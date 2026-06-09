@@ -1,104 +1,100 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { VoyageAIClient } from "voyageai";
 
-// ── Clients ───────────────────────────────────────────────────────────────────
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const voyage = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY! });
 
-// ── System prompt ─────────────────────────────────────────────────────────────
+// ── System prompt ──────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `
 You are a senior Governance, Risk and Compliance analyst specialising in technology regulation
 across AI, privacy, cybersecurity, computer vision, automated decisioning, and robotics, globally.
 
-A user will describe a product or deployment and receive relevant regulatory clauses.
-Analyse the deployment and return ONLY valid JSON, no preamble, no markdown fences.
+Respond in EXACTLY this format, two sections separated by ---JSON---:
 
-Return this exact structure:
+Section 1: 2-3 sentences of plain English summary of the compliance position and the most
+urgent priority. No markdown, no bullets, just clear prose.
 
+---JSON---
+
+Section 2: A valid JSON object:
 {
   "title": "short title describing the deployment (max 8 words)",
-  "summary": "two sentence plain English summary of compliance position and most urgent priorities",
   "risk": "high" | "med" | "low",
-  "risk_summary": "one sentence explaining the overall risk level",
-  "frameworks": ["array of applicable framework abbreviations as strings"],
+  "risk_score": <integer 0-100>,
+  "frameworks": ["applicable framework abbreviation strings"],
   "gaps": [
     {
       "severity": "critical" | "high" | "medium",
       "title": "short gap title",
-      "detail": "what the requirement is and how the deployment falls short, cite specific article numbers",
+      "detail": "what the requirement is and how the deployment falls short, cite specific articles",
       "frameworks": ["framework abbreviations for this gap"],
-      "remediation": "specific actionable fix, what to build, change, or document"
+      "remediation": "specific actionable fix"
     }
   ]
 }
 
 Rules:
-- severity "critical" = prohibited practice, active enforcement risk, or immediate legal liability
-- severity "high" = significant gap requiring priority action
-- severity "medium" = gap requiring attention, lower immediate risk
-- cite specific articles: "GDPR Article 9(2)(a)" not just "GDPR"
-- remediation must be actionable by an engineer or legal counsel
+- Output plain prose summary FIRST, then ---JSON--- separator, then JSON
+- critical = prohibited practice, active enforcement risk, or immediate liability
+- high = significant gap requiring priority action
+- medium = gap requiring attention, lower immediate risk
+- cite specific articles: "GDPR Art.9(2)(a)" not just "GDPR"
 - order gaps by severity descending
-- never invent regulations not in the retrieved clauses or deployment profile
-- return lowercase risk values: "high", "med", or "low"
+- never invent regulations not in the retrieved clauses
 `;
 
-// ── Risk scoring ──────────────────────────────────────────────────────────────
+// ── Risk scoring ───────────────────────────────────────────────────────────────
 
-const DOMAIN_SCORES:      Record<string, number> = { cv:22, ai:20, cyber:18, adm:18, privacy:16, robotics:14 };
-const JURISDICTION_SCORES:Record<string, number> = { eu:22, us_state:16, uk:14, us_federal:12, apac:10, latam:8, mena:8 };
-const DEPLOYMENT_SCORES:  Record<string, number> = { facial_recognition:25, law_enforcement:25, workplace_surveillance:22, healthcare_ai:20, hiring_ai:18, credit_scoring:18, autonomous_systems:18, consumer_profiling:14, content_moderation:12, iot_connected:12 };
-const DATA_TYPE_SCORES:   Record<string, number> = { biometric:25, health:24, neural:22, children:20, location:16, financial:15, communications:12, behavioural:10, general_pi:5 };
-const SECTOR_SCORES:      Record<string, number> = { government:20, healthcare:18, finance:16, hr_recruitment:14, education:14, transport:12, media_adtech:12, legal:12, retail:8, proptech:8 };
+const DOMAIN_SCORES:       Record<string, number> = { cv:22, ai:20, cyber:18, adm:18, privacy:16, robotics:14 };
+const JURISDICTION_SCORES: Record<string, number> = { eu:22, us_state:16, uk:14, us_federal:12, canada:10, apac:10, latam:8, mena:8 };
+const DATA_TYPE_SCORES:    Record<string, number> = { biometric:25, health:24, children:20, location:16, financial:15, behavioural:10, communications:12, general_pi:5 };
+const SECTOR_SCORES:       Record<string, number> = { government:20, healthcare:18, finance:16, hr_recruitment:14, education:14, transport:12, media_adtech:12, legal:12, retail:8, proptech:8 };
 
-function scoreList(items: string[], table: Record<string, number>) {
-  return Math.min(items.reduce((s, v) => s + (table[v.toLowerCase()] || 0), 0), 100);
-}
-
-function calcRisk(inputs: { domains:string[]; jurisdictions:string[]; deployments:string[]; data_types:string[]; sector:string }) {
+function calcRisk(domains: string[], jurisdictions: string[], dataTypes: string[], sector: string) {
+  const score = (items: string[], table: Record<string, number>) =>
+    Math.min(items.reduce((a, v) => a + (table[v.toLowerCase()] || 0), 0), 100);
   const sub = {
-    data_types:    scoreList(inputs.data_types,    DATA_TYPE_SCORES),
-    deployment:    scoreList(inputs.deployments,   DEPLOYMENT_SCORES),
-    domains:       scoreList(inputs.domains,       DOMAIN_SCORES),
-    jurisdictions: scoreList(inputs.jurisdictions, JURISDICTION_SCORES),
-    sector:        scoreList([inputs.sector],      SECTOR_SCORES),
+    domains:       score(domains,       DOMAIN_SCORES),
+    jurisdictions: score(jurisdictions, JURISDICTION_SCORES),
+    data_types:    score(dataTypes,     DATA_TYPE_SCORES),
+    sector:        score([sector],      SECTOR_SCORES),
   };
   const composite = Math.round(
-    sub.data_types*0.24 + sub.deployment*0.22 + sub.domains*0.20 + sub.jurisdictions*0.20 + sub.sector*0.14
+    sub.domains * 0.25 + sub.jurisdictions * 0.25 + sub.data_types * 0.3 + sub.sector * 0.2
   );
-  return { composite, tier: composite>=70?"High":composite>=40?"Medium":"Low", sub_scores: sub };
+  return { composite, tier: composite >= 70 ? "High" : composite >= 40 ? "Medium" : "Low", sub };
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── JSON helpers ───────────────────────────────────────────────────────────────
 
-function parseJSON(raw: string) {
+function sseChunk(data: object) {
+  return `data: ${JSON.stringify(data)}\n\n`;
+}
+
+function parseAssessmentJSON(raw: string) {
   let s = raw.trim();
-  if (s.startsWith("```")) {
-    s = s.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim();
-  }
+  s = s.replace(/^```json?\s*/im, "").replace(/```\s*$/m, "").trim();
   const start = s.indexOf("{");
-  if (start > 0) s = s.slice(start);
+  if (start < 0) throw new Error("No JSON found");
+  s = s.slice(start);
   try { return JSON.parse(s); }
   catch {
-    // close unclosed brackets
     const stack: string[] = [];
     let inStr = false, esc = false;
     for (const c of s) {
-      if (inStr) { esc = c === "\\" && !esc; if (!esc && c === '"') inStr=false; continue; }
-      if (c==='"') inStr=true;
-      else if (c==="{") stack.push("}");
-      else if (c==="[") stack.push("]");
-      else if ((c==="}"||c==="]") && stack.length && stack[stack.length-1]===c) stack.pop();
+      if (inStr) { esc = c === "\\" && !esc; if (!esc && c === '"') inStr = false; continue; }
+      if (c === '"') inStr = true;
+      else if (c === "{") stack.push("}");
+      else if (c === "[") stack.push("]");
+      else if ((c === "}" || c === "]") && stack.length && stack[stack.length - 1] === c) stack.pop();
     }
     return JSON.parse(s + stack.reverse().join(""));
   }
@@ -111,141 +107,192 @@ function normSev(v: string) {
   return "medium";
 }
 
-// ── POST handler ──────────────────────────────────────────────────────────────
+// ── POST — streaming assess ────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const encoder = new TextEncoder();
 
-    const body = await req.json();
-    const {
-      description,
-      domains       = [],
-      jurisdictions = [],
-      deployments   = [],
-      data_types    = [],
-      sector        = "",
-      contract_text = "",
-    } = body;
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data: object) =>
+        controller.enqueue(encoder.encode(sseChunk(data)));
 
-    if (!description || description.trim().length < 10) {
-      return NextResponse.json({ error: "Description too short" }, { status: 400 });
-    }
+      try {
+        const { userId } = await auth();
+        if (!userId) {
+          send({ type: "error", text: "Unauthorised" });
+          controller.close();
+          return;
+        }
 
-    // 1. Risk score
-    const riskResult = calcRisk({ domains, jurisdictions, deployments, data_types, sector });
+        const body = await req.json();
+        const {
+          description   = "",
+          domains       = [] as string[],
+          jurisdictions = [] as string[],
+          data_types    = [] as string[],
+          sector        = "",
+          contract_text = "",
+          tags          = [] as string[],
+        } = body;
 
-    // 2. Embed
-    const query = `${description}. Domains: ${domains.join(", ")}. Data: ${data_types.join(", ")}. Jurisdictions: ${jurisdictions.join(", ")}.`;
-    const embedRes  = await voyage.embed({ input: [query], model: "voyage-3-large", inputType: "query" });
-    const embedding = (embedRes as { data?: { embedding?: number[] }[]; embeddings?: number[][] }).data?.[0]?.embedding
-      ?? (embedRes as { embeddings?: number[][] }).embeddings?.[0];
+        if (description.trim().length < 10) {
+          send({ type: "error", text: "Description too short" });
+          controller.close();
+          return;
+        }
 
-    // 3. Retrieve chunks
-    const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
-      query_embedding: embedding,
-      match_threshold: 0.35,
-      match_count:     12,
-    });
+        const risk = calcRisk(domains, jurisdictions, data_types, sector);
 
-    const clauseText = (chunks || []).map((c: {
-      reg_abbr: string;
-      reg_name: string;
-      jurisdiction: string;
-      state?: string;
-      chunk_text: string;
-    }, i: number) =>
-      `[${i+1}] ${c.reg_abbr}, ${c.reg_name}\n    ${c.jurisdiction}${c.state ? ` (${c.state})` : ""}\n    ${c.chunk_text}`
-    ).join("\n\n");
+        send({ type: "status", text: "Searching 140+ regulations..." });
 
-    // 4. Claude
-    const userMsg = `
-DEPLOYMENT DESCRIPTION:
-${description}
+        const embedRes = await voyage.embed({
+          input:     [description],
+          model:     "voyage-3-large",
+          inputType: "query",
+        });
+        const embedding = (embedRes as { data?: { embedding?: number[] }[]; embeddings?: number[][] }).data?.[0]?.embedding
+          ?? (embedRes as { embeddings?: number[][] }).embeddings?.[0];
 
-PROFILE:
-- Domains: ${domains.join(", ") || "not specified"}
-- Jurisdictions: ${jurisdictions.join(", ") || "not specified"}
-- Deployment types: ${deployments.join(", ") || "not specified"}
-- Data types: ${data_types.join(", ") || "not specified"}
-- Sector: ${sector || "not specified"}
-- Risk exposure score: ${riskResult.composite}/100 (${riskResult.tier})
+        const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
+          query_embedding: embedding,
+          match_threshold: 0.35,
+          match_count:     12,
+        });
 
-RETRIEVED REGULATORY CLAUSES:
-${clauseText || "No specific clauses retrieved. Assess based on deployment description and general knowledge."}
-${contract_text ? `\n\nCONTRACT / POLICY TEXT FOR REDLINING:\n${contract_text.slice(0, 8000)}` : ""}
+        const clauseText = (chunks || []).map((c: {
+          reg_abbr: string;
+          jurisdiction: string;
+          state?: string;
+          chunk_text: string;
+        }, i: number) =>
+          `[${i + 1}] ${c.reg_abbr}, ${c.jurisdiction}${c.state ? ` (${c.state})` : ""}\n${c.chunk_text}`
+        ).join("\n\n");
 
-Return your compliance assessment as JSON.
-`;
+        send({ type: "status", text: "Analysing your deployment..." });
 
-    const response = await claude.messages.create({
-      model:    "claude-sonnet-4-6",
-      max_tokens: 4000,
-      system:   SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMsg }],
-    });
+        const userMsg = `
+DEPLOYMENT: ${description}
+PROFILE: domains=${domains.join(",") || "n/a"} | jurisdictions=${jurisdictions.join(",") || "n/a"} | data=${data_types.join(",") || "n/a"} | sector=${sector || "n/a"}
+External risk score: ${risk.composite}/100 (${risk.tier})
 
-    const raw        = response.content[0].type === "text" ? response.content[0].text : "";
-    const assessment = parseJSON(raw);
+RETRIEVED CLAUSES:
+${clauseText || "No specific clauses retrieved."}
+${contract_text ? `\nCONTRACT TEXT:\n${contract_text.slice(0, 6000)}` : ""}`;
 
-    // 5. Normalise
-    if (Array.isArray(assessment.gaps)) {
-      assessment.gaps = assessment.gaps.map((g: {
-        severity?: string;
-        remediation?: string;
-        fix?: string;
-        detail?: string;
-        description?: string;
-        frameworks?: string[];
-      }) => ({
-        ...g,
-        severity:    normSev(g.severity ?? "medium"),
-        remediation: g.remediation ?? g.fix ?? "",
-        detail:      g.detail ?? g.description ?? "",
-        frameworks:  Array.isArray(g.frameworks) ? g.frameworks : [],
-      }));
-    }
-    if (!assessment.risk) {
-      assessment.risk = riskResult.tier.toLowerCase() === "high" ? "high"
-        : riskResult.tier.toLowerCase() === "medium" ? "med" : "low";
-    }
+        const claudeStream = claude.messages.stream({
+          model:      "claude-sonnet-4-6",
+          max_tokens: 4000,
+          system:     SYSTEM_PROMPT,
+          messages:   [{ role: "user", content: userMsg }],
+        });
 
-    assessment.risk_score = {
-      composite:  riskResult.composite,
-      tier:       riskResult.tier,
-      sub_scores: riskResult.sub_scores,
-    };
+        let fullText = "";
+        let pastSep  = false;
 
-    assessment.meta = {
-      assessed_at:      new Date().toISOString(),
-      chunks_retrieved: (chunks || []).length,
-    };
+        for await (const event of claudeStream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            const chunk = event.delta.text;
+            fullText += chunk;
 
-    // 6. Save
-    const title = assessment.title || description.slice(0, 80);
-    const { data: saved, error: saveErr } = await supabase
-      .from("assessments")
-      .insert({
-        user_id:      userId,
-        title,
-        description:  description.slice(0, 500),
-        result:       assessment,
-        risk_tier:    riskResult.tier,
-        risk_score:   riskResult.composite,
-        domains,
-        jurisdictions,
-      })
-      .select("id")
-      .single();
+            if (!pastSep && fullText.includes("---JSON---")) {
+              pastSep = true;
+              const summaryPart = fullText.split("---JSON---")[0].trim();
+              if (summaryPart) send({ type: "summary", text: summaryPart });
+              continue;
+            }
 
-    if (saveErr) console.error("Supabase save error:", saveErr.message);
+            if (!pastSep) {
+              send({ type: "token", text: chunk });
+            }
+          }
+        }
 
-    return NextResponse.json({ ...assessment, id: saved?.id });
+        const jsonPart = fullText.includes("---JSON---")
+          ? fullText.split("---JSON---")[1]
+          : fullText;
 
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Assessment failed";
-    console.error("Assessment error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+        let assessment: Record<string, unknown>;
+        try {
+          assessment = parseAssessmentJSON(jsonPart);
+        } catch {
+          send({ type: "error", text: "Failed to parse assessment. Please try again." });
+          controller.close();
+          return;
+        }
+
+        if (Array.isArray(assessment.gaps)) {
+          assessment.gaps = assessment.gaps.map((g: {
+            severity?: string;
+            detail?: string;
+            description?: string;
+            remediation?: string;
+            fix?: string;
+            frameworks?: string[];
+          }) => ({
+            ...g,
+            severity:    normSev(g.severity ?? "medium"),
+            detail:      g.detail ?? g.description ?? "",
+            remediation: g.remediation ?? g.fix ?? "",
+            frameworks:  Array.isArray(g.frameworks) ? g.frameworks : [],
+          }));
+        }
+
+        if (!assessment.risk) {
+          assessment.risk = risk.tier.toLowerCase() === "high" ? "high"
+            : risk.tier.toLowerCase() === "medium" ? "med" : "low";
+        }
+
+        assessment.risk_score = { composite: risk.composite, tier: risk.tier, sub: risk.sub };
+        assessment.summary = fullText.split("---JSON---")[0].trim()
+          || (assessment.summary as string)
+          || "";
+        assessment.meta = {
+          assessed_at:      new Date().toISOString(),
+          chunks_retrieved: (chunks || []).length,
+        };
+
+        const initialMessages = [
+          { role: "user", content: description, tags },
+          { role: "assistant", assessment },
+        ];
+
+        const { data: saved, error: saveErr } = await supabase
+          .from("assessments")
+          .insert({
+            user_id:      userId,
+            title:        (assessment.title as string) || description.slice(0, 80),
+            description:  description.slice(0, 500),
+            result:       assessment,
+            messages:     initialMessages,
+            risk_tier:    risk.tier,
+            risk_score:   risk.composite,
+            domains,
+            jurisdictions,
+          })
+          .select("id")
+          .single();
+
+        if (saveErr) console.error("Supabase save error:", saveErr.message);
+
+        assessment.id = saved?.id;
+        send({ type: "done", assessment });
+        controller.close();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Assessment failed";
+        console.error("Assess error:", err);
+        controller.enqueue(encoder.encode(sseChunk({ type: "error", text: message })));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type":        "text/event-stream",
+      "Cache-Control":       "no-cache, no-transform",
+      Connection:            "keep-alive",
+      "X-Accel-Buffering":   "no",
+    },
+  });
 }

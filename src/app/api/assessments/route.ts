@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
     const id    = searchParams.get("id");
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100);
 
-    // Single assessment by ID — returns full result JSON
+    // Single assessment — return full result + full messages array
     if (id) {
       const { data, error } = await supabase
         .from("assessments")
-        .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions, result")
+        .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions, result, messages")
         .eq("id", id)
         .eq("user_id", userId)
         .single();
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ assessment: data });
     }
 
-    // List — returns summary rows for sidebar and history page
+    // List — summary rows for sidebar + history page
     const { data, error } = await supabase
       .from("assessments")
       .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions")
