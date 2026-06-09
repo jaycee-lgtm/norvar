@@ -400,13 +400,27 @@ function Home() {
     setLoadingSaved(true);
     setError("");
 
-    fetch(`/api/assessments/${id}`)
+    fetch(`/api/assessments?id=${id}`)
       .then(r => r.json())
-      .then(data => {
-        if (data.error) throw new Error(data.error);
+      .then(d => {
+        if (d.error) throw new Error(d.error);
+        if (!d.assessment) throw new Error("Assessment not found");
+        const row = d.assessment;
+        const result = (row.result ?? row) as Assessment;
         setMessages([
-          { role: "user", content: data.description || data.title || "" },
-          { role: "assistant", assessment: data },
+          { role: "user", content: row.description || row.title || "" },
+          {
+            role: "assistant",
+            assessment: {
+              ...result,
+              id: row.id,
+              title: result.title ?? row.title,
+              risk_score: result.risk_score ?? {
+                composite: row.risk_score,
+                tier: row.risk_tier,
+              },
+            },
+          },
         ]);
       })
       .catch((e: unknown) => {

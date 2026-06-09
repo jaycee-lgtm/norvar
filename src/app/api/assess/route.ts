@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       deployments   = [],
       data_types    = [],
       sector        = "",
-      contract_text,
+      contract_text = "",
     } = body;
 
     if (!description || description.trim().length < 10) {
@@ -171,10 +171,10 @@ PROFILE:
 - Data types: ${data_types.join(", ") || "not specified"}
 - Sector: ${sector || "not specified"}
 - Risk exposure score: ${riskResult.composite}/100 (${riskResult.tier})
-${contract_text ? `\nCONTRACT / POLICY TEXT:\n${String(contract_text).slice(0, 8000)}` : ""}
 
 RETRIEVED REGULATORY CLAUSES:
 ${clauseText || "No specific clauses retrieved. Assess based on deployment description and general knowledge."}
+${contract_text ? `\n\nCONTRACT / POLICY TEXT FOR REDLINING:\n${contract_text.slice(0, 8000)}` : ""}
 
 Return your compliance assessment as JSON.
 `;
