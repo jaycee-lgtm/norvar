@@ -126,10 +126,11 @@ export async function POST(req: NextRequest) {
       deployments   = [],
       data_types    = [],
       sector        = "",
+      contract_text,
     } = body;
 
-    if (!description || description.trim().length < 1) {
-      return NextResponse.json({ error: "Description required" }, { status: 400 });
+    if (!description || description.trim().length < 10) {
+      return NextResponse.json({ error: "Description too short" }, { status: 400 });
     }
 
     // 1. Risk score
@@ -170,6 +171,7 @@ PROFILE:
 - Data types: ${data_types.join(", ") || "not specified"}
 - Sector: ${sector || "not specified"}
 - Risk exposure score: ${riskResult.composite}/100 (${riskResult.tier})
+${contract_text ? `\nCONTRACT / POLICY TEXT:\n${String(contract_text).slice(0, 8000)}` : ""}
 
 RETRIEVED REGULATORY CLAUSES:
 ${clauseText || "No specific clauses retrieved. Assess based on deployment description and general knowledge."}
