@@ -5,38 +5,160 @@ import { Show, SignInButton } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import {
-  ArrowUp, Globe, Layers, Database,
-  FileText, Loader2, AlertTriangle,
-  AlertCircle, Info, ShieldAlert,
+  ArrowUp, Globe, Layers, Database, FileText,
+  Loader2, AlertTriangle, AlertCircle, Info,
+  ShieldAlert, X, Check, ChevronDown,
 } from "lucide-react";
+
+// ── Option sets ────────────────────────────────────────────────────────────────
+
+const JURISDICTION_OPTIONS = [
+  { value: "eu",         label: "EU / EEA"    },
+  { value: "uk",         label: "UK"          },
+  { value: "us_federal", label: "US Federal"  },
+  { value: "us_state",   label: "US States"   },
+  { value: "canada",     label: "Canada"      },
+  { value: "apac",       label: "Asia-Pacific" },
+  { value: "latam",      label: "Latin America" },
+  { value: "mena",       label: "MENA"        },
+];
+
+const DOMAIN_OPTIONS = [
+  { value: "ai",       label: "Artificial Intelligence" },
+  { value: "privacy",  label: "Privacy"                 },
+  { value: "cyber",    label: "Cybersecurity"           },
+  { value: "cv",       label: "Computer Vision"         },
+  { value: "adm",      label: "Auto Decisioning"        },
+  { value: "robotics", label: "Robotics"                },
+];
+
+const DATA_TYPE_OPTIONS = [
+  { value: "biometric",      label: "Biometrics"        },
+  { value: "health",         label: "Health / genetic"  },
+  { value: "children",       label: "Children's data"   },
+  { value: "location",       label: "Precise location"  },
+  { value: "financial",      label: "Financial data"    },
+  { value: "behavioural",    label: "Behavioural"       },
+  { value: "communications", label: "Communications"    },
+  { value: "general_pi",     label: "General personal data" },
+];
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Gap = {
-  severity:    "critical" | "high" | "medium";
-  title:       string;
-  detail?:     string;
+  severity:     "critical" | "high" | "medium";
+  title:        string;
+  detail?:      string;
   description?: string;
   remediation?: string;
-  frameworks:  string[];
+  frameworks:   string[];
 };
 
 type Assessment = {
-  title:       string;
-  summary:     string;
-  risk:        string;
+  title:        string;
+  summary:      string;
+  risk:         string;
   risk_summary?: string;
-  risk_score:  { composite: number; tier: string };
-  gaps:        Gap[];
-  metrics?:    { label: string; value: string }[];
-  frameworks?: string[];
+  risk_score:   { composite: number; tier: string };
+  gaps:         Gap[];
+  frameworks?:  string[];
 };
 
 type Message =
-  | { role: "user"; content: string }
+  | { role: "user"; content: string; tags?: string[] }
   | { role: "assistant"; assessment: Assessment };
 
-// ── Gap severity icon ──────────────────────────────────────────────────────────
+// ── Chip dropdown ──────────────────────────────────────────────────────────────
+
+function ChipDropdown({
+  icon, label, options, selected, onToggle, onClose,
+}: {
+  icon:     React.ReactNode;
+  label:    string;
+  options:  { value: string; label: string }[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  onClose:  () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={onClose}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "6px 12px", borderRadius: 20,
+          border: `0.5px solid ${selected.length > 0 ? "var(--bdr3)" : "var(--bdr2)"}`,
+          background: selected.length > 0 ? "var(--lift)" : "var(--card)",
+          fontSize: 11, color: selected.length > 0 ? "var(--fg)" : "var(--fg2)",
+          fontWeight: selected.length > 0 ? 500 : 400,
+          cursor: "pointer", fontFamily: "'Sora', sans-serif",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {icon}
+        {label}
+        {selected.length > 0 && (
+          <span style={{
+            fontSize: 9, background: "var(--fg)", color: "var(--bg)",
+            padding: "0 5px", borderRadius: 10, fontWeight: 600,
+          }}>{selected.length}</span>
+        )}
+        <ChevronDown size={10} strokeWidth={2} />
+      </button>
+
+      <div style={{
+        position: "absolute", bottom: "calc(100% + 8px)", left: 0,
+        minWidth: 200, background: "var(--card)", border: "0.5px solid var(--bdr2)",
+        borderRadius: 8, overflow: "hidden", zIndex: 100,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+      }}>
+        <div style={{
+          padding: "7px 12px", borderBottom: "0.5px solid var(--bdr)",
+          fontSize: 10, fontWeight: 600, letterSpacing: ".08em",
+          textTransform: "uppercase", color: "var(--fg3)",
+          fontFamily: "'Sora', sans-serif",
+        }}>{label}</div>
+        {options.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onToggle(opt.value)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center",
+              justifyContent: "space-between", padding: "8px 12px",
+              background: "transparent", border: "none",
+              fontSize: 13, fontFamily: "'Sora', sans-serif",
+              letterSpacing: "-0.01em", cursor: "pointer",
+              color: selected.includes(opt.value) ? "var(--fg)" : "var(--fg2)",
+              fontWeight: selected.includes(opt.value) ? 500 : 400,
+              textAlign: "left",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--lift)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+          >
+            {opt.label}
+            {selected.includes(opt.value) && (
+              <Check size={13} strokeWidth={2.5} color="var(--fg3)" />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Severity icon ──────────────────────────────────────────────────────────────
 
 function SevIcon({ sev }: { sev: string }) {
   if (sev === "critical") return <AlertTriangle size={9} strokeWidth={2.5} />;
@@ -47,12 +169,14 @@ function SevIcon({ sev }: { sev: string }) {
 // ── Assessment card ────────────────────────────────────────────────────────────
 
 function AssessmentCard({ a }: { a: Assessment }) {
-  const [tab, setTab] = useState<"gaps" | "actions" | "frameworks">("gaps");
+  const [tab, setTab] = useState<"gaps" | "frameworks">("gaps");
   const score = a.risk_score?.composite ?? 0;
   const gaps  = a.gaps ?? [];
-  const crits = gaps.filter(g => g.severity === "critical");
-  const highs = gaps.filter(g => g.severity === "high");
-  const meds  = gaps.filter(g => g.severity === "medium");
+  const ordered = [
+    ...gaps.filter(g => g.severity === "critical"),
+    ...gaps.filter(g => g.severity === "high"),
+    ...gaps.filter(g => g.severity === "medium"),
+  ];
 
   return (
     <div className="msg-ai-card fade-up">
@@ -61,7 +185,6 @@ function AssessmentCard({ a }: { a: Assessment }) {
         Norvar assessment
       </div>
 
-      {/* Score */}
       <div className="score-row">
         <span className="score-number">{score}</span>
         <span className="score-denom">/100</span>
@@ -72,15 +195,13 @@ function AssessmentCard({ a }: { a: Assessment }) {
       </div>
 
       <p className="assessment-summary">{a.summary}</p>
-
       <div className="section-divider" />
 
-      {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "0.5px solid var(--bdr)", marginBottom: 12 }}>
-        {(["gaps","actions","frameworks"] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
+        {(["gaps", "frameworks"] as const).map(t => (
+          <button key={t} type="button" onClick={() => setTab(t)} style={{
             display: "flex", alignItems: "center", gap: 5,
-            padding: "6px 10px", fontSize: 11, cursor: "pointer",
+            padding: "6px 11px", fontSize: 11, cursor: "pointer",
             background: "transparent", border: "none",
             fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
             color: tab === t ? "var(--fg)" : "var(--fg3)",
@@ -89,19 +210,19 @@ function AssessmentCard({ a }: { a: Assessment }) {
             marginBottom: -1,
           }}>
             {t === "gaps"       && `Gaps (${gaps.length})`}
-            {t === "actions"    && "Actions"}
             {t === "frameworks" && `Frameworks (${a.frameworks?.length ?? 0})`}
           </button>
         ))}
       </div>
 
-      {/* Gap list */}
       {tab === "gaps" && (
         <div>
-          {gaps.length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No compliance gaps identified.</p>
+          {ordered.length === 0 && (
+            <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>
+              No compliance gaps identified.
+            </p>
           )}
-          {[...crits, ...highs, ...meds].map((gap, i) => (
+          {ordered.map((gap, i) => (
             <div key={i} className="gap-item">
               <span className={`gap-sev ${gap.severity}`}>
                 <SevIcon sev={gap.severity} />
@@ -125,25 +246,22 @@ function AssessmentCard({ a }: { a: Assessment }) {
         </div>
       )}
 
-      {tab === "actions" && (
-        <p style={{ fontSize: 12, color: "var(--fg2)", lineHeight: 1.65 }}>
-          Prioritised action plan coming in the next release.
-        </p>
-      )}
-
       {tab === "frameworks" && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {(a.frameworks ?? []).length === 0 && (
+            <p style={{ fontSize: 12, color: "var(--fg3)" }}>No frameworks listed.</p>
+          )}
           {(a.frameworks ?? []).map(f => (
             <span key={f} style={{
               fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
               padding: "3px 10px", borderRadius: 5,
-              border: "0.5px solid var(--bdr)", fontFamily: "'JetBrains Mono', monospace",
+              border: "0.5px solid var(--bdr)",
+              fontFamily: "'JetBrains Mono', monospace",
             }}>{f}</span>
           ))}
         </div>
       )}
 
-      {/* Action chips */}
       <div className="section-divider" />
       <div className="result-actions">
         <span className="result-action">Export PDF</span>
@@ -168,15 +286,21 @@ function Home() {
   const searchParams = useSearchParams();
   const assessmentId = searchParams.get("id");
 
-  const [messages,    setMessages]    = useState<Message[]>([]);
-  const [input,       setInput]       = useState("");
-  const [loading,     setLoading]     = useState(false);
-  const [loadingSaved, setLoadingSaved] = useState(false);
-  const [error,       setError]       = useState("");
+  const [messages,      setMessages]      = useState<Message[]>([]);
+  const [input,         setInput]         = useState("");
+  const [loading,       setLoading]       = useState(false);
+  const [loadingSaved,  setLoadingSaved]  = useState(false);
+  const [error,         setError]         = useState("");
+
+  const [jurisdictions, setJurisdictions] = useState<string[]>([]);
+  const [domains,       setDomains]       = useState<string[]>([]);
+  const [dataTypes,     setDataTypes]     = useState<string[]>([]);
+  const [openChip,      setOpenChip]      = useState<string | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
+  const fileRef     = useRef<HTMLInputElement>(null);
 
-  // Load saved assessment from history / sidebar links
   useEffect(() => {
     if (!assessmentId) {
       setMessages([]);
@@ -203,7 +327,6 @@ function Home() {
       .finally(() => setLoadingSaved(false));
   }, [assessmentId]);
 
-  // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -211,26 +334,61 @@ function Home() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  const canSend = input.trim().length > 0 && !loading;
+  const canSend = input.trim().length > 10 && !loading;
+
+  function toggleJurisdiction(v: string) {
+    setJurisdictions(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
+  }
+  function toggleDomain(v: string) {
+    setDomains(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
+  }
+  function toggleDataType(v: string) {
+    setDataTypes(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
+  }
+
+  function buildTags() {
+    const tags: string[] = [];
+    jurisdictions.forEach(v => {
+      const o = JURISDICTION_OPTIONS.find(x => x.value === v);
+      if (o) tags.push(o.label);
+    });
+    domains.forEach(v => {
+      const o = DOMAIN_OPTIONS.find(x => x.value === v);
+      if (o) tags.push(o.label);
+    });
+    dataTypes.forEach(v => {
+      const o = DATA_TYPE_OPTIONS.find(x => x.value === v);
+      if (o) tags.push(o.label);
+    });
+    return tags;
+  }
 
   const handleSend = async () => {
     if (!canSend) return;
     const text = input.trim();
+    const tags = buildTags();
     setInput("");
     setError("");
-    setMessages(prev => [...prev, { role: "user", content: text }]);
+    setOpenChip(null);
+    setMessages(prev => [...prev, { role: "user", content: text, tags }]);
     setLoading(true);
 
     try {
-      const res  = await fetch("/api/assess", {
+      const res = await fetch("/api/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: text }),
+        body: JSON.stringify({
+          description:  text,
+          domains,
+          jurisdictions,
+          data_types:   dataTypes,
+          deployments:  [],
+          sector:       "",
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Assessment failed");
@@ -248,13 +406,140 @@ function Home() {
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
 
+  const InputBar = (
+    <div className="input-wrap">
+      {(jurisdictions.length > 0 || domains.length > 0 || dataTypes.length > 0) && (
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: 5,
+          marginBottom: 8, padding: "0 2px",
+        }}>
+          {buildTags().map(tag => (
+            <span key={tag} style={{
+              fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+              padding: "2px 9px", borderRadius: 20,
+              border: "0.5px solid var(--bdr2)",
+              fontFamily: "'Sora', sans-serif",
+            }}>{tag}</span>
+          ))}
+          <button
+            type="button"
+            onClick={() => { setJurisdictions([]); setDomains([]); setDataTypes([]); }}
+            style={{
+              fontSize: 10, color: "var(--fg3)", background: "transparent",
+              border: "none", cursor: "pointer", padding: "2px 4px",
+              fontFamily: "'Sora', sans-serif", display: "flex", alignItems: "center", gap: 3,
+            }}
+          >
+            <X size={10} strokeWidth={2} /> Clear
+          </button>
+        </div>
+      )}
+
+      <div className="input-bar">
+        <textarea
+          ref={textareaRef}
+          className="input-textarea"
+          placeholder="Describe your product or deployment..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKey}
+          rows={1}
+        />
+        <button type="button" className="send-btn" onClick={handleSend} disabled={!canSend}>
+          {loading
+            ? <Loader2 size={16} className="spin" />
+            : <ArrowUp size={16} strokeWidth={2.5} />}
+        </button>
+      </div>
+
+      <div className="input-chips">
+        {openChip === "jurisdictions" ? (
+          <ChipDropdown
+            icon={<Globe size={11} strokeWidth={1.75} />}
+            label="Jurisdictions"
+            options={JURISDICTION_OPTIONS}
+            selected={jurisdictions}
+            onToggle={toggleJurisdiction}
+            onClose={() => setOpenChip(null)}
+          />
+        ) : (
+          <button type="button" className="chip" onClick={() => setOpenChip("jurisdictions")}>
+            <Globe size={11} strokeWidth={1.75} />
+            Jurisdictions
+            {jurisdictions.length > 0 && (
+              <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>
+                {jurisdictions.length}
+              </span>
+            )}
+          </button>
+        )}
+
+        {openChip === "domains" ? (
+          <ChipDropdown
+            icon={<Layers size={11} strokeWidth={1.75} />}
+            label="Domains"
+            options={DOMAIN_OPTIONS}
+            selected={domains}
+            onToggle={toggleDomain}
+            onClose={() => setOpenChip(null)}
+          />
+        ) : (
+          <button type="button" className="chip" onClick={() => setOpenChip("domains")}>
+            <Layers size={11} strokeWidth={1.75} />
+            Domains
+            {domains.length > 0 && (
+              <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>
+                {domains.length}
+              </span>
+            )}
+          </button>
+        )}
+
+        {openChip === "datatypes" ? (
+          <ChipDropdown
+            icon={<Database size={11} strokeWidth={1.75} />}
+            label="Data types"
+            options={DATA_TYPE_OPTIONS}
+            selected={dataTypes}
+            onToggle={toggleDataType}
+            onClose={() => setOpenChip(null)}
+          />
+        ) : (
+          <button type="button" className="chip" onClick={() => setOpenChip("datatypes")}>
+            <Database size={11} strokeWidth={1.75} />
+            Data types
+            {dataTypes.length > 0 && (
+              <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>
+                {dataTypes.length}
+              </span>
+            )}
+          </button>
+        )}
+
+        <button type="button" className="chip" onClick={() => fileRef.current?.click()}>
+          <FileText size={11} strokeWidth={1.75} />
+          Upload contract
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.txt"
+          style={{ display: "none" }}
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) setInput(prev => prev + (prev ? "\n\n" : "") + `[Contract attached: ${file.name}]`);
+          }}
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div className="app-shell">
       <Show when="signed-in">
         <Sidebar />
         <div className="main-area">
 
-          {/* HOME STATE */}
           {loadingSaved && (
             <div className="home-body">
               <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
@@ -273,51 +558,55 @@ function Home() {
                 Describe your deployment and Norvar will map it to the regulations
                 that apply, score your risk, and surface compliance gaps.
               </p>
-              <div className="input-wrap">
-                <div className="input-bar">
-                  <textarea
-                    ref={textareaRef}
-                    className="input-textarea"
-                    placeholder="Describe your product or deployment..."
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKey}
-                    rows={1}
-                  />
-                  <button type="button" className="send-btn" onClick={handleSend} disabled={!canSend}>
-                    {loading
-                      ? <Loader2 size={16} className="spin" />
-                      : <ArrowUp size={16} strokeWidth={2.5} />}
-                  </button>
-                </div>
-                <div className="input-chips">
-                  <span className="chip"><Globe    size={11} strokeWidth={1.75} />Jurisdictions</span>
-                  <span className="chip"><Layers   size={11} strokeWidth={1.75} />Domains</span>
-                  <span className="chip"><Database size={11} strokeWidth={1.75} />Data types</span>
-                  <span className="chip"><FileText size={11} strokeWidth={1.75} />Upload contract</span>
-                </div>
-              </div>
+              {InputBar}
               {error && (
-                <p style={{ marginTop: 16, fontSize: 12, color: "var(--rh)" }}>{error}</p>
+                <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>
               )}
             </div>
           )}
 
-          {/* CHAT STATE */}
           {!isHome && !loadingSaved && (
             <>
-              <div className="chat-scroll" ref={scrollRef} style={{ maxWidth: "100%", padding: "24px 32px" }}>
+              <div
+                ref={scrollRef}
+                style={{
+                  flex: 1, overflowY: "auto",
+                  padding: "24px 32px",
+                  display: "flex", flexDirection: "column", gap: 16,
+                }}
+              >
                 {messages.map((msg, i) => (
                   <div key={i} className={msg.role === "user" ? "msg-user fade-up" : "msg-ai"}>
-                    {msg.role === "user"
-                      ? msg.content
-                      : <AssessmentCard a={msg.assessment} />}
+                    {msg.role === "user" ? (
+                      <div>
+                        <div>{msg.content}</div>
+                        {msg.tags && msg.tags.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 7 }}>
+                            {msg.tags.map(t => (
+                              <span key={t} style={{
+                                fontSize: 10, color: "var(--fg3)",
+                                background: "rgba(255,255,255,.06)",
+                                padding: "1px 7px", borderRadius: 10,
+                                border: "0.5px solid var(--bdr)",
+                                fontFamily: "'Sora', sans-serif",
+                              }}>{t}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <AssessmentCard a={msg.assessment} />
+                    )}
                   </div>
                 ))}
+
                 {loading && (
                   <div className="msg-ai fade-up">
                     <div className="msg-ai-card">
-                      <div className="msg-ai-label"><ShieldAlert size={11} color="var(--fg3)" />Norvar is assessing...</div>
+                      <div className="msg-ai-label">
+                        <ShieldAlert size={11} color="var(--fg3)" />
+                        Norvar is assessing...
+                      </div>
                       <div style={{ display: "flex", gap: 5, padding: "8px 0" }}>
                         <span className="loading-dot" />
                         <span className="loading-dot" />
@@ -326,6 +615,7 @@ function Home() {
                     </div>
                   </div>
                 )}
+
                 {error && (
                   <p style={{ fontSize: 12, color: "var(--rh)", padding: "4px 0" }}>{error}</p>
                 )}
