@@ -64,3 +64,22 @@ $$;
 grant select on public.regulatory_chunks to authenticated;
 grant all on public.regulatory_chunks to service_role;
 grant execute on function public.match_regulatory_chunks to authenticated, service_role;
+
+-- Assessments (saved compliance runs per Clerk user)
+create table if not exists assessments (
+    id            uuid primary key default gen_random_uuid(),
+    user_id       text not null,
+    title         text not null,
+    description   text,
+    result        jsonb,
+    risk_tier     text,
+    risk_score    integer,
+    domains       text[],
+    jurisdictions text[],
+    created_at    timestamptz default now()
+);
+
+create index if not exists assessments_user_id_idx on assessments(user_id);
+create index if not exists assessments_created_at_idx on assessments(created_at desc);
+
+grant all on public.assessments to service_role;

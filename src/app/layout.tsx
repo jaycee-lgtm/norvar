@@ -1,55 +1,26 @@
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  Show,
-  UserButton,
-} from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { Sora } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sora = Sora({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300","400","500","600"],
+  variable: "--font-sora",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Norvar",
-  description: "Governance, risk and compliance intelligence",
+  description: "Governance, Risk and Compliance Intelligence Platform",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClerkProvider>
-          <header className="flex items-center justify-between border-b border-border px-6 py-4">
-            <a href="/" className="text-lg font-semibold tracking-tight">
-              Norvar
-            </a>
-            <nav className="flex items-center gap-3">
-              <Show when="signed-out">
-                <SignInButton />
-                <SignUpButton />
-              </Show>
-              <Show when="signed-in">
-                <UserButton />
-              </Show>
-            </nav>
-          </header>
-          {children}
-        </ClerkProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className={sora.variable}>
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

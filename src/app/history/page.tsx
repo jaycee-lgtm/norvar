@@ -1,0 +1,143 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Sidebar from "@/components/Sidebar";
+import { AlertTriangle, Tag, Clock, Plus, FileSearch, ChevronRight } from "lucide-react";
+
+type HistoryItem = {
+  id:            string;
+  description:   string;
+  title?:        string;
+  risk_tier:     string;
+  risk_score:    number;
+  created_at:    string;
+  domains?:      string[];
+};
+
+function tierColors(tier: string) {
+  const t = tier?.toLowerCase();
+  if (t === "high")   return { num: "var(--rh)", bg: "var(--rh-bg)", bdr: "var(--rh-bdr)" };
+  if (t === "medium") return { num: "var(--rm)", bg: "var(--rm-bg)", bdr: "var(--rm-bdr)" };
+  return { num: "var(--rl)", bg: "var(--rl-bg)", bdr: "var(--rl-bdr)" };
+}
+
+export default function HistoryPage() {
+  const [items,   setItems]   = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/assessments")
+      .then(r => r.json())
+      .then(d => { setItems(d.assessments || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <div className="main-area" style={{ overflowY: "auto" }}>
+        <div className="page-body" style={{ margin: "0 auto" }}>
+
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
+            <div>
+              <p className="stag" style={{ marginBottom: 8 }}>Assessment history</p>
+              <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.04em", fontFamily: "'Sora', sans-serif" }}>
+                Your assessments
+              </h1>
+            </div>
+            <Link href="/" className="btn-primary" style={{ fontSize: 12, padding: "8px 14px", gap: 6 }}>
+              <Plus size={13} strokeWidth={2} />
+              New assessment
+            </Link>
+          </div>
+
+          {loading && (
+            <div style={{ display: "flex", gap: 5, justifyContent: "center", padding: "60px 0" }}>
+              <span className="loading-dot" />
+              <span className="loading-dot" />
+              <span className="loading-dot" />
+            </div>
+          )}
+
+          {!loading && items.length === 0 && (
+            <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
+              <FileSearch size={32} strokeWidth={1.25} color="var(--fg4)" style={{ margin: "0 auto 14px" }} />
+              <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, color: "var(--fg)", fontFamily: "'Sora', sans-serif" }}>
+                No assessments yet
+              </p>
+              <p style={{ fontSize: 12, color: "var(--fg3)", marginBottom: 24, fontFamily: "'Sora', sans-serif" }}>
+                Run your first assessment to see your compliance history here.
+              </p>
+              <Link href="/" className="btn-primary" style={{ gap: 6 }}>
+                Run first assessment
+                <ChevronRight size={14} strokeWidth={2} />
+              </Link>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {items.map(item => {
+              const c = tierColors(item.risk_tier);
+              return (
+                <Link key={item.id} href={`/?id=${item.id}`} className="history-item">
+                  <div className="history-score" style={{ background: c.bg, border: `0.5px solid ${c.bdr}` }}>
+                    <span className="history-score-num" style={{ color: c.num }}>{item.risk_score}</span>
+                    <span className="history-score-den">/100</span>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
+                        background: c.bg, color: c.num, border: `0.5px solid ${c.bdr}`,
+                        fontFamily: "'Sora', sans-serif",
+                      }}>
+                        <AlertTriangle size={10} strokeWidth={2.5} />
+                        {item.risk_tier} risk
+                      </span>
+                      {item.domains?.slice(0, 3).map(d => (
+                        <span key={d} style={{
+                          display: "inline-flex", alignItems: "center", gap: 3,
+                          fontSize: 10, color: "var(--fg3)", background: "var(--card2)",
+                          padding: "1px 7px", borderRadius: 4, border: "0.5px solid var(--bdr)",
+                          fontFamily: "'Sora', sans-serif",
+                        }}>
+                          <Tag size={9} strokeWidth={2} />
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+
+                    <p style={{
+                      fontSize: 13, color: "var(--fg)", overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
+                      marginBottom: 4,
+                    }}>
+                      {item.title || item.description}
+                    </p>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <Clock size={10} strokeWidth={2} color="var(--fg4)" />
+                      <span style={{ fontSize: 11, color: "var(--fg4)", fontFamily: "'Sora', sans-serif" }}>
+                        {new Date(item.created_at).toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <ChevronRight size={14} strokeWidth={1.75} color="var(--fg3)" />
+                </Link>
+              );
+            })}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
