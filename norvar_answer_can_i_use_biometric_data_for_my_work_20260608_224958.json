@@ -1,0 +1,84 @@
+{
+  "question": "Can I use biometric data for my work project? What legal requirements apply to collecting and using biometric identifiers and biometric information in the United States?",
+  "answer": "Using biometric data for a work project is legally permissible in many circumstances, but it triggers significant compliance obligations under multiple state laws and, in certain contexts, federal law. Here is what the retrieved regulations require.\n\n---\n\nWHAT COUNTS AS BIOMETRIC DATA\n\nUnder Illinois law, a \"biometric identifier\" includes retina or iris scans, fingerprints, voiceprints, and scans of hand or face geometry. It expressly excludes writing samples, photographs, demographic data, health-care data covered by HIPAA, and medical imaging [BIPA 740 ILCS 14/10]. \"Biometric information\" is any information based on a biometric identifier that is used to identify an individual [BIPA 740 ILCS 14/10].\n\nOregon defines \"biometric data\" similarly \u2014 automatic measurements of biological characteristics such as fingerprints, voiceprints, retinal or iris patterns, and gait \u2014 but explicitly excludes ordinary photographs, audio/video recordings, and facial mapping unless generated for the specific purpose of identifying a consumer [OCPA 646A.570(3)]. Rhode Island's law likewise covers biological characteristics used to identify a specific individual, and excludes digital photographs and audio/video recordings unless used for identification [RIDTPPA]. Under HIPAA, biometric identifiers (including finger and voice prints) are treated as protected health information identifiers that must be removed to achieve de-identification [HIPAA Privacy \u00a7 164.514].\n\n---\n\nKEY LEGAL REQUIREMENTS: ILLINOIS (BIPA \u2014 MOST STRINGENT)\n\nIf your project involves individuals in Illinois, BIPA imposes the strictest requirements. Before collecting any biometric identifier or biometric information, a private entity must: (1) inform the subject in writing that biometric data is being collected or stored; (2) inform the subject in writing of the specific purpose and length of time for which it will be collected, stored, and used; and (3) obtain a written release from the subject [BIPA 740 ILCS 14/15(b)]. In an employment context, a release executed by an employee as a condition of employment qualifies as a \"written release\" [BIPA 740 ILCS 14/10].\n\nYou must also publish a publicly available written policy establishing a retention schedule and destruction guidelines. Biometric data must be destroyed when the original purpose is satisfied or within three years of the individual's last interaction with your organization, whichever comes first [BIPA 740 ILCS 14/15(a)]. You may not sell, lease, trade, or profit from biometric data [BIPA 740 ILCS 14/15(c)], and you may not disclose it without the subject's consent, unless required by law or a valid court order [BIPA 740 ILCS 14/15(d)]. Storage and transmission must use the reasonable standard of care in your industry and be at least as protective as how you handle other confidential and sensitive information [BIPA 740 ILCS 14/15(e)].\n\nViolations carry steep penalties: $1,000 per negligent violation or $5,000 per intentional or reckless violation, plus attorneys' fees and possible injunctive relief [BIPA 740 ILCS 14/20]. Note that BIPA does not apply to government agencies, financial institutions subject to Gramm-Leach-Bliley, or contractors working for a state or local government agency [BIPA 740 ILCS 14/25].\n\n---\n\nOTHER JURISDICTIONS AND FEDERAL CONSIDERATIONS\n\nOregon's Consumer Privacy Act covers biometric data as sensitive personal data requiring consumer consent before processing [OCPA 646A.570(3)]. Rhode Island's law similarly treats biometric data as sensitive information requiring consent [RIDTPPA]. If your project involves healthcare and you are a HIPAA-covered entity, biometric identifiers must be removed before health information can be considered de-identified, meaning you cannot use such data in combination with health records without full HIPAA protections in place [HIPAA Privacy \u00a7 164.514].\n\nThe retrieved clauses cover only Illinois, Oregon, Rhode Island, and federal HIPAA rules. Other states may have their own biometric privacy laws not included here. Before proceeding, you should determine which states' residents are involved, whether your organization qualifies as a covered entity under HIPAA, and whether any project-specific exemptions (e.g., health care, government contracting) apply.\n\n---\n\nSOURCES\n\n[BIPA] \u2014 Illinois Biometric Information Privacy Act, 740 ILCS 14/\n[OCPA] \u2014 Oregon Consumer Privacy Act, ORS 646A.570 et seq.\n[RIDTPPA] \u2014 Rhode Island Data Transparency and Privacy Protection Act\n[HIPAA Privacy] \u2014 HIPAA Privacy Rule, 45 C.F.R. \u00a7 164.514",
+  "sources": [
+    {
+      "index": 1,
+      "reg_abbr": "BIPA",
+      "reg_name": "Illinois Biometric Information Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Illinois",
+      "similarity": 0.588089686987124,
+      "source_url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57"
+    },
+    {
+      "index": 2,
+      "reg_abbr": "BIPA",
+      "reg_name": "Illinois Biometric Information Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Illinois",
+      "similarity": 0.585730510524831,
+      "source_url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57"
+    },
+    {
+      "index": 3,
+      "reg_abbr": "BIPA",
+      "reg_name": "Illinois Biometric Information Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Illinois",
+      "similarity": 0.578795688712475,
+      "source_url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57"
+    },
+    {
+      "index": 4,
+      "reg_abbr": "BIPA",
+      "reg_name": "Illinois Biometric Information Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Illinois",
+      "similarity": 0.562059869950404,
+      "source_url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57"
+    },
+    {
+      "index": 5,
+      "reg_abbr": "RIDTPPA",
+      "reg_name": "Rhode Island Data Transparency and Privacy Protection Act",
+      "jurisdiction": "US State",
+      "state": "Rhode Island",
+      "similarity": 0.522437546689072,
+      "source_url": "https://webserver.rilegislature.gov/BillText/BillText24/HouseText24/H7787A.pdf"
+    },
+    {
+      "index": 6,
+      "reg_abbr": "HIPAA Privacy",
+      "reg_name": "HIPAA Privacy Rule",
+      "jurisdiction": "US Federal",
+      "state": null,
+      "similarity": 0.51089863576579,
+      "source_url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-E"
+    },
+    {
+      "index": 7,
+      "reg_abbr": "OCPA",
+      "reg_name": "Oregon Consumer Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Oregon",
+      "similarity": 0.502528027076726,
+      "source_url": "https://www.oregonlegislature.gov/bills_laws/ors/ors646A.html"
+    },
+    {
+      "index": 8,
+      "reg_abbr": "HIPAA Privacy",
+      "reg_name": "HIPAA Privacy Rule",
+      "jurisdiction": "US Federal",
+      "state": null,
+      "similarity": 0.495371028091167,
+      "source_url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-E"
+    }
+  ],
+  "meta": {
+    "answered_at": "2026-06-08T22:49:58.349603",
+    "chunks_retrieved": 8,
+    "claude_model": "claude-sonnet-4-6",
+    "voyage_model": "voyage-3-large"
+  }
+}

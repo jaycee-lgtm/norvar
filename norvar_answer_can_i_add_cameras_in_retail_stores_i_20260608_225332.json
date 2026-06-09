@@ -1,0 +1,84 @@
+{
+  "question": "Can I add cameras in retail stores in the US? What legal requirements apply to in-store camera surveillance, video analytics, customer tracking, and biometric surveillance?",
+  "answer": "Adding cameras to retail stores is generally permissible in the US, but a patchwork of state laws imposes significant requirements depending on what the cameras do, what data they collect, and where your stores are located. The most critical legal obligations arise when cameras are used for biometric surveillance \u2014 such as facial recognition \u2014 rather than simple video monitoring.\n\nGENERAL VIDEO RECORDING VS. BIOMETRIC SURVEILLANCE\n\nPlain video recording (security footage) is largely unregulated by the statutes in the retrieved clauses. Multiple state laws explicitly carve out ordinary video recordings from their definitions of \"biometric data.\" For example, under Connecticut law, \"biometric data\" does not include \"a digital or physical photograph, an audio or video recording, or any data generated from a digital or physical photograph, or an audio or video recording, unless such data is generated to identify a specific individual\" [CTDPA Sec. 1(3)]. Oregon takes the same approach and adds that even \"facial mapping or facial geometry\" is excluded from biometric data unless it \"was generated for the purpose of identifying a specific consumer or was used to identify a specific consumer\" [OCPA 646A.570(3)]. New Jersey, Rhode Island, Maryland, and Minnesota use nearly identical language [NJDPA C.56:8-166.4; RIDTPPA 6-48.1-2(3); MODPA 14-4601(D); MN MCDPA 325M.11(d)].\n\nThe critical threshold is whether your video analytics or camera system processes footage to identify specific individuals. Once that line is crossed, you move into heavily regulated biometric territory.\n\nBIOMETRIC SURVEILLANCE AND FACIAL RECOGNITION (ILLINOIS \u2014 BIPA)\n\nIf your retail stores are in Illinois, the Biometric Information Privacy Act imposes the strictest requirements in the country. Before collecting any biometric identifier or biometric information (which would include facial geometry generated to identify a person), a private entity must: (1) inform the subject in writing that biometric data is being collected or stored; (2) inform the subject in writing of the specific purpose and the length of time for which it will be collected, stored, and used; and (3) receive a written release from the subject [BIPA 740 ILCS 14/15(b)]. A private entity must also develop a publicly available written policy establishing a retention schedule and destruction guidelines, and must permanently destroy biometric data when the initial purpose has been satisfied or within three years of the individual's last interaction, whichever comes first [BIPA 740 ILCS 14/15(a)]. BIPA also prohibits selling, leasing, trading, or otherwise profiting from biometric identifiers or information [BIPA 740 ILCS 14/15(c)], and prohibits disclosing it without consent or other narrow legal justifications [BIPA 740 ILCS 14/15(d)]. BIPA further requires that biometric data be stored and protected using the reasonable standard of care in the industry, and at least as securely as other sensitive confidential information [BIPA 740 ILCS 14/15(e)].\n\nVIDEO ANALYTICS AND CUSTOMER TRACKING UNDER STATE DATA PRIVACY LAWS\n\nIf your in-store cameras feed into analytics systems that track individual customers and link that data to identified or identifiable individuals, multiple state consumer data privacy laws are triggered. Retailers in Connecticut, Rhode Island, New Jersey, Oregon, Maryland, and Minnesota must comply with their respective state privacy acts when processing personal data of residents. Key obligations include:\n\n- Consent requirements: Processing biometric data (including facial recognition outputs) requires a \"clear affirmative act\" of \"freely given, specific, informed and unambiguous\" consent from the consumer \u2014 passive presence in a store almost certainly does not satisfy this standard [CTDPA Sec. 1(6); RIDTPPA 6-48.1-2(6); NJDPA C.56:8-166.4; MN MCDPA 325M.11(f); MODPA 14-4601(G)]. Oregon similarly requires an affirmative act with no mechanism that \"obscures, subverts or impairs the consumer's autonomy\" and explicitly states that \"inaction does not constitute consent\" [OCPA 646A.570(6)].\n- Dark patterns: Using misleading interfaces or signage to obtain consent is prohibited across all these states [CTDPA Sec. 1(11); RIDTPPA 6-48.1-2(11); NJDPA C.56:8-166.4; MN MCDPA 325M.11(j)].\n- Significant decisions: If camera-based tracking is used to make decisions about providing or denying services, insurance, employment, or access to essential goods and services, heightened obligations apply [CTDPA Sec. 1(12); OCPA 646A.570(10); MN MCDPA 325M.11(i)].\n\nWHAT THE RETRIEVED CLAUSES DO NOT COVER\n\nThe retrieved clauses do not contain information about federal wiretapping or video surveillance law, OSHA workplace requirements, employee monitoring rules, local ordinances, or specific notice/signage requirements for retail premises. You should also consult those sources for a complete compliance picture. Additionally, only Illinois BIPA among the retrieved clauses provides a private right of action with statutory damages for biometric violations, making compliance there especially high-stakes.\n\nSources:\n[BIPA] \u2014 Illinois Biometric Information Privacy Act, 740 ILCS 14/1 et seq.\n[CTDPA] \u2014 Connecticut Data Privacy Act, Public Act No. 22-15\n[RIDTPPA] \u2014 Rhode Island Data Transparency and Privacy Protection Act, R.I. Gen. Laws Chapter 6-48.1\n[NJDPA] \u2014 New Jersey Data Privacy Act, P.L. 2023, c.266 (C.56:8-166.4 et seq.)\n[OCPA] \u2014 Oregon Consumer Privacy Act, ORS 646A.570 et seq.\n[MODPA] \u2014 Maryland Online Data Privacy Act, Article \u2013 Commercial Law, Title 14, Subtitle 46\n[MN MCDPA] \u2014 Minnesota Consumer Data Privacy Act, Minn. Stat. \u00a7\u00a7 325M.10\u2013325M.21",
+  "sources": [
+    {
+      "index": 1,
+      "reg_abbr": "RIDTPPA",
+      "reg_name": "Rhode Island Data Transparency and Privacy Protection Act",
+      "jurisdiction": "US State",
+      "state": "Rhode Island",
+      "similarity": 0.437263557666264,
+      "source_url": "https://webserver.rilegislature.gov/BillText/BillText24/HouseText24/H7787A.pdf"
+    },
+    {
+      "index": 2,
+      "reg_abbr": "RIDTPPA",
+      "reg_name": "Rhode Island Data Transparency and Privacy Protection Act",
+      "jurisdiction": "US State",
+      "state": "Rhode Island",
+      "similarity": 0.429817059321738,
+      "source_url": "https://webserver.rilegislature.gov/BillText/BillText24/HouseText24/H7787A.pdf"
+    },
+    {
+      "index": 3,
+      "reg_abbr": "CTDPA",
+      "reg_name": "Connecticut Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Connecticut",
+      "similarity": 0.411507552176265,
+      "source_url": "https://www.cga.ct.gov/2022/act/pa/pdf/2022PA-00015-R00SB-00006-PA.pdf"
+    },
+    {
+      "index": 4,
+      "reg_abbr": "modpa-full-text",
+      "reg_name": "MODPA \u2014 Maryland Online Data Privacy Act (MODPA) (Full Text)",
+      "jurisdiction": "US State",
+      "state": "Maryland",
+      "similarity": 0.405000973343968,
+      "source_url": "https://mgaleg.maryland.gov/2024RS/bills/hb/hb0567E.pdf"
+    },
+    {
+      "index": 5,
+      "reg_abbr": "OCPA",
+      "reg_name": "Oregon Consumer Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Oregon",
+      "similarity": 0.402057105425424,
+      "source_url": "https://www.oregonlegislature.gov/bills_laws/ors/ors646A.html"
+    },
+    {
+      "index": 6,
+      "reg_abbr": "BIPA",
+      "reg_name": "Illinois Biometric Information Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Illinois",
+      "similarity": 0.397586918021029,
+      "source_url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57"
+    },
+    {
+      "index": 7,
+      "reg_abbr": "MN MCDPA",
+      "reg_name": "Minnesota Consumer Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Minnesota",
+      "similarity": 0.397205656933448,
+      "source_url": "https://www.revisor.mn.gov/statutes/cite/325M/full"
+    },
+    {
+      "index": 8,
+      "reg_abbr": "NJDPA",
+      "reg_name": "New Jersey Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "New Jersey",
+      "similarity": 0.39459950827352,
+      "source_url": "https://pub.njleg.state.nj.us/Bills/2022/PL23/266_.PDF"
+    }
+  ],
+  "meta": {
+    "answered_at": "2026-06-08T22:53:32.759917",
+    "chunks_retrieved": 8,
+    "claude_model": "claude-sonnet-4-6",
+    "voyage_model": "voyage-3-large"
+  }
+}

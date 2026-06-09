@@ -1,0 +1,84 @@
+{
+  "question": "Provide a comprehensive list of all personal information and personal data elements and categories defined across US privacy regulations in the corpus, including sensitive personal information and special categories.",
+  "answer": "COMPREHENSIVE LIST OF PERSONAL INFORMATION AND PERSONAL DATA ELEMENTS ACROSS US PRIVACY REGULATIONS\n\nThe retrieved regulations define both general personal data/information and specific sensitive categories. Below is an organized compilation across all jurisdictions represented in the corpus.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nI. GENERAL PERSONAL DATA / PERSONAL INFORMATION\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nMost state laws share a broad baseline definition. \"Personal data\" means any information that is linked or reasonably linkable to an identified or identifiable natural person [MN MCDPA \u00a7(p)][NJDPA]. Oregon's Consumer Privacy Act similarly defines \"personal data\" as data, derived data, or any unique identifier linked to or reasonably linkable to a consumer or to a device linked to one or more consumers in a household [OCPA 646A.572].\n\nOregon's breach-notification statute defines \"personal information\" more specifically as a consumer's first name or first initial and last name in combination with one or more of the following data elements (when not rendered unusable by encryption or redaction) [OCPA ORS]:\n\n\u2022 Social Security number\n\u2022 Driver license number or state identification card number issued by the Department of Transportation\n\u2022 Passport number or other U.S.-government-issued identification number\n\u2022 Financial account number, credit card number, or debit card number, combined with any required security code, access code, or password permitting access to a financial account, or any other information that would permit such access\n\u2022 Data from automatic measurements of a consumer's physical characteristics (e.g., fingerprint, retina, or iris image) used to authenticate identity in a financial or other transaction\n\u2022 Health insurance policy number or health insurance subscriber identification number combined with any other unique identifier used by a health insurer\n\u2022 Any information about a consumer's medical history or mental or physical condition, or about a health care professional's medical diagnosis or treatment of the consumer\n\u2022 A username or other means of identifying a consumer for account access, together with any authentication method necessary to access the account\n\u2022 Any of the above data elements alone (without name) if not rendered unusable and if they would enable identity theft [OCPA ORS \u00a712(a)(A)\u2013(C)]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nII. SENSITIVE DATA / SPECIAL CATEGORIES\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nAll four state consumer privacy laws in the corpus define a \"sensitive data\" category subject to heightened requirements. The categories overlap substantially but differ in some details.\n\nA. OREGON (OCPA)\nSensitive data means personal data that [OCPA 646A.572 \u00a718(a)]:\n\u2022 Reveals a consumer's racial or ethnic background, national origin, religious beliefs, mental or physical condition or diagnosis, sexual orientation, status as transgender or nonbinary, status as a victim of crime, or citizenship or immigration status\n\u2022 Is a child's personal data\n\u2022 Accurately identifies within a radius of 1,750 feet a consumer's present or past location, or the present or past location of a linked device (via GPS or similar technology)\n\u2022 Is genetic or biometric data\n\nB. KENTUCKY (KCDPA)\nSensitive data means [KCDPA \u00a728]:\n\u2022 Personal data indicating racial or ethnic origin, religious beliefs, mental or physical health diagnosis, sexual orientation, or citizenship or immigration status\n\u2022 Genetic or biometric data processed for the purpose of uniquely identifying a specific natural person\n\u2022 Personal data collected from a known child\n\u2022 Precise geolocation data\n\nC. MINNESOTA (MN MCDPA)\nSensitive data means [MN MCDPA \u00a7(v)]:\n\u2022 Personal data revealing racial or ethnic origin, religious beliefs, mental or physical health condition or diagnosis, sexual orientation, or citizenship or immigration status\n\u2022 Biometric data or genetic information processed for the purpose of uniquely identifying an individual\n\u2022 Personal data of a known child (a person under 13 where the controller has actual knowledge or willfully disregards the person's age)\n\u2022 Specific geolocation data\n\nD. NEW JERSEY (NJDPA)\nSensitive data means personal data revealing [NJDPA]:\n\u2022 Racial or ethnic origin\n\u2022 Religious beliefs\n\u2022 Mental or physical health condition, treatment, or diagnosis\n\u2022 Financial information, including a consumer's account number, account log-in, financial account, or credit or debit card number combined with any required security code, access code, or password permitting access to a financial account (NOTE: New Jersey uniquely includes financial information as sensitive data, unlike the other three states)\n\u2022 Sex life or sexual orientation\n\u2022 Citizenship or immigration status\n\u2022 Status as transgender or non-binary\n\u2022 Genetic or biometric data (that may be used to uniquely identify an individual \u2014 clause is truncated in retrieved text)\n\u2022 Precise geolocation data (defined as within a radius of 1,750 feet, derived from GPS-level coordinates or other mechanisms) [NJDPA]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nIII. KEY DEFINITIONAL DIFFERENCES ACROSS JURISDICTIONS\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nSeveral notable differences exist:\n\n1. Financial information: Only New Jersey explicitly includes financial account credentials (account numbers, card numbers with security codes) as sensitive data [NJDPA]. Oregon's breach-notification statute covers these under its personal information definition [OCPA ORS \u00a712(a)(A)(iv)], but not within sensitive data per the privacy act.\n\n2. Victim status / national origin: Oregon uniquely includes \"status as a victim of crime\" and \"national origin\" as sensitive data categories [OCPA \u00a718(a)(A)]. Kentucky and Minnesota do not.\n\n3. Transgender/non-binary status: Oregon [OCPA \u00a718(a)(A)] and New Jersey [NJDPA] explicitly call out transgender or nonbinary status. Kentucky and Minnesota do not list it separately, though sexual orientation is covered by all four.\n\n4. Genetic information as standalone: Minnesota defines \"genetic information\" by cross-reference to its own state statute (section 13.386, subdivision 1) [MN MCDPA \u00a7(m)], treating it as a separately defined term in addition to its inclusion in sensitive data.\n\n5. Geolocation precision: Oregon uses a 1,750-foot radius standard [OCPA \u00a718(a)(C)]; New Jersey uses the same standard [NJDPA]; Kentucky uses the term \"precise geolocation data\" without specifying a radius [KCDPA \u00a728(d)]; Minnesota uses \"specific geolocation data\" [MN MCDPA \u00a7(v)(4)].\n\n6. Children's data: All four laws include personal data of children as sensitive, but Minnesota defines \"known child\" specifically as under 13 years of age where the controller has actual knowledge or willfully disregards the age [MN MCDPA \u00a7(o)]. The other laws use \"known child\" without an identical statutory gloss in the retrieved text.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSOURCES\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n[OCPA] \u2014 Oregon Consumer Privacy Act (ORS 646A.570 et seq.) and Oregon's personal information/breach statute (ORS 646A.602 et seq.)\n[KCDPA] \u2014 Kentucky Consumer Data Protection Act\n[MN MCDPA] \u2014 Minnesota Consumer Data Privacy Act\n[NJDPA] \u2014 New Jersey Data Privacy Act (P.L. 2023, Chapter 266)",
+  "sources": [
+    {
+      "index": 1,
+      "reg_abbr": "OCPA",
+      "reg_name": "Oregon Consumer Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Oregon",
+      "similarity": 0.563034765358599,
+      "source_url": "https://www.oregonlegislature.gov/bills_laws/ors/ors646A.html"
+    },
+    {
+      "index": 2,
+      "reg_abbr": "kcdpa-full-text",
+      "reg_name": "KCDPA \u2014 Kentucky Consumer Data Protection Act (KCDPA) (Full Text)",
+      "jurisdiction": "US State",
+      "state": "Kentucky",
+      "similarity": 0.553055709964722,
+      "source_url": "https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb15/bill.pdf"
+    },
+    {
+      "index": 3,
+      "reg_abbr": "KCDPA",
+      "reg_name": "Kentucky Consumer Data Protection Act",
+      "jurisdiction": "US State",
+      "state": "Kentucky",
+      "similarity": 0.551656749745802,
+      "source_url": "https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb15/orig_bill.pdf"
+    },
+    {
+      "index": 4,
+      "reg_abbr": "MN MCDPA",
+      "reg_name": "Minnesota Consumer Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Minnesota",
+      "similarity": 0.551469326019287,
+      "source_url": "https://www.revisor.mn.gov/statutes/cite/325M/full"
+    },
+    {
+      "index": 5,
+      "reg_abbr": "NJDPA",
+      "reg_name": "New Jersey Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "New Jersey",
+      "similarity": 0.550936119286303,
+      "source_url": "https://pub.njleg.state.nj.us/Bills/2022/PL23/266_.PDF"
+    },
+    {
+      "index": 6,
+      "reg_abbr": "CTDPA",
+      "reg_name": "Connecticut Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Connecticut",
+      "similarity": 0.549712419509888,
+      "source_url": "https://www.cga.ct.gov/2022/act/pa/pdf/2022PA-00015-R00SB-00006-PA.pdf"
+    },
+    {
+      "index": 7,
+      "reg_abbr": "MN MCDPA",
+      "reg_name": "Minnesota Consumer Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Minnesota",
+      "similarity": 0.54557192325592,
+      "source_url": "https://www.revisor.mn.gov/statutes/cite/325M/full"
+    },
+    {
+      "index": 8,
+      "reg_abbr": "OCPA",
+      "reg_name": "Oregon Consumer Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Oregon",
+      "similarity": 0.545516339211683,
+      "source_url": "https://www.oregonlegislature.gov/bills_laws/ors/ors646A.html"
+    }
+  ],
+  "meta": {
+    "answered_at": "2026-06-08T22:47:27.497853",
+    "chunks_retrieved": 8,
+    "claude_model": "claude-sonnet-4-6",
+    "voyage_model": "voyage-3-large"
+  }
+}

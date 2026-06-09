@@ -1,0 +1,228 @@
+{
+  "risk_tier": "High",
+  "risk_summary": "Despite a low pre-calculated risk score, this AI vision analytics deployment in California retail stores triggers multiple high-severity obligations under California privacy law due to its collection of behavioural and location data through automated means, with potential exposure under CCPA/CPRA, ADMT regulations, and the California Age-Appropriate Design Code.",
+  "applicable_frameworks": [
+    {
+      "name": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "jurisdiction": "California, US State",
+      "why_applicable": "The system collects behavioural and location data (personal information) from California consumers in retail stores, triggering CCPA/CPRA obligations around notice, opt-out, and data minimisation."
+    },
+    {
+      "name": "California CPPA Automated Decisionmaking Technology Regulations",
+      "abbr": "CA ADMT Regs",
+      "jurisdiction": "California, US State",
+      "why_applicable": "The AI vision analytics system uses automated technology to profile customer movement and dwell time, which constitutes ADMT processing subject to CPPA regulations effective March 29, 2023."
+    },
+    {
+      "name": "California Age-Appropriate Design Code Act",
+      "abbr": "CA AADC (AB 2273)",
+      "jurisdiction": "California, US State",
+      "why_applicable": "Retail stores are likely to be accessed by children, and the vision system may collect personal information from minors, triggering obligations under the AADC effective July 1, 2024."
+    }
+  ],
+  "gaps": [
+    {
+      "priority": 1,
+      "title": "No Opt-Out Mechanism for ADMT Profiling",
+      "regulation": "California CPPA Automated Decisionmaking Technology Regulations",
+      "abbr": "CA ADMT Regs",
+      "article": "CPRA \u00a7 1798.185(a)(16) / CPPA ADMT Regulations (March 2023)",
+      "description": "The ADMT regulations require businesses to provide consumers with the right to opt out of automated decisionmaking technology used for profiling. The deployment has no documented opt-out mechanism for customers whose movement and dwell time are being tracked and profiled in-store.",
+      "severity": "High",
+      "deadline": "March 29, 2023 (regulations in effect)",
+      "recommendation": {
+        "action": "Implement a visible in-store opt-out mechanism (e.g., signage with QR code linking to opt-out portal) and a documented process for honouring opt-out requests within the timeframes required by CPPA ADMT regulations.",
+        "timeframe": "immediate"
+      }
+    },
+    {
+      "priority": 2,
+      "title": "Missing At-Collection Notice for Behavioural and Location Data",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.100(b) / \u00a7 1798.130(a)(5)",
+      "description": "CCPA/CPRA requires businesses to provide consumers with notice at or before the point of collection of personal information, including the categories collected and purposes of use. No at-collection notice disclosing behavioural tracking and dwell-time analytics is described for this deployment.",
+      "severity": "High",
+      "deadline": "Effective January 1, 2023 (CPRA amendments)",
+      "recommendation": {
+        "action": "Deploy prominent in-store signage and update the privacy policy to disclose the categories of personal information collected (behavioural, location), the AI vision system in use, and the purposes of processing prior to consumer entry into tracked areas.",
+        "timeframe": "immediate"
+      }
+    },
+    {
+      "priority": 3,
+      "title": "No Data Protection Impact Assessment for ADMT",
+      "regulation": "California CPPA Automated Decisionmaking Technology Regulations",
+      "abbr": "CA ADMT Regs",
+      "article": "CPPA ADMT Regulations (March 2023) \u2014 Risk Assessment Requirements",
+      "description": "The CPPA ADMT regulations require businesses using automated decisionmaking technology for profiling to conduct and document risk assessments. No such assessment has been identified for this AI vision analytics system.",
+      "severity": "High",
+      "deadline": "March 29, 2023 (regulations in effect)",
+      "recommendation": {
+        "action": "Commission and document a formal risk assessment covering the AI vision system's profiling activities, data flows, potential consumer harms, and mitigation measures, and make it available to the CPPA upon request.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 4,
+      "title": "Children's Data Protection Impact Assessment Not Completed",
+      "regulation": "California Age-Appropriate Design Code Act",
+      "abbr": "CA AADC (AB 2273)",
+      "article": "Cal. Civ. Code \u00a7 1798.99.29(a) \u2014 Data Protection Impact Assessment",
+      "description": "The CA AADC requires businesses whose services are likely to be accessed by children to complete a Data Protection Impact Assessment before deployment. Retail environments are routinely accessed by minors, and no DPIA for children's data has been described.",
+      "severity": "High",
+      "deadline": "July 1, 2024",
+      "recommendation": {
+        "action": "Conduct a DPIA specifically assessing the risk to children from the vision analytics system, document it, and implement technical controls (e.g., automatic exclusion of minors from profiling or data deletion) before or immediately after deployment in California stores.",
+        "timeframe": "immediate"
+      }
+    },
+    {
+      "priority": 5,
+      "title": "No Limiting of Data Collection from Children",
+      "regulation": "California Age-Appropriate Design Code Act",
+      "abbr": "CA AADC (AB 2273)",
+      "article": "Cal. Civ. Code \u00a7 1798.99.31(a)(3) \u2014 Prohibition on Use of Personal Information of Children",
+      "description": "The CA AADC prohibits using personal information of children for purposes beyond those for which it was collected unless there is a compelling reason in the child's best interest. The vision system does not appear to include age-detection or exclusion logic to prevent collection of minors' behavioural and location data.",
+      "severity": "High",
+      "deadline": "July 1, 2024",
+      "recommendation": {
+        "action": "Implement technical measures to detect or approximate the presence of minors and either exclude their data from processing or apply strict data minimisation and retention controls, with documented justification for any residual processing.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 6,
+      "title": "Absence of Data Minimisation Controls for Location and Behavioural Data",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.100(a)(3) \u2014 Data Minimisation",
+      "description": "CPRA introduced a data minimisation principle requiring that personal information collected be reasonably necessary and proportionate to the disclosed purpose. There is no evidence that the deployment has scoped or limited data collection to the minimum necessary for stated retail analytics purposes.",
+      "severity": "High",
+      "deadline": "January 1, 2023 (CPRA in effect)",
+      "recommendation": {
+        "action": "Define and document the minimum data necessary for the stated retail analytics purpose (e.g., aggregate dwell time without individual tracking), implement technical controls to enforce those limits, and update the privacy policy accordingly.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 7,
+      "title": "No Consumer Rights Fulfilment Process (Access, Deletion, Correction)",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.105, \u00a7 1798.106, \u00a7 1798.110",
+      "description": "CCPA/CPRA grants consumers rights to access, delete, and correct their personal information. The deployment collects identifiable behavioural and location data but has no described process for receiving and fulfilling these consumer rights requests from California retail customers.",
+      "severity": "High",
+      "deadline": "January 1, 2023 (CPRA in effect)",
+      "recommendation": {
+        "action": "Establish and publicise a consumer rights request intake process (web form, toll-free number, or in-store mechanism), map collected data to identifiable individuals where possible, and implement a response workflow meeting the 45-day statutory deadline.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 8,
+      "title": "No Opt-Out of Sale or Sharing of Profiling Data",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.120 \u2014 Right to Opt-Out of Sale or Sharing",
+      "description": "If behavioural or location data collected by the vision system is shared with third-party analytics vendors or platform providers, CCPA/CPRA requires a 'Do Not Sell or Share My Personal Information' mechanism. No such mechanism has been identified in the deployment description.",
+      "severity": "High",
+      "deadline": "January 1, 2023 (CPRA in effect)",
+      "recommendation": {
+        "action": "Audit all data flows from the vision analytics system to identify third-party sharing arrangements, implement a 'Do Not Sell or Share' opt-out link in in-store and online notices, and ensure data sharing agreements include CPRA-compliant contractual provisions.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 9,
+      "title": "No Vendor Contract Obligations (Service Provider Agreements)",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.140(ag) \u2014 Service Provider Contract Requirements",
+      "description": "CCPA/CPRA requires written contracts with service providers and contractors that process personal information on the business's behalf, including specific contractual restrictions on data use. IoT-connected vision analytics systems typically involve third-party technology vendors, and no compliant data processing agreements are documented.",
+      "severity": "Medium",
+      "deadline": "January 1, 2023 (CPRA in effect)",
+      "recommendation": {
+        "action": "Review and update contracts with all AI vision system vendors and data processors to include CPRA-required service provider provisions, including restrictions on use of personal information outside the service context and audit rights.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 10,
+      "title": "Default Privacy Settings Not Configured to High Privacy (Children)",
+      "regulation": "California Age-Appropriate Design Code Act",
+      "abbr": "CA AADC (AB 2273)",
+      "article": "Cal. Civ. Code \u00a7 1798.99.31(a)(1) \u2014 Default Privacy Settings",
+      "description": "The CA AADC requires that default privacy settings for services likely accessed by children be set to the highest level of privacy. The vision system's default configuration appears to collect and retain all tracked data without applying child-protective defaults.",
+      "severity": "Medium",
+      "deadline": "July 1, 2024",
+      "recommendation": {
+        "action": "Configure the vision analytics system to apply a 'privacy-by-default' posture in retail environments (e.g., no individual-level retention, immediate aggregation), and document the compelling reason standard if any individual-level processing of minors' data is retained.",
+        "timeframe": "30 days"
+      }
+    },
+    {
+      "priority": 11,
+      "title": "No Documented Data Retention and Deletion Policy",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.100(a)(3) \u2014 Storage Limitation",
+      "description": "CPRA requires that personal information not be retained longer than reasonably necessary for the disclosed purpose. The deployment description does not reference any retention schedule or automated deletion process for behavioural and location data collected by the vision system.",
+      "severity": "Medium",
+      "deadline": "January 1, 2023 (CPRA in effect)",
+      "recommendation": {
+        "action": "Define and implement a documented data retention schedule proportionate to the analytics purpose (e.g., maximum 30-day rolling retention for raw video/tracking data), configure automated deletion workflows, and disclose retention periods in the privacy notice.",
+        "timeframe": "90 days"
+      }
+    },
+    {
+      "priority": 12,
+      "title": "IoT Security Controls Not Documented for Connected Vision Devices",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "Cal. Civ. Code \u00a7 1798.150 \u2014 Reasonable Security Procedures",
+      "description": "CCPA/CPRA requires businesses to implement reasonable security procedures for personal information. IoT-connected vision cameras and analytics endpoints present elevated attack surfaces, and no security controls or assessments for the connected device infrastructure are described.",
+      "severity": "Medium",
+      "deadline": "Ongoing obligation",
+      "recommendation": {
+        "action": "Conduct a security assessment of all IoT vision devices covering firmware patching, network segmentation, encryption in transit and at rest, and access controls; remediate identified vulnerabilities and document the security programme.",
+        "timeframe": "90 days"
+      }
+    },
+    {
+      "priority": 13,
+      "title": "Texas Privacy Compliance Not Assessed",
+      "regulation": "California Consumer Privacy Act / California Privacy Rights Act",
+      "abbr": "CCPA/CPRA",
+      "article": "N/A \u2014 Gap in jurisdiction coverage",
+      "description": "The deployment spans Texas as well as California, but no Texas-specific privacy framework (Texas Data Privacy and Security Act, effective July 1, 2024) has been assessed. Texas TDPSA imposes obligations on controllers processing personal data of Texas consumers including behavioural and location data, mirroring several CPRA requirements.",
+      "severity": "Medium",
+      "deadline": "July 1, 2024 (Texas TDPSA)",
+      "recommendation": {
+        "action": "Conduct a gap assessment of the deployment against the Texas Data Privacy and Security Act (TDPSA), paying particular attention to consumer rights, opt-out of profiling, and data protection assessment obligations applicable to Texas store locations.",
+        "timeframe": "30 days"
+      }
+    }
+  ],
+  "summary": "This AI vision analytics deployment in California and Texas retail stores carries a materially higher compliance risk than the pre-calculated score suggests, with at least eight high-severity gaps under CCPA/CPRA and the California ADMT Regulations requiring immediate remediation. The most urgent priorities are deploying an at-collection consumer notice and opt-out mechanism, completing ADMT and children's DPIA assessments, and implementing data minimisation and retention controls before or immediately upon launch.",
+  "risk_score": {
+    "composite": 29,
+    "tier": "Low",
+    "sub_scores": {
+      "data_types": 31,
+      "deployment": 26,
+      "domains": 58,
+      "jurisdictions": 16,
+      "sector": 8
+    },
+    "triggered_rules": []
+  },
+  "meta": {
+    "assessed_at": "2026-06-08T22:36:18.311969",
+    "chunks_retrieved": 12,
+    "corpus_version": "unknown",
+    "claude_model": "claude-sonnet-4-6",
+    "voyage_model": "voyage-3-large"
+  }
+}

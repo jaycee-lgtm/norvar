@@ -1,0 +1,84 @@
+{
+  "question": "What is personal information?",
+  "answer": "What Is \"Personal Information\"?\n\nThe term \"personal information\" (or \"personal data\") is defined differently depending on the jurisdiction and regulatory context. Broadly, it refers to information that identifies or can be linked to a specific individual, but the scope of that definition varies significantly across laws.\n\nUnder federal law focused on children, the Children's Online Privacy Protection Act defines personal information as \"individually identifiable information about an individual collected online,\" and provides a detailed list of covered data elements. These include a child's name, home address, online contact information (such as email or instant messaging identifiers), telephone number, government-issued identifiers (like a Social Security number or passport number), persistent identifiers (such as IP addresses or cookies), photographs or audio/video files containing a child's image or voice, geolocation information precise enough to identify a street and city, and biometric identifiers such as fingerprints, iris patterns, or facial templates [COPPA].\n\nSeveral state consumer privacy laws take a broader, more principles-based approach. New Jersey, Minnesota, and Maryland each define \"personal data\" as any information that is \"linked or reasonably linkable to an identified or identifiable\" person [NJDPA; MN MCDPA; MODPA]. These definitions intentionally exclude de-identified data and publicly available information. Rhode Island's law is similarly broad, protecting information linked to an identified or identifiable individual [RIDTPPA].\n\nOregon's law takes a narrower, more specific approach tailored to data breach contexts. It defines \"personal information\" as a consumer's first name (or initial) and last name combined with sensitive data elements such as a Social Security number, driver's license number, passport number, financial account credentials, biometric authentication data, health insurance identifiers, or medical history information \u2014 but only when that combined data has not been rendered unusable through encryption or redaction [OCPA]. Oregon also covers standalone usernames paired with authentication credentials, and data elements that alone could enable identity theft [OCPA].\n\nSources\n\nCOPPA \u2014 Children's Online Privacy Protection Act Regulations (US Federal)\nOCPA \u2014 Oregon Consumer Privacy Act\nNJDPA \u2014 New Jersey Data Privacy Act\nMN MCDPA \u2014 Minnesota Consumer Data Privacy Act\nMODPA \u2014 Maryland Online Data Privacy Act\nRIDTPPA \u2014 Rhode Island Data Transparency and Privacy Protection Act",
+  "sources": [
+    {
+      "index": 1,
+      "reg_abbr": "COPPA",
+      "reg_name": "Children's Online Privacy Protection Act (COPPA) Regulations",
+      "jurisdiction": "US Federal",
+      "state": null,
+      "similarity": 0.612488434088108,
+      "source_url": "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312"
+    },
+    {
+      "index": 2,
+      "reg_abbr": "OCPA",
+      "reg_name": "Oregon Consumer Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Oregon",
+      "similarity": 0.597700989109346,
+      "source_url": "https://www.oregonlegislature.gov/bills_laws/ors/ors646A.html"
+    },
+    {
+      "index": 3,
+      "reg_abbr": "NJDPA",
+      "reg_name": "New Jersey Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "New Jersey",
+      "similarity": 0.589959470921678,
+      "source_url": "https://pub.njleg.state.nj.us/Bills/2022/PL23/266_.PDF"
+    },
+    {
+      "index": 4,
+      "reg_abbr": "KCDPA",
+      "reg_name": "Kentucky Consumer Data Protection Act",
+      "jurisdiction": "US State",
+      "state": "Kentucky",
+      "similarity": 0.577551756951327,
+      "source_url": "https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb15/orig_bill.pdf"
+    },
+    {
+      "index": 5,
+      "reg_abbr": "MN MCDPA",
+      "reg_name": "Minnesota Consumer Data Privacy Act",
+      "jurisdiction": "US State",
+      "state": "Minnesota",
+      "similarity": 0.576263794453601,
+      "source_url": "https://www.revisor.mn.gov/statutes/cite/325M/full"
+    },
+    {
+      "index": 6,
+      "reg_abbr": "kcdpa-full-text",
+      "reg_name": "KCDPA \u2014 Kentucky Consumer Data Protection Act (KCDPA) (Full Text)",
+      "jurisdiction": "US State",
+      "state": "Kentucky",
+      "similarity": 0.57387616011528,
+      "source_url": "https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb15/bill.pdf"
+    },
+    {
+      "index": 7,
+      "reg_abbr": "modpa-full-text",
+      "reg_name": "MODPA \u2014 Maryland Online Data Privacy Act (MODPA) (Full Text)",
+      "jurisdiction": "US State",
+      "state": "Maryland",
+      "similarity": 0.568445579635043,
+      "source_url": "https://mgaleg.maryland.gov/2024RS/bills/hb/hb0567E.pdf"
+    },
+    {
+      "index": 8,
+      "reg_abbr": "RIDTPPA",
+      "reg_name": "Rhode Island Data Transparency and Privacy Protection Act",
+      "jurisdiction": "US State",
+      "state": "Rhode Island",
+      "similarity": 0.567366284257106,
+      "source_url": "https://webserver.rilegislature.gov/BillText/BillText24/HouseText24/H7787A.pdf"
+    }
+  ],
+  "meta": {
+    "answered_at": "2026-06-08T22:45:56.275874",
+    "chunks_retrieved": 8,
+    "claude_model": "claude-sonnet-4-6",
+    "voyage_model": "voyage-3-large"
+  }
+}
