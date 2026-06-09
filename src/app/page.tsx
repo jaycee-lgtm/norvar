@@ -216,7 +216,7 @@ function Home() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  const canSend = input.trim().length > 10 && !loading;
+  const canSend = input.trim().length > 0 && !loading;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -284,7 +284,7 @@ function Home() {
                     onKeyDown={handleKey}
                     rows={1}
                   />
-                  <button className="send-btn" onClick={handleSend} disabled={!canSend}>
+                  <button type="button" className="send-btn" onClick={handleSend} disabled={!canSend}>
                     {loading
                       ? <Loader2 size={16} className="spin" />
                       : <ArrowUp size={16} strokeWidth={2.5} />}
@@ -341,7 +341,7 @@ function Home() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <button className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
+                    <button type="button" className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
                       {loading
                         ? <Loader2 size={14} className="spin" />
                         : <ArrowUp size={14} strokeWidth={2.5} />}
@@ -367,7 +367,7 @@ function Home() {
             Governance, Risk and Compliance Intelligence. Sign in to run your first assessment.
           </p>
           <SignInButton>
-            <button className="btn-primary">Sign in to get started</button>
+            <button type="button" className="btn-primary">Sign in to get started</button>
           </SignInButton>
         </div>
       </Show>

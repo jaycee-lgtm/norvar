@@ -246,7 +246,7 @@ body {
   border: none;
   transition: opacity 0.15s;
 }
-.send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.send-btn:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
 
 .input-chips {
   display: flex;
@@ -431,7 +431,7 @@ body {
   justify-content: center; flex-shrink: 0; cursor: pointer;
   color: var(--bg); border: none; transition: opacity 0.15s;
 }
-.chat-send-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+.chat-send-btn:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
 
 /* ══════════════════════════════════════════════════════════════════
    HISTORY PAGE
