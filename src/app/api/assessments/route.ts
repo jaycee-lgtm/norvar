@@ -45,3 +45,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch assessments" }, { status: 500 });
   }
 }
+
+// DELETE — hard delete an assessment (also cascades to remediation_items via FK)
+export async function DELETE(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+
+  const { id } = await req.json();
+  if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+  const { error } = await supabase
+    .from("assessments")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}

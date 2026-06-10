@@ -71,20 +71,23 @@ type Gap = {
 };
 
 type Assessment = {
-  id?:          string;
-  title:        string;
-  summary:      string;
-  risk:         string;
-  risk_summary?: string;
-  risk_score:   { composite: number; tier: string };
-  gaps:         Gap[];
-  frameworks?:  string[];
+  id?:             string;
+  title:           string;
+  summary:         string;
+  risk:            string;
+  risk_summary?:   string;
+  risk_score?:     { composite: number; tier: string };
+  risk_tier?:      string;
+  risk_by_domain?: Record<string, { tier: string; gap_count: number }>;
+  assessment_number?: string;
+  gaps:            Gap[];
+  frameworks?:     string[];
 };
 
 type Message =
   | { role: "user"; content: string; tags?: string[] }
   | { role: "assistant"; assessment: Assessment }
-  | { role: "thinking"; text: string; status?: string }
+  | { role: "thinking"; text: string; status?: string; isFollowUp?: boolean; followUpOptions?: string[] }
   | { role: "chat"; text: string };
 
 type StoredMessage =
@@ -256,7 +259,7 @@ function exportAssessment(a: Assessment) {
     "=".repeat(50),
     "",
     `Title: ${a.title}`,
-    `Risk: ${a.risk_score?.tier} (${a.risk_score?.composite}/100)`,
+    `Risk: ${a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low"}`,
     "",
     "SUMMARY",
     "-".repeat(30),
@@ -294,16 +297,73 @@ function exportAssessment(a: Assessment) {
 
 // ── Assessment card ────────────────────────────────────────────────────────────
 
+function TierBadge({ tier }: { tier: string }) {
+  const t = tier?.toLowerCase() ?? "low";
+  const styles: Record<string, { bg: string; color: string }> = {
+    critical: { bg: "var(--color-background-danger,  #FCEBEB)", color: "var(--color-text-danger,  #A32D2D)" },
+    high:     { bg: "var(--color-background-warning, #FAEEDA)", color: "var(--color-text-warning, #854F0B)" },
+    medium:   { bg: "var(--color-background-info,    #E6F1FB)", color: "var(--color-text-info,    #185FA5)" },
+    low:      { bg: "var(--color-background-success, #EAF3DE)", color: "var(--color-text-success, #3B6D11)" },
+  };
+  const s = styles[t] ?? styles.low;
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
+      background: s.bg, color: s.color,
+      textTransform: "uppercase", letterSpacing: "0.5px",
+    }}>
+      {t}
+    </span>
+  );
+}
+
+const DOMAIN_LABELS: Record<string, string> = {
+  privacy:       "Privacy",
+  ai_governance: "AI Governance",
+  cybersecurity: "Cybersecurity",
+};
+
 function AssessmentCard({ a, onNew }: { a: Assessment; onNew: () => void }) {
   const router = useRouter();
   const [tab, setTab] = useState<"gaps" | "frameworks">("gaps");
-  const score   = a.risk_score?.composite ?? 0;
-  const gaps    = a.gaps ?? [];
-  const ordered = [
+
+  const overallTier = a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low";
+  const byDomain    = a.risk_by_domain ?? null;
+  const gaps        = a.gaps ?? [];
+  const ordered     = [
     ...gaps.filter(g => g.severity === "critical"),
     ...gaps.filter(g => g.severity === "high"),
     ...gaps.filter(g => g.severity === "medium"),
   ];
+
+  const [queued,    setQueued]    = useState<Set<number>>(new Set());
+  const [queueing,  setQueueing]  = useState<number | null>(null);
+  const [queuedAll, setQueuedAll] = useState(false);
+
+  const addToQueue = async (indices: number[]) => {
+    if (!a.id) return;
+    const gapsToQueue = indices.map(i => ordered[i]).filter(Boolean);
+    if (!gapsToQueue.length) return;
+
+    const first = indices[0];
+    setQueueing(indices.length === 1 ? first : -1);
+
+    try {
+      await fetch("/api/remediation", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          assessment_id:     a.id,
+          assessment_number: a.assessment_number ?? null,
+          gaps:              gapsToQueue,
+        }),
+      });
+      setQueued(prev => { const next = new Set(prev); indices.forEach(i => next.add(i)); return next; });
+      if (indices.length > 1) setQueuedAll(true);
+    } finally {
+      setQueueing(null);
+    }
+  };
 
   return (
     <div className="msg-ai-card fade-up">
@@ -313,13 +373,35 @@ function AssessmentCard({ a, onNew }: { a: Assessment; onNew: () => void }) {
       </div>
 
       <div className="score-row">
-        <span className="score-number">{score}</span>
-        <span className="score-denom">/100</span>
-        <span className="risk-badge">{a.risk_score?.tier ?? a.risk} risk</span>
+        <TierBadge tier={overallTier} />
+        <span style={{ fontSize: 12, color: "var(--fg2)", fontWeight: 500, marginLeft: 6 }}>
+          {overallTier.charAt(0).toUpperCase() + overallTier.slice(1)} risk
+        </span>
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)" }}>
-          {gaps.length} gaps, {a.frameworks?.length ?? 0} frameworks
+          {gaps.length} gap{gaps.length !== 1 ? "s" : ""} · {a.frameworks?.length ?? 0} frameworks
         </span>
       </div>
+
+      {byDomain && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8, marginBottom: 4, flexWrap: "wrap" }}>
+          {Object.entries(byDomain).map(([domain, info]) => (
+            <div key={domain} style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "4px 10px", borderRadius: 6,
+              border: "0.5px solid var(--bdr)",
+              background: "var(--card2)", fontSize: 11,
+            }}>
+              <span style={{ color: "var(--fg3)" }}>{DOMAIN_LABELS[domain] ?? domain}</span>
+              <TierBadge tier={info.tier} />
+              {info.gap_count > 0 && (
+                <span style={{ fontSize: 10, color: "var(--fg3)" }}>
+                  {info.gap_count} gap{info.gap_count !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <p className="assessment-summary">{a.summary}</p>
       <div className="section-divider" />
@@ -336,7 +418,26 @@ function AssessmentCard({ a, onNew }: { a: Assessment; onNew: () => void }) {
             borderBottom: tab === t ? "1.5px solid var(--fg)" : "1.5px solid transparent",
             marginBottom: -1,
           }}>
-            {t === "gaps"       && `Gaps (${gaps.length})`}
+            {t === "gaps" && (
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {`Gaps (${gaps.length})`}
+                {tab === "gaps" && ordered.length > 0 && !queuedAll && (
+                  <span
+                    onClick={e => { e.stopPropagation(); addToQueue(ordered.map((_, i) => i)); }}
+                    style={{
+                      fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 10,
+                      background: "var(--card2)", color: "var(--fg3)", border: "0.5px solid var(--bdr2)",
+                      cursor: "pointer", letterSpacing: "0.05em", textTransform: "uppercase",
+                    }}
+                  >
+                    + Add all
+                  </span>
+                )}
+                {queuedAll && (
+                  <span style={{ fontSize: 9, color: "var(--rl)", fontWeight: 600 }}>✓ All queued</span>
+                )}
+              </span>
+            )}
             {t === "frameworks" && `Frameworks (${a.frameworks?.length ?? 0})`}
           </button>
         ))}
@@ -366,6 +467,23 @@ function AssessmentCard({ a, onNew }: { a: Assessment; onNew: () => void }) {
                   </div>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => addToQueue([i])}
+                disabled={queued.has(i) || queueing === i}
+                style={{
+                  flexShrink: 0, alignSelf: "flex-start", marginTop: 2,
+                  fontSize: 10, fontWeight: 500, padding: "3px 9px", borderRadius: 5,
+                  border: `0.5px solid ${queued.has(i) ? "var(--rl-bdr)" : "var(--bdr2)"}`,
+                  background: queued.has(i) ? "var(--rl-bg)" : "transparent",
+                  color: queued.has(i) ? "var(--rl)" : "var(--fg3)",
+                  cursor: queued.has(i) ? "default" : "pointer",
+                  fontFamily: "'Sora', sans-serif",
+                  transition: "all 0.15s",
+                }}
+              >
+                {queueing === i ? "..." : queued.has(i) ? "✓ Queued" : "+ Queue"}
+              </button>
             </div>
           ))}
         </div>
@@ -500,6 +618,20 @@ function Home() {
   const [openChip,      setOpenChip]      = useState<string | null>(null);
   const [assessmentId,  setAssessmentId]  = useState<string | null>(null);
 
+  const [inferring,       setInferring]       = useState(false);
+  const [pendingDesc,     setPendingDesc]     = useState("");
+  const [followUp,        setFollowUp]        = useState<{
+    dimension: "jurisdictions" | "data_types" | "sector";
+    question:  string;
+    options:   { value: string; label: string }[];
+  } | null>(null);
+  const [inferredContext, setInferredContext] = useState<{
+    domains:       string[];
+    jurisdictions: string[];
+    data_types:    string[];
+    sector:        string;
+  } | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
   const fileRef     = useRef<HTMLInputElement>(null);
@@ -577,6 +709,10 @@ function Home() {
     setContractText("");
     setContractName("");
     setAssessmentId(null);
+    setInferring(false);
+    setPendingDesc("");
+    setFollowUp(null);
+    setInferredContext(null);
     router.push("/");
   }
 
@@ -597,36 +733,54 @@ function Home() {
 
   const canSend = hasAssessment
     ? input.trim().length > 2 && !loading
-    : input.trim().length > 10 && !loading;
+    : input.trim().length > 10 && !loading && !inferring;
 
-  const handleAssessment = async (text: string, tags: string[]) => {
-    setMessages(prev => [...prev, { role: "user", content: text, tags }]);
-    setLoading(true);
+  const awaitingInference = messages.some(m => m.role === "thinking" && m.isFollowUp);
+
+  const FOLLOWUP_OPTIONS: Record<string, { question: string; options: { value: string; label: string }[] }> = {
+    jurisdictions: {
+      question: "Where are your users or data subjects located?",
+      options: JURISDICTION_OPTIONS,
+    },
+    data_types: {
+      question: "What types of personal data does your system process?",
+      options: DATA_TYPE_OPTIONS,
+    },
+    sector: {
+      question: "What industry or sector does your product operate in?",
+      options: SECTOR_OPTIONS,
+    },
+  };
+
+  const runAssessment = async (
+    text: string,
+    tags: string[],
+    resolvedDomains: string[],
+    resolvedJurisdictions: string[],
+    resolvedDataTypes: string[],
+    resolvedSector: string,
+  ) => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
-
+    setLoading(true);
     let streamingText = "";
-
     try {
       const res = await fetch("/api/assess", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description:   text,
-          domains,
-          jurisdictions,
-          data_types:    dataTypes,
-          sector:        sector[0] ?? "",
-          deployments:   [],
+          domains:       resolvedDomains,
+          jurisdictions: resolvedJurisdictions,
+          data_types:    resolvedDataTypes,
+          sector:        resolvedSector,
           contract_text: contractText || undefined,
           tags,
         }),
       });
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Assessment failed");
       }
-
       await readSSEStream(res, (event) => {
         if (event.type === "status") {
           setMessages(prev => updateLastMessage(prev, "thinking", { status: event.text }));
@@ -649,6 +803,9 @@ function Home() {
           clearAll();
           setContractText("");
           setContractName("");
+          setInferredContext(null);
+          setFollowUp(null);
+          setPendingDesc("");
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
@@ -658,6 +815,153 @@ function Home() {
       setMessages(prev => prev.filter(m => m.role !== "thinking"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFollowUpSelection = async (selected: string) => {
+    if (!followUp || !inferredContext) return;
+
+    const option = FOLLOWUP_OPTIONS[followUp.dimension].options.find(
+      o => o.label === selected || o.label.toLowerCase().includes(selected.toLowerCase()),
+    );
+    const value = option?.value ?? selected.toLowerCase().replace(/\s+/g, "_");
+
+    let updated = { ...inferredContext };
+    if (followUp.dimension === "jurisdictions") updated.jurisdictions = [...updated.jurisdictions, value];
+    if (followUp.dimension === "data_types")    updated.data_types    = [...updated.data_types, value];
+    if (followUp.dimension === "sector")         updated.sector        = value;
+    setInferredContext(updated);
+
+    const remainingGaps: Array<"jurisdictions" | "data_types" | "sector"> = [];
+    if (updated.jurisdictions.length === 0) remainingGaps.push("jurisdictions");
+    if (updated.data_types.length    === 0) remainingGaps.push("data_types");
+    if (!updated.sector)                     remainingGaps.push("sector");
+
+    if (remainingGaps.length > 0) {
+      const dim = remainingGaps[0];
+      const { question, options } = FOLLOWUP_OPTIONS[dim];
+      setFollowUp({ dimension: dim, question, options });
+      setMessages(prev => [...prev, {
+        role:            "thinking",
+        text:            question,
+        isFollowUp:      true,
+        followUpOptions: options.map(o => o.label),
+      }]);
+    } else {
+      setFollowUp(null);
+      const tags = [...updated.domains, ...updated.jurisdictions, ...updated.data_types, updated.sector].filter(Boolean);
+      await runAssessment(pendingDesc, tags, updated.domains, updated.jurisdictions, updated.data_types, updated.sector);
+    }
+  };
+
+  const handleInferenceOption = async (selected: string) => {
+    setMessages(prev => prev.filter(m => !(m.role === "thinking" && m.isFollowUp)));
+    setMessages(prev => [...prev, { role: "user", content: selected, tags: [] }]);
+
+    if (selected === "Looks right — run assessment" && inferredContext && pendingDesc) {
+      const tags = [
+        ...inferredContext.domains,
+        ...inferredContext.jurisdictions,
+        ...inferredContext.data_types,
+        inferredContext.sector,
+      ].filter(Boolean);
+      setFollowUp(null);
+      await runAssessment(
+        pendingDesc,
+        tags,
+        inferredContext.domains,
+        inferredContext.jurisdictions,
+        inferredContext.data_types,
+        inferredContext.sector,
+      );
+      return;
+    }
+
+    if (selected === "Let me correct something") {
+      setInferring(false);
+      setFollowUp(null);
+      return;
+    }
+
+    await handleFollowUpSelection(selected);
+  };
+
+  const handleAssessment = async (text: string, tags: string[]) => {
+    setMessages(prev => [...prev, { role: "user", content: text, tags }]);
+    setInferring(true);
+    setPendingDesc(text);
+
+    try {
+      setMessages(prev => [...prev, { role: "thinking", text: "", status: "Understanding your deployment..." }]);
+      const res  = await fetch("/api/infer", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ description: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Inference failed");
+      const { inferred } = data;
+
+      const resolvedDomains       = domains.length       > 0 ? domains       : (inferred.domains?.values       ?? []);
+      const resolvedJurisdictions = jurisdictions.length > 0 ? jurisdictions : (inferred.jurisdictions?.values ?? []);
+      const resolvedDataTypes     = dataTypes.length     > 0 ? dataTypes     : (inferred.data_types?.values    ?? []);
+      const resolvedSector        = sector.length        > 0 ? sector[0]     : (inferred.sector?.values?.[0]   ?? "");
+
+      setInferredContext({
+        domains:       resolvedDomains,
+        jurisdictions: resolvedJurisdictions,
+        data_types:    resolvedDataTypes,
+        sector:        resolvedSector,
+      });
+
+      setMessages(prev => prev.filter(m => m.role !== "thinking"));
+
+      const gaps: Array<"jurisdictions" | "data_types" | "sector"> = [];
+      if (inferred.jurisdictions?.confidence === "low" || resolvedJurisdictions.length === 0) gaps.push("jurisdictions");
+      if (inferred.data_types?.confidence    === "low" || resolvedDataTypes.length    === 0) gaps.push("data_types");
+      if (inferred.sector?.confidence        === "low" || !resolvedSector)                   gaps.push("sector");
+
+      const mediumDims: string[] = [];
+      if (inferred.domains?.confidence       === "medium") mediumDims.push(`domain: ${resolvedDomains.join(", ")}`);
+      if (inferred.jurisdictions?.confidence === "medium" && !gaps.includes("jurisdictions")) mediumDims.push(`jurisdiction: ${resolvedJurisdictions.join(", ")}`);
+      if (inferred.sector?.confidence        === "medium" && !gaps.includes("sector"))        mediumDims.push(`sector: ${resolvedSector}`);
+
+      if (mediumDims.length > 0) {
+        const confirmMsg = [
+          `Based on your description, I'm assuming:\n`,
+          ...mediumDims.map(d => `• ${d}`),
+          `\nDoes that look right? You can confirm or correct below.`,
+        ].join("\n");
+        setMessages(prev => [...prev, {
+          role:            "thinking",
+          text:            confirmMsg,
+          isFollowUp:      true,
+          followUpOptions: ["Looks right — run assessment", "Let me correct something"],
+        }]);
+        setInferring(false);
+        return;
+      }
+
+      if (gaps.length > 0) {
+        const dim = gaps[0];
+        const { question, options } = FOLLOWUP_OPTIONS[dim];
+        setFollowUp({ dimension: dim, question, options });
+        setMessages(prev => [...prev, {
+          role:            "thinking",
+          text:            question,
+          isFollowUp:      true,
+          followUpOptions: options.map(o => o.label),
+        }]);
+        setInferring(false);
+        return;
+      }
+
+      setInferring(false);
+      await runAssessment(text, tags, resolvedDomains, resolvedJurisdictions, resolvedDataTypes, resolvedSector);
+    } catch {
+      setMessages(prev => prev.filter(m => m.role !== "thinking"));
+      setInferring(false);
+      await runAssessment(text, tags, domains, jurisdictions, dataTypes, sector[0] ?? "");
     }
   };
 
@@ -674,7 +978,7 @@ function Home() {
         const a = m.assessment;
         history.push({
           role: "assistant",
-          content: `[Compliance Assessment] ${a.title}. Risk: ${a.risk_score?.tier} (${a.risk_score?.composite}/100). ${a.summary} Key gaps: ${(a.gaps || []).slice(0, 3).map(g => `${g.severity}: ${g.title}`).join("; ")}.`,
+          content: `[Compliance Assessment] ${a.title}. Risk: ${a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low"}. ${a.summary} Key gaps: ${(a.gaps || []).slice(0, 3).map(g => `${g.severity}: ${g.title}`).join("; ")}.`,
         });
       } else if (m.role === "chat" && m.text) {
         history.push({ role: "assistant", content: m.text });
@@ -725,6 +1029,8 @@ function Home() {
 
     if (hasAssessment) {
       await handleFollowUp(text);
+    } else if (awaitingInference || followUp) {
+      await handleInferenceOption(text);
     } else {
       await handleAssessment(text, buildTags());
     }
@@ -863,6 +1169,7 @@ function Home() {
                     }
 
                     if (msg.role === "thinking") {
+                      const isFollowUp = msg.isFollowUp && msg.followUpOptions;
                       return (
                         <div key={i} className="msg-ai fade-up">
                           <div className="msg-ai-card">
@@ -873,18 +1180,37 @@ function Home() {
                                   <Loader2 size={11} className="spin" color="var(--fg3)" />
                                   {msg.status}
                                 </span>
-                              ) : "Norvar is analysing..."}
+                              ) : isFollowUp ? "Norvar" : "Norvar is analysing..."}
                             </div>
                             {msg.text ? (
-                              <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em" }}>
+                              <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
                                 {msg.text}
-                                {streamCursor}
+                                {!isFollowUp && loading && streamCursor}
                               </p>
                             ) : (
                               <div style={{ display: "flex", gap: 5, padding: "8px 0" }}>
                                 <span className="loading-dot" />
                                 <span className="loading-dot" />
                                 <span className="loading-dot" />
+                              </div>
+                            )}
+                            {isFollowUp && msg.followUpOptions && (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                                {msg.followUpOptions.map(opt => (
+                                  <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => handleInferenceOption(opt)}
+                                    style={{
+                                      fontSize: 11, padding: "5px 12px", borderRadius: 16,
+                                      border: "0.5px solid var(--bdr2)", background: "var(--card2)",
+                                      color: "var(--fg2)", cursor: "pointer",
+                                      fontFamily: "'Sora', sans-serif",
+                                    }}
+                                  >
+                                    {opt}
+                                  </button>
+                                ))}
                               </div>
                             )}
                           </div>

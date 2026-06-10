@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -62,6 +62,8 @@ function SidebarInner() {
   const nav = [
     { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
     { href: "/chat", label: "GRC Chat", icon: MessageSquare, active: path === "/chat" },
+    { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
+    { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     {
       href: isChat ? "/chat/history" : "/history",
       label: "History",

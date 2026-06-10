@@ -90,3 +90,5 @@ create index if not exists assessments_user_id_idx
     on assessments (user_id, created_at desc);
 
 grant all on public.assessments to service_role;
+
+-- Next: run SETUP_SCHEMA_V3.sql for folders, documents, remediation queue, and assessment numbering.

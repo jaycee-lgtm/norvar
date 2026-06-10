@@ -10,6 +10,29 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+// Fetch document text from Supabase Storage for assessment context
+async function fetchDocumentText(docId: string, userId: string): Promise<string> {
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("file_path, name, file_type")
+    .eq("id", docId)
+    .eq("user_id", userId)
+    .single();
+
+  if (!doc?.file_path) return "";
+
+  const { data: fileData } = await supabase.storage
+    .from("documents")
+    .download(doc.file_path);
+
+  if (!fileData) return "";
+
+  if (["txt", "md", "csv"].includes(doc.file_type ?? "")) {
+    return `[Document: ${doc.name}]\n${await fileData.text()}`;
+  }
+  return `[Document attached: ${doc.name} (${doc.file_type?.toUpperCase()})]`;
+}
+
 async function getEmbedding(text: string): Promise<number[]> {
   const res = await fetch("https://api.voyageai.com/v1/embeddings", {
     method:  "POST",
@@ -27,47 +50,91 @@ const SYSTEM_PROMPT = `
 You are a senior Governance, Risk and Compliance analyst specialising in technology regulation
 across Privacy, AI Governance, and Cybersecurity globally.
 
-Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through these three lenses simultaneously.
+Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through these
+three domain lenses simultaneously.
 
-Respond in EXACTLY this format — a plain text summary, then a separator, then JSON:
+Respond in EXACTLY this format — plain text summary first, then separator, then JSON:
 
-Write 2-3 sentences of plain English summary of the compliance position and the most urgent priority.
+Write 2-3 sentences of plain English summarising the compliance position and most urgent priority.
 No markdown, no bullets, just clear prose.
 
 ---JSON---
 
 {
   "title": "short title (max 8 words)",
-  "risk": "high" | "med" | "low",
-  "risk_score": <integer 0-100>,
+  "risk_tier": "critical" | "high" | "medium" | "low",
+  "risk_by_domain": {
+    "privacy":        { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
+    "ai_governance":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
+    "cybersecurity":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> }
+  },
   "frameworks": ["framework abbreviation strings"],
   "gaps": [
     {
-      "severity": "critical" | "high" | "medium",
-      "title": "short gap title",
-      "detail": "specific issue with article citations",
-      "frameworks": ["applicable frameworks"],
+      "severity":    "critical" | "high" | "medium" | "low",
+      "domain":      "privacy" | "ai_governance" | "cybersecurity",
+      "title":       "short gap title",
+      "detail":      "specific issue with article/section citations",
+      "frameworks":  ["applicable frameworks"],
       "remediation": "specific actionable fix"
     }
   ]
 }
 
-Rules: output prose FIRST, then ---JSON--- separator, then JSON. Order gaps by severity descending.
-Never invent regulations not in the retrieved clauses. risk_score 70-100=high, 40-69=medium, 0-39=low.
+Risk tier rules — derived ONLY from the gaps you identify, not from any pre-set score:
+- "critical": any critical severity gap present
+- "high":     no critical gaps, but 1 or more high severity gaps
+- "medium":   no critical/high gaps, but 1 or more medium severity gaps
+- "low":      all gaps low severity, or no gaps found
+
+Per-domain tier: apply the same rules to gaps within that domain only.
+
+Rules:
+- Output prose FIRST, then ---JSON--- separator, then JSON.
+- Order gaps by severity descending.
+- Never invent regulations not present in the retrieved clauses.
+- The risk_tier must be consistent with the gaps you output — do not set it independently.
 `;
 
-// Three core domains. CV, ADMT, and Robotics signals map to these via subject detection.
-const D: Record<string, number> = { privacy: 36, ai: 34, cyber: 30 };
-const J: Record<string, number> = { eu: 22, us_state: 16, uk: 14, us_federal: 12, canada: 10, apac: 10, latam: 8, mena: 8 };
-const T: Record<string, number> = { biometric: 25, health: 24, children: 20, location: 16, financial: 15, behavioural: 10, communications: 12, general_pi: 5 };
-const S: Record<string, number> = { government: 20, healthcare: 18, finance: 16, hr_recruitment: 14, education: 14, transport: 12, media_adtech: 12, legal: 12, retail: 8, proptech: 8 };
+function normalizeGapDomain(raw: string): string {
+  const d = raw.toLowerCase();
+  if (d === "ai" || d === "ai_governance") return "ai_governance";
+  if (d === "cyber" || d === "cybersecurity") return "cybersecurity";
+  return "privacy";
+}
 
-function calcRisk(d: string[], j: string[], t: string[], s: string) {
-  const sc = (i: string[], tb: Record<string, number>) =>
-    Math.min(i.reduce((a, v) => a + (tb[v.toLowerCase()] || 0), 0), 100);
-  const sub = { domains: sc(d, D), jurisdictions: sc(j, J), data_types: sc(t, T), sector: sc([s], S) };
-  const composite = Math.round(sub.domains * 0.25 + sub.jurisdictions * 0.25 + sub.data_types * 0.3 + sub.sector * 0.2);
-  return { composite, tier: composite >= 70 ? "High" : composite >= 40 ? "Medium" : "Low", sub };
+// Gap-driven risk scoring — derived entirely from Claude's gap analysis output.
+// No lookup tables. No pre-calculated weights.
+function deriveRiskFromGaps(gaps: Array<{ severity: string; domain: string }>) {
+  const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+  const domains = ["privacy", "ai_governance", "cybersecurity"];
+
+  // Overall tier
+  const maxSeverity = gaps.reduce((max, g) => {
+    const rank = severityRank[g.severity?.toLowerCase()] ?? 0;
+    return rank > max ? rank : max;
+  }, 0);
+
+  const overallTier =
+    maxSeverity >= 4 ? "critical" :
+    maxSeverity >= 3 ? "high" :
+    maxSeverity >= 2 ? "medium" : "low";
+
+  // Per-domain tier
+  const byDomain: Record<string, { tier: string; gap_count: number }> = {};
+  for (const domain of domains) {
+    const domainGaps = gaps.filter(g => g.domain === domain);
+    const domainMax  = domainGaps.reduce((max, g) => {
+      const rank = severityRank[g.severity?.toLowerCase()] ?? 0;
+      return rank > max ? rank : max;
+    }, 0);
+    byDomain[domain] = {
+      tier: domainMax >= 4 ? "critical" : domainMax >= 3 ? "high" : domainMax >= 2 ? "medium" : "low",
+      gap_count: domainGaps.length,
+    };
+  }
+
+  return { overall: overallTier, byDomain };
 }
 
 function parseJSON(raw: string) {
@@ -79,14 +146,9 @@ function parseJSON(raw: string) {
     return JSON.parse(s);
   } catch {
     const stack: string[] = [];
-    let inStr = false;
-    let esc = false;
+    let inStr = false, esc = false;
     for (const c of s) {
-      if (inStr) {
-        esc = c === "\\" && !esc;
-        if (!esc && c === '"') inStr = false;
-        continue;
-      }
+      if (inStr) { esc = c === "\\" && !esc; if (!esc && c === '"') inStr = false; continue; }
       if (c === '"') inStr = true;
       else if (c === "{") stack.push("}");
       else if (c === "[") stack.push("]");
@@ -124,6 +186,7 @@ export async function POST(req: NextRequest) {
         sector        = "",
         contract_text = "",
         tags          = [] as string[],
+        document_ids  = [] as string[],
       } = body;
 
       if (description.trim().length < 10) {
@@ -132,9 +195,7 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      const risk = calcRisk(domains, jurisdictions, data_types, sector);
-
-      await send({ type: "status", text: "Searching 140+ regulations..." });
+      await send({ type: "status", text: "Searching 93 regulations..." });
       const embedding = await getEmbedding(description);
 
       const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
@@ -143,12 +204,29 @@ export async function POST(req: NextRequest) {
         match_count:     12,
       });
 
-      const filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[], 0.40);
+      const filtered   = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[], 0.40);
       const clauseText = buildRegulatoryContextBlock(filtered);
 
       await send({ type: "status", text: "Analysing your deployment..." });
 
-      const userMsg = `DEPLOYMENT: ${description}\nPROFILE: domains=${domains.join(",") || "n/a"} | jurisdictions=${jurisdictions.join(",") || "n/a"} | data=${data_types.join(",") || "n/a"} | sector=${sector || "n/a"}\nRisk: ${risk.composite}/100 (${risk.tier})\n\nREGULATORY CLAUSES:\n${clauseText || "No clauses retrieved."}${contract_text ? `\n\nCONTRACT:\n${contract_text.slice(0, 6000)}` : ""}`;
+      // Fetch any referenced documents and inject into assessment context
+      let docContext = "";
+      if (document_ids.length > 0) {
+        const texts = await Promise.all(
+          document_ids.map((id: string) => fetchDocumentText(id, userId)),
+        );
+        docContext = texts.filter(Boolean).join("\n\n");
+      }
+
+      const userMsg = [
+        `DEPLOYMENT: ${description}`,
+        `CONTEXT: domains=${domains.join(",") || "inferred"} | jurisdictions=${jurisdictions.join(",") || "inferred"} | data=${data_types.join(",") || "inferred"} | sector=${sector || "inferred"}`,
+        ``,
+        `REGULATORY CLAUSES:`,
+        clauseText || "No clauses retrieved.",
+        contract_text ? `\nCONTRACT:\n${contract_text.slice(0, 6000)}` : "",
+        docContext ? `\nREFERENCED DOCUMENTS:\n${docContext.slice(0, 4000)}` : "",
+      ].join("\n");
 
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
@@ -187,41 +265,52 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      if (Array.isArray(assessment.gaps)) {
-        assessment.gaps = (assessment.gaps as Record<string, unknown>[]).map(g => ({
-          ...g,
-          severity:    String(g.severity || "medium").toLowerCase(),
-          detail:      g.detail || g.description || "",
-          remediation: g.remediation || g.fix || "",
-          frameworks:  Array.isArray(g.frameworks) ? g.frameworks : [],
-        }));
-      }
+      // Normalise gaps
+      const gaps = Array.isArray(assessment.gaps)
+        ? (assessment.gaps as Record<string, unknown>[]).map(g => ({
+            ...g,
+            severity:    String(g.severity || "medium").toLowerCase(),
+            domain:      normalizeGapDomain(String(g.domain || "privacy")),
+            detail:      g.detail      || g.description || "",
+            remediation: g.remediation || g.fix         || "",
+            frameworks:  Array.isArray(g.frameworks) ? g.frameworks : [],
+          }))
+        : [];
 
-      assessment.risk_score = { composite: risk.composite, tier: risk.tier, sub: risk.sub };
+      assessment.gaps = gaps;
+
+      // Derive risk entirely from gap analysis — no lookup tables
+      const risk = deriveRiskFromGaps(gaps as Array<{ severity: string; domain: string }>);
+      assessment.risk_tier      = risk.overall;
+      assessment.risk_by_domain = risk.byDomain;
+
+      // Remove any legacy numeric score from Claude's output
+      delete assessment.risk_score;
+
       assessment.summary = fullText.split("---JSON---")[0].trim() || (assessment.summary as string) || "";
 
       const messageTags = tags.length > 0
         ? tags
         : [...domains, ...jurisdictions, ...data_types, sector].filter(Boolean);
 
-      const initialMessages = [
-        { role: "user", content: description, tags: messageTags },
-        { role: "assistant", assessment },
-      ];
-
       const { data: saved } = await supabase.from("assessments").insert({
         user_id:      userId,
         title:        (assessment.title as string) || description.slice(0, 80),
         description:  description.slice(0, 500),
         result:       assessment,
-        messages:     initialMessages,
-        risk_tier:    risk.tier,
-        risk_score:   risk.composite,
+        messages:     [
+          { role: "user",      content: description, tags: messageTags },
+          { role: "assistant", assessment },
+        ],
+        risk_tier:    risk.overall,
         domains,
         jurisdictions,
-      }).select("id").single();
+        // Auto-assign to the user who ran the assessment
+        assigned_to:  [userId],
+      }).select("id, assessment_number").single();
 
-      assessment.id = saved?.id;
+      assessment.id                = saved?.id;
+      assessment.assessment_number = saved?.assessment_number;
       await send({ type: "done", assessment });
     } catch (err: unknown) {
       console.error("Assess error:", err);

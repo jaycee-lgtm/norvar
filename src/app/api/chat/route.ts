@@ -9,6 +9,32 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+// Fetch document text from Supabase Storage for context injection
+async function fetchDocumentText(docId: string, userId: string): Promise<string> {
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("file_path, name, file_type")
+    .eq("id", docId)
+    .eq("user_id", userId)
+    .single();
+
+  if (!doc?.file_path) return "";
+
+  const { data: fileData } = await supabase.storage
+    .from("documents")
+    .download(doc.file_path);
+
+  if (!fileData) return "";
+
+  // For text-based files, read as text
+  if (["txt", "md", "csv"].includes(doc.file_type ?? "")) {
+    return `[Document: ${doc.name}]\n${await fileData.text()}`;
+  }
+
+  // For PDF/DOCX, return a placeholder — full extraction would need server-side parsing
+  return `[Document attached: ${doc.name} (${doc.file_type?.toUpperCase()})]`;
+}
+
 const SYSTEM_PROMPT = `
 You are Norvar, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
 
@@ -44,6 +70,7 @@ export async function POST(req: NextRequest) {
 
   (async () => {
     try {
+      // Allow audit runner through if secret matches, otherwise require Clerk auth
       const auditMode = isAuditRequest(req);
       let userId: string | null = null;
       if (!auditMode) {
@@ -56,7 +83,16 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { messages, assessment_id, new_user_message, message } = await req.json();
+      const { messages, assessment_id, new_user_message, message, document_ids } = await req.json();
+
+      // Fetch and inject any referenced documents into context
+      let docContext = "";
+      if (Array.isArray(document_ids) && document_ids.length > 0 && userId) {
+        const texts = await Promise.all(
+          document_ids.map((id: string) => fetchDocumentText(id, userId)),
+        );
+        docContext = texts.filter(Boolean).join("\n\n");
+      }
 
       // Audit runner sends a single `message` string — wrap it for Claude
       const resolvedMessages = messages?.length
@@ -71,10 +107,14 @@ export async function POST(req: NextRequest) {
         return;
       }
 
+      const systemPrompt = docContext
+        ? `${SYSTEM_PROMPT}\n\nREFERENCED DOCUMENTS:\n${docContext}`
+        : SYSTEM_PROMPT;
+
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
         max_tokens: 1000,
-        system:     SYSTEM_PROMPT,
+        system:     systemPrompt,
         messages:   resolvedMessages,
         stream:     true,
       });
