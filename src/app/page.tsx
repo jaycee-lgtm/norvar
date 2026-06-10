@@ -776,144 +776,146 @@ function Home() {
   );
 
   return (
-    <div className="app-shell">
+    <>
       <Show when="signed-in">
-        <Sidebar />
-        <div className="main-area">
+        <div className="app-shell">
+          <Sidebar />
+          <div className="main-area">
 
-          {loadingSaved && (
-            <div className="home-body">
-              <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
-                <span className="loading-dot" />
-                <span className="loading-dot" />
-                <span className="loading-dot" />
+            {loadingSaved && (
+              <div className="home-body">
+                <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
+                  <span className="loading-dot" />
+                  <span className="loading-dot" />
+                  <span className="loading-dot" />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {isHome && (
-            <div className="home-body">
-              <div className="home-logo">N</div>
-              <h1 className="home-heading">What are you building?</h1>
-              <p className="home-sub">
-                Describe your deployment and Norvar will map it to the regulations
-                that apply, score your risk, and surface compliance gaps.
-              </p>
-              <div style={{ marginBottom: 14 }}>
-                <ModeSelector current="assess" />
+            {isHome && (
+              <div className="home-body">
+                <div className="home-logo">N</div>
+                <h1 className="home-heading">What are you building?</h1>
+                <p className="home-sub">
+                  Describe your deployment and Norvar will map it to the regulations
+                  that apply, score your risk, and surface compliance gaps.
+                </p>
+                <div style={{ marginBottom: 14 }}>
+                  <ModeSelector current="assess" />
+                </div>
+                {InputBar}
+                {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
               </div>
-              {InputBar}
-              {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
-            </div>
-          )}
+            )}
 
-          {!isHome && !loadingSaved && (
-            <>
-              <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
-                <ModeSelector current="assess" />
-              </div>
-              <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
-                {messages.map((msg, i) => {
-                  if (msg.role === "user") {
-                    return (
-                      <div key={i} className="msg-user fade-up">
-                        <div>{msg.content}</div>
-                        {msg.tags && msg.tags.length > 0 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 7 }}>
-                            {msg.tags.map(t => (
-                              <span key={t} style={{ fontSize: 10, color: "var(--fg3)", background: "rgba(255,255,255,.05)", padding: "1px 7px", borderRadius: 10, border: "0.5px solid var(--bdr)", fontFamily: "'Sora', sans-serif" }}>{t}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  if (msg.role === "thinking") {
-                    return (
-                      <div key={i} className="msg-ai fade-up">
-                        <div className="msg-ai-card">
-                          <div className="msg-ai-label">
-                            <ShieldAlert size={11} color="var(--fg3)" />
-                            {msg.status ? (
-                              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <Loader2 size={11} className="spin" color="var(--fg3)" />
-                                {msg.status}
-                              </span>
-                            ) : "Norvar is analysing..."}
-                          </div>
-                          {msg.text ? (
-                            <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em" }}>
-                              {msg.text}
-                              {streamCursor}
-                            </p>
-                          ) : (
-                            <div style={{ display: "flex", gap: 5, padding: "8px 0" }}>
-                              <span className="loading-dot" />
-                              <span className="loading-dot" />
-                              <span className="loading-dot" />
+            {!isHome && !loadingSaved && (
+              <>
+                <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+                  <ModeSelector current="assess" />
+                </div>
+                <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  {messages.map((msg, i) => {
+                    if (msg.role === "user") {
+                      return (
+                        <div key={i} className="msg-user fade-up">
+                          <div>{msg.content}</div>
+                          {msg.tags && msg.tags.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 7 }}>
+                              {msg.tags.map(t => (
+                                <span key={t} style={{ fontSize: 10, color: "var(--fg3)", background: "rgba(255,255,255,.05)", padding: "1px 7px", borderRadius: 10, border: "0.5px solid var(--bdr)", fontFamily: "'Sora', sans-serif" }}>{t}</span>
+                              ))}
                             </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  }
+                      );
+                    }
 
-                  if (msg.role === "assistant") {
-                    return (
-                      <div key={i} className="msg-ai">
-                        <AssessmentCard a={msg.assessment} onNew={startNew} />
-                      </div>
-                    );
-                  }
-
-                  if (msg.role === "chat") {
-                    return (
-                      <div key={i} className="msg-ai fade-up">
-                        <div className="msg-ai-card">
-                          <div className="msg-ai-label">
-                            <ShieldAlert size={11} color="var(--fg3)" />
-                            Norvar
+                    if (msg.role === "thinking") {
+                      return (
+                        <div key={i} className="msg-ai fade-up">
+                          <div className="msg-ai-card">
+                            <div className="msg-ai-label">
+                              <ShieldAlert size={11} color="var(--fg3)" />
+                              {msg.status ? (
+                                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <Loader2 size={11} className="spin" color="var(--fg3)" />
+                                  {msg.status}
+                                </span>
+                              ) : "Norvar is analysing..."}
+                            </div>
+                            {msg.text ? (
+                              <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em" }}>
+                                {msg.text}
+                                {streamCursor}
+                              </p>
+                            ) : (
+                              <div style={{ display: "flex", gap: 5, padding: "8px 0" }}>
+                                <span className="loading-dot" />
+                                <span className="loading-dot" />
+                                <span className="loading-dot" />
+                              </div>
+                            )}
                           </div>
-                          <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.75, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
-                            {msg.text || ""}
-                            {loading && i === messages.length - 1 && streamCursor}
-                          </p>
                         </div>
-                      </div>
-                    );
-                  }
+                      );
+                    }
 
-                  return null;
-                })}
-                {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
-              </div>
+                    if (msg.role === "assistant") {
+                      return (
+                        <div key={i} className="msg-ai">
+                          <AssessmentCard a={msg.assessment} onNew={startNew} />
+                        </div>
+                      );
+                    }
 
-              <div className="chat-input-row">
-                <div className="chat-input-inner">
-                  <div className="chat-input-bar">
-                    <input
-                      className="chat-input-field"
-                      placeholder={hasAssessment ? "Ask a follow-up question about this assessment..." : "Describe another deployment..."}
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={handleKey}
-                    />
-                    <button type="button" className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
-                      {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
-                    </button>
+                    if (msg.role === "chat") {
+                      return (
+                        <div key={i} className="msg-ai fade-up">
+                          <div className="msg-ai-card">
+                            <div className="msg-ai-label">
+                              <ShieldAlert size={11} color="var(--fg3)" />
+                              Norvar
+                            </div>
+                            <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.75, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
+                              {msg.text || ""}
+                              {loading && i === messages.length - 1 && streamCursor}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return null;
+                  })}
+                  {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
+                </div>
+
+                <div className="chat-input-row">
+                  <div className="chat-input-inner">
+                    <div className="chat-input-bar">
+                      <input
+                        className="chat-input-field"
+                        placeholder={hasAssessment ? "Ask a follow-up question about this assessment..." : "Describe another deployment..."}
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={handleKey}
+                      />
+                      <button type="button" className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
+                        {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
 
+          </div>
         </div>
       </Show>
 
       <Show when="signed-out">
         <LandingPage />
       </Show>
-    </div>
+    </>
   );
 }
