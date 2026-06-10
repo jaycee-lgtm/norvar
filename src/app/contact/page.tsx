@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import { useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 
@@ -52,7 +53,7 @@ export default function ContactPage() {
 
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
-          <div style={{ width: 26, height: 26, background: "#8b1a1a", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#f5f5f4" }}>N</div>
+          <Logo size={26} />
           <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em" }}>Norvar</span>
         </Link>
         <Link href="/" style={{ fontSize: 12, color: "#444442", textDecoration: "none", letterSpacing: "-.01em" }}>Back to home</Link>

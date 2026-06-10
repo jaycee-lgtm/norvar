@@ -6,6 +6,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import ModeSelector from "@/components/ModeSelector";
+import Logo from "@/components/Logo";
 
 type RecentAssessment = {
   id:         string;
@@ -38,6 +39,7 @@ export default function Sidebar() {
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [tick,          setTick]          = useState(0);
 
   useEffect(() => {
     fetch("/api/assessments?limit=5")
@@ -48,7 +50,14 @@ export default function Sidebar() {
       .then(r => r.json())
       .then(d => setConversations(d.conversations || []))
       .catch(() => {});
-  }, [path]);
+  }, [path, tick]);
+
+  // Bump tick after saves so recent lists refresh (e.g. router.replace with new id)
+  useEffect(() => {
+    const onFocus = () => setTick(t => t + 1);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   const initials = user
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
@@ -64,6 +73,12 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px 10px" }}>
+          <Logo size={24} />
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--fg)", letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>
+            Norvar
+          </span>
+        </div>
         <Link href={isChat ? "/chat" : "/"} className="new-assess-btn">
           <span className="new-assess-label">{isChat ? "New chat" : "New assessment"}</span>
           <SquarePen size={14} color="var(--fg3)" />

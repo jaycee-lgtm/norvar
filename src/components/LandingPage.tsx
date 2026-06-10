@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SignInButton } from "@clerk/nextjs";
+import Logo from "@/components/Logo";
 
 const H = "#e2e2e0";
 
@@ -11,7 +12,7 @@ export default function LandingPage() {
 
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ width: 26, height: 26, background: "#8b1a1a", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#f5f5f4", fontFamily: "'Sora', sans-serif" }}>N</div>
+          <Logo size={28} />
           <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>Norvar</span>
         </div>
         <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -57,7 +58,7 @@ export default function LandingPage() {
 
       <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 20, height: 20, background: "#8b1a1a", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#f5f5f4", fontFamily: "'Sora', sans-serif" }}>N</div>
+          <Logo size={20} />
           <span style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif" }}>Norvar - norvar.io</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
