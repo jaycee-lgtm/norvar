@@ -54,8 +54,8 @@ TABLE_NAME = "regulatory_chunks"
 
 SYSTEM_PROMPT = """
 You are a senior Governance, Risk and Compliance analyst specialising in
-technology regulation across AI, privacy, cybersecurity, computer vision,
-automated decisioning, and robotics globally.
+technology regulation across Privacy, AI Governance, and Cybersecurity globally.
+Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through these three lenses simultaneously.
 
 Return ONLY valid JSON. No preamble, no markdown fences. Use this exact structure:
 
@@ -193,13 +193,12 @@ def build_framework_context(domains: list[str], jurisdictions: list[str]) -> str
 # RISK SCORING ENGINE
 # ══════════════════════════════════════════════════════════════════════════════
 
+# Three core domain lenses. CV, ADMT, and Robotics are assessment subjects
+# evaluated through Privacy, AI Governance, and Cybersecurity — not separate domains.
 DOMAIN_SCORES = {
-    "cv": 22,
-    "ai": 20,
-    "cyber": 18,
-    "adm": 18,
-    "privacy": 16,
-    "robotics": 14,
+    "privacy": 36,
+    "ai": 34,
+    "cyber": 30,
 }
 
 JURISDICTION_SCORES = {
@@ -264,7 +263,8 @@ Return ONLY valid JSON. No preamble, no markdown code blocks.
 
 Use ONLY these allowed values (pick all that clearly apply):
 
-domains: ai, cyber, privacy, cv, adm, robotics
+domains: privacy, ai, cyber
+  (cv, admt, and robotics are subjects — map them to the domain lenses above)
 jurisdictions: eu, uk, us_federal, us_state, apac, latam, mena
 deployments: facial_recognition, law_enforcement, workplace_surveillance,
   healthcare_ai, hiring_ai, credit_scoring, autonomous_systems, consumer_profiling,
@@ -311,19 +311,36 @@ def infer_risk_inputs_heuristic(description: str) -> dict:
     """Keyword-based fallback when Claude extraction is unavailable."""
     t = description.lower()
 
+    # Three core domain lenses.
+    # CV, ADMT, and Robotics signals map into these domains — they are subjects, not domains.
     domains: list[str] = []
-    if any(k in t for k in ("vision", "camera", "video", "facial", "computer vision", "surveillance")):
-        domains.append("cv")
-    if any(k in t for k in ("ai", "machine learning", " ml", "automated", "algorithm", "model")):
-        domains.append("ai")
-    if any(k in t for k in ("cyber", "security", "breach", "encryption", "iot")):
-        domains.append("cyber")
-    if any(k in t for k in ("decision", "scoring", "profiling", "hiring", "credit", "employment")):
-        domains.append("adm")
-    if any(k in t for k in ("privacy", "personal data", "consent", "gdpr", "ccpa")):
+
+    # Privacy lens: triggered by data handling signals AND by CV/biometric/robotics subjects
+    if any(k in t for k in (
+        "privacy", "personal data", "consent", "gdpr", "ccpa",
+        "biometric", "facial", "camera", "vision", "surveillance",  # CV subjects
+        "robot", "robotics", "autonomous vehicle", "drone",            # Robotics subjects
+        "location", "health", "children", "employee",
+    )):
         domains.append("privacy")
-    if any(k in t for k in ("robot", "robotics", "autonomous vehicle", "drone")):
-        domains.append("robotics")
+
+    # AI Governance lens: triggered by AI/ML signals AND by ADMT/CV/Robotics subjects
+    if any(k in t for k in (
+        "ai", "machine learning", " ml", "model", "algorithm",
+        "automated", "decision", "scoring", "profiling", "hiring", "credit",  # ADMT subjects
+        "computer vision", "video", "facial recognition",                          # CV subjects
+        "autonomous", "robot", "drone",                                            # Robotics subjects
+    )):
+        domains.append("ai")
+
+    # Cybersecurity lens: triggered by security signals AND by IoT/CV/Robotics attack surface
+    if any(k in t for k in (
+        "cyber", "security", "breach", "encryption", "iot",
+        "camera", "sensor", "network", "firmware",                              # CV/Robotics attack surface
+        "robot", "autonomous vehicle", "connected", "embedded",                 # Robotics subjects
+    )):
+        domains.append("cyber")
+
     if not domains:
         domains = ["privacy"]
 
@@ -933,7 +950,7 @@ EXAMPLE_ASSESSMENTS = [
             "hiring decisions and processes biometric facial data."
         ),
         "inputs": {
-            "domains": ["ai", "cv", "adm", "privacy"],
+            "domains": ["ai", "privacy"],  # cv and adm map to ai lens
             "jurisdictions": ["us_state", "eu"],
             "deployments": ["hiring_ai", "facial_recognition"],
             "data_types": ["biometric", "behavioural"],
@@ -955,7 +972,7 @@ EXAMPLE_ASSESSMENTS = [
             "with no human review."
         ),
         "inputs": {
-            "domains": ["adm", "privacy", "cyber"],
+            "domains": ["ai", "privacy", "cyber"],  # adm maps to ai lens
             "jurisdictions": ["us_federal", "us_state", "uk"],
             "deployments": ["credit_scoring"],
             "data_types": ["financial", "behavioural", "general_pi"],

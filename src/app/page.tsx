@@ -27,13 +27,12 @@ const JURISDICTION_OPTIONS = [
   { value: "mena",       label: "MENA"          },
 ];
 
+// Three core domain lenses. CV, ADMT, and Robotics are assessment subjects
+// evaluated through these lenses, not separate domains.
 const DOMAIN_OPTIONS = [
-  { value: "ai",       label: "Artificial Intelligence" },
-  { value: "privacy",  label: "Privacy"                 },
-  { value: "cyber",    label: "Cybersecurity"           },
-  { value: "cv",       label: "Computer Vision"         },
-  { value: "adm",      label: "Auto Decisioning"        },
-  { value: "robotics", label: "Robotics"                },
+  { value: "privacy",  label: "Privacy"       },
+  { value: "ai",       label: "AI Governance" },
+  { value: "cyber",    label: "Cybersecurity" },
 ];
 
 const DATA_TYPE_OPTIONS = [

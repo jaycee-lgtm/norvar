@@ -342,7 +342,7 @@ def _infer_domain(title: str) -> tuple[str, str | None]:
     if any(k in t for k in ("biometric", "bipa", "cubi")):
         return "privacy", "biometric"
     if any(k in t for k in ("employment", "eeoc", "hud", "hiring", "aedt", "ll144")):
-        return "adm", "employment"
+        return "ai", "employment"
     if any(k in t for k in ("health", "hipaa", "mhmd")):
         return "privacy", "health"
     if any(k in t for k in ("children", "coppa", "minor")):
@@ -353,8 +353,9 @@ def _infer_domain(title: str) -> tuple[str, str | None]:
         return "privacy", "education"
     if "executive order" in t or "eo 14117" in t:
         return "privacy", "national_security"
+    # ADMT maps to AI Governance lens
     if "admt" in t or "automated decision" in t or "ai act" in t:
-        return "adm", "automated_decisioning"
+        return "ai", "automated_decisioning"
     if "delete act" in t or "data broker" in t:
         return "privacy", "data_broker"
     return "privacy", "comprehensive"
@@ -561,7 +562,7 @@ HAND_CORPUS = [
     {
         "name": "CFPB — Model Risk Management Guidance (Algorithmic Credit)",
         "abbr": "CFPB Model Risk",
-        "domain": "adm",
+        "domain": "ai",
         "subdomain": "financial",
         "jurisdiction": "US Federal",
         "status": "active",
@@ -596,7 +597,7 @@ HAND_CORPUS = [
     {
         "name": "EEOC Guidance on AI and Algorithmic Tools in Employment",
         "abbr": "EEOC AI Guidance",
-        "domain": "adm",
+        "domain": "ai",
         "subdomain": "employment",
         "jurisdiction": "US Federal",
         "status": "active",
@@ -625,7 +626,7 @@ HAND_CORPUS = [
     {
         "name": "California CPPA ADMT Regulations",
         "abbr": "CA ADMT Regs",
-        "domain": "adm",
+        "domain": "ai",
         "subdomain": "automated_decisioning",
         "jurisdiction": "US State",
         "state": "California",
@@ -1030,7 +1031,7 @@ HAND_CORPUS = [
     {
         "name": "NYC Local Law 144 — Automated Employment Decisions Tool",
         "abbr": "NYC LL144",
-        "domain": "adm",
+        "domain": "ai",
         "subdomain": "employment",
         "jurisdiction": "US Local",
         "state": "New York",
@@ -1044,7 +1045,7 @@ HAND_CORPUS = [
     {
         "name": "Colorado AI Act (CAIA) — Automated Decisioning Tech",
         "abbr": "CAIA",
-        "domain": "adm",
+        "domain": "ai",
         "subdomain": "high_risk_ai",
         "jurisdiction": "US State",
         "state": "Colorado",

@@ -25,7 +25,9 @@ async function getEmbedding(text: string): Promise<number[]> {
 
 const SYSTEM_PROMPT = `
 You are a senior Governance, Risk and Compliance analyst specialising in technology regulation
-across AI, privacy, cybersecurity, computer vision, automated decisioning, and robotics globally.
+across Privacy, AI Governance, and Cybersecurity globally.
+
+Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through these three lenses simultaneously.
 
 Respond in EXACTLY this format — a plain text summary, then a separator, then JSON:
 
@@ -54,7 +56,8 @@ Rules: output prose FIRST, then ---JSON--- separator, then JSON. Order gaps by s
 Never invent regulations not in the retrieved clauses. risk_score 70-100=high, 40-69=medium, 0-39=low.
 `;
 
-const D: Record<string, number> = { cv: 22, ai: 20, cyber: 18, adm: 18, privacy: 16, robotics: 14 };
+// Three core domains. CV, ADMT, and Robotics signals map to these via subject detection.
+const D: Record<string, number> = { privacy: 36, ai: 34, cyber: 30 };
 const J: Record<string, number> = { eu: 22, us_state: 16, uk: 14, us_federal: 12, canada: 10, apac: 10, latam: 8, mena: 8 };
 const T: Record<string, number> = { biometric: 25, health: 24, children: 20, location: 16, financial: 15, behavioural: 10, communications: 12, general_pi: 5 };
 const S: Record<string, number> = { government: 20, healthcare: 18, finance: 16, hr_recruitment: 14, education: 14, transport: 12, media_adtech: 12, legal: 12, retail: 8, proptech: 8 };
