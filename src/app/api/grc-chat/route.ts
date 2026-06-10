@@ -43,6 +43,12 @@ function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
 }
 
+function isAuditRequest(req: NextRequest): boolean {
+  const secret = process.env.AUDIT_SECRET;
+  if (!secret) return false;
+  return req.headers.get("x-audit-secret") === secret;
+}
+
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export async function POST(req: NextRequest) {
@@ -53,21 +59,32 @@ export async function POST(req: NextRequest) {
 
   (async () => {
     try {
-      const { userId } = await auth();
-      if (!userId) {
-        await send({ type: "error", text: "Unauthorised" });
-        await writer.close();
-        return;
+      const auditMode = isAuditRequest(req);
+      let userId: string | null = null;
+      if (!auditMode) {
+        const authResult = await auth();
+        userId = authResult.userId;
+        if (!userId) {
+          await send({ type: "error", text: "Unauthorised" });
+          await writer.close();
+          return;
+        }
       }
 
-      const { messages, conversation_id } = await req.json();
-      if (!messages?.length) {
+      const { messages, conversation_id, message } = await req.json();
+      const resolvedMessages: ChatMessage[] | null = messages?.length
+        ? messages
+        : message
+          ? [{ role: "user", content: message }]
+          : null;
+
+      if (!resolvedMessages?.length) {
         await send({ type: "error", text: "No messages" });
         await writer.close();
         return;
       }
 
-      const typedMessages = messages as ChatMessage[];
+      const typedMessages = resolvedMessages;
       const lastUser = [...typedMessages].reverse().find(m => m.role === "user")?.content ?? "";
 
       let system = SYSTEM_PROMPT;
@@ -107,7 +124,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (fullText) {
+      if (!auditMode && fullText && userId) {
         const newMessages: ChatMessage[] = [...typedMessages, { role: "assistant", content: fullText }];
         if (conversation_id) {
           const { error: updateError } = await supabase.from("conversations")
@@ -139,7 +156,7 @@ export async function POST(req: NextRequest) {
           await send({ type: "done", text: fullText, conversation_id: saved.id });
         }
       } else {
-        await send({ type: "done", text: "" });
+        await send({ type: "done", text: fullText, conversation_id: conversation_id ?? null });
       }
     } catch (err: unknown) {
       await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });

@@ -1,6 +1,13 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
-export default clerkMiddleware();
+const AUDIT_API_PATHS = new Set(["/api/chat", "/api/grc-chat"]);
+
+export default clerkMiddleware(async (_auth, req) => {
+  // Sprint-1 audit runner authenticates via x-audit-secret; route handlers validate it.
+  if (AUDIT_API_PATHS.has(req.nextUrl.pathname) && req.headers.get("x-audit-secret")) {
+    return;
+  }
+});
 
 export const config = {
   matcher: [
