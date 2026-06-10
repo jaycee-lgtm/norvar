@@ -1,10 +1,10 @@
 "use client";
 
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings } from "lucide-react";
-import { useEffect, useState } from "react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -32,42 +32,44 @@ function tierKey(t: string): keyof typeof TIER {
   return v === "high" ? "high" : v === "medium" ? "medium" : "low";
 }
 
-export default function Sidebar() {
-  const path     = usePathname();
-  const { user } = useUser();
-  const isChat   = path.startsWith("/chat");
+function SidebarInner() {
+  const path         = usePathname();
+  const searchParams = useSearchParams();
+  const { user }     = useUser();
+  const isChat       = path.startsWith("/chat");
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
-  const [tick,          setTick]          = useState(0);
 
   useEffect(() => {
-    fetch("/api/assessments?limit=5")
-      .then(r => r.json())
-      .then(d => setAssessments(d.assessments || []))
-      .catch(() => {});
-    fetch("/api/conversations?limit=5")
-      .then(r => r.json())
-      .then(d => setConversations(d.conversations || []))
-      .catch(() => {});
-  }, [path, tick]);
-
-  // Bump tick after saves so recent lists refresh (e.g. router.replace with new id)
-  useEffect(() => {
-    const onFocus = () => setTick(t => t + 1);
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
+    if (isChat) {
+      fetch("/api/conversations?limit=5")
+        .then(r => r.json())
+        .then(d => setConversations(d.conversations || []))
+        .catch(() => {});
+    } else {
+      fetch("/api/assessments?limit=5")
+        .then(r => r.json())
+        .then(d => setAssessments(d.assessments || []))
+        .catch(() => {});
+    }
+  }, [path, searchParams.toString(), isChat]);
 
   const initials = user
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
     : "N";
 
   const nav = [
-    { href: "/",           label: "Assessments", icon: FileSearch,      active: path === "/" },
-    { href: "/history",    label: "History",     icon: LayoutDashboard, active: path === "/history" },
-    { href: "/frameworks", label: "Frameworks",  icon: Layers,          active: path === "/frameworks" },
-    { href: "/settings",   label: "Settings",    icon: Settings,        active: path === "/settings" },
+    { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
+    { href: "/chat", label: "GRC Chat", icon: MessageSquare, active: path === "/chat" },
+    {
+      href: isChat ? "/chat/history" : "/history",
+      label: "History",
+      icon: LayoutDashboard,
+      active: path === "/history" || path === "/chat/history",
+    },
+    { href: "/frameworks", label: "Frameworks", icon: Layers, active: path === "/frameworks" },
+    { href: "/settings", label: "Settings", icon: Settings, active: path === "/settings" },
   ];
 
   return (
@@ -94,7 +96,7 @@ export default function Sidebar() {
       <div className="sidebar-scroll">
         <div style={{ padding: "0 0 4px" }}>
           {nav.map(({ href, label, icon: Icon, active }) => (
-            <Link key={href} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
+            <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
               <Icon size={14} strokeWidth={active ? 2 : 1.75} />
               {label}
             </Link>
@@ -147,5 +149,13 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+  );
+}
+
+export default function Sidebar() {
+  return (
+    <Suspense fallback={<aside className="sidebar" />}>
+      <SidebarInner />
+    </Suspense>
   );
 }
