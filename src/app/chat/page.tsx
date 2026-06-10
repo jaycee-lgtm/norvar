@@ -109,12 +109,17 @@ function Chat() {
   const [error,          setError]          = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const inputRef  = useRef<HTMLTextAreaElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef    = useRef<HTMLTextAreaElement>(null);
+  const scrollRef   = useRef<HTMLDivElement>(null);
+  const loadedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const id = searchParams.get("id");
-    if (!id || messages.length > 0) return;
+    if (!id) {
+      loadedIdRef.current = null;
+      return;
+    }
+    if (loadedIdRef.current === id) return;
 
     setLoadingSaved(true);
     setError("");
@@ -128,14 +133,17 @@ function Chat() {
         setHistory(msgs);
         setMessages(msgs.map(m => ({ role: m.role, content: m.content })));
         setConversationId(id);
+        loadedIdRef.current = id;
       })
       .catch((e: unknown) => {
         setMessages([]);
         setHistory([]);
+        setConversationId(null);
+        loadedIdRef.current = null;
         setError(e instanceof Error ? e.message : "Failed to load conversation");
       })
       .finally(() => setLoadingSaved(false));
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -200,6 +208,7 @@ function Chat() {
           setHistory(prev => [...prev, { role: "assistant", content: finalText }]);
           if (event.conversation_id) {
             setConversationId(event.conversation_id);
+            loadedIdRef.current = event.conversation_id;
             router.replace(`/chat?id=${event.conversation_id}`, { scroll: false });
           }
         } else if (event.type === "error") {
@@ -228,6 +237,7 @@ function Chat() {
     setInput("");
     setError("");
     setConversationId(null);
+    loadedIdRef.current = null;
     router.replace("/chat", { scroll: false });
   };
 

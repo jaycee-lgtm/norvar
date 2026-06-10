@@ -110,21 +110,36 @@ export async function POST(req: NextRequest) {
       if (fullText) {
         const newMessages: ChatMessage[] = [...typedMessages, { role: "assistant", content: fullText }];
         if (conversation_id) {
-          await supabase.from("conversations")
+          const { error: updateError } = await supabase.from("conversations")
             .update({ messages: newMessages, updated_at: new Date().toISOString() })
             .eq("id", conversation_id)
             .eq("user_id", userId);
+          if (updateError) {
+            console.error("Failed to update conversation:", updateError);
+            await send({ type: "error", text: `Could not save chat: ${updateError.message}` });
+            return;
+          }
           await send({ type: "done", text: fullText, conversation_id });
         } else {
           const title = lastUser.length > 60 ? `${lastUser.slice(0, 57)}...` : lastUser;
-          const { data: saved } = await supabase.from("conversations")
+          const { data: saved, error: insertError } = await supabase.from("conversations")
             .insert({ user_id: userId, title, messages: newMessages })
             .select("id")
             .single();
-          await send({ type: "done", text: fullText, conversation_id: saved?.id });
+          if (insertError || !saved?.id) {
+            console.error("Failed to create conversation:", insertError);
+            await send({
+              type: "error",
+              text: insertError?.message
+                ? `Could not save chat: ${insertError.message}`
+                : "Could not save chat. Has the conversations table been created in Supabase?",
+            });
+            return;
+          }
+          await send({ type: "done", text: fullText, conversation_id: saved.id });
         }
       } else {
-        await send({ type: "done", text: "", conversation_id });
+        await send({ type: "done", text: "" });
       }
     } catch (err: unknown) {
       await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });
