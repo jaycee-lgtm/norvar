@@ -2,9 +2,10 @@
 
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Show, SignInButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
+import LandingPage from "@/components/LandingPage";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -911,16 +912,7 @@ function Home() {
       </Show>
 
       <Show when="signed-out">
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center", background: "var(--bg)" }}>
-          <div className="home-logo">N</div>
-          <h1 className="home-heading">Norvar</h1>
-          <p className="home-sub" style={{ marginBottom: 28 }}>
-            Governance, Risk and Compliance Intelligence. Sign in to run your first assessment.
-          </p>
-          <SignInButton>
-            <button type="button" className="btn-primary">Sign in to get started</button>
-          </SignInButton>
-        </div>
+        <LandingPage />
       </Show>
     </div>
   );

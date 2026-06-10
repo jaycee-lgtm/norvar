@@ -78,12 +78,7 @@ function Chat() {
 
   useEffect(() => {
     const id = searchParams.get("id");
-    if (!id) {
-      setMessages([]);
-      setHistory([]);
-      setConversationId(null);
-      return;
-    }
+    if (!id || messages.length > 0) return;
 
     setLoadingSaved(true);
     setError("");
@@ -104,7 +99,7 @@ function Chat() {
         setError(e instanceof Error ? e.message : "Failed to load conversation");
       })
       .finally(() => setLoadingSaved(false));
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -169,7 +164,7 @@ function Chat() {
           setHistory(prev => [...prev, { role: "assistant", content: finalText }]);
           if (event.conversation_id) {
             setConversationId(event.conversation_id);
-            window.history.replaceState({}, "", `/chat?id=${event.conversation_id}`);
+            router.replace(`/chat?id=${event.conversation_id}`, { scroll: false });
           }
         } else if (event.type === "error") {
           throw new Error(event.text);
@@ -197,7 +192,7 @@ function Chat() {
     setInput("");
     setError("");
     setConversationId(null);
-    router.push("/chat");
+    router.replace("/chat", { scroll: false });
   };
 
   const isHome = messages.length === 0 && !loadingSaved;
