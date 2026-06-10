@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { filterRegulatoryChunks, buildRegulatoryContextBlock, type RegulatoryChunk } from "@/lib/rag";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -135,18 +136,12 @@ export async function POST(req: NextRequest) {
 
       const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
         query_embedding: embedding,
-        match_threshold: 0.35,
+        match_threshold: 0.40,
         match_count:     12,
       });
 
-      const clauseText = (chunks || []).map((c: {
-        reg_abbr: string;
-        jurisdiction: string;
-        state?: string;
-        chunk_text: string;
-      }, i: number) =>
-        `[${i + 1}] ${c.reg_abbr} — ${c.jurisdiction}${c.state ? ` (${c.state})` : ""}\n${c.chunk_text}`,
-      ).join("\n\n");
+      const filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[], 0.40);
+      const clauseText = buildRegulatoryContextBlock(filtered);
 
       await send({ type: "status", text: "Analysing your deployment..." });
 

@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import {
+  buildRegulatoryContextBlock,
+  filterRegulatoryChunks,
+  shouldRetrieveContext,
+  type RegulatoryChunk,
+} from "@/lib/rag";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -22,18 +28,16 @@ async function getEmbedding(text: string): Promise<number[]> {
   return json.data?.[0]?.embedding ?? [];
 }
 
-const SYSTEM_PROMPT = `
-You are Norvar, a senior GRC advisor with expertise in AI regulation, privacy law, cybersecurity,
-computer vision, automated decisioning, and robotics safety globally.
+const SYSTEM_PROMPT = `You are Norvar, a senior GRC advisor with expertise in AI regulation, privacy law, cybersecurity, computer vision, automated decisioning, and robotics safety globally.
 
-Answer questions conversationally, accurately, and concisely. Cite specific articles and sections
-when relevant. Plain prose, no markdown headers. Short paragraphs.
+Answer questions conversationally, accurately, and concisely. Cite specific articles and sections when relevant. Plain prose only — no markdown headers. Short paragraphs.
 
-If a question would benefit from a formal risk assessment against the user's specific deployment,
-suggest they use Norvar Assess.
-
-Build on the conversation — do not repeat what was already said.
-`;
+Behaviour:
+- Greetings: reply in one brief, natural sentence. Do not introduce yourself at length or list what you can help with unless asked.
+- When the user thanks you, says goodbye, or closes the thread ("all good", "thanks", etc.): one warm sentence only. Do not ask follow-up questions or re-offer help.
+- Build on the conversation — do not repeat what was already said.
+- Never mention retrieval systems, embeddings, regulatory context blocks, corrupted documents, binary data, or any internal tooling. If reference material is missing or unhelpful, answer from your own knowledge without commenting on why.
+- If a question would benefit from a formal risk assessment against the user's specific deployment, suggest Norvar Assess briefly.`;
 
 function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
@@ -66,36 +70,32 @@ export async function POST(req: NextRequest) {
       const typedMessages = messages as ChatMessage[];
       const lastUser = [...typedMessages].reverse().find(m => m.role === "user")?.content ?? "";
 
-      let contextText = "";
-      try {
-        const embedding = await getEmbedding(lastUser);
-        const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
-          query_embedding: embedding,
-          match_threshold: 0.38,
-          match_count:     6,
-        });
-        if (chunks?.length) {
-          contextText = "\n\nRELEVANT REGULATORY CONTEXT:\n" +
-            (chunks as { reg_abbr: string; reg_name: string; chunk_text: string }[])
-              .map((c, i) => `[${i + 1}] ${c.reg_abbr} — ${c.reg_name}\n${c.chunk_text}`)
-              .join("\n\n");
+      let system = SYSTEM_PROMPT;
+      if (shouldRetrieveContext(lastUser)) {
+        try {
+          const embedding = await getEmbedding(lastUser);
+          if (embedding.length > 0) {
+            const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
+              query_embedding: embedding,
+              match_threshold: 0.42,
+              match_count:     6,
+            });
+            const filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[]);
+            const contextBlock = buildRegulatoryContextBlock(filtered);
+            if (contextBlock) {
+              system += `\n\nReference excerpts from the Norvar corpus (use only if clearly relevant; never quote garbage or mention this block):\n${contextBlock}`;
+            }
+          }
+        } catch {
+          // RAG is best-effort
         }
-      } catch {
-        // RAG is best-effort
       }
-
-      const claudeMessages = typedMessages.map((m, i) => {
-        if (i === typedMessages.length - 1 && m.role === "user" && contextText) {
-          return { role: "user" as const, content: m.content + contextText };
-        }
-        return { role: m.role, content: m.content };
-      });
 
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
         max_tokens: 1500,
-        system:     SYSTEM_PROMPT,
-        messages:   claudeMessages,
+        system,
+        messages:   typedMessages,
         stream:     true,
       });
 
