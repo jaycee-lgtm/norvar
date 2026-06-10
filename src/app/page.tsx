@@ -832,10 +832,6 @@ function Home() {
                   <h1 className="home-heading">What are you building?</h1>
                   <InfoTip text="Describe your deployment and Norvar will map it to the regulations that apply, score your risk, and surface compliance gaps." />
                 </div>
-                <p className="home-sub">
-                  Describe your deployment and Norvar will map it to the regulations
-                  that apply, score your risk, and surface compliance gaps.
-                </p>
                 <div style={{ marginBottom: 14 }}>
                   <ModeSelector current="assess" />
                 </div>
