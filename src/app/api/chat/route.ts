@@ -26,6 +26,16 @@ function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
 }
 
+// Audit bypass: allows the sprint-1 audit runner to call this route
+// without a Clerk session, using a shared secret instead.
+// Set AUDIT_SECRET in Vercel environment variables.
+// Never expose this value in the frontend.
+function isAuditRequest(req: NextRequest): boolean {
+  const secret = process.env.AUDIT_SECRET;
+  if (!secret) return false;
+  return req.headers.get("x-audit-secret") === secret;
+}
+
 export async function POST(req: NextRequest) {
   const enc = new TextEncoder();
   const { readable, writable } = new TransformStream<Uint8Array>();
@@ -34,15 +44,28 @@ export async function POST(req: NextRequest) {
 
   (async () => {
     try {
-      const { userId } = await auth();
-      if (!userId) {
-        await send({ type: "error", text: "Unauthorised" });
-        await writer.close();
-        return;
+      const auditMode = isAuditRequest(req);
+      let userId: string | null = null;
+      if (!auditMode) {
+        const authResult = await auth();
+        userId = authResult.userId;
+        if (!userId) {
+          await send({ type: "error", text: "Unauthorised" });
+          await writer.close();
+          return;
+        }
       }
 
-      const { messages, assessment_id, new_user_message } = await req.json();
-      if (!messages?.length) {
+      const { messages, assessment_id, new_user_message, message } = await req.json();
+
+      // Audit runner sends a single `message` string — wrap it for Claude
+      const resolvedMessages = messages?.length
+        ? messages
+        : message
+          ? [{ role: "user", content: message }]
+          : null;
+
+      if (!resolvedMessages) {
         await send({ type: "error", text: "No messages" });
         await writer.close();
         return;
@@ -52,7 +75,7 @@ export async function POST(req: NextRequest) {
         model:      "claude-sonnet-4-6",
         max_tokens: 1000,
         system:     SYSTEM_PROMPT,
-        messages,
+        messages:   resolvedMessages,
         stream:     true,
       });
 
@@ -64,7 +87,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (assessment_id && new_user_message && fullText) {
+      // Only persist to Supabase for real user sessions, not audit runs
+      if (!auditMode && userId && assessment_id && new_user_message && fullText) {
         const { data: row } = await supabase.from("assessments")
           .select("messages")
           .eq("id", assessment_id)
@@ -84,7 +108,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      await send({ type: "done", text: fullText, conversation_id: assessment_id });
+      await send({ type: "done", text: fullText, conversation_id: assessment_id ?? null });
     } catch (err: unknown) {
       await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });
     } finally {
