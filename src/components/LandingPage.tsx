@@ -5,13 +5,6 @@ import { SignInButton } from "@clerk/nextjs";
 
 const H = "#e2e2e0";
 
-const CONTENT: React.CSSProperties = {
-  maxWidth: 1100,
-  margin:   "0 auto",
-  width:    "100%",
-  padding:  "80px 52px",
-};
-
 export default function LandingPage() {
   return (
     <div style={{ background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Sora', system-ui, sans-serif" }}>
@@ -36,7 +29,7 @@ export default function LandingPage() {
       </header>
 
       <section style={{ flex: 1, display: "flex", alignItems: "center" }}>
-        <div style={CONTENT}>
+        <div style={{ padding: "80px 52px", width: "100%" }}>
           <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(255,255,255,.12)", borderRadius: 20, padding: "4px 14px", marginBottom: 28, fontSize: 9, color: "#444442", letterSpacing: ".1em", textTransform: "uppercase", fontFamily: "'Sora', sans-serif" }}>
             Early access, norvar.io
           </div>

@@ -441,6 +441,39 @@ function updateLastMessage(
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
+function InfoTip({ text }: { text: string }) {
+  return (
+    <div
+      style={{ position: "relative", display: "inline-flex" }}
+      onMouseEnter={e => {
+        const t = e.currentTarget.querySelector(".tip") as HTMLElement;
+        if (t) t.style.opacity = "1";
+      }}
+      onMouseLeave={e => {
+        const t = e.currentTarget.querySelector(".tip") as HTMLElement;
+        if (t) t.style.opacity = "0";
+      }}
+    >
+      <Info size={14} strokeWidth={1.75} color="var(--fg3)" style={{ cursor: "default" }} />
+      <div
+        className="tip"
+        style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+          transform: "translateX(-50%)", background: "var(--card)",
+          border: "0.5px solid var(--bdr2)", borderRadius: 7,
+          padding: "10px 14px", width: 280, fontSize: 12,
+          color: "var(--fg2)", lineHeight: 1.65, fontFamily: "'Sora', sans-serif",
+          letterSpacing: "-.01em", opacity: 0, transition: "opacity 0.15s",
+          pointerEvents: "none", zIndex: 50,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
     <Suspense>

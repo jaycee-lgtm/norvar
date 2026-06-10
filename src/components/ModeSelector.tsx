@@ -76,7 +76,7 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
         <span style={{ color: "var(--fg2)", display: "flex", alignItems: "center" }}>
           {active.icon}
         </span>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", letterSpacing: "-0.02em" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--fg3)", letterSpacing: "-0.02em" }}>
           {active.label}
         </span>
         <span style={{

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
-import { ArrowUp, Loader2, ShieldAlert, SquarePen } from "lucide-react";
+import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -51,6 +51,41 @@ async function readSSEStream(response: Response, onEvent: (e: SSEEvent) => void)
       }
     }
   }
+}
+
+// ── Chat page ──────────────────────────────────────────────────────────────────
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <div
+      style={{ position: "relative", display: "inline-flex" }}
+      onMouseEnter={e => {
+        const t = e.currentTarget.querySelector(".tip") as HTMLElement;
+        if (t) t.style.opacity = "1";
+      }}
+      onMouseLeave={e => {
+        const t = e.currentTarget.querySelector(".tip") as HTMLElement;
+        if (t) t.style.opacity = "0";
+      }}
+    >
+      <Info size={14} strokeWidth={1.75} color="var(--fg3)" style={{ cursor: "default" }} />
+      <div
+        className="tip"
+        style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+          transform: "translateX(-50%)", background: "var(--card)",
+          border: "0.5px solid var(--bdr2)", borderRadius: 7,
+          padding: "10px 14px", width: 260, fontSize: 12,
+          color: "var(--fg2)", lineHeight: 1.65, fontFamily: "'Sora', sans-serif",
+          letterSpacing: "-.01em", opacity: 0, transition: "opacity 0.15s",
+          pointerEvents: "none", zIndex: 50,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
 }
 
 export default function ChatPage() {
@@ -223,11 +258,10 @@ function Chat() {
           {isHome && (
             <div className="home-body">
               <div className="home-logo">N</div>
-              <h1 className="home-heading">Ask anything about GRC</h1>
-              <p className="home-sub">
-                Ask about regulations, compliance requirements, audit preparation,
-                or how specific laws apply to your work.
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                <h1 className="home-heading">How can I help?</h1>
+                <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
+              </div>
 
               <div style={{ marginBottom: 14 }}>
                 <ModeSelector current="chat" />
