@@ -794,9 +794,9 @@ function Home() {
         }
         <button type="button" className="chip" onClick={() => fileRef.current?.click()}>
           <FileText size={11} strokeWidth={1.75} />
-          {contractName ? "Replace contract" : "Upload contract"}
+          {contractName ? "Replace doc" : "Upload doc"}
         </button>
-        <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+        <input ref={fileRef} type="file" accept=".docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       </div>
     </div>
   );
@@ -828,7 +828,10 @@ function Home() {
             {isHome && (
               <div className="home-body">
                 <div className="home-logo">N</div>
-                <h1 className="home-heading">What are you building?</h1>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                  <h1 className="home-heading">What are you building?</h1>
+                  <InfoTip text="Describe your deployment and Norvar will map it to the regulations that apply, score your risk, and surface compliance gaps." />
+                </div>
                 <p className="home-sub">
                   Describe your deployment and Norvar will map it to the regulations
                   that apply, score your risk, and surface compliance gaps.
