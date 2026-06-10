@@ -165,15 +165,36 @@ grant select, insert on public.remediation_activity to authenticated;
 
 
 -- ─── 7. STORAGE BUCKET ───────────────────────────────────────────────────────
--- Run this separately in Supabase Storage UI or via API:
--- Create bucket named 'documents' with the following policy:
 --
--- INSERT: auth.uid() = user_id (from path prefix)
--- SELECT: auth.uid() = user_id (from path prefix)
--- DELETE: auth.uid() = user_id (from path prefix)
+-- Norvar uses Clerk for auth and the Supabase SERVICE ROLE in API routes.
+-- Access control is enforced in /api/documents (Clerk userId), not via auth.uid().
+-- You only need a private bucket named "documents" — no auth.uid() RLS required.
 --
--- File path convention: {user_id}/{document_id}/{filename}
--- This scopes all files to the owning user.
+-- Path convention (set by the app): {clerk_user_id}/{document_id}/{filename}
+--
+-- ── Option A: Supabase Dashboard (recommended) ──
+-- 1. Open your project → Storage (left sidebar)
+-- 2. Click "New bucket"
+-- 3. Name: documents
+-- 4. Public bucket: OFF (keep private)
+-- 5. Click "Create bucket"
+-- Done. No storage policies needed for the current app architecture.
+--
+-- ── Option B: SQL Editor ──
+-- Run once in Supabase → SQL Editor:
 
--- Storage RLS policies (run after creating bucket)
--- insert into storage.buckets (id, name, public) values ('documents', 'documents', false);
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'documents',
+  'documents',
+  false,
+  52428800,  -- 50 MB max per file (adjust if needed)
+  null       -- allow all MIME types; or e.g. array['application/pdf','text/plain']
+)
+on conflict (id) do nothing;
+
+-- ── Verify ──
+-- After creating the bucket, test from the app:
+-- 1. Sign in → /documents → Upload a .txt or .pdf
+-- 2. In Storage → documents, you should see: {your_clerk_user_id}/{uuid}/{filename}
+-- 3. If upload fails with "Bucket not found", the bucket name must be exactly "documents"
