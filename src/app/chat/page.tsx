@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
+import Logo from "@/components/Logo";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -257,7 +258,7 @@ function Chat() {
 
           {isHome && (
             <div className="home-body">
-              <div className="home-logo">N</div>
+              <Logo size={40} />
               <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
                 <h1 className="home-heading">How can I help?</h1>
                 <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
@@ -420,7 +421,7 @@ function Chat() {
           alignItems: "center", justifyContent: "center",
           padding: 32, textAlign: "center", background: "var(--bg)",
         }}>
-          <div className="home-logo">N</div>
+          <Logo size={40} />
           <h1 className="home-heading">Norvar GRC Chat</h1>
           <p className="home-sub" style={{ marginBottom: 28 }}>
             Sign in to ask questions about governance, risk and compliance.

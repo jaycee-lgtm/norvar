@@ -6,6 +6,7 @@ import { Show } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
+import Logo from "@/components/Logo";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -827,7 +828,7 @@ function Home() {
 
             {isHome && (
               <div className="home-body">
-                <div className="home-logo">N</div>
+                <Logo size={40} />
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
                   <h1 className="home-heading">What are you building?</h1>
                   <InfoTip text="Describe your deployment and Norvar will map it to the regulations that apply, score your risk, and surface compliance gaps." />
