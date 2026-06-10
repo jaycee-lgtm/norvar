@@ -4,6 +4,7 @@ import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
+import ModeSelector from "@/components/ModeSelector";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -792,6 +793,9 @@ function Home() {
                 Describe your deployment and Norvar will map it to the regulations
                 that apply, score your risk, and surface compliance gaps.
               </p>
+              <div style={{ marginBottom: 14 }}>
+                <ModeSelector current="assess" />
+              </div>
               {InputBar}
               {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
             </div>
