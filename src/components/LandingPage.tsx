@@ -5,40 +5,38 @@ import { SignInButton } from "@clerk/nextjs";
 
 const H = "#e2e2e0";
 
-const WRAP: React.CSSProperties = {
+const CONTENT: React.CSSProperties = {
   maxWidth: 1100,
   margin:   "0 auto",
   width:    "100%",
-  padding:  "0 52px",
+  padding:  "80px 52px",
 };
 
 export default function LandingPage() {
   return (
     <div style={{ background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Sora', system-ui, sans-serif" }}>
 
-      <header style={{ borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
-        <div style={{ ...WRAP, display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 18, paddingBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <div style={{ width: 26, height: 26, background: "#8b1a1a", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#f5f5f4", fontFamily: "'Sora', sans-serif" }}>N</div>
-            <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>Norvar</span>
-          </div>
-          <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <Link href="/frameworks" style={{ fontSize: 12, color: "#444442", padding: "5px 12px", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em", textDecoration: "none" }}>Frameworks</Link>
-            <SignInButton>
-              <button type="button" style={{ fontSize: 12, color: "#444442", padding: "5px 12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em" }}>Sign in</button>
-            </SignInButton>
-            <SignInButton>
-              <button type="button" style={{ fontSize: 12, background: "#8b1a1a", color: "#f5f5f4", padding: "7px 16px", borderRadius: 6, fontWeight: 500, fontFamily: "'Sora', sans-serif", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Get started
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </SignInButton>
-          </nav>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ width: 26, height: 26, background: "#8b1a1a", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: "#f5f5f4", fontFamily: "'Sora', sans-serif" }}>N</div>
+          <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>Norvar</span>
         </div>
+        <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Link href="/frameworks" style={{ fontSize: 12, color: "#444442", padding: "5px 12px", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em", textDecoration: "none" }}>Frameworks</Link>
+          <SignInButton>
+            <button type="button" style={{ fontSize: 12, color: "#444442", padding: "5px 12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em" }}>Sign in</button>
+          </SignInButton>
+          <SignInButton>
+            <button type="button" style={{ fontSize: 12, background: "#8b1a1a", color: "#f5f5f4", padding: "7px 16px", borderRadius: 6, fontWeight: 500, fontFamily: "'Sora', sans-serif", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
+              Get started
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </SignInButton>
+        </nav>
       </header>
 
       <section style={{ flex: 1, display: "flex", alignItems: "center" }}>
-        <div style={{ ...WRAP, paddingTop: 80, paddingBottom: 80 }}>
+        <div style={CONTENT}>
           <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(255,255,255,.12)", borderRadius: 20, padding: "4px 14px", marginBottom: 28, fontSize: 9, color: "#444442", letterSpacing: ".1em", textTransform: "uppercase", fontFamily: "'Sora', sans-serif" }}>
             Early access, norvar.io
           </div>
@@ -64,17 +62,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer style={{ borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
-        <div style={{ ...WRAP, display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 18, paddingBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 20, height: 20, background: "#8b1a1a", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#f5f5f4", fontFamily: "'Sora', sans-serif" }}>N</div>
-            <span style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif" }}>Norvar - norvar.io</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-            <Link href="/privacy" style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Privacy</Link>
-            <Link href="/terms"   style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Terms</Link>
-            <Link href="/contact" style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Contact</Link>
-          </div>
+      <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 20, height: 20, background: "#8b1a1a", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#f5f5f4", fontFamily: "'Sora', sans-serif" }}>N</div>
+          <span style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif" }}>Norvar - norvar.io</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <Link href="/privacy" style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Privacy</Link>
+          <Link href="/terms"   style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Terms</Link>
+          <Link href="/contact" style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Contact</Link>
         </div>
       </footer>
 
