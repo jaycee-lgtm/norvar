@@ -293,11 +293,8 @@ function Chat() {
               <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                 <ModeSelector current="chat" />
               </div>
-              <div ref={scrollRef} style={{
-                flex: 1, overflowY: "auto",
-                padding: "24px 32px",
-                display: "flex", flexDirection: "column", gap: 14,
-              }}>
+              <div ref={scrollRef} style={{ flex: 1, overflowY: "auto" }}>
+                <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
                 {messages.map((msg, i) => {
                   if (msg.role === "user") {
                     return (
@@ -336,10 +333,12 @@ function Chat() {
                 })}
 
                 {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
+                </div>
               </div>
 
               <div className="chat-input-row">
                 <div className="chat-input-inner">
+                  <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
                       GRC chat
@@ -371,6 +370,7 @@ function Chat() {
                         ? <Loader2 size={14} className="spin" />
                         : <ArrowUp size={14} strokeWidth={2.5} />}
                     </button>
+                  </div>
                   </div>
                 </div>
               </div>

@@ -891,7 +891,7 @@ function Home() {
                 </div>
 
                 <div className="chat-input-row">
-                  <div className="chat-input-inner">
+                  <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
                     <div className="chat-input-bar">
                       <input
                         className="chat-input-field"
