@@ -167,7 +167,10 @@ function Chat() {
             return next;
           });
           setHistory(prev => [...prev, { role: "assistant", content: finalText }]);
-          if (event.conversation_id) setConversationId(event.conversation_id);
+          if (event.conversation_id) {
+            setConversationId(event.conversation_id);
+            window.history.replaceState({}, "", `/chat?id=${event.conversation_id}`);
+          }
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
@@ -292,6 +295,9 @@ function Chat() {
 
           {!isHome && !loadingSaved && (
             <>
+              <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+                <ModeSelector current="chat" />
+              </div>
               <div ref={scrollRef} style={{
                 flex: 1, overflowY: "auto",
                 padding: "24px 32px",

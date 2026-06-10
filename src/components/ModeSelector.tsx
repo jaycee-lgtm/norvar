@@ -32,7 +32,7 @@ export const MODES: {
   },
 ];
 
-export default function ModeSelector({ current }: { current: Mode }) {
+export default function ModeSelector({ current, compact = false }: { current: Mode; compact?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -48,7 +48,7 @@ export default function ModeSelector({ current }: { current: Mode }) {
   }, []);
 
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <div ref={ref} style={{ position: "relative", display: compact ? "block" : "inline-block", width: compact ? "100%" : undefined }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -56,7 +56,7 @@ export default function ModeSelector({ current }: { current: Mode }) {
           display:        "inline-flex",
           alignItems:     "center",
           gap:            7,
-          padding:        "6px 12px",
+          padding:        compact ? "5px 10px" : "6px 12px",
           borderRadius:   8,
           border:         "0.5px solid var(--bdr2)",
           background:     open ? "var(--lift)" : "var(--card)",
@@ -64,6 +64,7 @@ export default function ModeSelector({ current }: { current: Mode }) {
           fontFamily:     "'Sora', sans-serif",
           letterSpacing:  "-0.01em",
           transition:     "background 0.15s, border-color 0.15s",
+          width:          compact ? "100%" : "auto",
         }}
         onMouseEnter={e => {
           if (!open) e.currentTarget.style.background = "var(--card2)";

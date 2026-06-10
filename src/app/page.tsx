@@ -632,15 +632,20 @@ function Home() {
     setLoading(true);
     setMessages(prev => [...prev, { role: "chat", text: "" }]);
 
-    const history = messages
-      .filter(m => m.role === "user" || m.role === "assistant")
-      .map(m => {
-        if (m.role === "user") return { role: "user" as const, content: m.content };
-        return {
-          role: "assistant" as const,
-          content: `Assessment: ${m.assessment.title}. Risk: ${m.assessment.risk_score?.tier}. Summary: ${m.assessment.summary}. Gaps: ${(m.assessment.gaps || []).map(g => `${g.severity}: ${g.title}`).join("; ")}.`,
-        };
-      });
+    const history: { role: "user" | "assistant"; content: string }[] = [];
+    for (const m of messages) {
+      if (m.role === "user") {
+        history.push({ role: "user", content: m.content });
+      } else if (m.role === "assistant") {
+        const a = m.assessment;
+        history.push({
+          role: "assistant",
+          content: `[Compliance Assessment] ${a.title}. Risk: ${a.risk_score?.tier} (${a.risk_score?.composite}/100). ${a.summary} Key gaps: ${(a.gaps || []).slice(0, 3).map(g => `${g.severity}: ${g.title}`).join("; ")}.`,
+        });
+      } else if (m.role === "chat" && m.text) {
+        history.push({ role: "assistant", content: m.text });
+      }
+    }
     history.push({ role: "user", content: text });
 
     let chatText = "";
@@ -803,6 +808,9 @@ function Home() {
 
           {!isHome && !loadingSaved && (
             <>
+              <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+                <ModeSelector current="assess" />
+              </div>
               <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
                 {messages.map((msg, i) => {
                   if (msg.role === "user") {
