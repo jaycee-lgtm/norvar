@@ -16,7 +16,6 @@ export default function LandingPage() {
           <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>Norvar</span>
         </div>
         <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <Link href="/frameworks" style={{ fontSize: 12, color: "#444442", padding: "5px 12px", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em", textDecoration: "none" }}>Frameworks</Link>
           <SignInButton>
             <button type="button" style={{ fontSize: 12, color: "#444442", padding: "5px 12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em" }}>Sign in</button>
           </SignInButton>
@@ -29,18 +28,26 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <section style={{ flex: 1, display: "flex", alignItems: "center" }}>
-        <div style={{ padding: "80px 52px", width: "100%" }}>
+      <section style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          padding: "40px 52px",
+          width: "100%",
+          maxWidth: 640,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+        }}>
           <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(255,255,255,.12)", borderRadius: 20, padding: "4px 14px", marginBottom: 28, fontSize: 9, color: "#444442", letterSpacing: ".1em", textTransform: "uppercase", fontFamily: "'Sora', sans-serif" }}>
             Early access, norvar.io
           </div>
-          <h1 style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 500, color: H, letterSpacing: "-.045em", lineHeight: 1.05, marginBottom: 22, maxWidth: 640, fontFamily: "'Sora', sans-serif" }}>
+          <h1 style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 500, color: H, letterSpacing: "-.045em", lineHeight: 1.05, marginBottom: 22, fontFamily: "'Sora', sans-serif" }}>
             Know your regulatory<br />exposure before<br />you build
           </h1>
-          <p style={{ fontSize: 15, color: "#888884", lineHeight: 1.7, maxWidth: 460, letterSpacing: "-.01em", marginBottom: 36, fontFamily: "'Sora', sans-serif" }}>
+          <p style={{ fontSize: 15, color: "#888884", lineHeight: 1.7, maxWidth: 460, letterSpacing: "-.01em", marginBottom: 36, fontFamily: "'Sora', sans-serif", textAlign: "justify" }}>
             Norvar maps what you are building to the regulations that apply, scores your risk, and surfaces compliance gaps before launch.
           </p>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", width: "100%" }}>
             <SignInButton>
               <button type="button" style={{ fontSize: 13, background: "#8b1a1a", color: "#f5f5f4", padding: "11px 22px", borderRadius: 6, fontWeight: 500, fontFamily: "'Sora', sans-serif", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
                 Run first assessment
