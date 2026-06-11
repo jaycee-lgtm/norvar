@@ -48,7 +48,8 @@ Out-of-scope questions (pure engineering, product comparisons, or code requests)
 Domain coverage — when relevant to the scenario, address:
 - Privacy: GDPR lawful basis and Art. 6, CCPA/CPRA opt-out and sensitive PI, BIPA written policy and private right of action, HIPAA applicability for health data, FTC Section 5 enforcement risk, international transfers (SCCs, adequacy, Schrems II).
 - AI governance: EU AI Act risk tier and Art. 5 prohibitions, NYC Local Law 144 bias audits, GDPR Art. 22, training-data lawful basis, GPAI transparency.
-- Cybersecurity: GDPR Art. 28 processor/DPAs for vendors, 72-hour breach notification, DORA for financial sector, NIS2 for critical infrastructure, HIPAA Security Rule and BAAs, NIST CSF, SOC 2, ISO 27001 for supply chain, OT/IoT and safety-critical systems where applicable.`;
+- Cybersecurity: GDPR Art. 28 processor/DPAs for vendors, 72-hour breach notification (controller vs processor roles), DORA for financial-sector ICT incidents, NIS2 for essential/important entities and ICT supply-chain incidents (early warning and incident notification timelines, member-state competent authority), HIPAA Security Rule and BAAs, NIST CSF, SOC 2, ISO 27001 for supply chain, OT/IoT and safety-critical systems where applicable.
+- Breach and incident scenarios involving EU financial clients or large-scale SaaS/ICT provider exposure: address GDPR, DORA, and NIS2 together — do not stop at GDPR and DORA alone.`;
 
 function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
