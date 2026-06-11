@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { syncGapChatToAssessment, gapKeyFromTitle } from "@/lib/gap-chat";
 import {
   buildRegulatoryContextBlock,
   filterRegulatoryChunks,
@@ -145,10 +146,13 @@ export async function POST(req: NextRequest) {
         { role: "assistant", content: fullText },
       ];
 
+      let linkedAssessmentId = assessment_id as string | undefined;
+      let linkedGapKey       = gap_key as string | undefined;
+
       if (remediation_id) {
         const { data: item } = await supabase
           .from("remediation_items")
-          .select("created_by, assigned_to")
+          .select("created_by, assigned_to, assessment_id, gap_key, gap_title, gap_severity")
           .eq("id", remediation_id)
           .single();
 
@@ -165,9 +169,16 @@ export async function POST(req: NextRequest) {
           return;
         }
 
+        linkedAssessmentId = item.assessment_id;
+        linkedGapKey = item.gap_key
+          ?? gapKeyFromTitle(item.gap_title, item.gap_severity);
+
         const { error } = await supabase
           .from("remediation_items")
-          .update({ messages: updatedMessages })
+          .update({
+            messages: updatedMessages,
+            ...(item.gap_key ? {} : { gap_key: linkedGapKey }),
+          })
           .eq("id", remediation_id);
 
         if (error) {
@@ -182,35 +193,13 @@ export async function POST(req: NextRequest) {
           action:  "note_added",
           detail:  `Gap chat: ${new_user_message.trim().slice(0, 120)}`,
         });
-      } else if (assessment_id && gap_key) {
-        const { data: row } = await supabase
-          .from("assessments")
-          .select("gap_chats, user_id")
-          .eq("id", assessment_id)
-          .eq("user_id", userId)
-          .single();
+      } else if (linkedAssessmentId && linkedGapKey) {
+        await syncGapChatToAssessment(linkedAssessmentId, linkedGapKey, updatedMessages, userId);
+      }
 
-        if (!row) {
-          await send({ type: "error", text: "Assessment not found" });
-          await writer.close();
-          return;
-        }
-
-        const gapChats = (row.gap_chats && typeof row.gap_chats === "object")
-          ? row.gap_chats as Record<string, ChatMessage[]>
-          : {};
-
-        const { error } = await supabase
-          .from("assessments")
-          .update({ gap_chats: { ...gapChats, [gap_key]: updatedMessages } })
-          .eq("id", assessment_id)
-          .eq("user_id", userId);
-
-        if (error) {
-          await send({ type: "error", text: `Could not save chat: ${error.message}` });
-          await writer.close();
-          return;
-        }
+      // Always mirror remediation chat on the parent assessment when linked
+      if (remediation_id && linkedAssessmentId && linkedGapKey) {
+        await syncGapChatToAssessment(linkedAssessmentId, linkedGapKey, updatedMessages, userId);
       }
 
       await send({ type: "done", text: fullText, messages: updatedMessages });

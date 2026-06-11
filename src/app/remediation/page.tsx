@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import AssigneeManager from "@/components/AssigneeManager";
-import { sortBySeverity } from "@/lib/remediation";
+import StatusBadge from "@/components/StatusBadge";
+import { sortBySeverity, STATUS_LABELS, STATUS_STYLES, type RemediationStatus } from "@/lib/remediation";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
-  CheckCircle, ArrowUpRight, Clock, X,
+  CheckCircle, ArrowUpRight, Clock, X, ExternalLink,
 } from "lucide-react";
+
+interface ProjectOption {
+  id:     string;
+  title:  string;
+  number: string | null;
+}
 
 interface Activity {
   id:         string;
@@ -23,6 +31,8 @@ interface RemediationItem {
   id:                   string;
   assessment_id:        string;
   assessment_number:    string | null;
+  project_title:        string | null;
+  gap_key:              string | null;
   gap_title:            string;
   gap_severity:         "critical" | "high" | "medium" | "low";
   gap_domain:           string;
@@ -59,26 +69,13 @@ const SEV_STYLES: Record<string, { bg: string; color: string; bdr: string }> = {
   low:      { bg: "var(--card2)", color: "var(--fg3)", bdr: "var(--bdr2)" },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  open:        "Open",
-  in_progress: "In progress",
-  escalated:   "Escalated",
-  resolved:    "Resolved",
-  wont_fix:    "Won't fix",
-};
-
-const DOMAIN_LABELS: Record<string, string> = {
-  privacy:       "Privacy",
-  ai_governance: "AI Governance",
-  cybersecurity: "Cybersecurity",
-};
-
 const STATUS_FILTERS = [
   { value: "",            label: "All" },
   { value: "open",        label: "Open" },
   { value: "in_progress", label: "In progress" },
   { value: "escalated",   label: "Escalated" },
   { value: "resolved",    label: "Resolved" },
+  { value: "wont_fix",    label: "Won't fix" },
 ];
 
 const SEV_FILTERS = [
@@ -88,6 +85,12 @@ const SEV_FILTERS = [
   { value: "medium",   label: "Medium" },
   { value: "low",      label: "Low" },
 ];
+
+const DOMAIN_LABELS: Record<string, string> = {
+  privacy:       "Privacy",
+  ai_governance: "AI Governance",
+  cybersecurity: "Cybersecurity",
+};
 
 function SevBadge({ sev }: { sev: string }) {
   const s = SEV_STYLES[sev] ?? SEV_STYLES.low;
@@ -200,16 +203,21 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
 }) {
   const [expanded, setExpanded]     = useState(false);
   const [escalating, setEscalating] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
   const overdue = is_overdue(item.due_date) && item.status !== "resolved";
 
   const updateStatus = async (status: string) => {
+    setStatusBusy(true);
     await fetch("/api/remediation", {
       method:  "PATCH",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ id: item.id, status }),
     });
+    setStatusBusy(false);
     onUpdate();
   };
+
+  const statusStyle = STATUS_STYLES[item.status] ?? STATUS_STYLES.open;
 
   return (
     <>
@@ -228,6 +236,11 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
               {item.gap_title}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {item.project_title && (
+                <span style={{ fontSize: 10, color: "var(--fg2)", fontWeight: 500 }}>
+                  {item.project_title}
+                </span>
+              )}
               {item.assessment_number && (
                 <span style={{ fontSize: 10, color: "var(--fg3)", fontFamily: "'JetBrains Mono', monospace" }}>
                   {item.assessment_number}
@@ -245,17 +258,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
-              background: item.status === "resolved" ? "var(--rl-bg)" :
-                          item.status === "escalated" ? "var(--rm-bg)" : "var(--card2)",
-              color: item.status === "resolved" ? "var(--rl)" :
-                     item.status === "escalated" ? "var(--rm)" : "var(--fg3)",
-              border: `0.5px solid ${item.status === "resolved" ? "var(--rl-bdr)" :
-                       item.status === "escalated" ? "var(--rm-bdr)" : "var(--bdr2)"}`,
-            }}>
-              {STATUS_LABELS[item.status]}
-            </span>
+            <StatusBadge status={item.status} />
             {item.due_date && (
               <span style={{ fontSize: 10, color: overdue ? "var(--rh)" : "var(--fg3)", display: "flex", alignItems: "center", gap: 3 }}>
                 {overdue && <AlertTriangle size={9} />}
@@ -271,6 +274,46 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
 
         {expanded && (
           <div style={{ padding: "0 16px 16px", borderTop: "0.5px solid var(--bdr)" }}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 10, flexWrap: "wrap", marginTop: 12, marginBottom: 10,
+            }}>
+              <Link
+                href={`/?id=${item.assessment_id}`}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  fontSize: 11, color: "var(--fg2)", textDecoration: "none",
+                }}
+              >
+                <ExternalLink size={11} />
+                View assessment
+                {item.project_title && ` · ${item.project_title}`}
+              </Link>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Status
+                </span>
+                <select
+                  value={item.status}
+                  disabled={statusBusy}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => updateStatus(e.target.value)}
+                  className="remediation-status-select"
+                  style={{
+                    background: statusStyle.bg,
+                    color:      statusStyle.color,
+                    borderColor: statusStyle.bdr,
+                  }}
+                >
+                  {(Object.keys(STATUS_LABELS) as RemediationStatus[]).map(s => (
+                    <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {item.gap_detail && (
               <p style={{ fontSize: 12, color: "var(--fg2)", lineHeight: 1.55, marginTop: 12, marginBottom: 10 }}>
                 {item.gap_detail}
@@ -298,6 +341,8 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                 remediation_steps:  item.remediation_steps,
               }}
               remediationId={item.id}
+              assessmentId={item.assessment_id}
+              gapKey={item.gap_key ?? undefined}
               initialMessages={item.messages ?? []}
               onMessagesChange={msgs => onMessagesChange(item.id, msgs)}
             />
@@ -305,6 +350,8 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
             <div style={{ marginBottom: 12, marginTop: 12 }}>
               <AssigneeManager
                 itemId={item.id}
+                assessmentId={item.assessment_id}
+                projectTitle={item.project_title}
                 assignedTo={item.assigned_to}
                 profiles={profiles}
                 onUpdate={onUpdate}
@@ -389,9 +436,12 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
 export default function RemediationPage() {
   const [items, setItems]               = useState<RemediationItem[]>([]);
   const [profiles, setProfiles]         = useState<Record<string, UserProfile>>({});
+  const [projects, setProjects]         = useState<ProjectOption[]>([]);
   const [loading, setLoading]           = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSev, setFilterSev]       = useState("");
+  const [filterProject, setFilterProject] = useState("");
+  const [filterProjectNum, setFilterProjectNum] = useState("");
   const [mineOnly, setMineOnly]         = useState(false);
 
   const load = async () => {
@@ -399,14 +449,23 @@ export default function RemediationPage() {
     const params = new URLSearchParams();
     if (filterStatus) params.set("status", filterStatus);
     if (mineOnly)     params.set("mine", "true");
+    if (filterProject) params.set("assessment_id", filterProject);
+    if (filterProjectNum) params.set("project_number", filterProjectNum);
     const res = await fetch(`/api/remediation?${params}`);
-    const { items: data, users } = await res.json();
+    const { items: data, users, projects: proj } = await res.json();
     setItems(data ?? []);
     setProfiles(users ?? {});
+    setProjects(proj ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [filterStatus, mineOnly]);
+  useEffect(() => { load(); }, [filterStatus, mineOnly, filterProject, filterProjectNum]);
+
+  const projectNumbers = useMemo(() => {
+    const nums = new Set<string>();
+    projects.forEach(p => { if (p.number) nums.add(p.number); });
+    return [...nums].sort();
+  }, [projects]);
 
   const filtered = sortBySeverity(
     items.filter(i => !filterSev || i.gap_severity === filterSev),
@@ -421,6 +480,7 @@ export default function RemediationPage() {
     in_progress: items.filter(i => i.status === "in_progress").length,
     escalated:   items.filter(i => i.status === "escalated").length,
     resolved:    items.filter(i => i.status === "resolved").length,
+    wont_fix:    items.filter(i => i.status === "wont_fix").length,
     critical:    items.filter(i => i.gap_severity === "critical").length,
   };
 
@@ -443,6 +503,40 @@ export default function RemediationPage() {
           )}
         </button>
       ))}
+
+      <div className="sidebar-section" style={{ marginTop: 8 }}>Filter by project</div>
+      <select
+        value={filterProject}
+        onChange={e => setFilterProject(e.target.value)}
+        style={{
+          width: "calc(100% - 12px)", margin: "0 6px 6px",
+          padding: "6px 8px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
+          background: "var(--card)", color: "var(--fg)", fontSize: 11,
+          fontFamily: "'Sora', sans-serif",
+        }}
+      >
+        <option value="">All projects</option>
+        {projects.map(p => (
+          <option key={p.id} value={p.id}>{p.title}{p.number ? ` (${p.number})` : ""}</option>
+        ))}
+      </select>
+
+      <div className="sidebar-section">Project number</div>
+      <select
+        value={filterProjectNum}
+        onChange={e => setFilterProjectNum(e.target.value)}
+        style={{
+          width: "calc(100% - 12px)", margin: "0 6px 6px",
+          padding: "6px 8px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
+          background: "var(--card)", color: "var(--fg)", fontSize: 11,
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
+        <option value="">All numbers</option>
+        {projectNumbers.map(n => (
+          <option key={n} value={n}>{n}</option>
+        ))}
+      </select>
     </>
   );
 

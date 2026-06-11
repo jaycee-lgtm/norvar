@@ -363,7 +363,11 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
         body:    JSON.stringify({
           assessment_id:     a.id,
           assessment_number: a.assessment_number ?? null,
-          gaps:              gapsToQueue,
+          project_title:     a.title,
+          gaps:              indices.map(i => ({
+            ...ordered[i],
+            gap_key: String(i),
+          })),
         }),
       });
       setQueued(prev => { const next = new Set(prev); indices.forEach(i => next.add(i)); return next; });

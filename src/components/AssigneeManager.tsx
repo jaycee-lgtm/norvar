@@ -7,14 +7,24 @@ import type { UserProfile } from "@/lib/clerk-users";
 type OrgInfo = { id: string; name: string };
 
 type AssigneeManagerProps = {
-  itemId:       string;
-  assignedTo:   string[];
-  profiles:     Record<string, UserProfile>;
-  onUpdate:     () => void;
+  itemId:        string;
+  assessmentId:  string;
+  projectTitle?: string | null;
+  assignedTo:    string[];
+  profiles:      Record<string, UserProfile>;
+  onUpdate:      () => void;
 };
 
-export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate }: AssigneeManagerProps) {
+export default function AssigneeManager({
+  itemId,
+  assessmentId,
+  projectTitle,
+  assignedTo,
+  profiles,
+  onUpdate,
+}: AssigneeManagerProps) {
   const [mode, setMode]           = useState<"idle" | "add" | "reassign">("idle");
+  const [scope, setScope]         = useState<"gap" | "project">("gap");
   const [query, setQuery]         = useState("");
   const [email, setEmail]         = useState("");
   const [members, setMembers]     = useState<UserProfile[]>([]);
@@ -40,7 +50,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
       } finally {
         setLoadingMembers(false);
       }
-    }, mode === "add" || mode === "reassign" ? 250 : 0);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [mode, query]);
@@ -49,10 +59,14 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
     setBusy(true);
     setError("");
     try {
+      const payload = scope === "project"
+        ? { ...body, assessment_id: assessmentId, scope: "project" }
+        : { id: itemId, ...body };
+
       const res = await fetch("/api/remediation", {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ id: itemId, ...body }),
+        body:    JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Update failed");
@@ -76,7 +90,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
   };
 
   const addMember = (member: UserProfile) => {
-    if (assignedTo.includes(member.id)) {
+    if (scope === "gap" && assignedTo.includes(member.id)) {
       setError(`${member.name} is already assigned`);
       return;
     }
@@ -91,15 +105,20 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
   const label = (uid: string) => profiles[uid]?.name ?? "Unknown user";
 
   const visibleMembers = members.filter(m =>
-    mode === "reassign" || !assignedTo.includes(m.id),
+    mode === "reassign" || scope === "project" || !assignedTo.includes(m.id),
   );
 
   const closePanel = () => {
     setMode("idle");
+    setScope("gap");
     setQuery("");
     setEmail("");
     setError("");
   };
+
+  const scopeLabel = scope === "project"
+    ? projectTitle ?? "this project"
+    : "this gap";
 
   return (
     <div onClick={e => e.stopPropagation()}>
@@ -117,7 +136,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
           <button
             type="button"
             disabled={busy}
-            onClick={() => { setMode(m => m === "add" ? "idle" : "add"); setError(""); setQuery(""); }}
+            onClick={() => { setMode(m => m === "add" ? "idle" : "add"); setScope("gap"); setError(""); setQuery(""); }}
             style={actionBtnStyle}
           >
             <UserPlus size={10} /> Add
@@ -125,7 +144,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
           <button
             type="button"
             disabled={busy}
-            onClick={() => { setMode(m => m === "reassign" ? "idle" : "reassign"); setError(""); setQuery(""); }}
+            onClick={() => { setMode(m => m === "reassign" ? "idle" : "reassign"); setScope("gap"); setError(""); setQuery(""); }}
             style={actionBtnStyle}
           >
             <ArrowRightLeft size={10} /> Reassign
@@ -161,10 +180,30 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
 
       {mode !== "idle" && (
         <div className="assignee-picker">
+          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            {(["gap", "project"] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                disabled={busy}
+                onClick={() => setScope(s)}
+                style={{
+                  ...actionBtnStyle,
+                  borderColor: scope === s ? "var(--bdr3)" : "var(--bdr2)",
+                  background:  scope === s ? "var(--lift)" : "transparent",
+                  color:       scope === s ? "var(--fg)" : "var(--fg3)",
+                }}
+              >
+                {s === "gap" ? "This gap" : "Entire project"}
+              </button>
+            ))}
+          </div>
+
           {organization ? (
             <>
               <div style={{ fontSize: 10, color: "var(--fg3)", marginBottom: 8 }}>
-                Search members of <span style={{ color: "var(--fg2)" }}>{organization.name}</span>
+                {mode === "reassign" ? "Reassign" : "Add to"} {scopeLabel}
+                {organization.name && <> · {organization.name}</>}
               </div>
               <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
                 <Search size={12} color="var(--fg3)" style={{ flexShrink: 0 }} />
@@ -209,7 +248,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
           ) : (
             <>
               <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 8, lineHeight: 1.5 }}>
-                No organization selected. Use the org switcher in the sidebar, or add someone by email below.
+                No organization selected. Use the org switcher in the sidebar, or add by email below.
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <input
@@ -239,9 +278,11 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
             </>
           )}
 
-          {mode === "reassign" && organization && (
+          {mode === "reassign" && (
             <p style={{ fontSize: 10, color: "var(--fg3)", marginTop: 8, lineHeight: 1.45 }}>
-              Reassign replaces all current assignees with the person you select.
+              {scope === "project"
+                ? "Reassigns every gap in this project to one person."
+                : "Reassign replaces all assignees on this gap with one person."}
             </p>
           )}
 

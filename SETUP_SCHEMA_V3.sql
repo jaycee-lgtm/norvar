@@ -117,6 +117,8 @@ create table if not exists remediation_items (
 
   -- Per-gap remediation chat (Claude thread)
   messages          jsonb not null default '[]'::jsonb,
+  gap_key           text,
+  project_title     text,
 
   -- Audit
   created_at        timestamptz default now(),
@@ -206,4 +208,6 @@ on conflict (id) do nothing;
 -- ─── 8. GAP CHAT (upgrade path) ─────────────────────────────────────────────
 
 alter table remediation_items add column if not exists messages jsonb not null default '[]'::jsonb;
+alter table remediation_items add column if not exists gap_key text;
+alter table remediation_items add column if not exists project_title text;
 alter table assessments add column if not exists gap_chats jsonb not null default '{}'::jsonb;
