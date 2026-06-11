@@ -6,6 +6,7 @@ import { Show, SignInButton } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
+import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -19,17 +20,6 @@ type SSEEvent =
   | { type: "token"; text: string }
   | { type: "done"; text?: string; conversation_id?: string }
   | { type: "error"; text: string };
-
-const STARTERS = [
-  "What does the EU AI Act require for high-risk AI systems?",
-  "How does GDPR Art.35 DPIA work in practice?",
-  "What is the difference between NIS2 and DORA?",
-  "Explain Illinois BIPA and the risk for computer vision products",
-  "What does the Colorado AI Act require from developers?",
-  "How do I prepare for a SOC 2 Type II audit?",
-  "What is the NIST AI Risk Management Framework?",
-  "When does CCPA apply to my company?",
-];
 
 async function readSSEStream(response: Response, onEvent: (e: SSEEvent) => void) {
   const reader  = response.body!.getReader();
@@ -297,37 +287,10 @@ function Chat() {
                 </div>
               </div>
 
-              <div style={{
-                display: "flex", flexWrap: "wrap", gap: 8,
-                justifyContent: "center", maxWidth: 620,
-              }}>
-                {STARTERS.map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleSend(s)}
-                    style={{
-                      fontSize: 12, color: "var(--fg2)",
-                      background: "var(--card)", border: "0.5px solid var(--bdr2)",
-                      borderRadius: 20, padding: "7px 14px",
-                      cursor: "pointer", fontFamily: "'Sora',sans-serif",
-                      letterSpacing: "-0.01em", lineHeight: 1.4,
-                      transition: "border-color 0.15s, color 0.15s",
-                      textAlign: "left",
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = "var(--bdr3)";
-                      e.currentTarget.style.color = "var(--fg)";
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = "var(--bdr2)";
-                      e.currentTarget.style.color = "var(--fg2)";
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+              <SampleQuestionsDropdown
+                onSelect={q => handleSend(q)}
+                disabled={loading}
+              />
 
               {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
             </div>
@@ -384,23 +347,30 @@ function Chat() {
               <div className="chat-input-row">
                 <div className="chat-input-inner">
                   <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
                       GRC chat
                     </span>
-                    <button
-                      type="button"
-                      onClick={startNew}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        fontSize: 11, color: "var(--fg3)", background: "transparent",
-                        border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                        letterSpacing: "-0.01em", padding: 0,
-                      }}
-                    >
-                      <SquarePen size={11} strokeWidth={2} />
-                      New chat
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <SampleQuestionsDropdown
+                        align="left"
+                        onSelect={q => handleSend(q)}
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={startNew}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          fontSize: 11, color: "var(--fg3)", background: "transparent",
+                          border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif",
+                          letterSpacing: "-0.01em", padding: 0,
+                        }}
+                      >
+                        <SquarePen size={11} strokeWidth={2} />
+                        New chat
+                      </button>
+                    </div>
                   </div>
                   <div className="chat-input-bar">
                     <input
