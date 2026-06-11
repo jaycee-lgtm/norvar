@@ -146,15 +146,25 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       </div>
 
       <div className="sidebar-footer">
-        <div className="avatar-row">
+        <div className="avatar-row sidebar-account">
           <div className="avatar">{initials}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="avatar-name">
               {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
             </div>
-            <div className="avatar-sub">norvar.io</div>
           </div>
-          <UserButton />
+          <div className="sidebar-account-button">
+            <UserButton
+              appearance={{
+                elements: {
+                  userButtonAvatarBox:       { display: "none" },
+                  userButtonOuterIdentifier: { display: "none" },
+                  userButtonTrigger:         { width: "100%", height: "100%" },
+                  rootBox:                   { width: "100%", height: "100%" },
+                },
+              }}
+            />
+          </div>
         </div>
       </div>
     </aside>

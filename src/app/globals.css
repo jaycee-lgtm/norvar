@@ -160,6 +160,17 @@ body {
 .recent-score { font-size: 9px; font-weight: 500; padding: 1px 6px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
 
 .avatar-row { display: flex; align-items: center; gap: 8px; }
+.sidebar-account { position: relative; cursor: pointer; }
+.sidebar-account-button {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.sidebar-account-button .cl-rootBox,
+.sidebar-account-button .cl-userButtonTrigger {
+  width: 100%;
+  height: 100%;
+}
 .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #f5f5f4; flex-shrink: 0; }
 .avatar-name { font-size: 11px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; }
 .avatar-sub  { font-size: 9px; color: var(--fg3); }
