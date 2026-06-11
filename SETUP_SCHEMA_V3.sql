@@ -109,7 +109,21 @@ create table if not exists remediation_items (
   status            text default 'open' check (
                       status in ('open', 'in_progress', 'escalated', 'resolved', 'wont_fix')
                     ),
-  escalated_to      text check (escalated_to in ('compliance', 'legal')),
+  escalated_to      text,
+  escalation_email  text,
+  escalation_recipient_name text,
+  escalation_recipient_user_id text,
+  escalation_role   text,
+  escalation_question text,
+  escalated_at      timestamptz,
+  escalation_status text check (
+                      escalation_status is null or escalation_status in (
+                        'sent', 'viewed', 'in_review', 'responded', 'closed'
+                      )
+                    ),
+  escalation_token  text unique,
+  last_notified_at  timestamptz,
+  assignee_meta     jsonb not null default '{}'::jsonb,
   escalation_note   text,
   due_date          timestamptz,
   resolved_at       timestamptz,

@@ -5,7 +5,10 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import AssigneeManager from "@/components/AssigneeManager";
+import EscalateModal from "@/components/EscalateModal";
+import EscalationTracker from "@/components/EscalationTracker";
 import StatusBadge from "@/components/StatusBadge";
+import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
 import { sortBySeverity, STATUS_LABELS, STATUS_STYLES, type RemediationStatus } from "@/lib/remediation";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
@@ -42,8 +45,16 @@ interface RemediationItem {
   assigned_to:          string[];
   created_by:           string;
   status:               "open" | "in_progress" | "escalated" | "resolved" | "wont_fix";
-  escalated_to:         "compliance" | "legal" | null;
+  escalated_to:         string | null;
+  escalation_email:     string | null;
+  escalation_recipient_name?: string | null;
+  escalation_role:      string | null;
+  escalation_question:  string | null;
   escalation_note:      string | null;
+  escalated_at:         string | null;
+  escalation_status:    EscalationStatus | null;
+  last_notified_at:     string | null;
+  assignee_meta?:       AssigneeMeta;
   due_date:             string | null;
   resolved_at:          string | null;
   resolution_note:      string | null;
@@ -92,6 +103,11 @@ const DOMAIN_LABELS: Record<string, string> = {
   cybersecurity: "Cybersecurity",
 };
 
+const DOMAIN_FILTERS = [
+  { value: "", label: "All domains" },
+  ...Object.entries(DOMAIN_LABELS).map(([value, label]) => ({ value, label })),
+];
+
 function SevBadge({ sev }: { sev: string }) {
   const s = SEV_STYLES[sev] ?? SEV_STYLES.low;
   return (
@@ -102,96 +118,6 @@ function SevBadge({ sev }: { sev: string }) {
     }}>
       {sev}
     </span>
-  );
-}
-
-function EscalateModal({ item, onClose, onDone }: {
-  item:    RemediationItem;
-  onClose: () => void;
-  onDone:  () => void;
-}) {
-  const [target, setTarget] = useState<"compliance" | "legal">("compliance");
-  const [note, setNote]     = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const submit = async () => {
-    setSaving(true);
-    await fetch("/api/remediation", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: item.id, escalated_to: target, escalation_note: note }),
-    });
-    setSaving(false);
-    onDone();
-    onClose();
-  };
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
-    }}>
-      <div style={{
-        background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 12, padding: "24px 28px", width: 400,
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>Escalate gap</span>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}>
-            <X size={15} />
-          </button>
-        </div>
-        <p style={{ fontSize: 12, color: "var(--fg3)", marginBottom: 16 }}>{item.gap_title}</p>
-
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
-            Escalate to
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(["compliance", "legal"] as const).map(t => (
-              <button key={t} type="button" onClick={() => setTarget(t)} style={{
-                flex: 1, padding: "7px 0", borderRadius: 6, fontSize: 12, fontWeight: 500,
-                border: `0.5px solid ${target === t ? "var(--bdr3)" : "var(--bdr2)"}`,
-                background: target === t ? "var(--lift)" : "transparent",
-                color: target === t ? "var(--fg)" : "var(--fg3)",
-                cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                textTransform: "capitalize",
-              }}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 4 }}>
-            Note (optional)
-          </label>
-          <textarea
-            value={note} onChange={e => setNote(e.target.value)}
-            placeholder="Context for the reviewer..."
-            style={{
-              width: "100%", padding: "8px 10px", borderRadius: 6,
-              border: "0.5px solid var(--bdr2)", background: "var(--card2)",
-              color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif",
-              resize: "vertical", minHeight: 72,
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" onClick={onClose} style={{
-            padding: "7px 16px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
-            background: "transparent", color: "var(--fg2)", fontSize: 12, cursor: "pointer",
-          }}>Cancel</button>
-          <button type="button" onClick={submit} disabled={saving} style={{
-            padding: "7px 16px", borderRadius: 6, border: "none",
-            background: "var(--fg)", color: "var(--bg)",
-            fontSize: 12, fontWeight: 500, cursor: saving ? "not-allowed" : "pointer",
-          }}>
-            {saving ? "Escalating..." : "Escalate"}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -358,14 +284,21 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
               />
             </div>
 
-            {item.escalated_to && (
-              <div style={{ marginBottom: 12, padding: "8px 10px", background: "var(--rm-bg)", border: "0.5px solid var(--rm-bdr)", borderRadius: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: "var(--rm)", marginBottom: item.escalation_note ? 4 : 0, textTransform: "capitalize" }}>
-                  Escalated to {item.escalated_to}
-                </div>
-                {item.escalation_note && <p style={{ fontSize: 11, color: "var(--fg2)" }}>{item.escalation_note}</p>}
-              </div>
-            )}
+            <EscalationTracker
+              itemId={item.id}
+              assignedTo={item.assigned_to}
+              profiles={profiles}
+              assigneeMeta={item.assignee_meta}
+              escalationEmail={item.escalation_email}
+              escalationRecipientName={item.escalation_recipient_name}
+              escalationRole={item.escalation_role}
+              escalationQuestion={item.escalation_question}
+              escalationNote={item.escalation_note}
+              escalatedAt={item.escalated_at}
+              escalationStatus={item.escalation_status}
+              lastNotifiedAt={item.last_notified_at}
+              onUpdate={onUpdate}
+            />
 
             {item.remediation_activity?.length > 0 && (
               <div style={{ marginBottom: 14 }}>
@@ -394,7 +327,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                     <Clock size={10} /> Start
                   </button>
                 )}
-                {item.status !== "escalated" && (
+                {(!item.escalation_email || item.escalation_status === "closed") && (
                   <button type="button" onClick={() => setEscalating(true)} style={{
                     display: "flex", alignItems: "center", gap: 5,
                     padding: "5px 12px", borderRadius: 5, fontSize: 11,
@@ -427,7 +360,12 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
       </div>
 
       {escalating && (
-        <EscalateModal item={item} onClose={() => setEscalating(false)} onDone={onUpdate} />
+        <EscalateModal
+          itemId={item.id}
+          gapTitle={item.gap_title}
+          onClose={() => setEscalating(false)}
+          onDone={onUpdate}
+        />
       )}
     </>
   );
@@ -440,6 +378,7 @@ export default function RemediationPage() {
   const [loading, setLoading]           = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSev, setFilterSev]       = useState("");
+  const [filterDomain, setFilterDomain] = useState("");
   const [filterProject, setFilterProject] = useState("");
   const [filterProjectNum, setFilterProjectNum] = useState("");
   const [mineOnly, setMineOnly]         = useState(false);
@@ -468,7 +407,10 @@ export default function RemediationPage() {
   }, [projects]);
 
   const filtered = sortBySeverity(
-    items.filter(i => !filterSev || i.gap_severity === filterSev),
+    items.filter(i =>
+      (!filterSev || i.gap_severity === filterSev) &&
+      (!filterDomain || i.gap_domain === filterDomain),
+    ),
   );
 
   const updateItemMessages = (id: string, messages: GapChatMessage[]) => {
@@ -503,42 +445,14 @@ export default function RemediationPage() {
           )}
         </button>
       ))}
-
-      <div className="sidebar-section" style={{ marginTop: 8 }}>Filter by project</div>
-      <select
-        value={filterProject}
-        onChange={e => setFilterProject(e.target.value)}
-        style={{
-          width: "calc(100% - 12px)", margin: "0 6px 6px",
-          padding: "6px 8px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
-          background: "var(--card)", color: "var(--fg)", fontSize: 11,
-          fontFamily: "'Sora', sans-serif",
-        }}
-      >
-        <option value="">All projects</option>
-        {projects.map(p => (
-          <option key={p.id} value={p.id}>{p.title}{p.number ? ` (${p.number})` : ""}</option>
-        ))}
-      </select>
-
-      <div className="sidebar-section">Project number</div>
-      <select
-        value={filterProjectNum}
-        onChange={e => setFilterProjectNum(e.target.value)}
-        style={{
-          width: "calc(100% - 12px)", margin: "0 6px 6px",
-          padding: "6px 8px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
-          background: "var(--card)", color: "var(--fg)", fontSize: 11,
-          fontFamily: "'JetBrains Mono', monospace",
-        }}
-      >
-        <option value="">All numbers</option>
-        {projectNumbers.map(n => (
-          <option key={n} value={n}>{n}</option>
-        ))}
-      </select>
     </>
   );
+
+  const headerSelectStyle: React.CSSProperties = {
+    padding: "5px 10px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
+    background: "var(--card2)", color: "var(--fg)", fontSize: 11,
+    fontFamily: "'Sora', sans-serif", cursor: "pointer",
+  };
 
   return (
     <div className="app-shell">
@@ -553,14 +467,47 @@ export default function RemediationPage() {
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Remediation queue</span>
 
           <select
-            value={filterSev} onChange={e => setFilterSev(e.target.value)}
-            style={{
-              padding: "5px 10px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
-              background: "var(--card2)", color: "var(--fg)", fontSize: 11,
-              fontFamily: "'Sora', sans-serif", cursor: "pointer",
-            }}
+            value={filterSev}
+            onChange={e => setFilterSev(e.target.value)}
+            style={headerSelectStyle}
           >
-            {SEV_FILTERS.map(({ value, label }) => <option key={value || "all"} value={value}>{label}</option>)}
+            {SEV_FILTERS.map(({ value, label }) => (
+              <option key={value || "all"} value={value}>{label}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterDomain}
+            onChange={e => setFilterDomain(e.target.value)}
+            style={headerSelectStyle}
+          >
+            {DOMAIN_FILTERS.map(({ value, label }) => (
+              <option key={value || "all"} value={value}>{label}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterProject}
+            onChange={e => setFilterProject(e.target.value)}
+            style={{ ...headerSelectStyle, maxWidth: 220 }}
+          >
+            <option value="">All projects</option>
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.title}{p.number ? ` (${p.number})` : ""}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filterProjectNum}
+            onChange={e => setFilterProjectNum(e.target.value)}
+            style={{ ...headerSelectStyle, fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            <option value="">All numbers</option>
+            {projectNumbers.map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
           </select>
 
           <button type="button" onClick={() => setMineOnly(!mineOnly)} style={{
