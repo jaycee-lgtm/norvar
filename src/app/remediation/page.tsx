@@ -500,7 +500,8 @@ export default function RemediationPage() {
           ))}
         </div>
 
-        <div className="chat-scroll">
+        <div className="main-scroll">
+          <div className="chat-scroll">
           {loading && (
             <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...
@@ -520,6 +521,7 @@ export default function RemediationPage() {
           {!loading && filtered.map(item => (
             <ItemCard key={item.id} item={item} onUpdate={load} onMessagesChange={updateItemMessages} />
           ))}
+          </div>
         </div>
       </main>
     </div>

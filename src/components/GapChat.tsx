@@ -135,6 +135,7 @@ export default function GapChat({
             </p>
           )}
 
+          <div className="gap-chat-msgs">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -150,6 +151,7 @@ export default function GapChat({
               )}
             </div>
           ))}
+          </div>
 
           {error && <p className="gap-chat-error">{error}</p>}
 

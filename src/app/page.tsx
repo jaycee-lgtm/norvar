@@ -1175,7 +1175,8 @@ function Home() {
                 <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                   <ModeSelector current="assess" />
                 </div>
-                <div ref={scrollRef} className="chat-scroll">
+                <div ref={scrollRef} className="main-scroll">
+                <div className="chat-scroll">
                   {messages.map((msg, i) => {
                     if (msg.role === "user") {
                       return (
@@ -1276,6 +1277,7 @@ function Home() {
                     return null;
                   })}
                   {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
+                </div>
                 </div>
 
                 <div className="chat-input-row">

@@ -418,7 +418,8 @@ export default function DocumentsPage() {
           ))}
         </div>
 
-        <div className="chat-scroll">
+        <div className="main-scroll">
+          <div className="chat-scroll">
           {loading && (
             <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...
@@ -435,6 +436,7 @@ export default function DocumentsPage() {
           {!loading && filtered.map(doc => (
             <DocRow key={doc.id} doc={doc} onAction={handleAction} />
           ))}
+          </div>
         </div>
       </main>
 
