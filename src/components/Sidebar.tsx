@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { UserButton, useUser } from "@clerk/nextjs";
+import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
 import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
@@ -94,6 +94,34 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       </div>
 
       <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
+
+      <div className="sidebar-org-switcher">
+        <OrganizationSwitcher
+          hidePersonal={false}
+          afterCreateOrganizationUrl="/remediation"
+          afterSelectOrganizationUrl="/remediation"
+          appearance={{
+            elements: {
+              rootBox:                   { width: "100%" },
+              organizationSwitcherTrigger: {
+                width:           "100%",
+                justifyContent:  "flex-start",
+                padding:         "6px 8px",
+                borderRadius:    "6px",
+                border:          "0.5px solid var(--bdr2)",
+                background:      "var(--card)",
+                color:           "var(--fg2)",
+                fontSize:        "11px",
+                fontFamily:      "'Sora', sans-serif",
+                boxShadow:       "none",
+              },
+              organizationPreviewTextContainer: { fontSize: "11px" },
+              organizationPreviewMainIdentifier:  { fontSize: "11px", color: "var(--fg)" },
+              organizationPreviewSecondaryIdentifier: { fontSize: "10px", color: "var(--fg3)" },
+            },
+          }}
+        />
+      </div>
 
       <div className="sidebar-scroll">
         <div style={{ padding: "0 0 4px" }}>

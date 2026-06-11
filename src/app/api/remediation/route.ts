@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { findUserByEmail, resolveUserProfiles } from "@/lib/clerk-users";
+import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
 import { sortBySeverity } from "@/lib/remediation";
 
 const supabase = createClient(
@@ -11,6 +12,13 @@ const supabase = createClient(
 
 function canManageItem(item: { created_by: string; assigned_to: string[] | null }, userId: string) {
   return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
+}
+
+async function assertCanAssign(userId: string, orgId: string | null, targetUserId: string) {
+  if (!orgId) return null;
+  const ok = await isOrgMember(orgId, targetUserId);
+  if (!ok) return "That user is not in your organization";
+  return null;
 }
 
 // GET — list remediation items (filter by status, assessment, assigned_to)
@@ -90,16 +98,18 @@ export async function POST(req: NextRequest) {
 
 // PATCH — update status, assignees, escalate, resolve
 export async function PATCH(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const {
     id, status, assigned_to, add_assignee, remove_assignee,
-    add_assignee_email, reassign_email,
+    add_assignee_email, reassign_email, reassign_to,
     escalated_to, escalation_note, resolution_note, due_date,
   } = await req.json();
 
   if (!id) return Response.json({ error: "ID required" }, { status: 400 });
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
 
   const { data: current } = await supabase
     .from("remediation_items")
@@ -109,7 +119,7 @@ export async function PATCH(req: NextRequest) {
   if (!current) return Response.json({ error: "Not found" }, { status: 404 });
 
   const assigneeChange = assigned_to || add_assignee || remove_assignee
-    || add_assignee_email || reassign_email;
+    || add_assignee_email || reassign_email || reassign_to;
   if (assigneeChange && !canManageItem(current, userId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -138,23 +148,36 @@ export async function PATCH(req: NextRequest) {
 
   let newAssignees = [...(current.assigned_to ?? [])];
 
-  if (reassign_email) {
+  if (reassign_to) {
+    const denied = await assertCanAssign(userId, activeOrgId, reassign_to);
+    if (denied) return Response.json({ error: denied }, { status: 403 });
+    const profiles = await resolveUserProfiles([reassign_to]);
+    newAssignees       = [reassign_to];
+    activityAction     = "assigned";
+    activityDetail     = `Reassigned to ${profiles[reassign_to]?.name ?? "assignee"}`;
+    updates.assigned_to = newAssignees;
+  } else if (reassign_email) {
     const profile = await findUserByEmail(reassign_email);
     if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
-    newAssignees     = [profile.id];
-    activityAction   = "assigned";
-    activityDetail   = `Reassigned to ${profile.name}`;
+    const denied = await assertCanAssign(userId, activeOrgId, profile.id);
+    if (denied) return Response.json({ error: denied }, { status: 403 });
+    newAssignees        = [profile.id];
+    activityAction      = "assigned";
+    activityDetail      = `Reassigned to ${profile.name}`;
     updates.assigned_to = newAssignees;
   } else {
     if (assigned_to) newAssignees = assigned_to;
 
     if (add_assignee) {
-      newAssignees = Array.from(new Set([...newAssignees, add_assignee]));
-      if (!activityDetail) {
-        const profiles = await resolveUserProfiles([add_assignee]);
-        activityAction = "assigned";
-        activityDetail = `Added ${profiles[add_assignee]?.name ?? "assignee"}`;
+      if (newAssignees.includes(add_assignee)) {
+        return Response.json({ error: "That person is already assigned" }, { status: 400 });
       }
+      const denied = await assertCanAssign(userId, activeOrgId, add_assignee);
+      if (denied) return Response.json({ error: denied }, { status: 403 });
+      newAssignees = Array.from(new Set([...newAssignees, add_assignee]));
+      const profiles = await resolveUserProfiles([add_assignee]);
+      activityAction = "assigned";
+      activityDetail = `Added ${profiles[add_assignee]?.name ?? "assignee"}`;
     }
 
     if (add_assignee_email) {
@@ -163,6 +186,8 @@ export async function PATCH(req: NextRequest) {
       if (newAssignees.includes(profile.id)) {
         return Response.json({ error: `${profile.name} is already assigned` }, { status: 400 });
       }
+      const denied = await assertCanAssign(userId, activeOrgId, profile.id);
+      if (denied) return Response.json({ error: denied }, { status: 403 });
       newAssignees   = Array.from(new Set([...newAssignees, profile.id]));
       activityAction = "assigned";
       activityDetail = `Added ${profile.name}`;

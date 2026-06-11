@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { User, UserPlus, X, ArrowRightLeft } from "lucide-react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { User, UserPlus, X, ArrowRightLeft, Search, Loader2 } from "lucide-react";
 import type { UserProfile } from "@/lib/clerk-users";
+
+type OrgInfo = { id: string; name: string };
 
 type AssigneeManagerProps = {
   itemId:       string;
@@ -12,10 +14,36 @@ type AssigneeManagerProps = {
 };
 
 export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate }: AssigneeManagerProps) {
-  const [mode, setMode]       = useState<"idle" | "add" | "reassign">("idle");
-  const [email, setEmail]     = useState("");
-  const [busy, setBusy]       = useState(false);
-  const [error, setError]     = useState("");
+  const [mode, setMode]           = useState<"idle" | "add" | "reassign">("idle");
+  const [query, setQuery]         = useState("");
+  const [email, setEmail]         = useState("");
+  const [members, setMembers]     = useState<UserProfile[]>([]);
+  const [organization, setOrganization] = useState<OrgInfo | null>(null);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [busy, setBusy]           = useState(false);
+  const [error, setError]         = useState("");
+
+  useEffect(() => {
+    if (mode === "idle") return;
+
+    const timer = setTimeout(async () => {
+      setLoadingMembers(true);
+      try {
+        const params = new URLSearchParams();
+        if (query.trim()) params.set("q", query.trim());
+        const res  = await fetch(`/api/org/members?${params}`);
+        const data = await res.json();
+        setMembers(data.members ?? []);
+        setOrganization(data.organization ?? null);
+      } catch {
+        setMembers([]);
+      } finally {
+        setLoadingMembers(false);
+      }
+    }, mode === "add" || mode === "reassign" ? 250 : 0);
+
+    return () => clearTimeout(timer);
+  }, [mode, query]);
 
   const patch = async (body: Record<string, unknown>) => {
     setBusy(true);
@@ -28,6 +56,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Update failed");
+      setQuery("");
       setEmail("");
       setMode("idle");
       onUpdate();
@@ -46,11 +75,31 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
     patch({ remove_assignee: uid });
   };
 
-  const addPerson = () => patch({ add_assignee_email: email });
+  const addMember = (member: UserProfile) => {
+    if (assignedTo.includes(member.id)) {
+      setError(`${member.name} is already assigned`);
+      return;
+    }
+    patch({ add_assignee: member.id });
+  };
 
-  const reassign = () => patch({ reassign_email: email });
+  const reassignMember = (member: UserProfile) => patch({ reassign_to: member.id });
+
+  const addByEmail = () => patch({ add_assignee_email: email });
+  const reassignByEmail = () => patch({ reassign_email: email });
 
   const label = (uid: string) => profiles[uid]?.name ?? "Unknown user";
+
+  const visibleMembers = members.filter(m =>
+    mode === "reassign" || !assignedTo.includes(m.id),
+  );
+
+  const closePanel = () => {
+    setMode("idle");
+    setQuery("");
+    setEmail("");
+    setError("");
+  };
 
   return (
     <div onClick={e => e.stopPropagation()}>
@@ -68,7 +117,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
           <button
             type="button"
             disabled={busy}
-            onClick={() => { setMode(m => m === "add" ? "idle" : "add"); setError(""); }}
+            onClick={() => { setMode(m => m === "add" ? "idle" : "add"); setError(""); setQuery(""); }}
             style={actionBtnStyle}
           >
             <UserPlus size={10} /> Add
@@ -76,7 +125,7 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
           <button
             type="button"
             disabled={busy}
-            onClick={() => { setMode(m => m === "reassign" ? "idle" : "reassign"); setError(""); }}
+            onClick={() => { setMode(m => m === "reassign" ? "idle" : "reassign"); setError(""); setQuery(""); }}
             style={actionBtnStyle}
           >
             <ArrowRightLeft size={10} /> Reassign
@@ -111,62 +160,95 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
       </div>
 
       {mode !== "idle" && (
-        <div style={{
-          display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap",
-          padding: "8px 10px", borderRadius: 6,
-          border: "0.5px solid var(--bdr2)", background: "var(--card2)",
-        }}>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Colleague's email address"
-            disabled={busy}
-            onKeyDown={e => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                if (mode === "add") addPerson();
-                else reassign();
-              }
-            }}
-            style={{
-              flex: 1, minWidth: 160, padding: "6px 8px", borderRadius: 5,
-              border: "0.5px solid var(--bdr2)", background: "var(--card)",
-              color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif",
-            }}
-          />
-          <button
-            type="button"
-            disabled={busy || !email.trim()}
-            onClick={mode === "add" ? addPerson : reassign}
-            style={{
-              padding: "6px 12px", borderRadius: 5, fontSize: 11, fontWeight: 500,
-              border: "none", background: "var(--fg)", color: "var(--bg)",
-              cursor: busy || !email.trim() ? "not-allowed" : "pointer",
-              fontFamily: "'Sora', sans-serif", opacity: busy || !email.trim() ? 0.5 : 1,
-            }}
-          >
-            {busy ? "Saving..." : mode === "add" ? "Add person" : "Reassign all"}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => { setMode("idle"); setEmail(""); setError(""); }}
-            style={{
-              padding: "6px 10px", borderRadius: 5, fontSize: 11,
-              border: "0.5px solid var(--bdr2)", background: "transparent",
-              color: "var(--fg3)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-            }}
-          >
+        <div className="assignee-picker">
+          {organization ? (
+            <>
+              <div style={{ fontSize: 10, color: "var(--fg3)", marginBottom: 8 }}>
+                Search members of <span style={{ color: "var(--fg2)" }}>{organization.name}</span>
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                <Search size={12} color="var(--fg3)" style={{ flexShrink: 0 }} />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search by name or email..."
+                  disabled={busy}
+                  autoFocus
+                  style={inputStyle}
+                />
+              </div>
+
+              <div className="assignee-picker-list">
+                {loadingMembers && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 4px", color: "var(--fg3)", fontSize: 11 }}>
+                    <Loader2 size={12} className="spin" /> Searching...
+                  </div>
+                )}
+                {!loadingMembers && visibleMembers.length === 0 && (
+                  <p style={{ fontSize: 11, color: "var(--fg3)", padding: "8px 4px" }}>
+                    {query.trim() ? "No members match your search." : "No other members found."}
+                  </p>
+                )}
+                {!loadingMembers && visibleMembers.map(member => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => mode === "add" ? addMember(member) : reassignMember(member)}
+                    className="assignee-picker-row"
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "var(--fg)" }}>{member.name}</span>
+                    {member.email && (
+                      <span style={{ fontSize: 10, color: "var(--fg3)" }}>{member.email}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 8, lineHeight: 1.5 }}>
+                No organization selected. Use the org switcher in the sidebar, or add someone by email below.
+              </p>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="Colleague's email address"
+                  disabled={busy}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (mode === "add") addByEmail();
+                      else reassignByEmail();
+                    }
+                  }}
+                  style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+                />
+                <button
+                  type="button"
+                  disabled={busy || !email.trim()}
+                  onClick={mode === "add" ? addByEmail : reassignByEmail}
+                  style={primaryBtnStyle(busy || !email.trim())}
+                >
+                  {busy ? "Saving..." : mode === "add" ? "Add" : "Reassign"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {mode === "reassign" && organization && (
+            <p style={{ fontSize: 10, color: "var(--fg3)", marginTop: 8, lineHeight: 1.45 }}>
+              Reassign replaces all current assignees with the person you select.
+            </p>
+          )}
+
+          <button type="button" disabled={busy} onClick={closePanel} style={{ ...actionBtnStyle, marginTop: 10 }}>
             Cancel
           </button>
         </div>
-      )}
-
-      {mode === "reassign" && (
-        <p style={{ fontSize: 10, color: "var(--fg3)", marginTop: 6, lineHeight: 1.45 }}>
-          Reassign replaces all current assignees with one person.
-        </p>
       )}
 
       {error && <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 6 }}>{error}</p>}
@@ -174,9 +256,29 @@ export default function AssigneeManager({ itemId, assignedTo, profiles, onUpdate
   );
 }
 
+const inputStyle: CSSProperties = {
+  width: "100%",
+  padding: "6px 8px",
+  borderRadius: 5,
+  border: "0.5px solid var(--bdr2)",
+  background: "var(--card)",
+  color: "var(--fg)",
+  fontSize: 12,
+  fontFamily: "'Sora', sans-serif",
+};
+
 const actionBtnStyle: CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 4,
   padding: "3px 8px", borderRadius: 5, fontSize: 10, fontWeight: 500,
   border: "0.5px solid var(--bdr2)", background: "transparent",
   color: "var(--fg3)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
 };
+
+function primaryBtnStyle(disabled: boolean): CSSProperties {
+  return {
+    padding: "6px 12px", borderRadius: 5, fontSize: 11, fontWeight: 500,
+    border: "none", background: "var(--fg)", color: "var(--bg)",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: "'Sora', sans-serif", opacity: disabled ? 0.5 : 1,
+  };
+}
