@@ -208,7 +208,7 @@ function ItemCard({ item, onUpdate }: {
     <>
       <div style={{
         background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 8, marginBottom: 8, overflow: "hidden",
+        borderRadius: 8, overflow: "hidden",
       }}>
         <div
           style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 10 }}
@@ -478,7 +478,7 @@ export default function RemediationPage() {
           ))}
         </div>
 
-        <div className="chat-scroll" style={{ paddingTop: 20 }}>
+        <div className="chat-scroll">
           {loading && (
             <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...

@@ -206,8 +206,9 @@ function DocRow({ doc, onAction }: {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 12,
-      padding: "10px 16px", borderBottom: "0.5px solid var(--bdr)",
-      background: "var(--card)",
+      padding: "10px 16px",
+      background: "var(--card)", border: "0.5px solid var(--bdr2)",
+      borderRadius: 8,
     }}
       onMouseEnter={e => (e.currentTarget.style.background = "var(--lift)")}
       onMouseLeave={e => (e.currentTarget.style.background = "var(--card)")}
@@ -417,14 +418,14 @@ export default function DocumentsPage() {
           ))}
         </div>
 
-        <div className="chat-scroll" style={{ paddingTop: 16 }}>
+        <div className="chat-scroll">
           {loading && (
-            <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg3)", fontSize: 12 }}>
+            <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...
             </div>
           )}
           {!loading && filtered.length === 0 && (
-            <div style={{ padding: "60px 24px", textAlign: "center" }}>
+            <div style={{ textAlign: "center", padding: "60px 0" }}>
               <FolderOpen size={28} color="var(--fg4)" style={{ margin: "0 auto 12px" }} />
               <p style={{ fontSize: 13, color: "var(--fg3)" }}>
                 {search ? "No documents match your search" : "No documents yet — upload your first one"}

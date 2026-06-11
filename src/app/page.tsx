@@ -1151,7 +1151,7 @@ function Home() {
                 <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                   <ModeSelector current="assess" />
                 </div>
-                <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+                <div ref={scrollRef} className="chat-scroll">
                   {messages.map((msg, i) => {
                     if (msg.role === "user") {
                       return (
@@ -1249,7 +1249,7 @@ function Home() {
                 </div>
 
                 <div className="chat-input-row">
-                  <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+                  <div className="chat-input-inner">
                     <div className="chat-input-bar">
                       <input
                         className="chat-input-field"
