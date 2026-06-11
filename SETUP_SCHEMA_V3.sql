@@ -115,6 +115,9 @@ create table if not exists remediation_items (
   resolved_at       timestamptz,
   resolution_note   text,
 
+  -- Per-gap remediation chat (Claude thread)
+  messages          jsonb not null default '[]'::jsonb,
+
   -- Audit
   created_at        timestamptz default now(),
   updated_at        timestamptz default now()
@@ -198,3 +201,9 @@ on conflict (id) do nothing;
 -- 1. Sign in → /documents → Upload a .txt or .pdf
 -- 2. In Storage → documents, you should see: {your_clerk_user_id}/{uuid}/{filename}
 -- 3. If upload fails with "Bucket not found", the bucket name must be exactly "documents"
+
+
+-- ─── 8. GAP CHAT (upgrade path) ─────────────────────────────────────────────
+
+alter table remediation_items add column if not exists messages jsonb not null default '[]'::jsonb;
+alter table assessments add column if not exists gap_chats jsonb not null default '{}'::jsonb;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
+import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
   CheckCircle, ArrowUpRight, Clock, X,
@@ -34,6 +35,7 @@ interface RemediationItem {
   resolved_at:          string | null;
   resolution_note:      string | null;
   created_at:           string;
+  messages?:            GapChatMessage[];
   remediation_activity: Activity[];
 }
 
@@ -187,9 +189,10 @@ function EscalateModal({ item, onClose, onDone }: {
   );
 }
 
-function ItemCard({ item, onUpdate }: {
+function ItemCard({ item, onUpdate, onMessagesChange }: {
   item:     RemediationItem;
   onUpdate: () => void;
+  onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
 }) {
   const [expanded, setExpanded]     = useState(false);
   const [escalating, setEscalating] = useState(false);
@@ -281,7 +284,21 @@ function ItemCard({ item, onUpdate }: {
               </div>
             )}
 
-            <div style={{ marginBottom: 12 }}>
+            <GapChat
+              gap={{
+                title:              item.gap_title,
+                severity:           item.gap_severity,
+                domain:             DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain,
+                detail:             item.gap_detail,
+                frameworks:         item.gap_frameworks,
+                remediation_steps:  item.remediation_steps,
+              }}
+              remediationId={item.id}
+              initialMessages={item.messages ?? []}
+              onMessagesChange={msgs => onMessagesChange(item.id, msgs)}
+            />
+
+            <div style={{ marginBottom: 12, marginTop: 12 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
                 Assigned to ({item.assigned_to.length})
               </div>
@@ -395,6 +412,10 @@ export default function RemediationPage() {
 
   const filtered = items.filter(i => !filterSev || i.gap_severity === filterSev);
 
+  const updateItemMessages = (id: string, messages: GapChatMessage[]) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, messages } : i));
+  };
+
   const counts = {
     open:        items.filter(i => i.status === "open").length,
     in_progress: items.filter(i => i.status === "in_progress").length,
@@ -497,7 +518,7 @@ export default function RemediationPage() {
             </div>
           )}
           {!loading && filtered.map(item => (
-            <ItemCard key={item.id} item={item} onUpdate={load} />
+            <ItemCard key={item.id} item={item} onUpdate={load} onMessagesChange={updateItemMessages} />
           ))}
         </div>
       </main>

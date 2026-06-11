@@ -398,6 +398,53 @@ body {
 }
 .gap-fix-label { font-size: 8px; color: var(--rl); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
 
+.gap-chat { margin-top: 12px; }
+.gap-chat-toggle {
+  display: inline-flex; align-items: center; gap: 6;
+  padding: 5px 10px; border-radius: 5; font-size: 11px; font-weight: 500;
+  border: 0.5px solid var(--bdr2); background: var(--card2); color: var(--fg2);
+  cursor: pointer; font-family: 'Sora', sans-serif;
+  transition: border-color 0.15s, color 0.15s;
+}
+.gap-chat-toggle:hover { border-color: var(--bdr3); color: var(--fg); }
+.gap-chat-count {
+  font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 10px;
+  background: var(--lift); color: var(--fg3); margin-left: 2px;
+}
+.gap-chat-panel {
+  margin-top: 10px; padding: 12px; border-radius: 8px;
+  border: 0.5px solid var(--bdr); background: var(--card2);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.gap-chat-hint { font-size: 11px; color: var(--fg3); line-height: 1.5; }
+.gap-chat-msg {
+  font-size: 12px; line-height: 1.6; padding: 8px 10px; border-radius: 8px;
+  white-space: pre-wrap; letter-spacing: -0.01em;
+}
+.gap-chat-msg-user {
+  align-self: flex-end; max-width: 88%;
+  background: var(--card); border: 0.5px solid var(--bdr2); color: var(--fg);
+}
+.gap-chat-msg-ai {
+  align-self: flex-start; max-width: 100%;
+  background: var(--card); border: 0.5px solid var(--bdr); color: var(--fg2);
+}
+.gap-chat-thinking { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.gap-chat-error { font-size: 11px; color: var(--rh); }
+.gap-chat-input-row { display: flex; gap: 6; align-items: center; margin-top: 4px; }
+.gap-chat-input {
+  flex: 1; padding: 7px 10px; border-radius: 6px;
+  border: 0.5px solid var(--bdr2); background: var(--card);
+  color: var(--fg); font-size: 12px; font-family: 'Sora', sans-serif;
+}
+.gap-chat-input:focus { outline: none; border-color: var(--bdr3); }
+.gap-chat-send {
+  width: 28px; height: 28px; border-radius: 6px; border: none;
+  background: var(--fg); color: var(--bg); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.gap-chat-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
 .result-actions {
   display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
 }

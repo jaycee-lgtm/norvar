@@ -7,6 +7,7 @@ import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
+import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -323,7 +324,13 @@ const DOMAIN_LABELS: Record<string, string> = {
   cybersecurity: "Cybersecurity",
 };
 
-function AssessmentCard({ a, onNew }: { a: Assessment; onNew: () => void }) {
+function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: {
+  a:                 Assessment;
+  onNew:             () => void;
+  assessmentId?:     string | null;
+  gapChats?:         Record<string, GapChatMessage[]>;
+  onGapChatsUpdate?: (key: string, messages: GapChatMessage[]) => void;
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<"gaps" | "frameworks">("gaps");
 
@@ -466,6 +473,19 @@ function AssessmentCard({ a, onNew }: { a: Assessment; onNew: () => void }) {
                     {gap.remediation}
                   </div>
                 )}
+                <GapChat
+                  gap={{
+                    title:              gap.title,
+                    severity:           gap.severity,
+                    detail:             gap.detail || gap.description,
+                    frameworks:         gap.frameworks,
+                    remediation_steps:  gap.remediation,
+                  }}
+                  assessmentId={assessmentId}
+                  gapKey={String(i)}
+                  initialMessages={gapChats?.[String(i)] ?? []}
+                  onMessagesChange={msgs => onGapChatsUpdate?.(String(i), msgs)}
+                />
               </div>
               <button
                 type="button"
@@ -617,6 +637,7 @@ function Home() {
   const [sector,        setSector]        = useState<string[]>([]);
   const [openChip,      setOpenChip]      = useState<string | null>(null);
   const [assessmentId,  setAssessmentId]  = useState<string | null>(null);
+  const [gapChats,      setGapChats]      = useState<Record<string, GapChatMessage[]>>({});
 
   const [inferring,       setInferring]       = useState(false);
   const [pendingDesc,     setPendingDesc]     = useState("");
@@ -642,6 +663,7 @@ function Home() {
       setMessages([]);
       setError("");
       setAssessmentId(null);
+      setGapChats({});
       return;
     }
 
@@ -654,6 +676,7 @@ function Home() {
         if (d.error) throw new Error(d.error);
         if (!d.assessment) throw new Error("Assessment not found");
         setAssessmentId(id);
+        setGapChats(d.assessment.gap_chats ?? {});
         setMessages(restoreMessages(d.assessment));
       })
       .catch((e: unknown) => {
@@ -709,6 +732,7 @@ function Home() {
     setContractText("");
     setContractName("");
     setAssessmentId(null);
+    setGapChats({});
     setInferring(false);
     setPendingDesc("");
     setFollowUp(null);
@@ -1221,7 +1245,13 @@ function Home() {
                     if (msg.role === "assistant") {
                       return (
                         <div key={i} className="msg-ai">
-                          <AssessmentCard a={msg.assessment} onNew={startNew} />
+                          <AssessmentCard
+                            a={msg.assessment}
+                            onNew={startNew}
+                            assessmentId={assessmentId}
+                            gapChats={gapChats}
+                            onGapChatsUpdate={(key, msgs) => setGapChats(prev => ({ ...prev, [key]: msgs }))}
+                          />
                         </div>
                       );
                     }

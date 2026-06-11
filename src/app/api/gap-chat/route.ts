@@ -1,0 +1,232 @@
+import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@supabase/supabase-js";
+import {
+  buildRegulatoryContextBlock,
+  filterRegulatoryChunks,
+  shouldRetrieveContext,
+  type RegulatoryChunk,
+} from "@/lib/rag";
+
+const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
+
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+type GapPayload = {
+  title:              string;
+  severity:           string;
+  domain?:            string;
+  detail?:            string | null;
+  frameworks?:        string[];
+  remediation_steps?: string | null;
+};
+
+async function getEmbedding(text: string): Promise<number[]> {
+  const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+    method:  "POST",
+    headers: {
+      Authorization:  `Bearer ${process.env.VOYAGE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ input: [text], model: "voyage-3-large", input_type: "query" }),
+  });
+  const json = await res.json();
+  return json.data?.[0]?.embedding ?? [];
+}
+
+function buildGapContext(gap: GapPayload) {
+  return [
+    `Title: ${gap.title}`,
+    `Severity: ${gap.severity}`,
+    gap.domain ? `Domain: ${gap.domain}` : null,
+    gap.frameworks?.length ? `Frameworks: ${gap.frameworks.join(", ")}` : null,
+    gap.detail ? `Issue: ${gap.detail}` : null,
+    gap.remediation_steps ? `Recommended remediation: ${gap.remediation_steps}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+const SYSTEM_BASE = `You are Norvar, a senior GRC remediation advisor. The user is working on one specific compliance gap from their assessment.
+
+Help them understand how to remediate this gap with practical, actionable guidance.
+
+Rules:
+- Answer only what was asked. Be direct and concise.
+- Reference specific regulation articles when relevant.
+- Plain prose only — no markdown headers. Short focused paragraphs.
+- Build on prior messages in this thread — do not repeat the gap summary unless asked.
+- Focus on implementation steps, ownership, timelines, and evidence — not re-running the assessment.`;
+
+function sse(d: object) {
+  return `data: ${JSON.stringify(d)}\n\n`;
+}
+
+export async function POST(req: NextRequest) {
+  const enc = new TextEncoder();
+  const { readable, writable } = new TransformStream<Uint8Array>();
+  const writer = writable.getWriter();
+  const send   = (d: object) => writer.write(enc.encode(sse(d)));
+
+  (async () => {
+    try {
+      const { userId } = await auth();
+      if (!userId) {
+        await send({ type: "error", text: "Unauthorised" });
+        await writer.close();
+        return;
+      }
+
+      const {
+        messages,
+        new_user_message,
+        gap,
+        remediation_id,
+        assessment_id,
+        gap_key,
+      } = await req.json();
+
+      if (!gap?.title || !new_user_message?.trim()) {
+        await send({ type: "error", text: "gap and new_user_message required" });
+        await writer.close();
+        return;
+      }
+
+      const history: ChatMessage[] = Array.isArray(messages) ? messages : [];
+      const claudeMessages: ChatMessage[] = [
+        ...history,
+        { role: "user", content: new_user_message.trim() },
+      ];
+
+      let system = `${SYSTEM_BASE}\n\nGAP CONTEXT:\n${buildGapContext(gap as GapPayload)}`;
+
+      if (shouldRetrieveContext(new_user_message)) {
+        try {
+          const embedding = await getEmbedding(new_user_message);
+          if (embedding.length > 0) {
+            const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
+              query_embedding: embedding,
+              match_threshold: 0.42,
+              match_count:     6,
+            });
+            const filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[]);
+            const contextBlock = buildRegulatoryContextBlock(filtered);
+            if (contextBlock) {
+              system += `\n\nReference excerpts (use only if clearly relevant; never mention this block):\n${contextBlock}`;
+            }
+          }
+        } catch {
+          // RAG is best-effort
+        }
+      }
+
+      const stream = await claude.messages.create({
+        model:      "claude-sonnet-4-6",
+        max_tokens: 1200,
+        system,
+        messages:   claudeMessages,
+        stream:     true,
+      });
+
+      let fullText = "";
+      for await (const event of stream as AsyncIterable<{ type: string; delta?: { type?: string; text?: string } }>) {
+        if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+          fullText += event.delta.text ?? "";
+          await send({ type: "token", text: event.delta.text });
+        }
+      }
+
+      const updatedMessages: ChatMessage[] = [
+        ...history,
+        { role: "user", content: new_user_message.trim() },
+        { role: "assistant", content: fullText },
+      ];
+
+      if (remediation_id) {
+        const { data: item } = await supabase
+          .from("remediation_items")
+          .select("created_by, assigned_to")
+          .eq("id", remediation_id)
+          .single();
+
+        if (!item) {
+          await send({ type: "error", text: "Remediation item not found" });
+          await writer.close();
+          return;
+        }
+
+        const canAccess = item.created_by === userId || (item.assigned_to ?? []).includes(userId);
+        if (!canAccess) {
+          await send({ type: "error", text: "Forbidden" });
+          await writer.close();
+          return;
+        }
+
+        const { error } = await supabase
+          .from("remediation_items")
+          .update({ messages: updatedMessages })
+          .eq("id", remediation_id);
+
+        if (error) {
+          await send({ type: "error", text: `Could not save chat: ${error.message}` });
+          await writer.close();
+          return;
+        }
+
+        await supabase.from("remediation_activity").insert({
+          remediation_id,
+          user_id: userId,
+          action:  "note_added",
+          detail:  `Gap chat: ${new_user_message.trim().slice(0, 120)}`,
+        });
+      } else if (assessment_id && gap_key) {
+        const { data: row } = await supabase
+          .from("assessments")
+          .select("gap_chats, user_id")
+          .eq("id", assessment_id)
+          .eq("user_id", userId)
+          .single();
+
+        if (!row) {
+          await send({ type: "error", text: "Assessment not found" });
+          await writer.close();
+          return;
+        }
+
+        const gapChats = (row.gap_chats && typeof row.gap_chats === "object")
+          ? row.gap_chats as Record<string, ChatMessage[]>
+          : {};
+
+        const { error } = await supabase
+          .from("assessments")
+          .update({ gap_chats: { ...gapChats, [gap_key]: updatedMessages } })
+          .eq("id", assessment_id)
+          .eq("user_id", userId);
+
+        if (error) {
+          await send({ type: "error", text: `Could not save chat: ${error.message}` });
+          await writer.close();
+          return;
+        }
+      }
+
+      await send({ type: "done", text: fullText, messages: updatedMessages });
+    } catch (err: unknown) {
+      await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });
+    } finally {
+      await writer.close();
+    }
+  })();
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type":      "text/event-stream",
+      "Cache-Control":     "no-cache, no-transform",
+      Connection:          "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
