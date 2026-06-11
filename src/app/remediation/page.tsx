@@ -208,7 +208,7 @@ function ItemCard({ item, onUpdate }: {
     <>
       <div style={{
         background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 8, overflow: "hidden",
+        borderRadius: 8,
       }}>
         <div
           style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 10 }}
