@@ -14,7 +14,12 @@ function canManageItem(item: { created_by: string; assigned_to: string[] | null 
   return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
 }
 
+function accessibleItemFilter(userId: string) {
+  return `created_by.eq.${userId},assigned_to.cs.{${userId}}`;
+}
+
 async function assertCanAssign(userId: string, orgId: string | null, targetUserId: string) {
+  if (targetUserId === userId) return null;
   if (!orgId) return null;
   const ok = await isOrgMember(orgId, targetUserId);
   if (!ok) return "That user is not in your organization";
@@ -29,14 +34,13 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const assessment_id = searchParams.get("assessment_id");
   const status        = searchParams.get("status");
-  const mine          = searchParams.get("mine") === "true";
 
   let query = supabase
     .from("remediation_items")
     .select("*, remediation_activity(*)")
+    .or(accessibleItemFilter(userId))
     .order("created_at", { ascending: false });
 
-  if (mine) query = query.or(`created_by.eq.${userId},assigned_to.cs.{${userId}}`);
   if (assessment_id) query = query.eq("assessment_id", assessment_id);
   if (status)        query = query.eq("status", status);
 
@@ -52,12 +56,30 @@ export async function GET(req: NextRequest) {
 
 // POST — add gap(s) to remediation queue
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { assessment_id, assessment_number, gaps, assigned_to, due_date } = await req.json();
   if (!assessment_id || !gaps?.length) {
     return Response.json({ error: "assessment_id and gaps required" }, { status: 400 });
+  }
+
+  const { data: assessment } = await supabase
+    .from("assessments")
+    .select("id")
+    .eq("id", assessment_id)
+    .eq("user_id", userId)
+    .single();
+  if (!assessment) return Response.json({ error: "Assessment not found" }, { status: 404 });
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
+  const extraAssignees = Array.isArray(assigned_to)
+    ? assigned_to.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
+
+  for (const targetUserId of extraAssignees) {
+    const denied = await assertCanAssign(userId, activeOrgId, targetUserId);
+    if (denied) return Response.json({ error: denied }, { status: 403 });
   }
 
   const items = gaps.map((gap: Record<string, unknown>) => ({
@@ -69,8 +91,8 @@ export async function POST(req: NextRequest) {
     gap_detail:        gap.detail,
     gap_frameworks:    gap.frameworks ?? [],
     remediation_steps: gap.remediation,
-    assigned_to:       assigned_to?.length
-                         ? Array.from(new Set([userId, ...assigned_to]))
+    assigned_to:       extraAssignees.length
+                         ? Array.from(new Set([userId, ...extraAssignees]))
                          : [userId],
     created_by:        userId,
     due_date:          due_date ?? null,
@@ -118,9 +140,7 @@ export async function PATCH(req: NextRequest) {
     .single();
   if (!current) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const assigneeChange = assigned_to || add_assignee || remove_assignee
-    || add_assignee_email || reassign_email || reassign_to;
-  if (assigneeChange && !canManageItem(current, userId)) {
+  if (!canManageItem(current, userId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
