@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { isAuditRequest } from "@/lib/audit";
 import {
   buildRegulatoryContextBlock,
   filterRegulatoryChunks,
@@ -51,12 +52,6 @@ Domain coverage — when relevant to the scenario, address:
 
 function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
-}
-
-function isAuditRequest(req: NextRequest): boolean {
-  const secret = process.env.AUDIT_SECRET;
-  if (!secret) return false;
-  return req.headers.get("x-audit-secret") === secret;
 }
 
 type ChatMessage = { role: "user" | "assistant"; content: string };

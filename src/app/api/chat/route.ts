@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { isAuditRequest } from "@/lib/audit";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -52,15 +53,7 @@ function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
 }
 
-// Audit bypass: allows the sprint-1 audit runner to call this route
-// without a Clerk session, using a shared secret instead.
-// Set AUDIT_SECRET in Vercel environment variables.
-// Never expose this value in the frontend.
-function isAuditRequest(req: NextRequest): boolean {
-  const secret = process.env.AUDIT_SECRET;
-  if (!secret) return false;
-  return req.headers.get("x-audit-secret") === secret;
-}
+// Audit bypass: x-audit-secret header matching AUDIT_SECRET (server env only).
 
 export async function POST(req: NextRequest) {
   const enc = new TextEncoder();
