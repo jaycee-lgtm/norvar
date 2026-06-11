@@ -1,11 +1,17 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
+import { findUserByEmail, resolveUserProfiles } from "@/lib/clerk-users";
+import { sortBySeverity } from "@/lib/remediation";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
+
+function canManageItem(item: { created_by: string; assigned_to: string[] | null }, userId: string) {
+  return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
+}
 
 // GET — list remediation items (filter by status, assessment, assigned_to)
 export async function GET(req: NextRequest) {
@@ -22,14 +28,18 @@ export async function GET(req: NextRequest) {
     .select("*, remediation_activity(*)")
     .order("created_at", { ascending: false });
 
-  // Filter to items the user created or is assigned to
   if (mine) query = query.or(`created_by.eq.${userId},assigned_to.cs.{${userId}}`);
   if (assessment_id) query = query.eq("assessment_id", assessment_id);
   if (status)        query = query.eq("status", status);
 
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ items: data });
+
+  const items = sortBySeverity(data ?? []);
+  const userIds = items.flatMap(i => [...(i.assigned_to ?? []), i.created_by]);
+  const users   = await resolveUserProfiles(userIds);
+
+  return Response.json({ items, users });
 }
 
 // POST — add gap(s) to remediation queue
@@ -51,7 +61,6 @@ export async function POST(req: NextRequest) {
     gap_detail:        gap.detail,
     gap_frameworks:    gap.frameworks ?? [],
     remediation_steps: gap.remediation,
-    // Auto-assign to the user who queued it; extend with any additional assignees
     assigned_to:       assigned_to?.length
                          ? Array.from(new Set([userId, ...assigned_to]))
                          : [userId],
@@ -67,7 +76,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Log activity for each item
   await supabase.from("remediation_activity").insert(
     data.map((item: { id: string }) => ({
       remediation_id: item.id,
@@ -87,18 +95,24 @@ export async function PATCH(req: NextRequest) {
 
   const {
     id, status, assigned_to, add_assignee, remove_assignee,
+    add_assignee_email, reassign_email,
     escalated_to, escalation_note, resolution_note, due_date,
   } = await req.json();
 
   if (!id) return Response.json({ error: "ID required" }, { status: 400 });
 
-  // Fetch current item
   const { data: current } = await supabase
     .from("remediation_items")
-    .select("assigned_to, status")
+    .select("assigned_to, status, created_by")
     .eq("id", id)
     .single();
   if (!current) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const assigneeChange = assigned_to || add_assignee || remove_assignee
+    || add_assignee_email || reassign_email;
+  if (assigneeChange && !canManageItem(current, userId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const updates: Record<string, unknown> = {};
   let activityAction = "note_added";
@@ -122,14 +136,55 @@ export async function PATCH(req: NextRequest) {
 
   if (due_date !== undefined) updates.due_date = due_date;
 
-  // Multi-assignee management
   let newAssignees = [...(current.assigned_to ?? [])];
-  if (assigned_to)     newAssignees = assigned_to;
-  if (add_assignee)    newAssignees = Array.from(new Set([...newAssignees, add_assignee]));
-  if (remove_assignee) newAssignees = newAssignees.filter((a: string) => a !== remove_assignee);
-  if (assigned_to || add_assignee || remove_assignee) {
+
+  if (reassign_email) {
+    const profile = await findUserByEmail(reassign_email);
+    if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
+    newAssignees     = [profile.id];
+    activityAction   = "assigned";
+    activityDetail   = `Reassigned to ${profile.name}`;
     updates.assigned_to = newAssignees;
-    if (!activityDetail) { activityAction = "assigned"; activityDetail = "Assignees updated"; }
+  } else {
+    if (assigned_to) newAssignees = assigned_to;
+
+    if (add_assignee) {
+      newAssignees = Array.from(new Set([...newAssignees, add_assignee]));
+      if (!activityDetail) {
+        const profiles = await resolveUserProfiles([add_assignee]);
+        activityAction = "assigned";
+        activityDetail = `Added ${profiles[add_assignee]?.name ?? "assignee"}`;
+      }
+    }
+
+    if (add_assignee_email) {
+      const profile = await findUserByEmail(add_assignee_email);
+      if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
+      if (newAssignees.includes(profile.id)) {
+        return Response.json({ error: `${profile.name} is already assigned` }, { status: 400 });
+      }
+      newAssignees   = Array.from(new Set([...newAssignees, profile.id]));
+      activityAction = "assigned";
+      activityDetail = `Added ${profile.name}`;
+    }
+
+    if (remove_assignee) {
+      if (newAssignees.length <= 1) {
+        return Response.json({ error: "At least one assignee is required" }, { status: 400 });
+      }
+      const profiles = await resolveUserProfiles([remove_assignee]);
+      newAssignees   = newAssignees.filter(a => a !== remove_assignee);
+      activityAction = "assigned";
+      activityDetail = `Removed ${profiles[remove_assignee]?.name ?? "assignee"}`;
+    }
+
+    if (assigned_to || add_assignee || add_assignee_email || remove_assignee) {
+      updates.assigned_to = newAssignees;
+      if (!activityDetail) {
+        activityAction = "assigned";
+        activityDetail = "Assignees updated";
+      }
+    }
   }
 
   const { data, error } = await supabase
@@ -141,13 +196,14 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Log activity
-  await supabase.from("remediation_activity").insert({
-    remediation_id: id,
-    user_id:        userId,
-    action:         activityAction,
-    detail:         activityDetail,
-  });
+  if (activityDetail) {
+    await supabase.from("remediation_activity").insert({
+      remediation_id: id,
+      user_id:        userId,
+      action:         activityAction,
+      detail:         activityDetail,
+    });
+  }
 
   return Response.json({ item: data });
 }
@@ -160,7 +216,6 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
   if (!id) return Response.json({ error: "ID required" }, { status: 400 });
 
-  // Only creator or assignee can delete
   const { data: item } = await supabase
     .from("remediation_items")
     .select("created_by, assigned_to")
@@ -169,8 +224,9 @@ export async function DELETE(req: NextRequest) {
 
   if (!item) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const canDelete = item.created_by === userId || (item.assigned_to ?? []).includes(userId);
-  if (!canDelete) return Response.json({ error: "Forbidden" }, { status: 403 });
+  if (!canManageItem(item, userId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await supabase.from("remediation_items").delete().eq("id", id);
   return Response.json({ ok: true });

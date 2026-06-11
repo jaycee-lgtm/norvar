@@ -63,7 +63,7 @@ const SECTOR_OPTIONS = [
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Gap = {
-  severity:     "critical" | "high" | "medium";
+  severity:     "critical" | "high" | "medium" | "low";
   title:        string;
   detail?:      string;
   description?: string;
@@ -341,6 +341,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
     ...gaps.filter(g => g.severity === "critical"),
     ...gaps.filter(g => g.severity === "high"),
     ...gaps.filter(g => g.severity === "medium"),
+    ...gaps.filter(g => g.severity === "low"),
   ];
 
   const [queued,    setQueued]    = useState<Set<number>>(new Set());

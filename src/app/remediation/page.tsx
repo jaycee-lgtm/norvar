@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
+import AssigneeManager from "@/components/AssigneeManager";
+import { sortBySeverity } from "@/lib/remediation";
+import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
   CheckCircle, ArrowUpRight, Clock, X,
@@ -189,8 +192,9 @@ function EscalateModal({ item, onClose, onDone }: {
   );
 }
 
-function ItemCard({ item, onUpdate, onMessagesChange }: {
+function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
   item:     RemediationItem;
+  profiles: Record<string, UserProfile>;
   onUpdate: () => void;
   onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
 }) {
@@ -299,20 +303,12 @@ function ItemCard({ item, onUpdate, onMessagesChange }: {
             />
 
             <div style={{ marginBottom: 12, marginTop: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                Assigned to ({item.assigned_to.length})
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {item.assigned_to.map(uid => (
-                  <span key={uid} style={{
-                    display: "flex", alignItems: "center", gap: 4,
-                    fontSize: 11, padding: "3px 8px", borderRadius: 20,
-                    background: "var(--card2)", color: "var(--fg2)", border: "0.5px solid var(--bdr2)",
-                  }}>
-                    <User size={9} />{uid.slice(0, 8)}...
-                  </span>
-                ))}
-              </div>
+              <AssigneeManager
+                itemId={item.id}
+                assignedTo={item.assigned_to}
+                profiles={profiles}
+                onUpdate={onUpdate}
+              />
             </div>
 
             {item.escalated_to && (
@@ -392,6 +388,7 @@ function ItemCard({ item, onUpdate, onMessagesChange }: {
 
 export default function RemediationPage() {
   const [items, setItems]               = useState<RemediationItem[]>([]);
+  const [profiles, setProfiles]         = useState<Record<string, UserProfile>>({});
   const [loading, setLoading]           = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSev, setFilterSev]       = useState("");
@@ -403,14 +400,17 @@ export default function RemediationPage() {
     if (filterStatus) params.set("status", filterStatus);
     if (mineOnly)     params.set("mine", "true");
     const res = await fetch(`/api/remediation?${params}`);
-    const { items: data } = await res.json();
+    const { items: data, users } = await res.json();
     setItems(data ?? []);
+    setProfiles(users ?? {});
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [filterStatus, mineOnly]);
 
-  const filtered = items.filter(i => !filterSev || i.gap_severity === filterSev);
+  const filtered = sortBySeverity(
+    items.filter(i => !filterSev || i.gap_severity === filterSev),
+  );
 
   const updateItemMessages = (id: string, messages: GapChatMessage[]) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, messages } : i));
@@ -519,7 +519,13 @@ export default function RemediationPage() {
             </div>
           )}
           {!loading && filtered.map(item => (
-            <ItemCard key={item.id} item={item} onUpdate={load} onMessagesChange={updateItemMessages} />
+            <ItemCard
+              key={item.id}
+              item={item}
+              profiles={profiles}
+              onUpdate={load}
+              onMessagesChange={updateItemMessages}
+            />
           ))}
           </div>
         </div>
