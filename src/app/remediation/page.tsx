@@ -449,13 +449,14 @@ export default function RemediationPage() {
           </select>
 
           <button type="button" onClick={() => setMineOnly(!mineOnly)} style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
             padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 500,
             border: `0.5px solid ${mineOnly ? "var(--bdr3)" : "var(--bdr2)"}`,
             background: mineOnly ? "var(--lift)" : "transparent",
             color: mineOnly ? "var(--fg)" : "var(--fg3)", cursor: "pointer",
-            fontFamily: "'Sora', sans-serif",
+            fontFamily: "'Sora', sans-serif", whiteSpace: "nowrap", flexShrink: 0,
           }}>
-            <User size={10} style={{ marginRight: 4, verticalAlign: "middle" }} />
+            <User size={10} />
             Mine only
           </button>
         </div>
