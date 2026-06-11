@@ -403,10 +403,32 @@ export default function RemediationPage() {
     critical:    items.filter(i => i.gap_severity === "critical").length,
   };
 
+  const statusFilters = (
+    <>
+      <div className="sidebar-section">Filter by status</div>
+      {STATUS_FILTERS.map(({ value, label }) => (
+        <button
+          key={value || "all"}
+          type="button"
+          onClick={() => setFilterStatus(value)}
+          className={`sidebar-nav-item${filterStatus === value ? " active" : ""}`}
+          style={{ width: "100%", textAlign: "left" }}
+        >
+          {label}
+          {value && counts[value as keyof typeof counts] !== undefined && (
+            <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--fg3)" }}>
+              {counts[value as keyof typeof counts]}
+            </span>
+          )}
+        </button>
+      ))}
+    </>
+  );
+
   return (
     <div className="app-shell">
-      <Sidebar />
-      <main className="main-area" style={{ overflow: "auto" }}>
+      <Sidebar extra={statusFilters} />
+      <main className="main-area">
         <div style={{
           padding: "16px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", alignItems: "center", gap: 12,
@@ -414,28 +436,6 @@ export default function RemediationPage() {
         }}>
           <ShieldAlert size={14} color="var(--fg3)" />
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Remediation queue</span>
-
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {STATUS_FILTERS.map(({ value, label }) => (
-              <button
-                key={value || "all"}
-                type="button"
-                onClick={() => setFilterStatus(value)}
-                style={{
-                  padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 500,
-                  border: `0.5px solid ${filterStatus === value ? "var(--bdr3)" : "var(--bdr2)"}`,
-                  background: filterStatus === value ? "var(--lift)" : "transparent",
-                  color: filterStatus === value ? "var(--fg)" : "var(--fg3)", cursor: "pointer",
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                {label}
-                {value && counts[value as keyof typeof counts] !== undefined && (
-                  <span style={{ marginLeft: 6, opacity: 0.7 }}>{counts[value as keyof typeof counts]}</span>
-                )}
-              </button>
-            ))}
-          </div>
 
           <select
             value={filterSev} onChange={e => setFilterSev(e.target.value)}
@@ -463,6 +463,7 @@ export default function RemediationPage() {
         <div style={{
           padding: "10px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", gap: 24, background: "var(--card2)", flexWrap: "wrap",
+          flexShrink: 0,
         }}>
           {[
             { label: "Open",        value: counts.open,        color: "var(--fg)" },
@@ -477,7 +478,7 @@ export default function RemediationPage() {
           ))}
         </div>
 
-        <div style={{ padding: "16px 24px" }}>
+        <div className="chat-scroll" style={{ paddingTop: 20 }}>
           {loading && (
             <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...

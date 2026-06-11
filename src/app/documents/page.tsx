@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "@/components/Sidebar";
 import {
-  FileText, Upload, Archive, Trash2, FolderOpen,
+  Upload, Archive, Trash2, FolderOpen,
   Download, Search, ChevronDown, X,
 } from "lucide-react";
 
@@ -289,7 +289,7 @@ function DocRow({ doc, onAction }: {
 }
 
 export default function DocumentsPage() {
-  const [docs, setDocs]               = useState<Document[]>([]);
+  const [docs, setDocs]                 = useState<Document[]>([]);
   const [folders, setFolders]           = useState<Folder[]>([]);
   const [loading, setLoading]           = useState(true);
   const [showUpload, setShowUpload]     = useState(false);
@@ -327,16 +327,42 @@ export default function DocumentsPage() {
     d.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const folderFilters = folders.length > 0 ? (
+    <>
+      <div className="sidebar-section">Folders</div>
+      <button
+        type="button"
+        onClick={() => setFilterFolder("")}
+        className={`sidebar-nav-item${!filterFolder ? " active" : ""}`}
+        style={{ width: "100%", textAlign: "left" }}
+      >
+        All folders
+      </button>
+      {folders.map(f => (
+        <button
+          key={f.id}
+          type="button"
+          onClick={() => setFilterFolder(filterFolder === f.id ? "" : f.id)}
+          className={`sidebar-nav-item${filterFolder === f.id ? " active" : ""}`}
+          style={{ width: "100%", textAlign: "left" }}
+        >
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: f.color, flexShrink: 0 }} />
+          {f.name}
+        </button>
+      ))}
+    </>
+  ) : null;
+
   return (
     <div className="app-shell">
-      <Sidebar />
-      <main className="main-area" style={{ overflow: "auto" }}>
+      <Sidebar extra={folderFilters} />
+      <main className="main-area">
         <div style={{
           padding: "16px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", alignItems: "center", gap: 12,
-          background: "var(--card)", flexShrink: 0, flexWrap: "wrap",
+          background: "var(--card)", flexShrink: 0,
         }}>
-          <FileText size={14} color="var(--fg3)" />
+          <FolderOpen size={14} color="var(--fg3)" />
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Documents</span>
 
           <div style={{ position: "relative" }}>
@@ -351,21 +377,6 @@ export default function DocumentsPage() {
               }}
             />
           </div>
-
-          {folders.length > 0 && (
-            <select
-              value={filterFolder}
-              onChange={e => setFilterFolder(e.target.value)}
-              style={{
-                padding: "6px 10px", borderRadius: 6,
-                border: "0.5px solid var(--bdr2)", background: "var(--card2)",
-                color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif",
-              }}
-            >
-              <option value="">All folders</option>
-              {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-            </select>
-          )}
 
           <div style={{ display: "flex", gap: 4 }}>
             {(["active", "archived"] as const).map(s => (
@@ -393,6 +404,7 @@ export default function DocumentsPage() {
         <div style={{
           padding: "10px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", gap: 20, background: "var(--card2)",
+          flexShrink: 0,
         }}>
           {[
             { label: "Total",    value: docs.length },
@@ -405,7 +417,7 @@ export default function DocumentsPage() {
           ))}
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div className="chat-scroll" style={{ paddingTop: 16 }}>
           {loading && (
             <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg3)", fontSize: 12 }}>
               Loading...

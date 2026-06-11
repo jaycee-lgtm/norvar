@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
@@ -32,7 +32,7 @@ function tierKey(t: string): keyof typeof TIER {
   return v === "high" ? "high" : v === "medium" ? "medium" : "low";
 }
 
-function SidebarInner() {
+function SidebarInner({ extra }: { extra?: ReactNode }) {
   const path         = usePathname();
   const searchParams = useSearchParams();
   const { user }     = useUser();
@@ -136,6 +136,13 @@ function SidebarInner() {
             ))}
           </>
         )}
+
+        {extra && (
+          <>
+            <div className="sidebar-divider" />
+            {extra}
+          </>
+        )}
       </div>
 
       <div className="sidebar-footer">
@@ -154,10 +161,10 @@ function SidebarInner() {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ extra }: { extra?: ReactNode }) {
   return (
     <Suspense fallback={<aside className="sidebar" />}>
-      <SidebarInner />
+      <SidebarInner extra={extra} />
     </Suspense>
   );
 }
