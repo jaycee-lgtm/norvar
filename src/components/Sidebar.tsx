@@ -86,11 +86,10 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
     : "N";
 
-  const nav = [
+  const mainNav = [
     { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
     { href: "/chat", label: "GRC Chat", icon: MessageSquare, active: path === "/chat" },
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
-    { href: "/projects", label: "Projects", icon: Briefcase, active: path.startsWith("/projects") },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     {
       href: isChat ? "/chat/history" : "/history",
@@ -98,8 +97,11 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       icon: LayoutDashboard,
       active: path === "/history" || path === "/chat/history",
     },
+  ];
+
+  const libraryNav = [
+    { href: "/projects", label: "Projects", icon: Briefcase, active: path.startsWith("/projects") },
     { href: "/frameworks", label: "Frameworks", icon: Layers, active: path === "/frameworks" },
-    { href: "/settings", label: "Settings", icon: Settings, active: path === "/settings" },
   ];
 
   return (
@@ -153,7 +155,18 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
 
       <div className="sidebar-scroll">
         <div style={{ padding: "0 0 4px" }}>
-          {nav.map(({ href, label, icon: Icon, active }) => (
+          {mainNav.map(({ href, label, icon: Icon, active }) => (
+            <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
+              <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="sidebar-divider" />
+        <div className="sidebar-section">Projects & frameworks</div>
+        <div style={{ padding: "0 0 4px" }}>
+          {libraryNav.map(({ href, label, icon: Icon, active }) => (
             <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
               <Icon size={14} strokeWidth={active ? 2 : 1.75} />
               {label}
@@ -217,25 +230,33 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       </div>
 
       <div className="sidebar-footer">
-        <div className="avatar-row sidebar-account">
-          <div className="avatar">{initials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="avatar-name">
-              {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
+        <div className="avatar-row sidebar-account-row">
+          <div className="sidebar-account-avatar">
+            <div className="avatar">{initials}</div>
+            <div className="sidebar-account-button">
+              <UserButton
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox:       { display: "none" },
+                    userButtonOuterIdentifier: { display: "none" },
+                    userButtonTrigger:         { width: "100%", height: "100%" },
+                    rootBox:                   { width: "100%", height: "100%" },
+                  },
+                }}
+              />
             </div>
           </div>
-          <div className="sidebar-account-button">
-            <UserButton
-              appearance={{
-                elements: {
-                  userButtonAvatarBox:       { display: "none" },
-                  userButtonOuterIdentifier: { display: "none" },
-                  userButtonTrigger:         { width: "100%", height: "100%" },
-                  rootBox:                   { width: "100%", height: "100%" },
-                },
-              }}
-            />
+          <div className="avatar-name" style={{ flex: 1, minWidth: 0 }}>
+            {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
           </div>
+          <Link
+            href="/settings"
+            className={`sidebar-settings-btn${path === "/settings" ? " active" : ""}`}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={14} strokeWidth={path === "/settings" ? 2 : 1.75} />
+          </Link>
         </div>
       </div>
     </aside>
