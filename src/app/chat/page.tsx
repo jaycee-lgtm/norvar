@@ -3,7 +3,7 @@
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
@@ -319,10 +319,10 @@ function Chat() {
   );
 
   return (
-    <div className="app-shell">
+    <>
       <Show when="signed-in">
-        <Sidebar />
-        <div className="main-area">
+        <AppShell>
+          <div className="main-area">
 
           {loadingSaved && (
             <div className="home-body">
@@ -396,11 +396,11 @@ function Chat() {
 
           {!isHome && !loadingSaved && (
             <>
-              <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+              <div className="mode-bar" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                 <ModeSelector current="chat" />
               </div>
-              <div ref={scrollRef} style={{ flex: 1, overflowY: "auto" }}>
-                <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div ref={scrollRef} className="main-scroll">
+                <div className="thread-inner" style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
                 {messages.map((msg, i) => {
                   if (msg.role === "user") {
                     return (
@@ -453,11 +453,11 @@ function Chat() {
                       />
                     </div>
                   )}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+                  <div className="chat-input-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
                       Chat
                     </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className="chat-input-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {conversationId && (
                         <button
                           type="button"
@@ -539,7 +539,8 @@ function Chat() {
             </>
           )}
 
-        </div>
+          </div>
+        </AppShell>
       </Show>
 
       <Show when="signed-out">
@@ -558,6 +559,6 @@ function Chat() {
           </SignInButton>
         </div>
       </Show>
-    </div>
+    </>
   );
 }

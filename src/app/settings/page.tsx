@@ -1,11 +1,10 @@
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import AiSettingsPanel from "@/components/AiSettingsPanel";
 import { UserProfile } from "@clerk/nextjs";
 
 export default function SettingsPage() {
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <AppShell>
       <div className="main-area" style={{ overflowY: "auto" }}>
         <div className="page-body" style={{ margin: "0 auto" }}>
           <p className="stag" style={{ marginBottom: 8 }}>Settings</p>
@@ -36,6 +35,6 @@ export default function SettingsPage() {
           />
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

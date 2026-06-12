@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import { fmtProjectDate } from "@/lib/projects";
 import {
   ArrowLeft, FileSearch, ShieldAlert, MessageSquare, Upload,
@@ -182,27 +182,24 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="app-shell">
-        <Sidebar />
+      <AppShell>
         <main className="main-area"><div style={{ padding: 40, color: "var(--fg3)", fontSize: 12 }}>Loading...</div></main>
-      </div>
+      </AppShell>
     );
   }
 
   if (!data) {
     return (
-      <div className="app-shell">
-        <Sidebar />
+      <AppShell>
         <main className="main-area"><div style={{ padding: 40, color: "var(--fg3)", fontSize: 12 }}>Project not found</div></main>
-      </div>
+      </AppShell>
     );
   }
 
   const { folder, assessments, documents, gaps, chats, counts } = data;
 
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <AppShell>
       <main className="main-area">
         <div className="main-scroll">
           <div className="chat-scroll">
@@ -210,7 +207,7 @@ export default function ProjectDetailPage() {
               <ArrowLeft size={12} /> All projects
             </Link>
 
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+            <div className="project-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 10, background: `${folder.color}22`,
@@ -224,6 +221,7 @@ export default function ProjectDetailPage() {
                   <p style={{ fontSize: 10, color: "var(--fg4)", margin: 0 }}>Created {fmtProjectDate(folder.created_at)}</p>
                 </div>
               </div>
+              <div className="project-header-actions">
               <button type="button" onClick={deleteProject} style={{
                 display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 10px",
                 borderRadius: 6, border: "0.5px solid var(--bdr2)", background: "transparent",
@@ -231,6 +229,7 @@ export default function ProjectDetailPage() {
               }}>
                 <Trash2 size={12} /> Delete project
               </button>
+              </div>
             </div>
 
             <div style={{
@@ -339,7 +338,7 @@ export default function ProjectDetailPage() {
           onAdd={async itemId => patchItem({ add_item: { type: addType, id: itemId } })}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
 

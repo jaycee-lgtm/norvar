@@ -8,9 +8,9 @@ const H = "#e2e2e0";
 
 export default function LandingPage() {
   return (
-    <div style={{ background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Sora', system-ui, sans-serif" }}>
+    <div style={{ background: "#000", minHeight: "100dvh", display: "flex", flexDirection: "column", fontFamily: "'Sora', system-ui, sans-serif" }}>
 
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
+      <header className="landing-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <Logo size={28} />
           <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>Norvar</span>
@@ -29,7 +29,7 @@ export default function LandingPage() {
       </header>
 
       <section style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{
+        <div className="landing-hero" style={{
           padding: "40px 52px",
           width: "100%",
           maxWidth: 640,
@@ -44,10 +44,10 @@ export default function LandingPage() {
           <h1 style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 500, color: H, letterSpacing: "-.045em", lineHeight: 1.05, marginBottom: 22, fontFamily: "'Sora', sans-serif" }}>
             Know your regulatory<br />exposure before<br />you build
           </h1>
-          <p style={{ fontSize: 15, color: "#888884", lineHeight: 1.7, maxWidth: 460, letterSpacing: "-.01em", marginBottom: 36, fontFamily: "'Sora', sans-serif", textAlign: "justify" }}>
+          <p style={{ fontSize: 15, color: "#888884", lineHeight: 1.7, maxWidth: 460, letterSpacing: "-.01em", marginBottom: 36, fontFamily: "'Sora', sans-serif", textAlign: "center" }}>
             Norvar maps what you are building to the regulations that apply, scores your risk, and surfaces compliance gaps before launch.
           </p>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", width: "100%" }}>
+          <div className="landing-cta-row" style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", width: "100%" }}>
             <SignInButton>
               <button type="button" style={{ fontSize: 13, background: "#8b1a1a", color: "#f5f5f4", padding: "11px 22px", borderRadius: 6, fontWeight: 500, fontFamily: "'Sora', sans-serif", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
                 Run first assessment
@@ -63,12 +63,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
+      <footer className="landing-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Logo size={20} />
           <span style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif" }}>Norvar - norvar.io</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        <div className="landing-footer-links" style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <Link href="/privacy" style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Privacy</Link>
           <Link href="/terms"   style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Terms</Link>
           <Link href="/contact" style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif", textDecoration: "none" }}>Contact</Link>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import { PROJECT_COLORS, fmtProjectDate } from "@/lib/projects";
 import {
   Briefcase, Plus, FolderOpen, FileSearch, ShieldAlert,
@@ -134,8 +134,7 @@ export default function ProjectsPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <AppShell>
       <main className="main-area">
         <div className="main-scroll">
           <div className="chat-scroll">
@@ -224,7 +223,7 @@ export default function ProjectsPage() {
           onCreated={id => { load(); window.location.href = `/projects/${id}`; }}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import {
   Upload, Archive, Trash2, FolderOpen,
   Download, Search, ChevronDown, X,
@@ -215,6 +215,7 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
       background: "var(--card)", border: "0.5px solid var(--bdr2)",
       borderRadius: 8,
     }}
+      className="doc-row"
       onMouseEnter={e => (e.currentTarget.style.background = "var(--lift)")}
       onMouseLeave={e => (e.currentTarget.style.background = "var(--card)")}
     >
@@ -228,7 +229,7 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
         </span>
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="doc-row-main" style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {doc.name}
         </div>
@@ -250,6 +251,7 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
         </div>
       </div>
 
+      <div className="doc-row-actions">
       {doc.status === "archived" && (
         <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "var(--card2)", color: "var(--fg3)", border: "0.5px solid var(--bdr)" }}>
           Archived
@@ -309,6 +311,7 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
@@ -406,18 +409,18 @@ function DocumentsPageInner() {
   ) : null;
 
   return (
-    <div className="app-shell">
-      <Sidebar extra={folderFilters} />
+    <AppShell sidebarExtra={folderFilters}>
       <main className="main-area">
-        <div style={{
+        <div className="page-toolbar" style={{
           padding: "16px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", alignItems: "center", gap: 12,
-          background: "var(--card)", flexShrink: 0,
+          background: "var(--card)", flexShrink: 0, flexWrap: "wrap",
         }}>
           <FolderOpen size={14} color="var(--fg3)" />
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Documents</span>
+          <span className="page-toolbar-title" style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Documents</span>
 
-          <div style={{ position: "relative" }}>
+          <div className="page-toolbar-controls" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
             <Search size={12} color="var(--fg3)" style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }} />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
@@ -426,9 +429,10 @@ function DocumentsPageInner() {
                 paddingLeft: 28, paddingRight: 10, paddingTop: 6, paddingBottom: 6,
                 borderRadius: 6, border: "0.5px solid var(--bdr2)", background: "var(--card2)",
                 color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif", width: 220,
+                maxWidth: "100%",
               }}
             />
-          </div>
+            </div>
 
           <div style={{ display: "flex", gap: 4 }}>
             {(["active", "archived"] as const).map(s => (
@@ -451,9 +455,10 @@ function DocumentsPageInner() {
           }}>
             <Upload size={12} /> Upload
           </button>
+          </div>
         </div>
 
-        <div style={{
+        <div className="page-stats-bar" style={{
           padding: "10px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", gap: 20, background: "var(--card2)",
           flexShrink: 0,
@@ -505,6 +510,6 @@ function DocumentsPageInner() {
           onUploaded={load}
         />
       )}
-    </div>
+    </AppShell>
   );
 }

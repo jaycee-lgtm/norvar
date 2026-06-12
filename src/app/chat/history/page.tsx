@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import { MessageSquare, Plus, ChevronRight, Trash2 } from "lucide-react";
 
 type ConversationItem = {
@@ -46,12 +46,11 @@ export default function ChatHistoryPage() {
   };
 
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <AppShell>
       <div className="main-area" style={{ overflowY: "auto" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "36px 32px" }}>
+        <div className="page-body" style={{ maxWidth: 720, margin: "0 auto" }}>
 
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
+          <div className="page-heading-row" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28, gap: 12, flexWrap: "wrap" }}>
             <div>
               <p className="stag" style={{ marginBottom: 8 }}>Chat history</p>
               <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-.04em", fontFamily: "'Sora', sans-serif" }}>
@@ -154,6 +153,6 @@ export default function ChatHistoryPage() {
 
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

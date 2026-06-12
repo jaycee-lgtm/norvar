@@ -3,7 +3,7 @@
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Show } from "@clerk/nextjs";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
@@ -1223,8 +1223,7 @@ function Home() {
   return (
     <>
       <Show when="signed-in">
-        <div className="app-shell">
-          <Sidebar />
+        <AppShell>
           <div className="main-area">
 
             {loadingSaved && (
@@ -1254,7 +1253,7 @@ function Home() {
 
             {!isHome && !loadingSaved && (
               <>
-                <div style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+                <div className="mode-bar" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                   <ModeSelector current="assess" />
                 </div>
                 <div ref={scrollRef} className="main-scroll">
@@ -1400,7 +1399,7 @@ function Home() {
             )}
 
           </div>
-        </div>
+        </AppShell>
       </Show>
 
       <Show when="signed-out">

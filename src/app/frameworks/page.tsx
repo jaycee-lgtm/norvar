@@ -1,6 +1,6 @@
 "use client";
 
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import { Search } from "lucide-react";
 import { useState } from "react";
 import FRAMEWORKS from "@/lib/frameworks";
@@ -34,8 +34,7 @@ export default function FrameworksPage() {
   const domains = ["all", ...Array.from(new Set(FRAMEWORKS.map(f => f.domain)))];
 
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <AppShell>
       <div className="main-area" style={{ overflowY: "auto" }}>
         <div className="page-body" style={{ margin: "0 auto" }}>
 
@@ -50,7 +49,7 @@ export default function FrameworksPage() {
           </div>
 
           {/* Filters */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+          <div className="framework-filters" style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
               background: "var(--card)", border: "0.5px solid var(--bdr2)",
@@ -86,7 +85,7 @@ export default function FrameworksPage() {
           </div>
 
           {/* Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
+          <div className="framework-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
             {filtered.map(fw => {
               const sc = STATUS_COLORS[fw.status] || STATUS_COLORS.watch;
               return (
@@ -133,6 +132,6 @@ export default function FrameworksPage() {
 
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

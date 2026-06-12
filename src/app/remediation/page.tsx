@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import AssigneeManager from "@/components/AssigneeManager";
 import EscalateModal from "@/components/EscalateModal";
@@ -485,17 +485,17 @@ export default function RemediationPage() {
   };
 
   return (
-    <div className="app-shell">
-      <Sidebar extra={statusFilters} />
+    <AppShell sidebarExtra={statusFilters}>
       <main className="main-area">
-        <div style={{
+        <div className="page-toolbar" style={{
           padding: "16px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", alignItems: "center", gap: 12,
           background: "var(--card)", flexShrink: 0, flexWrap: "wrap",
         }}>
           <ShieldAlert size={14} color="var(--fg3)" />
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Remediation queue</span>
+          <span className="page-toolbar-title" style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Remediation queue</span>
 
+          <div className="page-toolbar-controls">
           <select
             value={filterSev}
             onChange={e => setFilterSev(e.target.value)}
@@ -551,9 +551,10 @@ export default function RemediationPage() {
             <User size={10} />
             Mine only
           </button>
+          </div>
         </div>
 
-        <div style={{
+        <div className="page-stats-bar" style={{
           padding: "10px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", gap: 24, background: "var(--card2)", flexWrap: "wrap",
           flexShrink: 0,
@@ -602,6 +603,6 @@ export default function RemediationPage() {
           </div>
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }
