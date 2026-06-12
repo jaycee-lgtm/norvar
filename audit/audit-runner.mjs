@@ -10,7 +10,8 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const { TEST_QUERIES } = await import(join(__dirname, "queries.js"));
+const { TEST_QUERIES }  = await import(join(__dirname, "queries.js"));
+const { scoreResponse } = await import(join(__dirname, "scoring.mjs"));
 import { writeFileSync } from "fs";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -33,70 +34,7 @@ if (!SECRET) {
 }
 
 // ─── SCORING ─────────────────────────────────────────────────────────────────
-
-function scoreResponse(query, responseText) {
-  const text = responseText.toLowerCase();
-  const scores = {
-    frameworkCoverage: 0,
-    conceptCoverage:   0,
-    citationPresent:   false,
-    outOfScopeHandled: false,
-    redFlagsTriggered: [],
-    notes: [],
-  };
-
-  const expectedFrameworks = query.expected.frameworks || [];
-  const foundFrameworks    = expectedFrameworks.filter(f => text.includes(f.toLowerCase()));
-  scores.frameworkCoverage = expectedFrameworks.length > 0
-    ? Math.round((foundFrameworks.length / expectedFrameworks.length) * 100) : 100;
-  scores.foundFrameworks   = foundFrameworks;
-  scores.missingFrameworks = expectedFrameworks.filter(f => !text.includes(f.toLowerCase()));
-
-  const expectedConcepts = query.expected.concepts || [];
-  const foundConcepts    = expectedConcepts.filter(c => text.includes(c.toLowerCase()));
-  scores.conceptCoverage = expectedConcepts.length > 0
-    ? Math.round((foundConcepts.length / expectedConcepts.length) * 100) : 100;
-  scores.foundConcepts   = foundConcepts;
-  scores.missingConcepts = expectedConcepts.filter(c => !text.includes(c.toLowerCase()));
-
-  const citationPatterns = [
-    /art(?:icle)?\.?\s*\d+/i, /§\s*\d+/, /section\s+\d+/i,
-    /local law\s+\d+/i, /\d+\s+cfr/i, /recital\s+\d+/i,
-  ];
-  scores.citationPresent = citationPatterns.some(p => p.test(responseText));
-
-  if (query.type === "out-of-scope") {
-    const refusalSignals = [
-      "outside", "not a compliance", "technical question", "beyond", "scope",
-      "not able to", "cannot assess", "architecture", "product comparison", "benchmark",
-    ];
-    scores.outOfScopeHandled = refusalSignals.some(s => text.includes(s));
-    if (!scores.outOfScopeHandled && text.length > 200) {
-      scores.notes.push("WARNING: May have hallucinated compliance findings for out-of-scope query");
-    }
-  }
-
-  scores.redFlagsTriggered = (query.redFlags || []).filter(flag => {
-    const flagLower = flag.toLowerCase();
-    if (flagLower.includes("no mention of")) {
-      const subject = flagLower.replace("no mention of", "").trim();
-      return !text.includes(subject);
-    }
-    return false;
-  });
-
-  const baseScore = Math.round(
-    (scores.frameworkCoverage * 0.4) +
-    (scores.conceptCoverage   * 0.4) +
-    (scores.citationPresent ? 20 : 0)
-  );
-  scores.compositeScore = Math.min(100, baseScore);
-  scores.grade =
-    scores.compositeScore >= 85 ? "PASS" :
-    scores.compositeScore >= 65 ? "REVIEW" : "FAIL";
-
-  return scores;
-}
+// Synonym-aware scoring lives in scoring.mjs (imported above).
 
 // ─── REQUEST ─────────────────────────────────────────────────────────────────
 

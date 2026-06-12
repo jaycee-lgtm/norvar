@@ -8,6 +8,8 @@ import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
+import VoiceControls, { VoiceErrorBanner } from "@/components/VoiceControls";
+import { useVoice } from "@/hooks/useVoice";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -659,9 +661,11 @@ function Home() {
     sector:        string;
   } | null>(null);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollRef   = useRef<HTMLDivElement>(null);
-  const fileRef     = useRef<HTMLInputElement>(null);
+  const textareaRef    = useRef<HTMLTextAreaElement>(null);
+  const scrollRef      = useRef<HTMLDivElement>(null);
+  const fileRef        = useRef<HTMLInputElement>(null);
+  const followUpRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
+  const speakAfterRef  = useRef<(text: string) => void>(() => {});
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -764,6 +768,17 @@ function Home() {
   const canSend = hasAssessment
     ? input.trim().length > 2 && !loading
     : input.trim().length > 10 && !loading && !inferring;
+
+  const voice = useVoice({
+    onTranscript: text => setInput(text),
+    onAutoSend: async text => {
+      const response = await followUpRef.current(text);
+      if (response) speakAfterRef.current(response);
+    },
+    disabled: loading || !hasAssessment,
+  });
+
+  speakAfterRef.current = voice.speakAfterResponse;
 
   const awaitingInference = messages.some(m => m.role === "thinking" && m.isFollowUp);
 
@@ -998,7 +1013,7 @@ function Home() {
     }
   };
 
-  const handleFollowUp = async (text: string) => {
+  const handleFollowUp = async (text: string): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "user", content: text }]);
     setLoading(true);
     setMessages(prev => [...prev, { role: "chat", text: "" }]);
@@ -1045,13 +1060,18 @@ function Home() {
           throw new Error(event.text);
         }
       });
+
+      return chatText || null;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setMessages(prev => prev.filter(m => m.role !== "chat" || m.text));
+      return null;
     } finally {
       setLoading(false);
     }
   };
+
+  followUpRef.current = handleFollowUp;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -1061,7 +1081,8 @@ function Home() {
     setOpenChip(null);
 
     if (hasAssessment) {
-      await handleFollowUp(text);
+      const response = await handleFollowUp(text);
+      if (response) voice.speakAfterResponse(response);
     } else if (awaitingInference || followUp) {
       await handleInferenceOption(text);
     } else {
@@ -1291,6 +1312,30 @@ function Home() {
 
                 <div className="chat-input-row">
                   <div className="chat-input-inner">
+                    <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+                      <VoiceControls
+                        speakEnabled={voice.settings.speakResponses}
+                        conversationEnabled={voice.settings.voiceConversation}
+                        onToggleSpeak={voice.toggleSpeakResponses}
+                        onToggleConversation={voice.toggleVoiceConversation}
+                        isListening={voice.isListening}
+                        isSpeaking={voice.isSpeaking}
+                        onStartListening={voice.startListening}
+                        onStopListening={voice.stopListening}
+                        onStopSpeaking={voice.stopSpeak}
+                        ttsSupported={voice.support.tts}
+                        sttSupported={voice.support.stt}
+                        configured={voice.support.configured}
+                        disabled={loading}
+                      />
+                      {!voice.support.configured && (
+                        <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>
+                          Install the ElevenLabs integration on Vercel to enable AI voice.
+                        </p>
+                      )}
+                      {voice.voiceError && (
+                        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                      )}
                     <div className="chat-input-bar">
                       <input
                         className="chat-input-field"
@@ -1302,6 +1347,7 @@ function Home() {
                       <button type="button" className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
                         {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                       </button>
+                    </div>
                     </div>
                   </div>
                 </div>

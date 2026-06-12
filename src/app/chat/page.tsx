@@ -7,6 +7,8 @@ import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
+import VoiceControls, { VoiceErrorBanner } from "@/components/VoiceControls";
+import { useVoice } from "@/hooks/useVoice";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -100,9 +102,11 @@ function Chat() {
   const [error,          setError]          = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const inputRef    = useRef<HTMLTextAreaElement>(null);
-  const scrollRef   = useRef<HTMLDivElement>(null);
-  const loadedIdRef = useRef<string | null>(null);
+  const inputRef         = useRef<HTMLTextAreaElement>(null);
+  const scrollRef        = useRef<HTMLDivElement>(null);
+  const loadedIdRef      = useRef<string | null>(null);
+  const handleSendRef    = useRef<(text?: string) => Promise<string | null>>(async () => null);
+  const speakAfterRef    = useRef<(text: string) => void>(() => {});
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -149,9 +153,20 @@ function Chat() {
 
   const canSend = input.trim().length > 2 && !loading;
 
-  const handleSend = async (text?: string) => {
+  const voice = useVoice({
+    onTranscript: text => setInput(text),
+    onAutoSend: async text => {
+      const response = await handleSendRef.current(text);
+      if (response) speakAfterRef.current(response);
+    },
+    disabled: loading,
+  });
+
+  speakAfterRef.current = voice.speakAfterResponse;
+
+  const handleSend = async (text?: string): Promise<string | null> => {
     const content = (text ?? input).trim();
-    if (!content || content.length <= 2 || loading) return;
+    if (!content || content.length <= 2 || loading) return null;
     setInput("");
     setError("");
 
@@ -163,6 +178,7 @@ function Chat() {
     setLoading(true);
 
     let streamText = "";
+    let finalResponse: string | null = null;
 
     try {
       const res = await fetch("/api/grc-chat", {
@@ -191,6 +207,7 @@ function Chat() {
           });
         } else if (event.type === "done") {
           const finalText = streamText || event.text || "";
+          finalResponse = finalText;
           setMessages(prev => {
             const next = [...prev];
             const idx  = next.findLastIndex(m => m.role === "streaming");
@@ -211,17 +228,55 @@ function Chat() {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setMessages(prev => prev.filter(m => m.role !== "streaming"));
       setHistory(prev => prev.slice(0, -1));
+      return null;
     } finally {
       setLoading(false);
     }
+
+    return finalResponse;
+  };
+
+  handleSendRef.current = handleSend;
+
+  const sendWithVoice = async (text?: string) => {
+    const response = await handleSend(text);
+    if (response) voice.speakAfterResponse(response);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      sendWithVoice();
     }
   };
+
+  const voiceBar = (
+    <>
+      <VoiceControls
+        speakEnabled={voice.settings.speakResponses}
+        conversationEnabled={voice.settings.voiceConversation}
+        onToggleSpeak={voice.toggleSpeakResponses}
+        onToggleConversation={voice.toggleVoiceConversation}
+        isListening={voice.isListening}
+        isSpeaking={voice.isSpeaking}
+        onStartListening={voice.startListening}
+        onStopListening={voice.stopListening}
+        onStopSpeaking={voice.stopSpeak}
+        ttsSupported={voice.support.tts}
+        sttSupported={voice.support.stt}
+        configured={voice.support.configured}
+        disabled={loading}
+      />
+      {!voice.support.configured && (
+        <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>
+          Install the ElevenLabs integration on Vercel to enable AI voice.
+        </p>
+      )}
+      {voice.voiceError && (
+        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+      )}
+    </>
+  );
 
   const startNew = () => {
     setMessages([]);
@@ -271,6 +326,7 @@ function Chat() {
               </div>
 
               <div className="input-wrap" style={{ marginBottom: 24 }}>
+                {voiceBar}
                 <div className="input-bar">
                   <textarea
                     ref={inputRef}
@@ -281,7 +337,7 @@ function Chat() {
                     onKeyDown={handleKey}
                     rows={1}
                   />
-                  <button type="button" className="send-btn" onClick={() => handleSend()} disabled={!canSend}>
+                  <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                     {loading
                       ? <Loader2 size={16} className="spin" />
                       : <ArrowUp size={16} strokeWidth={2.5} />}
@@ -290,7 +346,7 @@ function Chat() {
               </div>
 
               <SampleQuestionsDropdown
-                onSelect={q => handleSend(q)}
+                onSelect={q => sendWithVoice(q)}
                 disabled={loading}
               />
 
@@ -356,7 +412,7 @@ function Chat() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <SampleQuestionsDropdown
                         align="left"
-                        onSelect={q => handleSend(q)}
+                        onSelect={q => sendWithVoice(q)}
                         disabled={loading}
                       />
                       <button
@@ -374,6 +430,7 @@ function Chat() {
                       </button>
                     </div>
                   </div>
+                  {voiceBar}
                   <div className="chat-input-bar">
                     <input
                       className="chat-input-field"
@@ -382,7 +439,7 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <button type="button" className="chat-send-btn" onClick={() => handleSend()} disabled={!canSend}>
+                    <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                       {loading
                         ? <Loader2 size={14} className="spin" />
                         : <ArrowUp size={14} strokeWidth={2.5} />}
