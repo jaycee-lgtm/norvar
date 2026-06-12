@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { syncGapChatToAssessment, gapKeyFromTitle } from "@/lib/gap-chat";
+import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
 import {
   buildRegulatoryContextBlock,
   filterRegulatoryChunks,
@@ -74,12 +75,14 @@ export async function POST(req: NextRequest) {
 
   (async () => {
     try {
-      const { userId } = await auth();
+      const { userId, orgId } = await auth();
       if (!userId) {
         await send({ type: "error", text: "Unauthorised" });
         await writer.close();
         return;
       }
+
+      const activeOrgId = await getActiveOrganizationId(userId, orgId);
 
       const {
         messages,
@@ -162,7 +165,23 @@ export async function POST(req: NextRequest) {
           return;
         }
 
-        const canAccess = item.created_by === userId || (item.assigned_to ?? []).includes(userId);
+        let canAccess =
+          item.created_by === userId
+          || (item.assigned_to ?? []).includes(userId);
+
+        if (!canAccess && activeOrgId && await isOrgMember(activeOrgId, userId)) {
+          if (await isOrgMember(activeOrgId, item.created_by)) {
+            canAccess = true;
+          } else {
+            for (const assigneeId of item.assigned_to ?? []) {
+              if (await isOrgMember(activeOrgId, assigneeId)) {
+                canAccess = true;
+                break;
+              }
+            }
+          }
+        }
+
         if (!canAccess) {
           await send({ type: "error", text: "Forbidden" });
           await writer.close();

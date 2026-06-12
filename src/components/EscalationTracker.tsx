@@ -51,6 +51,8 @@ export default function EscalationTracker({
 }: EscalationTrackerProps) {
   const [renotifyBusy, setRenotifyBusy] = useState(false);
   const [statusBusy, setStatusBusy]     = useState(false);
+  const [roleBusy, setRoleBusy]         = useState(false);
+  const [error, setError]               = useState("");
   const [roleEdits, setRoleEdits]       = useState<Record<string, string>>({});
 
   const currentStep = escalationStepIndex(escalationStatus ?? undefined);
@@ -58,13 +60,18 @@ export default function EscalationTracker({
 
   const renotify = async () => {
     setRenotifyBusy(true);
+    setError("");
     try {
-      await fetch("/api/remediation", {
+      const res = await fetch("/api/remediation", {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ id: itemId, renotify: true }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not send reminder");
       onUpdate();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not send reminder");
     } finally {
       setRenotifyBusy(false);
     }
@@ -72,13 +79,18 @@ export default function EscalationTracker({
 
   const setStatus = async (status: EscalationStatus) => {
     setStatusBusy(true);
+    setError("");
     try {
-      await fetch("/api/remediation", {
+      const res = await fetch("/api/remediation", {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ id: itemId, escalation_status: status }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update escalation");
       onUpdate();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not update escalation");
     } finally {
       setStatusBusy(false);
     }
@@ -87,12 +99,22 @@ export default function EscalationTracker({
   const saveAssigneeRole = async (userId: string) => {
     const role = roleEdits[userId]?.trim();
     if (!role) return;
-    await fetch("/api/remediation", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: itemId, assignee_id: userId, assignee_role: role }),
-    });
-    onUpdate();
+    setRoleBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/remediation", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: itemId, assignee_id: userId, assignee_role: role }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save role");
+      onUpdate();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not save role");
+    } finally {
+      setRoleBusy(false);
+    }
   };
 
   if (!escalationEmail && assignedTo.length === 0) return null;
@@ -142,6 +164,7 @@ export default function EscalationTracker({
                     />
                     <button
                       type="button"
+                      disabled={roleBusy}
                       onClick={() => saveAssigneeRole(id)}
                       style={{
                         padding: "4px 8px", borderRadius: 4, fontSize: 10,
@@ -238,6 +261,10 @@ export default function EscalationTracker({
             )}
           </div>
         </>
+      )}
+
+      {error && (
+        <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, marginBottom: 0 }}>{error}</p>
       )}
     </div>
   );

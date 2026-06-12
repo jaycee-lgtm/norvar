@@ -117,7 +117,12 @@ export default function GapChat({
     <div className="gap-chat" onClick={e => e.stopPropagation()}>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={() => {
+          setOpen(v => {
+            if (v) setError("");
+            return !v;
+          });
+        }}
         className="gap-chat-toggle"
       >
         <MessageSquare size={11} />
@@ -126,6 +131,10 @@ export default function GapChat({
           <span className="gap-chat-count">{Math.ceil(messages.length / 2)}</span>
         )}
       </button>
+
+      {error && !open && (
+        <p className="gap-chat-error" style={{ marginTop: 6 }}>{error}</p>
+      )}
 
       {open && (
         <div className="gap-chat-panel">

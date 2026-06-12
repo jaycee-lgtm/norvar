@@ -41,6 +41,38 @@ function canManageItem(item: { created_by: string; assigned_to: string[] | null 
   return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
 }
 
+async function canAccessRemediationItem(
+  item: { created_by: string; assigned_to: string[] | null },
+  userId: string,
+  orgId: string | null,
+): Promise<boolean> {
+  if (canManageItem(item, userId)) return true;
+  if (!orgId) return false;
+
+  const userInOrg = await isOrgMember(orgId, userId);
+  if (!userInOrg) return false;
+
+  if (await isOrgMember(orgId, item.created_by)) return true;
+
+  for (const assigneeId of item.assigned_to ?? []) {
+    if (await isOrgMember(orgId, assigneeId)) return true;
+  }
+
+  return false;
+}
+
+async function loadRemediationItem(id: string) {
+  const { data, error } = await supabase
+    .from("remediation_items")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) return { item: null as Record<string, unknown> | null, error: error.message };
+  if (!data) return { item: null, error: "Remediation item not found" };
+  return { item: data, error: null };
+}
+
 async function assertCanAssign(userId: string, orgId: string | null, targetUserId: string) {
   if (!orgId) return null;
   const ok = await isOrgMember(orgId, targetUserId);
@@ -303,21 +335,33 @@ export async function PATCH(req: NextRequest) {
 
   if (!id) return Response.json({ error: "ID required" }, { status: 400 });
 
-  const { data: current } = await supabase
-    .from("remediation_items")
-    .select(`
-      assigned_to, status, created_by, assignee_meta,
-      gap_title, gap_severity, gap_domain, gap_detail, project_title,
-      escalation_token, escalation_email, escalation_recipient_name,
-      escalation_role, escalation_question, escalation_note
-    `)
-    .eq("id", id)
-    .single();
-  if (!current) return Response.json({ error: "Not found" }, { status: 404 });
+  const { item: loaded, error: loadError } = await loadRemediationItem(id);
+  if (loadError || !loaded) {
+    return Response.json({ error: loadError ?? "Remediation item not found" }, { status: loadError === "Remediation item not found" ? 404 : 500 });
+  }
+  const current = loaded as {
+    assigned_to: string[] | null;
+    status: string;
+    created_by: string;
+    assignee_meta: AssigneeMeta | null;
+    gap_title: string;
+    gap_severity: string;
+    gap_domain: string;
+    gap_detail: string | null;
+    project_title: string | null;
+    escalation_token: string | null;
+    escalation_email: string | null;
+    escalation_recipient_name: string | null;
+    escalation_role: string | null;
+    escalation_question: string | null;
+    escalation_note: string | null;
+  };
+
+  const canManage = async () => canAccessRemediationItem(current, userId, activeOrgId);
 
   // ── Renotify escalation recipient ─────────────────────────────────────────
   if (renotify) {
-    if (!canManageItem(current, userId)) {
+    if (!(await canManage())) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
     if (!current.escalation_email || !current.escalation_token) {
@@ -362,19 +406,19 @@ export async function PATCH(req: NextRequest) {
 
   const assigneeChange = assigned_to || add_assignee || remove_assignee
     || add_assignee_email || reassign_email || reassign_to;
-  if (assigneeChange && !canManageItem(current, userId)) {
+  if (assigneeChange && !(await canManage())) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (escalation_email && !canManageItem(current, userId)) {
+  if (escalation_email && !(await canManage())) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (escalation_status && !canManageItem(current, userId)) {
+  if (escalation_status && !(await canManage())) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (status && !canManageItem(current, userId)) {
+  if (status && !(await canManage())) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -447,7 +491,7 @@ export async function PATCH(req: NextRequest) {
     if (escalation_status === "closed") updates.status = "in_progress";
   }
 
-  if (assignee_role && assignee_id && canManageItem(current, userId)) {
+  if (assignee_role && assignee_id && (await canManage())) {
     const meta = touchAssigneeMeta(
       (current.assignee_meta as AssigneeMeta) ?? {},
       current.assigned_to ?? [],
@@ -554,9 +598,10 @@ export async function PATCH(req: NextRequest) {
     .update(updates)
     .eq("id", id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (!data) return Response.json({ error: "Remediation item not found" }, { status: 404 });
 
   if (activityDetail) {
     await supabase.from("remediation_activity").insert({
@@ -572,21 +617,20 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE — remove a remediation item
 export async function DELETE(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { id } = await req.json();
   if (!id) return Response.json({ error: "ID required" }, { status: 400 });
 
-  const { data: item } = await supabase
-    .from("remediation_items")
-    .select("created_by, assigned_to")
-    .eq("id", id)
-    .single();
+  const { item: loaded, error: loadError } = await loadRemediationItem(id);
+  if (loadError || !loaded) {
+    return Response.json({ error: loadError ?? "Remediation item not found" }, { status: loadError === "Remediation item not found" ? 404 : 500 });
+  }
+  const item = loaded as { created_by: string; assigned_to: string[] | null };
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
 
-  if (!item) return Response.json({ error: "Not found" }, { status: 404 });
-
-  if (!canManageItem(item, userId)) {
+  if (!(await canAccessRemediationItem(item, userId, activeOrgId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

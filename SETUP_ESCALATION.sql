@@ -8,6 +8,7 @@ alter table remediation_items add column if not exists escalation_recipient_name
 alter table remediation_items add column if not exists escalation_recipient_user_id text;
 alter table remediation_items add column if not exists escalation_role text;
 alter table remediation_items add column if not exists escalation_question text;
+alter table remediation_items add column if not exists escalation_note text;
 alter table remediation_items add column if not exists escalated_at timestamptz;
 alter table remediation_items add column if not exists escalation_status text
   check (escalation_status is null or escalation_status in ('sent', 'viewed', 'in_review', 'responded', 'closed'));
