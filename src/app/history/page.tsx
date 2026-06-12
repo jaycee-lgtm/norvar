@@ -68,7 +68,7 @@ export default function HistoryPage() {
                 Your assessments
               </h1>
             </div>
-            <Link href="/" className="btn-primary" style={{ fontSize: 12, padding: "8px 14px", gap: 6 }}>
+            <Link href="/assess" className="btn-primary" style={{ fontSize: 12, padding: "8px 14px", gap: 6 }}>
               <Plus size={13} strokeWidth={2} />
               New assessment
             </Link>
@@ -91,7 +91,7 @@ export default function HistoryPage() {
               <p style={{ fontSize: 12, color: "var(--fg3)", marginBottom: 24, fontFamily: "'Sora', sans-serif" }}>
                 Run your first assessment to see your compliance history here.
               </p>
-              <Link href="/" className="btn-primary" style={{ gap: 6 }}>
+              <Link href="/assess" className="btn-primary" style={{ gap: 6 }}>
                 Run first assessment
                 <ChevronRight size={14} strokeWidth={2} />
               </Link>
@@ -104,7 +104,7 @@ export default function HistoryPage() {
               const title = item.title || item.description;
               return (
                 <div key={item.id} className="history-item" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <Link href={`/?id=${item.id}`} style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0, textDecoration: "none", color: "inherit" }}>
+                  <Link href={`/assess?id=${item.id}`} style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0, textDecoration: "none", color: "inherit" }}>
                   <div className="history-score" style={{ background: c.bg, border: `0.5px solid ${c.bdr}` }}>
                     <span className="history-score-num" style={{ color: c.num }}>{item.risk_score}</span>
                     <span className="history-score-den">/100</span>

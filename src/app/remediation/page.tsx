@@ -225,7 +225,7 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
               gap: 10, flexWrap: "wrap", marginTop: 12, marginBottom: 10,
             }}>
               <Link
-                href={`/?id=${item.assessment_id}`}
+                href={`/assess?id=${item.assessment_id}`}
                 onClick={e => e.stopPropagation()}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 5,

@@ -250,7 +250,7 @@ export default function ProjectDetailPage() {
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-              <Link href={`/?folder=${id}`} className="btn-primary" style={{ fontSize: 11, padding: "6px 12px", gap: 5 }}>
+              <Link href={`/assess?folder=${id}`} className="btn-primary" style={{ fontSize: 11, padding: "6px 12px", gap: 5 }}>
                 <Plus size={11} /> New assessment
               </Link>
               <Link href={`/documents?folder=${id}`} className="btn-secondary" style={{ fontSize: 11, padding: "6px 12px", gap: 5 }}>
@@ -270,7 +270,7 @@ export default function ProjectDetailPage() {
               {assessments.map(a => (
                 <ProjectRow
                   key={a.id}
-                  href={`/?id=${a.id}`}
+                  href={`/assess?id=${a.id}`}
                   title={a.title}
                   meta={`${a.assessment_number ?? "—"} · ${a.risk_tier} risk · ${a.risk_score}/100`}
                   onRemove={() => patchItem({ remove_item: { type: "assessment", id: a.id } })}

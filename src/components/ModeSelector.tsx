@@ -15,20 +15,20 @@ export const MODES: {
   href:    string;
 }[] = [
   {
-    id:      "assess",
-    label:   "Cassius",
-    version: "1.0",
-    tagline: "Formal compliance risk assessment",
-    icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
-    href:    "/",
-  },
-  {
     id:      "chat",
     label:   "Nora",
     version: "1.0",
     tagline: "Free-form GRC conversation",
     icon:    <MessageSquare size={13} strokeWidth={1.75} />,
     href:    "/chat",
+  },
+  {
+    id:      "assess",
+    label:   "Cassius",
+    version: "1.0",
+    tagline: "Formal compliance risk assessment",
+    icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
+    href:    "/assess",
   },
 ];
 

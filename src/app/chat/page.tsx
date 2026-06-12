@@ -392,7 +392,7 @@ function Chat() {
                   <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
-                      GRC chat
+                      Chat
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <SampleQuestionsDropdown

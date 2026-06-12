@@ -35,11 +35,11 @@ export default function PrivacyPage() {
     <div style={{ background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Sora', system-ui, sans-serif" }}>
 
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
+        <Link href="/chat" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <Logo size={26} />
           <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em" }}>Norvar</span>
         </Link>
-        <Link href="/" style={{ fontSize: 12, color: "#444442", textDecoration: "none", letterSpacing: "-.01em" }}>Back to home</Link>
+        <Link href="/chat" style={{ fontSize: 12, color: "#444442", textDecoration: "none", letterSpacing: "-.01em" }}>Back to home</Link>
       </header>
 
       <main style={{ flex: 1, padding: "72px 52px", maxWidth: 680 }}>

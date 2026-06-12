@@ -37,7 +37,9 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { user }     = useUser();
-  const isChat       = path.startsWith("/chat");
+  const isChat   = path === "/chat" || path.startsWith("/chat/");
+  const isAssess = path === "/assess";
+  const sidebarMode = isAssess ? "assess" as const : "chat" as const;
   const activeId     = searchParams.get("id");
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
@@ -74,7 +76,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Delete failed");
       setAssessments(prev => prev.filter(a => a.id !== id));
-      if (activeId === id) router.push("/");
+      if (activeId === id) router.push("/assess");
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Could not delete assessment");
     } finally {
@@ -87,12 +89,12 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
     : "N";
 
   const mainNav = [
-    { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
     { href: "/chat", label: "Chat", icon: MessageSquare, active: path === "/chat" },
+    { href: "/assess", label: "Assessments", icon: FileSearch, active: isAssess },
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     {
-      href: isChat ? "/chat/history" : "/history",
+      href: isAssess || path === "/history" ? "/history" : "/chat/history",
       label: "History",
       icon: LayoutDashboard,
       active: path === "/history" || path === "/chat/history",
@@ -108,14 +110,14 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
             Norvar
           </span>
         </div>
-        <Link href={isChat ? "/chat" : "/"} className="new-assess-btn">
-          <span className="new-assess-label">{isChat ? "New chat" : "New assessment"}</span>
+        <Link href={isAssess ? "/assess" : "/chat"} className="new-assess-btn">
+          <span className="new-assess-label">{isAssess ? "New assessment" : "New chat"}</span>
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
       </div>
 
       <div style={{ padding: "0 10px 8px" }}>
-        <ModeSelector current={isChat ? "chat" : "assess"} compact />
+        <ModeSelector current={sidebarMode} compact />
       </div>
 
       <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
@@ -182,7 +184,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
           </Link>
         </div>
 
-        {assessments.length > 0 && !isChat && (
+        {assessments.length > 0 && isAssess && (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent assessments</div>
@@ -192,7 +194,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
               return (
                 <div key={item.id} className="recent-item-row">
                   <Link
-                    href={`/?id=${item.id}`}
+                    href={`/assess?id=${item.id}`}
                     className={`recent-item${isActive ? " active" : ""}`}
                   >
                     <div className="recent-dot" style={{ background: c.dot }} />
