@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { isAuditRequest } from "@/lib/audit";
+import { ASSESS_AGENT } from "@/lib/agents";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -10,7 +12,7 @@ const VALID_DATA_TYPES    = ["biometric", "health", "children", "location", "fin
 const VALID_SECTORS       = ["government", "healthcare", "finance", "hr_recruitment", "education", "transport", "media_adtech", "legal", "retail", "proptech", "technology"];
 
 const INFER_PROMPT = `
-You are a GRC analyst. A user has described a technology deployment.
+You are ${ASSESS_AGENT.name}, a GRC analyst. A user has described a technology deployment.
 Your job is to infer: domains, jurisdictions, data_types, and sector from the description.
 
 Return ONLY valid JSON — no prose, no markdown:
@@ -27,19 +29,22 @@ Valid values only:
 - data_types: ${VALID_DATA_TYPES.join(", ")}
 - sector: ${VALID_SECTORS.join(", ")}
 
-Confidence rules:
-- "high" = clearly stated or strongly implied
-- "medium" = reasonably inferred but not explicit — state assumption in reasoning
-- "low" = cannot be determined — set values: [] and state what is missing
+Confidence rules — calibrate carefully, overconfidence is worse than underconfidence:
+- "high" = explicitly stated, or an unavoidable consequence of what is described (e.g. an applicant-screening tool necessarily processes behavioural data; a hospital is necessarily healthcare sector).
+- "medium" = a reasonable inference that requires an assumption (e.g. a hospital network probably involves health data, but the tool described might not touch it; a single vague mention like "uses machine learning" with no other detail). State the assumption in reasoning.
+- "low" = cannot be determined from the description — set values: [] and state what is missing.
+- NEVER pad values with extras that are not grounded in the description. Do not add jurisdictions, data types, or sectors "as a baseline" or "to be safe".
 
 Domain guidance:
 - privacy: any system processing personal data
-- ai: any AI/ML/algorithmic system
+- ai: any AI/ML/algorithmic system. Rule-based filters, keyword matching, and deterministic logic are NOT ai — do not flag ai for them.
 - cyber: any system with network, API, or security exposure
 
 Jurisdiction guidance:
-- Infer from country/city mentions, user base hints, or company HQ signals
-- If users are "global" include eu + us_federal as baseline
+- Infer ONLY from stated countries/cities, user-base locations, or company HQ. If no location signal exists, return values: [] with "low" confidence — never guess.
+- Do NOT add us_federal (or any jurisdiction) merely because a company might plausibly operate there. A Germany-only description means eu only.
+- If users are described as "global", include eu + us_federal as the baseline with "medium" confidence.
+- When HQ and user base differ (e.g. US company, Brazilian users), include both with "medium" confidence.
 
 Data type guidance:
 - hiring/recruitment → behavioural
@@ -50,8 +55,11 @@ Data type guidance:
 `;
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+  // Allow audit runner through if secret matches, otherwise require Clerk auth
+  if (!isAuditRequest(req)) {
+    const { userId } = await auth();
+    if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+  }
 
   const { description } = await req.json();
   if (!description || description.trim().length < 10) {
@@ -59,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   const response = await claude.messages.create({
-    model:      "claude-sonnet-4-6",
+    model:      "claude-haiku-4-5-20251001",
     max_tokens: 800,
     system:     INFER_PROMPT,
     messages:   [{ role: "user", content: description }],
@@ -67,8 +75,12 @@ export async function POST(req: NextRequest) {
 
   const raw = response.content[0].type === "text" ? response.content[0].text : "";
 
+  // Extract the JSON object even if the model wraps it in fences or prose.
+  const start = raw.indexOf("{");
+  const end   = raw.lastIndexOf("}");
+  const clean = start !== -1 && end > start ? raw.slice(start, end + 1) : raw.trim();
+
   try {
-    const clean    = raw.replace(/```json\s*/i, "").replace(/```\s*$/, "").trim();
     const inferred = JSON.parse(clean);
     return Response.json({ inferred });
   } catch {

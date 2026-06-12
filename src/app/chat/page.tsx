@@ -6,6 +6,10 @@ import { Show, SignInButton } from "@clerk/nextjs";
 import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
+import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
+import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
+import { useVoice } from "@/hooks/useVoice";
+import { CHAT_AGENT } from "@/lib/agents";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -19,17 +23,6 @@ type SSEEvent =
   | { type: "token"; text: string }
   | { type: "done"; text?: string; conversation_id?: string }
   | { type: "error"; text: string };
-
-const STARTERS = [
-  "What does the EU AI Act require for high-risk AI systems?",
-  "How does GDPR Art.35 DPIA work in practice?",
-  "What is the difference between NIS2 and DORA?",
-  "Explain Illinois BIPA and the risk for computer vision products",
-  "What does the Colorado AI Act require from developers?",
-  "How do I prepare for a SOC 2 Type II audit?",
-  "What is the NIST AI Risk Management Framework?",
-  "When does CCPA apply to my company?",
-];
 
 async function readSSEStream(response: Response, onEvent: (e: SSEEvent) => void) {
   const reader  = response.body!.getReader();
@@ -100,6 +93,7 @@ export default function ChatPage() {
 function Chat() {
   const searchParams = useSearchParams();
   const router       = useRouter();
+  const folderId     = searchParams.get("folder");
 
   const [messages,       setMessages]       = useState<DisplayMessage[]>([]);
   const [history,        setHistory]        = useState<ChatMessage[]>([]);
@@ -109,9 +103,10 @@ function Chat() {
   const [error,          setError]          = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const inputRef    = useRef<HTMLTextAreaElement>(null);
-  const scrollRef   = useRef<HTMLDivElement>(null);
-  const loadedIdRef = useRef<string | null>(null);
+  const inputRef         = useRef<HTMLTextAreaElement>(null);
+  const scrollRef        = useRef<HTMLDivElement>(null);
+  const loadedIdRef      = useRef<string | null>(null);
+  const handleSendRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -158,10 +153,16 @@ function Chat() {
 
   const canSend = input.trim().length > 2 && !loading;
 
-  const handleSend = async (text?: string) => {
-    const content = (text ?? input).trim();
-    if (!content || content.length <= 2 || loading) return;
-    setInput("");
+  const voice = useVoice({
+    onVoiceSend: text => handleSendRef.current(text),
+    disabled: loading,
+  });
+
+  const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
+    const content = (textOverride ?? input).trim();
+    if (!content || content.length <= 2) return null;
+    if (!fromVoice && loading) return null;
+    if (!textOverride) setInput("");
     setError("");
 
     const userMsg: ChatMessage = { role: "user", content };
@@ -172,6 +173,7 @@ function Chat() {
     setLoading(true);
 
     let streamText = "";
+    let finalResponse: string | null = null;
 
     try {
       const res = await fetch("/api/grc-chat", {
@@ -180,6 +182,7 @@ function Chat() {
         body:    JSON.stringify({
           messages:        newHistory,
           conversation_id: conversationId,
+          folder_id:       !conversationId ? folderId : undefined,
         }),
       });
 
@@ -199,6 +202,7 @@ function Chat() {
           });
         } else if (event.type === "done") {
           const finalText = streamText || event.text || "";
+          finalResponse = finalText;
           setMessages(prev => {
             const next = [...prev];
             const idx  = next.findLastIndex(m => m.role === "streaming");
@@ -219,17 +223,42 @@ function Chat() {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setMessages(prev => prev.filter(m => m.role !== "streaming"));
       setHistory(prev => prev.slice(0, -1));
+      return null;
     } finally {
       setLoading(false);
     }
+
+    return finalResponse;
+  };
+
+  handleSendRef.current = (text: string) => handleSend(text, true);
+
+  const sendWithVoice = async (text?: string) => {
+    const response = await handleSend(text, false);
+    if (response) voice.speakAfterResponse(response);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      sendWithVoice();
     }
   };
+
+  const voiceIcon = (
+    <VoiceInputIcon
+      isListening={voice.isListening}
+      isTranscribing={voice.isTranscribing}
+      isSpeaking={voice.isSpeaking}
+      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+      configured={voice.support.configured}
+      disabled={loading}
+      onStartListening={voice.startListening}
+      onStopListening={voice.stopListening}
+      onStopSpeaking={voice.stopSpeak}
+      agentName={CHAT_AGENT.name}
+    />
+  );
 
   const startNew = () => {
     setMessages([]);
@@ -289,45 +318,22 @@ function Chat() {
                     onKeyDown={handleKey}
                     rows={1}
                   />
-                  <button type="button" className="send-btn" onClick={() => handleSend()} disabled={!canSend}>
+                  {voiceIcon}
+                  <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                     {loading
                       ? <Loader2 size={16} className="spin" />
                       : <ArrowUp size={16} strokeWidth={2.5} />}
                   </button>
                 </div>
+                {voice.voiceError && (
+                  <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                )}
               </div>
 
-              <div style={{
-                display: "flex", flexWrap: "wrap", gap: 8,
-                justifyContent: "center", maxWidth: 620,
-              }}>
-                {STARTERS.map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleSend(s)}
-                    style={{
-                      fontSize: 12, color: "var(--fg2)",
-                      background: "var(--card)", border: "0.5px solid var(--bdr2)",
-                      borderRadius: 20, padding: "7px 14px",
-                      cursor: "pointer", fontFamily: "'Sora',sans-serif",
-                      letterSpacing: "-0.01em", lineHeight: 1.4,
-                      transition: "border-color 0.15s, color 0.15s",
-                      textAlign: "left",
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = "var(--bdr3)";
-                      e.currentTarget.style.color = "var(--fg)";
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = "var(--bdr2)";
-                      e.currentTarget.style.color = "var(--fg2)";
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+              <SampleQuestionsDropdown
+                onSelect={q => sendWithVoice(q)}
+                disabled={loading}
+              />
 
               {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
             </div>
@@ -356,7 +362,7 @@ function Chat() {
                       <div className="msg-ai-card">
                         <div className="msg-ai-label">
                           <ShieldAlert size={11} color="var(--fg3)" />
-                          Norvar
+                          {CHAT_AGENT.name}
                           {isStreaming && loading && i === messages.length - 1 && (
                             <span style={{ marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 3 }}>
                               <span className="loading-dot" />
@@ -384,23 +390,30 @@ function Chat() {
               <div className="chat-input-row">
                 <div className="chat-input-inner">
                   <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
-                      GRC chat
+                      Chat
                     </span>
-                    <button
-                      type="button"
-                      onClick={startNew}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        fontSize: 11, color: "var(--fg3)", background: "transparent",
-                        border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                        letterSpacing: "-0.01em", padding: 0,
-                      }}
-                    >
-                      <SquarePen size={11} strokeWidth={2} />
-                      New chat
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <SampleQuestionsDropdown
+                        align="left"
+                        onSelect={q => sendWithVoice(q)}
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={startNew}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          fontSize: 11, color: "var(--fg3)", background: "transparent",
+                          border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif",
+                          letterSpacing: "-0.01em", padding: 0,
+                        }}
+                      >
+                        <SquarePen size={11} strokeWidth={2} />
+                        New chat
+                      </button>
+                    </div>
                   </div>
                   <div className="chat-input-bar">
                     <input
@@ -410,12 +423,28 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <button type="button" className="chat-send-btn" onClick={() => handleSend()} disabled={!canSend}>
+                    <VoiceInputIcon
+                      isListening={voice.isListening}
+                      isTranscribing={voice.isTranscribing}
+                      isSpeaking={voice.isSpeaking}
+                      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                      configured={voice.support.configured}
+                      disabled={loading}
+                      onStartListening={voice.startListening}
+                      onStopListening={voice.stopListening}
+                      onStopSpeaking={voice.stopSpeak}
+                      size="sm"
+                      agentName={CHAT_AGENT.name}
+                    />
+                    <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                       {loading
                         ? <Loader2 size={14} className="spin" />
                         : <ArrowUp size={14} strokeWidth={2.5} />}
                     </button>
                   </div>
+                  {voice.voiceError && (
+                    <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                  )}
                   </div>
                 </div>
               </div>
@@ -432,7 +461,7 @@ function Chat() {
           padding: 32, textAlign: "center", background: "var(--bg)",
         }}>
           <Logo size={40} />
-          <h1 className="home-heading">Norvar GRC Chat</h1>
+          <h1 className="home-heading">Chat with {CHAT_AGENT.name}</h1>
           <p className="home-sub" style={{ marginBottom: 28 }}>
             Sign in to ask questions about governance, risk and compliance.
           </p>

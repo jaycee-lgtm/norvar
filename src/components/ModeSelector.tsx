@@ -15,20 +15,20 @@ export const MODES: {
   href:    string;
 }[] = [
   {
-    id:      "assess",
-    label:   "Norvar Assess",
-    version: "1.0",
-    tagline: "Formal compliance risk assessment",
-    icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
-    href:    "/",
-  },
-  {
     id:      "chat",
-    label:   "Norvar Chat",
+    label:   "Nora",
     version: "1.0",
     tagline: "Free-form GRC conversation",
     icon:    <MessageSquare size={13} strokeWidth={1.75} />,
     href:    "/chat",
+  },
+  {
+    id:      "assess",
+    label:   "Cassius",
+    version: "1.0",
+    tagline: "Formal compliance risk assessment",
+    icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
+    href:    "/assess",
   },
 ];
 
@@ -98,7 +98,10 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
           position:     "absolute",
           top:          "calc(100% + 6px)",
           left:         0,
-          minWidth:     260,
+          right:        compact ? 0 : undefined,
+          minWidth:     compact ? undefined : 260,
+          width:        compact ? "100%" : undefined,
+          maxWidth:     compact ? "100%" : undefined,
           background:   "var(--card)",
           border:       "0.5px solid var(--bdr2)",
           borderRadius: 9,
@@ -132,7 +135,7 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
                 style={{
                   width:         "100%",
                   display:       "flex",
-                  alignItems:    "center",
+                  alignItems:    "flex-start",
                   gap:           12,
                   padding:       "10px 14px",
                   background:    "transparent",
@@ -190,13 +193,17 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
                     color:         "var(--fg3)",
                     fontFamily:    "'Sora', sans-serif",
                     letterSpacing: "-0.01em",
+                    whiteSpace:    "normal",
+                    wordBreak:     "break-word",
+                    overflowWrap:  "break-word",
+                    lineHeight:    1.35,
                   }}>
                     {mode.tagline}
                   </div>
                 </div>
 
                 {isActive && (
-                  <Check size={14} strokeWidth={2.5} color="var(--fg3)" style={{ flexShrink: 0 }} />
+                  <Check size={14} strokeWidth={2.5} color="var(--fg3)" style={{ flexShrink: 0, marginTop: 2 }} />
                 )}
               </button>
             );

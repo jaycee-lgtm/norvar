@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -34,12 +34,24 @@ function tierKey(t: string): keyof typeof TIER {
 
 function SidebarInner({ extra }: { extra?: ReactNode }) {
   const path         = usePathname();
+  const router       = useRouter();
   const searchParams = useSearchParams();
   const { user }     = useUser();
-  const isChat       = path.startsWith("/chat");
+  const isChat   = path === "/chat" || path.startsWith("/chat/");
+  const isAssess = path === "/assess";
+  const sidebarMode = isAssess ? "assess" as const : "chat" as const;
+  const activeId     = searchParams.get("id");
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [deletingId,    setDeletingId]    = useState<string | null>(null);
+
+  const loadAssessments = () => {
+    fetch("/api/assessments?limit=5")
+      .then(r => r.json())
+      .then(d => setAssessments(d.assessments || []))
+      .catch(() => {});
+  };
 
   useEffect(() => {
     if (isChat) {
@@ -48,30 +60,45 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
         .then(d => setConversations(d.conversations || []))
         .catch(() => {});
     } else {
-      fetch("/api/assessments?limit=5")
-        .then(r => r.json())
-        .then(d => setAssessments(d.assessments || []))
-        .catch(() => {});
+      loadAssessments();
     }
   }, [path, searchParams.toString(), isChat]);
+
+  const deleteAssessment = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/assessments", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setAssessments(prev => prev.filter(a => a.id !== id));
+      if (activeId === id) router.push("/assess");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Could not delete assessment");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const initials = user
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
     : "N";
 
-  const nav = [
-    { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
-    { href: "/chat", label: "GRC Chat", icon: MessageSquare, active: path === "/chat" },
+  const mainNav = [
+    { href: "/chat", label: "Chat", icon: MessageSquare, active: path === "/chat" },
+    { href: "/assess", label: "Assessments", icon: FileSearch, active: isAssess },
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     {
-      href: isChat ? "/chat/history" : "/history",
+      href: isAssess || path === "/history" ? "/history" : "/chat/history",
       label: "History",
       icon: LayoutDashboard,
       active: path === "/history" || path === "/chat/history",
     },
-    { href: "/frameworks", label: "Frameworks", icon: Layers, active: path === "/frameworks" },
-    { href: "/settings", label: "Settings", icon: Settings, active: path === "/settings" },
   ];
 
   return (
@@ -83,14 +110,14 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
             Norvar
           </span>
         </div>
-        <Link href={isChat ? "/chat" : "/"} className="new-assess-btn">
-          <span className="new-assess-label">{isChat ? "New chat" : "New assessment"}</span>
+        <Link href={isAssess ? "/assess" : "/chat"} className="new-assess-btn">
+          <span className="new-assess-label">{isAssess ? "New assessment" : "New chat"}</span>
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
       </div>
 
       <div style={{ padding: "0 10px 8px" }}>
-        <ModeSelector current={isChat ? "chat" : "assess"} compact />
+        <ModeSelector current={sidebarMode} compact />
       </div>
 
       <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
@@ -125,7 +152,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
 
       <div className="sidebar-scroll">
         <div style={{ padding: "0 0 4px" }}>
-          {nav.map(({ href, label, icon: Icon, active }) => (
+          {mainNav.map(({ href, label, icon: Icon, active }) => (
             <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
               <Icon size={14} strokeWidth={active ? 2 : 1.75} />
               {label}
@@ -133,20 +160,59 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
           ))}
         </div>
 
-        {assessments.length > 0 && !isChat && (
+        <div className="sidebar-divider" />
+        <div className="sidebar-section">Projects</div>
+        <div style={{ padding: "0 0 4px" }}>
+          <Link
+            href="/projects"
+            className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}
+          >
+            <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
+            All projects
+          </Link>
+        </div>
+
+        <div className="sidebar-divider" />
+        <div className="sidebar-section">Frameworks</div>
+        <div style={{ padding: "0 0 4px" }}>
+          <Link
+            href="/frameworks"
+            className={`sidebar-nav-item${path === "/frameworks" ? " active" : ""}`}
+          >
+            <Layers size={14} strokeWidth={path === "/frameworks" ? 2 : 1.75} />
+            Browse frameworks
+          </Link>
+        </div>
+
+        {assessments.length > 0 && isAssess && (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent assessments</div>
             {assessments.map(item => {
               const c = TIER[tierKey(item.risk_tier)];
+              const isActive = activeId === item.id;
               return (
-                <Link key={item.id} href={`/?id=${item.id}`} className="recent-item">
-                  <div className="recent-dot" style={{ background: c.dot }} />
-                  <span className="recent-text">{item.title}</span>
-                  <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
-                    {item.risk_score}
-                  </span>
-                </Link>
+                <div key={item.id} className="recent-item-row">
+                  <Link
+                    href={`/assess?id=${item.id}`}
+                    className={`recent-item${isActive ? " active" : ""}`}
+                  >
+                    <div className="recent-dot" style={{ background: c.dot }} />
+                    <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
+                    <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
+                      {item.risk_score}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    className="recent-delete"
+                    aria-label={`Delete ${item.title}`}
+                    disabled={deletingId === item.id}
+                    onClick={() => deleteAssessment(item.id, item.title)}
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
               );
             })}
           </>
@@ -174,25 +240,33 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       </div>
 
       <div className="sidebar-footer">
-        <div className="avatar-row sidebar-account">
-          <div className="avatar">{initials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="avatar-name">
-              {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
+        <div className="avatar-row sidebar-account-row">
+          <div className="sidebar-account-avatar">
+            <div className="avatar">{initials}</div>
+            <div className="sidebar-account-button">
+              <UserButton
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox:       { display: "none" },
+                    userButtonOuterIdentifier: { display: "none" },
+                    userButtonTrigger:         { width: "100%", height: "100%" },
+                    rootBox:                   { width: "100%", height: "100%" },
+                  },
+                }}
+              />
             </div>
           </div>
-          <div className="sidebar-account-button">
-            <UserButton
-              appearance={{
-                elements: {
-                  userButtonAvatarBox:       { display: "none" },
-                  userButtonOuterIdentifier: { display: "none" },
-                  userButtonTrigger:         { width: "100%", height: "100%" },
-                  rootBox:                   { width: "100%", height: "100%" },
-                },
-              }}
-            />
+          <div className="avatar-name" style={{ flex: 1, minWidth: 0 }}>
+            {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
           </div>
+          <Link
+            href="/settings"
+            className={`sidebar-settings-btn${path === "/settings" ? " active" : ""}`}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={14} strokeWidth={path === "/settings" ? 2 : 1.75} />
+          </Link>
         </div>
       </div>
     </aside>

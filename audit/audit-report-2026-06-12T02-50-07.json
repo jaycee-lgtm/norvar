@@ -1,0 +1,727 @@
+{
+  "runAt": "2026-06-12T02:54:32.182Z",
+  "endpoint": "http://localhost:3000/api/chat",
+  "totalQueries": 15,
+  "passed": 4,
+  "review": 8,
+  "failed": 3,
+  "errors": 0,
+  "avgCompositeScore": 73,
+  "avgLatencyMs": 15324,
+  "domainScores": {
+    "Privacy": 82,
+    "AI Governance": 73,
+    "Cybersecurity": 65
+  },
+  "topMissingFrameworks": [
+    [
+      "NIST CSF",
+      3
+    ],
+    [
+      "CCPA/CPRA",
+      1
+    ],
+    [
+      "state privacy laws",
+      1
+    ],
+    [
+      "GDPR Chapter V",
+      1
+    ],
+    [
+      "NYC Local Law 144",
+      1
+    ]
+  ],
+  "overallGrade": "NEEDS WORK",
+  "results": [
+    {
+      "queryId": "P-01",
+      "domain": "Privacy",
+      "type": "core",
+      "query": "We are launching a mobile app that collects location data, email addresses, and browsing history from users in California and the EU. What are our key privacy obligations?",
+      "status": "OK",
+      "latencyMs": 19638,
+      "responseLength": 3204,
+      "responsePreview": "This deployment sits squarely under both CCPA/CPRA and GDPR, and the combination of data types you're collecting — particularly browsing history and precise location — triggers some of the stricter provisions in each regime.\n\nUnder CPRA, browsing history and precise geolocation (generally defined as within 1,850 feet) are classified as sensitive personal information. That means you must provide a ",
+      "fullResponse": "This deployment sits squarely under both CCPA/CPRA and GDPR, and the combination of data types you're collecting — particularly browsing history and precise location — triggers some of the stricter provisions in each regime.\n\nUnder CPRA, browsing history and precise geolocation (generally defined as within 1,850 feet) are classified as sensitive personal information. That means you must provide a \"Limit the Use of My Sensitive Personal Information\" opt-out right, in addition to the standard \"Do Not Sell or Share My Personal Information\" opt-out. Your privacy policy must be conspicuously posted, accurate, and updated at least every 12 months. If you sell or share data for cross-context behavioral advertising, you'll need opt-out preference signal recognition (e.g., Global Privacy Control). California also has the My Health My Data Act to keep in mind if any of that browsing history touches health-related content.\n\nUnder GDPR, every data type needs a lawful basis under Article 6. Legitimate interests may be arguable for some operational purposes, but for browsing history and location data the bar is high and you'd need a documented Legitimate Interests Assessment. Consent under Article 7 is the more defensible basis for behavioral or advertising use cases, but it must be freely given, specific, informed, and unambiguous — pre-ticked boxes don't cut it. You'll also need to satisfy Article 13 transparency obligations at the point of collection, and your privacy notice must cover retention periods, data subject rights, and the identity of any recipients or processors.\n\nPrecise location and browsing history together could also constitute profiling under GDPR Article 4(4), which means if you're using that combination to make decisions about users you may be touching Article 22 on automated decision-making. That requires either explicit consent, contractual necessity, or a specific EU/member-state legal basis, plus the right to human review.\n\nOn the mobile-specific layer, Recital 30 and the ePrivacy Directive (applicable in the EU) govern cookie-like tracking on devices. Accessing or storing information on a user's device — including via SDKs — requires prior informed consent in most EU member states, regardless of your GDPR lawful basis for the underlying data processing.\n\nFor international data transfers, if your app infrastructure is US-based and you're processing EU user data, you need a valid transfer mechanism. The EU-U.S. Data Privacy Framework covers self-certified US entities; if you're not certified, you'll need Standard Contractual Clauses under the 2021 Commission Decision, and a Transfer Impact Assessment is good practice given Schrems II residual risk.\n\nPractically speaking, you should implement a consent management platform that handles both GDPR consent and CPRA opt-outs, maintain Records of Processing Activities under GDPR Article 30, and conduct a Data Protection Impact Assessment under Article 35 given the scale and sensitivity of the data involved.\n\nIf you want a structured risk assessment mapped to your specific tech stack and data flows, Norvar Assess can do that systematically. Otherwise, happy to go deeper on any of these threads.",
+      "scores": {
+        "frameworkCoverage": 100,
+        "conceptCoverage": 80,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of GDPR Art. 6 lawful basis",
+          "No mention of CCPA opt-out rights"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "GDPR",
+          "CCPA/CPRA"
+        ],
+        "missingFrameworks": [],
+        "foundConcepts": [
+          "lawful basis",
+          "consent",
+          "data subject rights",
+          "privacy notice"
+        ],
+        "missingConcepts": [
+          "cross-border transfers"
+        ],
+        "compositeScore": 92,
+        "grade": "PASS"
+      },
+      "expectedFrameworks": [
+        "GDPR",
+        "CCPA/CPRA"
+      ],
+      "expectedConcepts": [
+        "lawful basis",
+        "consent",
+        "data subject rights",
+        "privacy notice",
+        "cross-border transfers"
+      ]
+    },
+    {
+      "queryId": "P-02",
+      "domain": "Privacy",
+      "type": "edge-case",
+      "query": "Our HR platform uses facial recognition to verify employee identity at login. Employees are based in Illinois and Texas.",
+      "status": "OK",
+      "latencyMs": 15519,
+      "responseLength": 2722,
+      "responsePreview": "This deployment sits at the intersection of biometric privacy law, AI governance, and employment data protection — and Illinois is where your highest legal exposure lives.\n\nIllinois BIPA (740 ILCS 14/) is the governing framework you need to treat as your primary obligation. It requires a written, publicly available biometric data retention and destruction policy before any collection begins. You n",
+      "fullResponse": "This deployment sits at the intersection of biometric privacy law, AI governance, and employment data protection — and Illinois is where your highest legal exposure lives.\n\nIllinois BIPA (740 ILCS 14/) is the governing framework you need to treat as your primary obligation. It requires a written, publicly available biometric data retention and destruction policy before any collection begins. You need informed written consent from each employee prior to capturing their faceprint — BIPA doesn't allow opt-out framing, it requires affirmative opt-in. You're also prohibited from selling or profiting from that biometric data, and you must use reasonable security standards to protect it. The private right of action under BIPA is the critical risk factor here: statutory damages run $1,000 per negligent violation and $5,000 per intentional or reckless violation, and class actions in this space have produced nine-figure settlements against employers.\n\nTexas has its own Biometric Identifier law (CUBI, Chapter 503 of the Business and Commerce Code) with similar consent and security requirements. The key difference is that Texas enforcement sits with the Attorney General rather than offering a private right of action, which reduces litigation exposure but doesn't eliminate regulatory risk. Consent must still be obtained before capture, and data must be destroyed within a reasonable time or within three years of the individual's last interaction.\n\nOn the AI governance side, a facial recognition system used for employment access decisions sits in a sensitive category under the EU AI Act's high-risk classification (Annex III), though your US-only deployment means that Act doesn't apply directly yet. More immediately relevant domestically, the FTC has signaled aggressive scrutiny of biometric systems in employment contexts under Section 5 unfair practices authority.\n\nYou should also think about GDPR Article 9 if any of these employees are EU nationals or if the platform vendor processes data on EU infrastructure — biometric data used to uniquely identify a person is special category data requiring explicit consent or another Article 9(2) basis.\n\nMinimum steps to address before continuing this deployment: obtain BIPA-compliant written consent for every Illinois employee, publish your retention and destruction policy, confirm your HR platform vendor has a data processing agreement covering biometric data specifically, and verify they meet your security standards for this class of data.\n\nIf you want a structured risk assessment mapped to your specific vendor setup and employee population, Norvar Assess can formalize that. Do you want to dig into the consent workflow or vendor obligations next?",
+      "scores": {
+        "frameworkCoverage": 67,
+        "conceptCoverage": 60,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of BIPA's private right of action",
+          "No mention of written policy requirement"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "BIPA",
+          "CUBI"
+        ],
+        "missingFrameworks": [
+          "CCPA/CPRA"
+        ],
+        "foundConcepts": [
+          "biometric data",
+          "written consent",
+          "private right of action"
+        ],
+        "missingConcepts": [
+          "retention policy",
+          "destruction schedule"
+        ],
+        "compositeScore": 71,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "BIPA",
+        "CUBI",
+        "CCPA/CPRA"
+      ],
+      "expectedConcepts": [
+        "biometric data",
+        "written consent",
+        "retention policy",
+        "destruction schedule",
+        "private right of action"
+      ]
+    },
+    {
+      "queryId": "P-03",
+      "domain": "Privacy",
+      "type": "core",
+      "query": "We process health data for a wellness app and want to share it with third-party advertisers. Users are in the US.",
+      "status": "OK",
+      "latencyMs": 14594,
+      "responseLength": 2588,
+      "responsePreview": "This is a high-risk data practice that triggers several overlapping frameworks, and the combination creates serious exposure.\n\nStarting with HIPAA: the key question is whether your wellness app qualifies as a covered entity or business associate. If you're not a HIPAA-covered entity (i.e., you're not a health plan, healthcare clearinghouse, or provider), HIPAA's Privacy Rule doesn't directly apply",
+      "fullResponse": "This is a high-risk data practice that triggers several overlapping frameworks, and the combination creates serious exposure.\n\nStarting with HIPAA: the key question is whether your wellness app qualifies as a covered entity or business associate. If you're not a HIPAA-covered entity (i.e., you're not a health plan, healthcare clearinghouse, or provider), HIPAA's Privacy Rule doesn't directly apply. However, if you receive health data from a covered entity or process it on their behalf, you're a business associate and sharing that data with advertisers without a Business Associate Agreement and valid authorization would be a clear violation.\n\nEven outside HIPAA, the FTC has aggressively pursued wellness and health app operators under Section 5 of the FTC Act. The FTC's 2023 Health Breach Notification Rule amendments explicitly cover apps that collect health data through non-HIPAA channels, and sharing health data with advertisers without clear user disclosure has been treated as an unfair or deceptive practice. The GoodRx and BetterHelp enforcement actions are directly on point here.\n\nUnder CCPA/CPRA, health information is sensitive personal information under Civil Code Section 1798.121. Sharing it with third-party advertisers likely constitutes a \"sale\" or \"sharing\" under the statute, which triggers the right to opt-out, mandatory disclosure in your privacy policy, and a limit-use notice at the point of collection. If users are under 16, you need opt-in consent rather than opt-out.\n\nSeveral states go further. If any users are in Illinois, BIPA could be relevant depending on what biometric markers your wellness data includes. Washington's My Health MY Data Act, effective 2024, creates a private right of action for health data shared without authorization and is notably broader than HIPAA in scope, covering any consumer health data regardless of HIPAA applicability.\n\nThe core compliance obligations you'd need to satisfy before any sharing begins are: a lawful basis for the sharing with clear user disclosure, an opt-out mechanism (or opt-in where required), a data processing or data sharing agreement with each advertiser defining permitted use, and a review of whether your advertising use is consistent with the purpose for which health data was originally collected.\n\nA formal risk assessment against your specific data flows and advertiser arrangements would clarify your full exposure here — that's something Norvar Assess can structure for you. What type of health data is being collected, and how are your advertising partners intending to use it?",
+      "scores": {
+        "frameworkCoverage": 67,
+        "conceptCoverage": 60,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [],
+        "notes": [],
+        "foundFrameworks": [
+          "HIPAA",
+          "FTC Act"
+        ],
+        "missingFrameworks": [
+          "state privacy laws"
+        ],
+        "foundConcepts": [
+          "covered entity",
+          "business associate",
+          "opt-in consent"
+        ],
+        "missingConcepts": [
+          "PHI",
+          "sensitive data"
+        ],
+        "compositeScore": 71,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "HIPAA",
+        "FTC Act",
+        "state privacy laws"
+      ],
+      "expectedConcepts": [
+        "PHI",
+        "covered entity",
+        "business associate",
+        "sensitive data",
+        "opt-in consent"
+      ]
+    },
+    {
+      "queryId": "P-04",
+      "domain": "Privacy",
+      "type": "cross-border",
+      "query": "We are a US company transferring EU customer data to our servers in the US for analytics processing.",
+      "status": "OK",
+      "latencyMs": 13662,
+      "responseLength": 2296,
+      "responsePreview": "This is a classic Schrems II scenario, and the transfer mechanism you choose will be foundational to everything else.\n\nThe most practical route for most US companies right now is self-certification under the EU-US Data Privacy Framework (DPF), which the European Commission adequacy decision of July 2023 reinstated as a valid transfer mechanism. If your company has certified with the Department of ",
+      "fullResponse": "This is a classic Schrems II scenario, and the transfer mechanism you choose will be foundational to everything else.\n\nThe most practical route for most US companies right now is self-certification under the EU-US Data Privacy Framework (DPF), which the European Commission adequacy decision of July 2023 reinstated as a valid transfer mechanism. If your company has certified with the Department of Commerce under the DPF, you can transfer EU personal data to your US servers without needing additional safeguards. That said, the DPF faces ongoing legal challenges from Max Schrems and noyb, so prudent organizations layer in Standard Contractual Clauses (SCCs) as a fallback even when relying on DPF adequacy.\n\nIf you haven't certified under the DPF, your next option is the 2021 SCCs issued by the European Commission under GDPR Article 46(2)(c). For a controller-to-processor transfer — which applies if your US analytics operation is processing on behalf of a EU entity — you'd use Module 2. You'll also need to conduct a Transfer Impact Assessment (TIA) under the Schrems II obligation to verify that US law doesn't undermine the protections the SCCs provide. Relevant here is the potential exposure under FISA Section 702 and Executive Order 14086, which introduced redress mechanisms that factor into the TIA analysis.\n\nOn the analytics processing itself, GDPR Article 6 lawful basis must be established before the data leaves the EU — the transfer mechanism doesn't substitute for lawful basis. If you're doing behavioral analytics or profiling, Article 22 automated decision-making restrictions may apply depending on whether decisions are being made about individuals. A DPIA under Article 35 is likely warranted if the analytics involve large-scale processing of personal data, which is almost certainly the case here.\n\nYou'll also want a Data Processing Agreement in place under Article 28 if the US entity is acting as a processor for the EU controller, including the mandatory clauses around sub-processors, audit rights, and deletion or return of data.\n\nIf you'd like a structured assessment of your specific data flows, transfer mechanisms, and analytics use case, Norvar Assess can map this against your deployment in detail. Otherwise, happy to go deeper on any of these areas.",
+      "scores": {
+        "frameworkCoverage": 67,
+        "conceptCoverage": 75,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of SCCs or adequacy decisions"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "GDPR",
+          "SCCs"
+        ],
+        "missingFrameworks": [
+          "GDPR Chapter V"
+        ],
+        "foundConcepts": [
+          "adequacy decision",
+          "standard contractual clauses",
+          "transfer impact assessment"
+        ],
+        "missingConcepts": [
+          "international transfer"
+        ],
+        "compositeScore": 77,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "GDPR",
+        "SCCs",
+        "GDPR Chapter V"
+      ],
+      "expectedConcepts": [
+        "international transfer",
+        "adequacy decision",
+        "standard contractual clauses",
+        "transfer impact assessment"
+      ]
+    },
+    {
+      "queryId": "P-05",
+      "domain": "Privacy",
+      "type": "out-of-scope",
+      "query": "What is the best database to store user data securely?",
+      "status": "OK",
+      "latencyMs": 6315,
+      "responseLength": 597,
+      "responsePreview": "That's more of an engineering and architecture question than a compliance one, so I'll leave the database comparison to your engineers. From a GRC angle, what matters is that whichever database you choose satisfies your obligations around encryption at rest and in transit, access controls, audit logging, and data minimisation — requirements that flow from frameworks like GDPR Article 5 and 32, HIP",
+      "fullResponse": "That's more of an engineering and architecture question than a compliance one, so I'll leave the database comparison to your engineers. From a GRC angle, what matters is that whichever database you choose satisfies your obligations around encryption at rest and in transit, access controls, audit logging, and data minimisation — requirements that flow from frameworks like GDPR Article 5 and 32, HIPAA's Security Rule, and SOC 2 Trust Service Criteria. If you want to assess whether your current or planned data storage setup meets those obligations, Norvar Assess can help map that out formally.",
+      "scores": {
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "citationPresent": true,
+        "outOfScopeHandled": true,
+        "redFlagsTriggered": [],
+        "notes": [],
+        "foundFrameworks": [],
+        "missingFrameworks": [],
+        "foundConcepts": [],
+        "missingConcepts": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "expectedFrameworks": [],
+      "expectedConcepts": []
+    },
+    {
+      "queryId": "AG-01",
+      "domain": "AI Governance",
+      "type": "core",
+      "query": "We are deploying an AI model that makes automated hiring decisions, including resume screening and candidate scoring. We operate in the EU and New York City.",
+      "status": "OK",
+      "latencyMs": 21170,
+      "responseLength": 3733,
+      "responsePreview": "This is a high-stakes deployment that sits at the intersection of several overlapping frameworks, so let me work through the most critical obligations.\n\nStarting with the EU AI Act, automated hiring systems — resume screening and candidate scoring — fall squarely into Annex III as high-risk AI systems used in employment and workers management. That classification triggers the full Chapter III obli",
+      "fullResponse": "This is a high-stakes deployment that sits at the intersection of several overlapping frameworks, so let me work through the most critical obligations.\n\nStarting with the EU AI Act, automated hiring systems — resume screening and candidate scoring — fall squarely into Annex III as high-risk AI systems used in employment and workers management. That classification triggers the full Chapter III obligations: conformity assessment, a risk management system maintained throughout the lifecycle, high-quality training data requirements under Article 10, technical documentation under Article 11, automatic logging and audit trails under Article 12, transparency to affected individuals under Article 13, human oversight measures under Article 14, and accuracy and robustness standards under Article 15. You will also need to register the system in the EU database for high-risk AI systems before deployment. These obligations are live for new high-risk systems from August 2026, but building compliance architecture now is essential given the lead time.\n\nOn GDPR, candidate data is personal data and automated scoring that produces a decision significantly affecting a candidate engages Article 22. If no human meaningfully reviews the output before a decision is made — or even if one does but the AI score heavily drives it — you are likely in scope for Art. 22(1). That means you need either explicit consent, necessity for a contract, or an EU/member-state authorised legal basis under Art. 22(2). Relying on consent in a recruitment context is very difficult to sustain as freely given. You must also provide meaningful information about the logic involved under Arts. 13 and 14, and honour rights to human review, explanation, and contestation. A DPIA under Art. 35 is mandatory here — systematic automated processing of personal data for high-risk decisions is one of the clearest triggers on the EDPB's list.\n\nIn New York City, Local Law 144 applies directly. If the tool is used to screen or score candidates for roles based in NYC, you are required to conduct an annual independent bias audit before deployment and publish a summary of results on your website. You must also provide candidates with notice that an AEDT is being used, at least ten business days before use, and give them the option to request an alternative selection process or accommodation. The law covers both employers and employment agencies, so the obligation follows the use of the tool, not just who built it.\n\nIf your AI vendor is processing candidate data on your behalf, GDPR Art. 28 requires a data processing agreement covering the standard prescribed clauses — purpose limitation, security measures, sub-processor controls, breach notification, and right to audit. You should assess whether the vendor holds ISO 27001 or SOC 2 Type II attestations and review their data retention and deletion practices carefully.\n\nA few practical gaps worth flagging: the lawful basis you rely on under Art. 6 for the underlying processing needs to be determined — legitimate interests is possible but requires a balancing test given the power imbalance in recruitment. You should also consider whether any special category data could be inferred from CVs or assessments, which would engage Art. 9 and demand explicit consent or another Art. 9(2) basis.\n\nGiven the high-risk classification, the Art. 22 exposure, and the LLC 144 audit requirement all converging, a structured risk assessment would be valuable before go-live. Norvar Assess can map your specific model architecture and workflow against each of these obligations in detail if that would be useful. In the meantime — are you building this model in-house or procuring it from a third-party vendor?",
+      "scores": {
+        "frameworkCoverage": 33,
+        "conceptCoverage": 80,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of EU AI Act high-risk classification",
+          "No mention of NYC LL 144 bias audit requirement",
+          "No mention of GDPR Art. 22 right to explanation"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "EU AI Act"
+        ],
+        "missingFrameworks": [
+          "NYC Local Law 144",
+          "GDPR Art. 22"
+        ],
+        "foundConcepts": [
+          "high-risk AI",
+          "human oversight",
+          "bias audit",
+          "transparency"
+        ],
+        "missingConcepts": [
+          "automated decision-making"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "EU AI Act",
+        "NYC Local Law 144",
+        "GDPR Art. 22"
+      ],
+      "expectedConcepts": [
+        "high-risk AI",
+        "human oversight",
+        "automated decision-making",
+        "bias audit",
+        "transparency"
+      ]
+    },
+    {
+      "queryId": "AG-02",
+      "domain": "AI Governance",
+      "type": "core",
+      "query": "We are building a generative AI product that creates marketing content and deploys it to consumers. What governance obligations apply?",
+      "status": "OK",
+      "latencyMs": 17759,
+      "responseLength": 3203,
+      "responsePreview": "This sits at the intersection of AI governance, privacy, and consumer protection law, so there are several frameworks to work through.\n\nStarting with the EU AI Act, a generative AI system used for marketing content will likely qualify as a General Purpose AI (GPAI) model if it is built on a foundation model. Under Articles 53 and 55, GPAI providers must maintain technical documentation, comply wit",
+      "fullResponse": "This sits at the intersection of AI governance, privacy, and consumer protection law, so there are several frameworks to work through.\n\nStarting with the EU AI Act, a generative AI system used for marketing content will likely qualify as a General Purpose AI (GPAI) model if it is built on a foundation model. Under Articles 53 and 55, GPAI providers must maintain technical documentation, comply with EU copyright law for training data, and publish summaries of training content. If your model is deemed systemic risk (above 10^25 FLOPs threshold), enhanced adversarial testing and incident reporting obligations apply. Separately, if the deployed system influences consumer decisions in a way that could be characterised as subliminal manipulation or exploiting vulnerabilities, Article 5's prohibited practices become relevant — worth reviewing carefully in a marketing context.\n\nOn transparency, Article 50 of the AI Act requires that AI-generated content be disclosed as such, particularly for deep fakes or synthetic media. For marketing material, this intersects with FTC guidance: the FTC has made clear under Section 5 of the FTC Act that failing to disclose AI-generated endorsements, fabricated reviews, or synthetic testimonials constitutes a deceptive practice. Their 2023 endorsement guide updates are directly applicable here.\n\nFrom a privacy standpoint, if you are processing personal data to personalise the marketing content, GDPR Article 6 lawful basis is required — legitimate interests or consent being the most common candidates, but consent is the safer basis where profiling is involved. If your system constitutes solely automated decision-making with legal or similarly significant effects, Article 22 is triggered. In California, CCPA/CPRA requires opt-out rights for targeted advertising and limits use of sensitive personal information. If you are building consumer profiles to drive the content generation, that data use needs to be disclosed in your privacy notice.\n\nRegarding training data, if you trained on scraped or licensed content, EU copyright law (DSM Directive) and your GPAI obligations require you to have a lawful basis for that ingestion. Text and data mining exceptions under Article 4 of the DSM Directive apply unless rights holders have opted out.\n\nOn the cybersecurity side, your platform will be holding consumer data and interacting with marketing systems, so GDPR Article 28 data processing agreements are needed with any vendors in your stack. If you are serving EU financial-sector clients or operating at scale, NIS2 obligations around ICT supply-chain security may also attach.\n\nA few things would sharpen the analysis further: whether you are the model provider, a deployer building on a third-party model, or both; which jurisdictions you are targeting; whether the content generation is personalised to individual consumers; and whether you are in a regulated sector like financial services or healthcare. Those factors affect risk tier, lawful basis choices, and whether sector-specific rules layer on top. If you want a structured assessment against your specific architecture, Norvar Assess can map obligations to your deployment in detail.",
+      "scores": {
+        "frameworkCoverage": 67,
+        "conceptCoverage": 40,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of AI-generated content disclosure"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "EU AI Act",
+          "FTC Act"
+        ],
+        "missingFrameworks": [
+          "NIST AI RMF"
+        ],
+        "foundConcepts": [
+          "transparency",
+          "GPAI"
+        ],
+        "missingConcepts": [
+          "AI-generated content disclosure",
+          "deceptive practices",
+          "risk management"
+        ],
+        "compositeScore": 63,
+        "grade": "FAIL"
+      },
+      "expectedFrameworks": [
+        "EU AI Act",
+        "FTC Act",
+        "NIST AI RMF"
+      ],
+      "expectedConcepts": [
+        "transparency",
+        "AI-generated content disclosure",
+        "deceptive practices",
+        "risk management",
+        "GPAI"
+      ]
+    },
+    {
+      "queryId": "AG-03",
+      "domain": "AI Governance",
+      "type": "edge-case",
+      "query": "Our AI model was trained on publicly scraped web data including personal information. We now sell it as a B2B product.",
+      "status": "OK",
+      "latencyMs": 23193,
+      "responseLength": 3953,
+      "responsePreview": "This is a common but genuinely complex compliance posture, and the risks span multiple frameworks depending on where your customers and their end users are located.\n\nStarting with GDPR, scraping publicly available personal data doesn't create a free pass. You need a lawful basis under Article 6 for the collection and processing during training. Legitimate interests under Article 6(1)(f) is the mos",
+      "fullResponse": "This is a common but genuinely complex compliance posture, and the risks span multiple frameworks depending on where your customers and their end users are located.\n\nStarting with GDPR, scraping publicly available personal data doesn't create a free pass. You need a lawful basis under Article 6 for the collection and processing during training. Legitimate interests under Article 6(1)(f) is the most commonly invoked basis here, but it requires a legitimate interests assessment that weighs your commercial interest against the reasonable expectations of the individuals whose data was scraped. People who post publicly generally don't expect their information to be ingested into a commercial AI product. The Article 9 bar is higher still if any of the scraped data includes special category information — health, political opinions, sexual orientation, and so on — which is almost inevitable at web scale.\n\nYou also have obligations around transparency that are difficult to fulfil retroactively. Articles 13 and 14 require that data subjects be informed about processing, and while there's a disproportionate effort exemption under Article 14(5)(b), supervisory authorities — particularly the Italian Garante, the Irish DPC, and the French CNIL — have been sceptical of its broad application to AI training. The fact that you're now commercialising the model as a B2B product strengthens the argument that the processing serves a significant commercial purpose, which cuts against the disproportionate effort defence.\n\nOn the EU AI Act, your risk classification matters. If your B2B customers are deploying the model in high-risk use cases listed in Annex III — HR, credit, education, law enforcement, essential services — you may be in the general-purpose AI model (GPAI) space under Title VIII, or your customers may be deploying a high-risk system where you're the provider under Article 6. GPAI models with systemic risk face additional obligations under Articles 55 and 53, including training data documentation, adversarial testing, and incident reporting to the AI Office. You should conduct a thorough mapping of actual customer deployments.\n\nIn the US, the FTC is the most immediate concern. Section 5 of the FTC Act covers unfair or deceptive practices, and the FTC has signalled clearly — through its AI and algorithmic accountability guidance and enforcement actions — that it considers training on personal data without adequate consent or transparency to be a potential unfair practice. If any of the scraped data involved minors, COPPA exposure is serious and strict.\n\nIf your scrape captured data from California residents, the CCPA/CPRA is relevant. Selling or licensing a model trained on personal information could be treated as a sale or sharing of personal information depending on how the model outputs are structured, and California's sensitive personal information categories carry additional opt-out rights under CPRA Section 1798.121.\n\nFor your B2B sales specifically, your downstream customers become controllers or joint controllers in many deployments, which means your contractual documentation needs to address liability allocation for the training data provenance. Customers in regulated industries — financial services, healthcare — will likely push for representations and warranties about training data lawfulness. If you can't make those representations cleanly, you carry deal risk as well as regulatory risk.\n\nThe practical priorities are: conduct or commission a retrospective legitimate interests assessment for the training data, document your GPAI model obligations under the AI Act, review your standard customer agreements for data provenance representations, and get ahead of any special category data that may have been ingested at scale.\n\nIf you'd like a structured risk assessment mapped to your specific model type and customer verticals, Norvar Assess is designed for exactly that kind of analysis.",
+      "scores": {
+        "frameworkCoverage": 100,
+        "conceptCoverage": 20,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of downstream liability for B2B resale"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "GDPR",
+          "EU AI Act",
+          "CCPA/CPRA"
+        ],
+        "missingFrameworks": [],
+        "foundConcepts": [
+          "training data"
+        ],
+        "missingConcepts": [
+          "lawful basis for processing",
+          "data minimisation",
+          "purpose limitation",
+          "model governance"
+        ],
+        "compositeScore": 68,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "GDPR",
+        "EU AI Act",
+        "CCPA/CPRA"
+      ],
+      "expectedConcepts": [
+        "training data",
+        "lawful basis for processing",
+        "data minimisation",
+        "purpose limitation",
+        "model governance"
+      ]
+    },
+    {
+      "queryId": "AG-04",
+      "domain": "AI Governance",
+      "type": "conflict-detection",
+      "query": "We want to use AI for real-time facial recognition in a public space in France for security purposes.",
+      "status": "OK",
+      "latencyMs": 18910,
+      "responseLength": 3376,
+      "responsePreview": "This is a high-risk deployment that sits at the intersection of several strict regulatory regimes, and France is one of the tougher jurisdictions in which to attempt it.\n\nStarting with the EU AI Act, real-time remote biometric identification in publicly accessible spaces is one of the few uses explicitly listed under Article 5 as a prohibited practice for law enforcement — and that prohibition is ",
+      "fullResponse": "This is a high-risk deployment that sits at the intersection of several strict regulatory regimes, and France is one of the tougher jurisdictions in which to attempt it.\n\nStarting with the EU AI Act, real-time remote biometric identification in publicly accessible spaces is one of the few uses explicitly listed under Article 5 as a prohibited practice for law enforcement — and that prohibition is essentially absolute unless you are a competent law enforcement authority acting under a very narrow set of exceptions (Article 5(2)), such as targeted searches for victims of serious crime, prevention of specific terrorist threats, or prosecution of offences carrying a custodial sentence above three years. Even then, prior judicial or independent administrative authorisation is required, and member states must have enacted national legislation enabling the exception. Critically, if you are a private actor — a retailer, venue operator, or private security firm — none of those law enforcement exceptions apply to you at all. Private use of real-time remote biometric identification in public spaces for general security monitoring has no permissible pathway under Article 5.\n\nEven setting aside Article 5, the system would be classified as high-risk under Annex III, triggering the full conformity obligations under Articles 9–17: a conformity assessment, technical documentation, a fundamental rights impact assessment, human oversight mechanisms, accuracy and robustness testing, and CE marking before deployment.\n\nOn the privacy side, facial recognition data is biometric data processed for the purpose of uniquely identifying individuals, which makes it special category data under GDPR Article 9. Processing requires not just a lawful basis under Article 6 but also a separate condition under Article 9(2). For private entities, the realistic options are explicit consent (impractical at scale in a public space) or substantial public interest under Article 9(2)(g), which requires a basis in EU or member state law with proportionate safeguards. France's CNIL has been consistently hostile to general-purpose facial recognition by private entities; it has blocked or restricted several pilot projects on proportionality grounds, including airport and school trials.\n\nThe CNIL will also expect a Data Protection Impact Assessment under GDPR Article 35, which is mandatory for large-scale processing of biometric data. That DPIA must demonstrate necessity, proportionality, and that less intrusive means were considered and found insufficient.\n\nThere is also a criminal exposure dimension. The French Penal Code and the loi Informatique et Libertés impose sanctions for unlawful biometric processing beyond the GDPR's administrative fines.\n\nIn practical terms: if you are a private entity, this deployment is not currently lawful in France under any available legal basis. If you are or are working with a public authority, you need to assess whether France has enacted the specific national legislative provisions required to activate the Article 5(2) exceptions, and you would still need judicial pre-authorisation for each use. I would strongly recommend a formal scoping exercise before going further. If you want a structured assessment against your specific use case and organisational profile, Norvar Assess can map the precise gaps and any residual pathways.",
+      "scores": {
+        "frameworkCoverage": 67,
+        "conceptCoverage": 50,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [],
+        "notes": [],
+        "foundFrameworks": [
+          "EU AI Act",
+          "GDPR"
+        ],
+        "missingFrameworks": [
+          "French data protection law"
+        ],
+        "foundConcepts": [
+          "law enforcement exception",
+          "CNIL"
+        ],
+        "missingConcepts": [
+          "prohibited AI practice",
+          "real-time biometric surveillance"
+        ],
+        "compositeScore": 67,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "EU AI Act",
+        "GDPR",
+        "French data protection law"
+      ],
+      "expectedConcepts": [
+        "prohibited AI practice",
+        "real-time biometric surveillance",
+        "law enforcement exception",
+        "CNIL"
+      ]
+    },
+    {
+      "queryId": "AG-05",
+      "domain": "AI Governance",
+      "type": "out-of-scope",
+      "query": "Which large language model has the best performance on coding benchmarks?",
+      "status": "OK",
+      "latencyMs": 3023,
+      "responseLength": 370,
+      "responsePreview": "That's more of a product research question than a compliance matter, so outside my lane. Where I can help is if you're evaluating LLMs for deployment — there are real GRC considerations around model selection, such as EU AI Act risk classification, training data provenance, GDPR Art. 28 obligations with the provider, and transparency requirements under the GPAI rules.",
+      "fullResponse": "That's more of a product research question than a compliance matter, so outside my lane. Where I can help is if you're evaluating LLMs for deployment — there are real GRC considerations around model selection, such as EU AI Act risk classification, training data provenance, GDPR Art. 28 obligations with the provider, and transparency requirements under the GPAI rules.",
+      "scores": {
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "citationPresent": true,
+        "outOfScopeHandled": true,
+        "redFlagsTriggered": [],
+        "notes": [],
+        "foundFrameworks": [],
+        "missingFrameworks": [],
+        "foundConcepts": [],
+        "missingConcepts": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "expectedFrameworks": [],
+      "expectedConcepts": []
+    },
+    {
+      "queryId": "CS-01",
+      "domain": "Cybersecurity",
+      "type": "core",
+      "query": "We are a SaaS company providing services to EU financial institutions. We recently experienced a data breach affecting 50,000 customer records.",
+      "status": "OK",
+      "latencyMs": 16995,
+      "responseLength": 3086,
+      "responsePreview": "This is a multi-framework incident, and your exposure spans GDPR, DORA, and NIS2 simultaneously — so let me walk through each.\n\nAs a SaaS provider processing personal data on behalf of EU financial institutions, you are almost certainly acting as a data processor under GDPR. That means the notification obligation under Article 33 sits primarily with your financial institution clients (the controll",
+      "fullResponse": "This is a multi-framework incident, and your exposure spans GDPR, DORA, and NIS2 simultaneously — so let me walk through each.\n\nAs a SaaS provider processing personal data on behalf of EU financial institutions, you are almost certainly acting as a data processor under GDPR. That means the notification obligation under Article 33 sits primarily with your financial institution clients (the controllers), but Article 33(2) requires you to inform them without undue delay once you become aware of the breach — no 72-hour grace period applies to you as processor, the clock runs immediately. Your clients then have 72 hours from their own awareness to notify their supervisory authority. Make sure your Data Processing Agreements under Article 28 specify this escalation pathway clearly, because if they don't, you have a gap that regulators will scrutinise.\n\nOn DORA, since your clients are EU financial entities subject to the Digital Operational Resilience Act, this breach likely constitutes an ICT-related incident under Article 3. If it meets the materiality thresholds in the RTS on incident classification — which look at data volume, client impact, service disruption, and reputational harm — your clients must report to their competent financial supervisor (ECB, EBA, national NCA depending on entity type) within the DORA timelines: an initial notification within four hours of classification, an intermediate report within 72 hours, and a final report within one month. Your contractual obligations under DORA Article 30 should require you to support that reporting, provide incident data promptly, and cooperate with any supervisory investigation.\n\nNIS2 is the third layer. If your SaaS operation qualifies as an important or essential entity — which a company of meaningful scale providing ICT services to financial sector clients almost certainly does — you face your own independent reporting obligations to your member state's competent authority. NIS2 Article 23 requires an early warning within 24 hours of becoming aware of a significant incident, a full notification within 72 hours, and a final report within one month. A breach of 50,000 records affecting financial sector clients would very likely meet the significance threshold.\n\nBeyond notification, you should be documenting your technical and organisational measures under GDPR Article 32, assessing whether your ISO 27001 or SOC 2 controls were operating effectively, and reviewing your Article 28 DPAs with each affected client to confirm their right-to-audit clauses and incident cooperation obligations are being honoured. If any data flows involved third-party sub-processors, their Article 28(4) obligations are also in scope.\n\nA few things would sharpen the analysis further: what types of personal data were exposed, whether any special category data under GDPR Article 9 was involved, and which member states your affected clients are based in. If you want a structured risk assessment mapped to your specific deployment and client contracts, Norvar Assess can help work through that systematically.",
+      "scores": {
+        "frameworkCoverage": 100,
+        "conceptCoverage": 20,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of 72-hour GDPR breach notification window",
+          "No mention of DORA for financial sector",
+          "No mention of NIS2 for critical infrastructure"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "GDPR",
+          "DORA",
+          "NIS2"
+        ],
+        "missingFrameworks": [],
+        "foundConcepts": [
+          "supervisory authority"
+        ],
+        "missingConcepts": [
+          "breach notification",
+          "72-hour window",
+          "incident response",
+          "ICT risk management"
+        ],
+        "compositeScore": 68,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "GDPR",
+        "DORA",
+        "NIS2"
+      ],
+      "expectedConcepts": [
+        "breach notification",
+        "72-hour window",
+        "supervisory authority",
+        "incident response",
+        "ICT risk management"
+      ]
+    },
+    {
+      "queryId": "CS-02",
+      "domain": "Cybersecurity",
+      "type": "core",
+      "query": "We are building a healthcare API that connects to hospital systems. What cybersecurity standards must we comply with in the US?",
+      "status": "OK",
+      "latencyMs": 15891,
+      "responseLength": 2796,
+      "responsePreview": "In the US, your primary regulatory anchor is HIPAA. As an API connecting to hospital systems, you will almost certainly handle Protected Health Information, making you a Business Associate under 45 CFR § 160.103. That means every hospital you connect to must execute a Business Associate Agreement with you before any PHI flows, and you take on direct liability under the HIPAA Security Rule.\n\nThe Se",
+      "fullResponse": "In the US, your primary regulatory anchor is HIPAA. As an API connecting to hospital systems, you will almost certainly handle Protected Health Information, making you a Business Associate under 45 CFR § 160.103. That means every hospital you connect to must execute a Business Associate Agreement with you before any PHI flows, and you take on direct liability under the HIPAA Security Rule.\n\nThe Security Rule (45 CFR Part 164, Subpart C) requires you to implement administrative, physical, and technical safeguards. On the technical side, that means access controls, audit controls, integrity controls, and transmission security — encryption in transit is effectively mandatory given the sensitivity of PHI, even though the Rule frames some controls as \"addressable.\" Conduct and document a formal risk analysis under § 164.308(a)(1); this is one of the most scrutinized requirements in OCR enforcement actions.\n\nBreach notification obligations sit under 45 CFR Part 164, Subpart D. As a Business Associate, you must notify the covered entity without unreasonable delay and no later than 60 days after discovering a breach of unsecured PHI. The covered entity then carries the obligation to notify affected individuals and HHS.\n\nBeyond HIPAA, the FTC Health Breach Notification Rule applies if you handle personal health records outside the HIPAA-covered entity relationship — worth checking if any data flows touch consumer-facing health apps or non-covered entities.\n\nFor baseline cybersecurity hygiene, the NIST Cybersecurity Framework is the most widely referenced voluntary standard in healthcare. NIST SP 800-66 Rev. 2 specifically maps the CSF to HIPAA Security Rule implementation, so it is a practical starting point. If your hospitals are part of any federally funded programs, you may also encounter requirements tied to the HHS cybersecurity performance goals published in 2024, which are moving toward becoming expected practice.\n\nIf you plan to expand to federal government hospital clients — VA, DoD, Indian Health Service — FedRAMP authorization will likely become a requirement, which adds substantial NIST SP 800-53 control obligations.\n\nOn the API architecture itself, consider that each hospital system integration point is a potential supply-chain risk vector. You should have a vendor risk management posture that covers your own upstream dependencies — cloud providers, authentication services, logging infrastructure — with contractual security requirements and attestations like SOC 2 Type II or ISO 27001.\n\nIf you want a structured gap assessment against HIPAA and NIST controls for your specific architecture, Norvar Assess can map that out. Are you operating solely in the US, or do any of your hospital clients have EU-based affiliates where GDPR might also apply?",
+      "scores": {
+        "frameworkCoverage": 67,
+        "conceptCoverage": 80,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of BAA requirement"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "HIPAA Security Rule",
+          "SOC 2"
+        ],
+        "missingFrameworks": [
+          "NIST CSF"
+        ],
+        "foundConcepts": [
+          "access controls",
+          "encryption",
+          "audit controls",
+          "business associate agreement"
+        ],
+        "missingConcepts": [
+          "ePHI"
+        ],
+        "compositeScore": 79,
+        "grade": "REVIEW"
+      },
+      "expectedFrameworks": [
+        "HIPAA Security Rule",
+        "NIST CSF",
+        "SOC 2"
+      ],
+      "expectedConcepts": [
+        "ePHI",
+        "access controls",
+        "encryption",
+        "audit controls",
+        "business associate agreement"
+      ]
+    },
+    {
+      "queryId": "CS-03",
+      "domain": "Cybersecurity",
+      "type": "edge-case",
+      "query": "We use 12 third-party SaaS vendors that have access to our customer data. How should we manage supply chain security risk?",
+      "status": "OK",
+      "latencyMs": 18399,
+      "responseLength": 3291,
+      "responsePreview": "Good question, and with 12 vendors touching customer data the exposure surface is meaningful enough to warrant a structured programme rather than ad hoc assessments.\n\nThe starting point is tiering. Not all 12 vendors carry equal risk, so segment them by the sensitivity of data they access, the criticality of the service they provide, and the depth of their system integration. A vendor processing p",
+      "fullResponse": "Good question, and with 12 vendors touching customer data the exposure surface is meaningful enough to warrant a structured programme rather than ad hoc assessments.\n\nThe starting point is tiering. Not all 12 vendors carry equal risk, so segment them by the sensitivity of data they access, the criticality of the service they provide, and the depth of their system integration. A vendor processing payment data or health records sits in a different tier than one handling anonymised analytics. Your controls, contractual requirements, and review cadence should scale accordingly.\n\nOn the contractual side, GDPR Article 28 is non-negotiable for any vendor processing personal data of EU or UK data subjects. You need a Data Processing Agreement in place with each one covering the mandatory elements — subject matter, duration, nature and purpose of processing, data types, and your instructions. Critically, Article 28(3)(h) requires you to audit or inspect processors, so your DPAs should include an explicit right-to-audit clause rather than accepting a vendor's standard terms that replace audits with third-party certifications only. For vendors outside the EEA, you also need to address international transfer mechanisms under Chapter V — Standard Contractual Clauses are the most common route post-Schrems II, and you should document your Transfer Impact Assessment.\n\nFor security assurance, ISO 27001 certification and SOC 2 Type II reports are your primary evidence sources for higher-tier vendors. A SOC 2 Type I is a point-in-time snapshot and materially weaker — insist on Type II where the vendor has had sufficient operating history. Review the actual reports, not just the certificates; the exceptions and qualifications sections tell you more than the cover page.\n\nNIS2, if you or your vendors operate within its scope as essential or important entities in the EU, imposes explicit ICT supply-chain security obligations under Article 21. You're expected to assess the security practices of your suppliers and reflect supply-chain risk in your overall risk management posture. Even if NIS2 doesn't directly apply to you, it increasingly shapes what regulators and customers expect of vendor programmes.\n\nThe NIST Cybersecurity Framework is a useful voluntary baseline for structuring your internal programme. The NIST SP 800-161 publication specifically addresses supply chain risk management and maps well to the kind of tiered assessment programme you'd want here.\n\nOperationally, your programme should include an onboarding security questionnaire scaled to tier, periodic reassessment (annually for high-tier, biannually for lower), incident notification obligations written into your DPAs and vendor contracts so you receive timely alerts that feed your own GDPR 72-hour breach notification window, and subprocessor change notification requirements so vendors can't quietly add a fourth party without your awareness.\n\nIf you want a structured risk scoring exercise across all 12 vendors mapped to these frameworks, Norvar Assess can build that out systematically. It would be worth knowing whether any of your vendors are in regulated sectors like finance or healthcare, as DORA and HIPAA Business Associate Agreement requirements would layer on top of what I've outlined.",
+      "scores": {
+        "frameworkCoverage": 50,
+        "conceptCoverage": 0,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [],
+        "notes": [],
+        "foundFrameworks": [
+          "ISO 27001",
+          "NIS2"
+        ],
+        "missingFrameworks": [
+          "NIST CSF",
+          "GDPR Art. 28"
+        ],
+        "foundConcepts": [],
+        "missingConcepts": [
+          "vendor risk management",
+          "third-party risk",
+          "data processing agreements",
+          "security assessments",
+          "right to audit"
+        ],
+        "compositeScore": 40,
+        "grade": "FAIL"
+      },
+      "expectedFrameworks": [
+        "ISO 27001",
+        "NIST CSF",
+        "NIS2",
+        "GDPR Art. 28"
+      ],
+      "expectedConcepts": [
+        "vendor risk management",
+        "third-party risk",
+        "data processing agreements",
+        "security assessments",
+        "right to audit"
+      ]
+    },
+    {
+      "queryId": "CS-04",
+      "domain": "Cybersecurity",
+      "type": "cross-domain",
+      "query": "Our autonomous vehicle software communicates over a public 5G network and processes real-time sensor data including camera feeds of public spaces.",
+      "status": "OK",
+      "latencyMs": 18897,
+      "responseLength": 3480,
+      "responsePreview": "This deployment sits at the intersection of several regulatory regimes simultaneously, so let me walk through the most significant ones.\n\nOn the AI governance side, the EU AI Act classifies autonomous vehicle systems as high-risk under Annex III and the specific provisions covering safety components of vehicles. That triggers obligations under Articles 9 through 15: mandatory risk management syste",
+      "fullResponse": "This deployment sits at the intersection of several regulatory regimes simultaneously, so let me walk through the most significant ones.\n\nOn the AI governance side, the EU AI Act classifies autonomous vehicle systems as high-risk under Annex III and the specific provisions covering safety components of vehicles. That triggers obligations under Articles 9 through 15: mandatory risk management systems, data governance requirements for training and validation datasets, technical documentation, human oversight mechanisms, and conformity assessment before market placement. The Act also intersects with existing type-approval frameworks under UNECE regulations, particularly WP.29 and its cybersecurity regulation (UNECE R155), which mandates a Cyber Security Management System for vehicle manufacturers.\n\nThe camera feeds processing images of individuals in public spaces are almost certainly processing personal data under GDPR, since individuals can be identified or are identifiable from video. Article 6 lawful basis needs to be established — legitimate interests under Art. 6(1)(f) is the most commonly relied upon here, but it requires a genuine balancing test against individuals' reasonable expectations. If any biometric processing occurs (gait recognition, face identification), that escalates to special category data under Art. 9, requiring explicit consent or a narrow derogation. Large-scale public surveillance also sits close to the Art. 5 prohibition territory in the AI Act regarding real-time remote biometric identification in public spaces, so you need to be clear that no such identification is occurring incidentally.\n\nThe 5G public network transmission is a significant attack surface from a cybersecurity standpoint. UNECE R155 directly requires manufacturers to manage risks associated to communication channels. Under GDPR Art. 32, you need appropriate technical measures for data in transit — TLS 1.3 or equivalent, certificate pinning, and integrity verification of sensor data streams. If this system is deployed in an EU member state and your organisation qualifies as an operator of essential services or important entity in the transport sector, NIS2 applies, bringing with it ICT supply chain security obligations and incident notification requirements to the relevant national competent authority within 24 hours of becoming aware of a significant incident, with a full report within 72 hours.\n\nOn the US side, if any of this operates in Illinois or involves facial geometry data, BIPA requires a written public policy, informed consent prior to collection, and carries a private right of action that has generated significant litigation. CCPA/CPRA applies if you are operating in California and meet the thresholds, with geolocation data qualifying as sensitive personal information under CPRA, requiring opt-out rights.\n\nA few things would sharpen the analysis: whether the vehicle is operating in EU jurisdictions or US states (or both), whether any onboard processing feeds back to a central cloud platform and where that platform is hosted, and whether the camera processing is purely for environmental perception or whether individuals are retained in any logs or datasets. Those factors affect your international transfer obligations and breach notification exposure considerably. If you want a structured risk assessment against your specific architecture, Norvar Assess is designed for exactly this kind of multi-framework deployment.",
+      "scores": {
+        "frameworkCoverage": 50,
+        "conceptCoverage": 0,
+        "citationPresent": true,
+        "outOfScopeHandled": false,
+        "redFlagsTriggered": [
+          "No mention of OT/IoT security considerations"
+        ],
+        "notes": [],
+        "foundFrameworks": [
+          "EU AI Act",
+          "GDPR"
+        ],
+        "missingFrameworks": [
+          "NIST CSF",
+          "ISO 27001"
+        ],
+        "foundConcepts": [],
+        "missingConcepts": [
+          "OT/IT security",
+          "network security",
+          "real-time data processing",
+          "biometric data",
+          "safety-critical system"
+        ],
+        "compositeScore": 40,
+        "grade": "FAIL"
+      },
+      "expectedFrameworks": [
+        "NIST CSF",
+        "ISO 27001",
+        "EU AI Act",
+        "GDPR"
+      ],
+      "expectedConcepts": [
+        "OT/IT security",
+        "network security",
+        "real-time data processing",
+        "biometric data",
+        "safety-critical system"
+      ]
+    },
+    {
+      "queryId": "CS-05",
+      "domain": "Cybersecurity",
+      "type": "out-of-scope",
+      "query": "Write me a Python script to scan for open ports on a network.",
+      "status": "OK",
+      "latencyMs": 5891,
+      "responseLength": 630,
+      "responsePreview": "That's outside my GRC lane — I don't write network scanning tools. What I can tell you is that if you're running penetration tests or vulnerability scans as part of a compliance programme, the governance side matters quite a bit.\n\nScope authorisation, rules of engagement, and evidence retention are required under frameworks like ISO 27001 Annex A 8.8 (management of technical vulnerabilities) and N",
+      "fullResponse": "That's outside my GRC lane — I don't write network scanning tools. What I can tell you is that if you're running penetration tests or vulnerability scans as part of a compliance programme, the governance side matters quite a bit.\n\nScope authorisation, rules of engagement, and evidence retention are required under frameworks like ISO 27001 Annex A 8.8 (management of technical vulnerabilities) and NIST CSF Identify/Protect functions. If you're in scope for NIS2, regular vulnerability assessments are an explicit expectation under Article 21. Want to talk through how to structure a compliant vulnerability management programme?",
+      "scores": {
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "citationPresent": true,
+        "outOfScopeHandled": true,
+        "redFlagsTriggered": [],
+        "notes": [],
+        "foundFrameworks": [],
+        "missingFrameworks": [],
+        "foundConcepts": [],
+        "missingConcepts": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "expectedFrameworks": [],
+      "expectedConcepts": []
+    }
+  ]
+}

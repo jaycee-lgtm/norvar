@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
+import { GRC_SYSTEM_PROMPT } from "@/lib/grc-prompt";
+import { ASSESS_AGENT } from "@/lib/agents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -36,8 +38,10 @@ async function fetchDocumentText(docId: string, userId: string): Promise<string>
   return `[Document attached: ${doc.name} (${doc.file_type?.toUpperCase()})]`;
 }
 
-const SYSTEM_PROMPT = `
-You are Norvar, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
+// Follow-up prompt: used when the user is continuing a conversation about an
+// existing assessment. Standalone questions get the full GRC advisor prompt.
+const FOLLOW_UP_PROMPT = `
+You are ${ASSESS_AGENT.name}, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
 
 CRITICAL RULES:
 - Answer ONLY the specific question asked. Be direct and concise.
@@ -100,13 +104,18 @@ export async function POST(req: NextRequest) {
         return;
       }
 
+      // Standalone question (no prior conversation or assessment context):
+      // respond as the full GRC advisor instead of the assessment follow-up persona.
+      const isStandalone = resolvedMessages.length === 1 && !assessment_id;
+      const basePrompt   = isStandalone ? GRC_SYSTEM_PROMPT : FOLLOW_UP_PROMPT;
+
       const systemPrompt = docContext
-        ? `${SYSTEM_PROMPT}\n\nREFERENCED DOCUMENTS:\n${docContext}`
-        : SYSTEM_PROMPT;
+        ? `${basePrompt}\n\nREFERENCED DOCUMENTS:\n${docContext}`
+        : basePrompt;
 
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
-        max_tokens: 1000,
+        max_tokens: isStandalone ? 1500 : 1000,
         system:     systemPrompt,
         messages:   resolvedMessages,
         stream:     true,

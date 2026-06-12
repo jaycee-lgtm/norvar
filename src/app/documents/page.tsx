@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import {
   Upload, Archive, Trash2, FolderOpen,
@@ -45,16 +46,17 @@ function fileIcon(type: string | null) {
   return type.toUpperCase().slice(0, 4);
 }
 
-function UploadModal({ folders, onClose, onUploaded }: {
-  folders:    Folder[];
-  onClose:    () => void;
-  onUploaded: () => void;
+function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
+  folders:          Folder[];
+  defaultFolderId?: string;
+  onClose:          () => void;
+  onUploaded:       () => void;
 }) {
   const fileRef                 = useRef<HTMLInputElement>(null);
   const [file, setFile]         = useState<File | null>(null);
   const [name, setName]         = useState("");
   const [desc, setDesc]         = useState("");
-  const [folderId, setFolderId] = useState("");
+  const [folderId, setFolderId] = useState(defaultFolderId ?? "");
   const [tags, setTags]         = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError]       = useState("");
@@ -290,6 +292,15 @@ function DocRow({ doc, onAction }: {
 }
 
 export default function DocumentsPage() {
+  return (
+    <Suspense>
+      <DocumentsPageInner />
+    </Suspense>
+  );
+}
+
+function DocumentsPageInner() {
+  const searchParams = useSearchParams();
   const [docs, setDocs]                 = useState<Document[]>([]);
   const [folders, setFolders]           = useState<Folder[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -312,6 +323,14 @@ export default function DocumentsPage() {
   };
 
   useEffect(() => { load(); }, [filterStatus, filterFolder]);
+
+  useEffect(() => {
+    const folder = searchParams.get("folder");
+    if (folder) {
+      setFilterFolder(folder);
+      setShowUpload(true);
+    }
+  }, [searchParams]);
 
   const handleAction = async (id: string, action: "archive" | "delete" | "restore") => {
     const statusMap = { archive: "archived", delete: "deleted", restore: "active" } as const;
@@ -441,7 +460,12 @@ export default function DocumentsPage() {
       </main>
 
       {showUpload && (
-        <UploadModal folders={folders} onClose={() => setShowUpload(false)} onUploaded={load} />
+        <UploadModal
+          folders={folders}
+          defaultFolderId={filterFolder}
+          onClose={() => setShowUpload(false)}
+          onUploaded={load}
+        />
       )}
     </div>
   );

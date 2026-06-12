@@ -1,14 +1,41 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 import { findUserByEmail, resolveUserProfiles } from "@/lib/clerk-users";
 import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
+import { gapKeyFromTitle } from "@/lib/gap-chat";
 import { sortBySeverity } from "@/lib/remediation";
+import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
+import { sendEscalationEmail } from "@/lib/email";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
+
+type ItemRow = {
+  id: string;
+  assessment_id: string;
+  assessment_number: string | null;
+  project_title: string | null;
+  gap_key: string | null;
+  gap_title: string;
+  gap_severity: string;
+  gap_domain?: string;
+  gap_detail?: string | null;
+  assigned_to: string[] | null;
+  created_by: string;
+  created_at: string;
+  assignee_meta?: AssigneeMeta | null;
+  escalation_token?: string | null;
+  escalation_email?: string | null;
+  escalation_recipient_name?: string | null;
+  escalation_role?: string | null;
+  escalation_question?: string | null;
+  escalation_note?: string | null;
+  assessments?: { title: string; assessment_number: string | null } | null;
+};
 
 function canManageItem(item: { created_by: string; assigned_to: string[] | null }, userId: string) {
   return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
@@ -26,32 +53,96 @@ async function assertCanAssign(userId: string, orgId: string | null, targetUserI
   return null;
 }
 
-// GET — list remediation items (filter by status, assessment, assigned_to)
+async function dispatchEscalationEmail(
+  item: {
+    gap_title: string;
+    gap_severity: string;
+    gap_domain: string;
+    gap_detail?: string | null;
+    project_title?: string | null;
+    assigned_to?: string[] | null;
+    assignee_meta?: AssigneeMeta | null;
+    escalation_token: string;
+    escalation_email: string;
+    escalation_recipient_name?: string | null;
+    escalation_question?: string | null;
+    escalation_note?: string | null;
+  },
+  escalatedByName: string,
+) {
+  const assigneeIds = item.assigned_to ?? [];
+  const profiles    = await resolveUserProfiles(assigneeIds);
+  const meta        = item.assignee_meta ?? {};
+
+  return sendEscalationEmail({
+    token:           item.escalation_token,
+    recipientEmail:  item.escalation_email,
+    recipientName:   item.escalation_recipient_name,
+    gapTitle:        item.gap_title,
+    gapSeverity:     item.gap_severity,
+    gapDomain:       item.gap_domain,
+    gapDetail:       item.gap_detail,
+    projectTitle:    item.project_title,
+    question:        item.escalation_question,
+    note:            item.escalation_note,
+    assigneeNames:   assigneeIds.map(id => profiles[id]?.name ?? "Assignee"),
+    assigneeRoles:   assigneeIds.map(id => meta[id]?.role ?? ""),
+    escalatedByName,
+  });
+}
+
+function enrichItem(row: ItemRow) {
+  const title = row.project_title ?? row.assessments?.title ?? null;
+  const number = row.assessment_number ?? row.assessments?.assessment_number ?? null;
+  const { assessments: _a, ...rest } = row;
+  return {
+    ...rest,
+    project_title:     title,
+    assessment_number: number,
+    gap_key:           rest.gap_key ?? gapKeyFromTitle(rest.gap_title, rest.gap_severity),
+  } as ItemRow & { project_title: string | null; assessment_number: string | null; gap_key: string };
+}
+
+// GET — list remediation items
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const assessment_id = searchParams.get("assessment_id");
-  const status        = searchParams.get("status");
+  const assessment_id  = searchParams.get("assessment_id");
+  const project_number = searchParams.get("project_number");
+  const status         = searchParams.get("status");
 
   let query = supabase
     .from("remediation_items")
-    .select("*, remediation_activity(*)")
+    .select("*, remediation_activity(*), assessments(title, assessment_number)")
     .or(accessibleItemFilter(userId))
     .order("created_at", { ascending: false });
 
-  if (assessment_id) query = query.eq("assessment_id", assessment_id);
-  if (status)        query = query.eq("status", status);
+  if (assessment_id)  query = query.eq("assessment_id", assessment_id);
+  if (project_number) query = query.eq("assessment_number", project_number);
+  if (status)         query = query.eq("status", status);
 
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const items = sortBySeverity(data ?? []);
+  const items = sortBySeverity((data ?? []).map(r => enrichItem(r as ItemRow)));
   const userIds = items.flatMap(i => [...(i.assigned_to ?? []), i.created_by]);
   const users   = await resolveUserProfiles(userIds);
 
-  return Response.json({ items, users });
+  const projectMap = new Map<string, { id: string; title: string; number: string | null }>();
+  for (const item of items) {
+    if (!projectMap.has(item.assessment_id)) {
+      projectMap.set(item.assessment_id, {
+        id:     item.assessment_id,
+        title:  item.project_title ?? "Untitled project",
+        number: item.assessment_number,
+      });
+    }
+  }
+  const projects = [...projectMap.values()].sort((a, b) => a.title.localeCompare(b.title));
+
+  return Response.json({ items, users, projects });
 }
 
 // POST — add gap(s) to remediation queue
@@ -59,14 +150,14 @@ export async function POST(req: NextRequest) {
   const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { assessment_id, assessment_number, gaps, assigned_to, due_date } = await req.json();
+  const { assessment_id, assessment_number, project_title, gaps, assigned_to, due_date } = await req.json();
   if (!assessment_id || !gaps?.length) {
     return Response.json({ error: "assessment_id and gaps required" }, { status: 400 });
   }
 
   const { data: assessment } = await supabase
     .from("assessments")
-    .select("id")
+    .select("title, assessment_number, gap_chats")
     .eq("id", assessment_id)
     .eq("user_id", userId)
     .single();
@@ -82,22 +173,38 @@ export async function POST(req: NextRequest) {
     if (denied) return Response.json({ error: denied }, { status: 403 });
   }
 
-  const items = gaps.map((gap: Record<string, unknown>) => ({
-    assessment_id,
-    assessment_number: assessment_number ?? null,
-    gap_title:         gap.title,
-    gap_severity:      gap.severity,
-    gap_domain:        gap.domain,
-    gap_detail:        gap.detail,
-    gap_frameworks:    gap.frameworks ?? [],
-    remediation_steps: gap.remediation,
-    assigned_to:       extraAssignees.length
-                         ? Array.from(new Set([userId, ...extraAssignees]))
-                         : [userId],
-    created_by:        userId,
-    due_date:          due_date ?? null,
-    status:            "open",
-  }));
+  const gapChats = (assessment?.gap_chats && typeof assessment.gap_chats === "object")
+    ? assessment.gap_chats as Record<string, unknown[]>
+    : {};
+
+  const resolvedTitle  = project_title ?? assessment?.title ?? null;
+  const resolvedNumber = assessment_number ?? assessment?.assessment_number ?? null;
+  const itemAssignees = Array.from(new Set([userId, ...extraAssignees]));
+
+  const items = gaps.map((gap: Record<string, unknown>) => {
+    const gapKey = (gap.gap_key as string)
+      ?? gapKeyFromTitle(String(gap.title), String(gap.severity));
+    const priorMessages = Array.isArray(gapChats[gapKey]) ? gapChats[gapKey] : [];
+
+    return {
+      assessment_id,
+      assessment_number: resolvedNumber,
+      project_title:     resolvedTitle,
+      gap_key:           gapKey,
+      gap_title:         gap.title,
+      gap_severity:      gap.severity,
+      gap_domain:        gap.domain,
+      gap_detail:        gap.detail,
+      gap_frameworks:    gap.frameworks ?? [],
+      remediation_steps: gap.remediation,
+      messages:          priorMessages,
+      assigned_to:       itemAssignees,
+      assignee_meta:     touchAssigneeMeta({}, itemAssignees),
+      created_by:        userId,
+      due_date:          due_date ?? null,
+      status:            "open",
+    };
+  });
 
   const { data, error } = await supabase
     .from("remediation_items")
@@ -118,24 +225,105 @@ export async function POST(req: NextRequest) {
   return Response.json({ items: data });
 }
 
-// PATCH — update status, assignees, escalate, resolve
+// PATCH — update status, assignees (single gap or entire project), escalate, resolve
 export async function PATCH(req: NextRequest) {
   const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const {
-    id, status, assigned_to, add_assignee, remove_assignee,
+    id, assessment_id, scope,
+    status, assigned_to, add_assignee, remove_assignee,
     add_assignee_email, reassign_email, reassign_to,
-    escalated_to, escalation_note, resolution_note, due_date,
+    escalation_email, escalation_role, escalation_question, escalation_note,
+    escalation_status, assignee_role, assignee_id, renotify,
+    resolution_note, due_date,
   } = await req.json();
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
+  const projectScope = scope === "project" && assessment_id;
+
+  // ── Project-wide assignee changes ─────────────────────────────────────────
+  if (projectScope && (reassign_to || reassign_email || add_assignee || add_assignee_email)) {
+    const { data: projectItems } = await supabase
+      .from("remediation_items")
+      .select("id, created_by, assigned_to, assignee_meta")
+      .eq("assessment_id", assessment_id);
+
+    if (!projectItems?.length) {
+      return Response.json({ error: "No gaps found for this project" }, { status: 404 });
+    }
+
+    const canManage = projectItems.every(i => canManageItem(i, userId));
+    if (!canManage) return Response.json({ error: "Forbidden" }, { status: 403 });
+
+    let targetId: string | null = null;
+    let targetName = "assignee";
+
+    if (reassign_to) {
+      const denied = await assertCanAssign(userId, activeOrgId, reassign_to);
+      if (denied) return Response.json({ error: denied }, { status: 403 });
+      targetId = reassign_to;
+      const profiles = await resolveUserProfiles([reassign_to]);
+      targetName = profiles[reassign_to]?.name ?? targetName;
+    } else if (reassign_email) {
+      const profile = await findUserByEmail(reassign_email);
+      if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
+      const denied = await assertCanAssign(userId, activeOrgId, profile.id);
+      if (denied) return Response.json({ error: denied }, { status: 403 });
+      targetId = profile.id;
+      targetName = profile.name;
+    } else if (add_assignee) {
+      const denied = await assertCanAssign(userId, activeOrgId, add_assignee);
+      if (denied) return Response.json({ error: denied }, { status: 403 });
+      targetId = add_assignee;
+      const profiles = await resolveUserProfiles([add_assignee]);
+      targetName = profiles[add_assignee]?.name ?? targetName;
+    } else if (add_assignee_email) {
+      const profile = await findUserByEmail(add_assignee_email);
+      if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
+      const denied = await assertCanAssign(userId, activeOrgId, profile.id);
+      if (denied) return Response.json({ error: denied }, { status: 403 });
+      targetId = profile.id;
+      targetName = profile.name;
+    }
+
+    if (!targetId) return Response.json({ error: "Invalid assignee" }, { status: 400 });
+
+    for (const item of projectItems) {
+      let newAssignees = [...(item.assigned_to ?? [])];
+      if (reassign_to || reassign_email) {
+        newAssignees = [targetId];
+      } else {
+        newAssignees = Array.from(new Set([...newAssignees, targetId]));
+      }
+      const assignee_meta = touchAssigneeMeta(
+        (item.assignee_meta as AssigneeMeta) ?? {},
+        newAssignees,
+      );
+      await supabase.from("remediation_items").update({ assigned_to: newAssignees, assignee_meta }).eq("id", item.id);
+      await supabase.from("remediation_activity").insert({
+        remediation_id: item.id,
+        user_id:        userId,
+        action:         "assigned",
+        detail:         reassign_to || reassign_email
+          ? `Project reassigned to ${targetName}`
+          : `Added ${targetName} to project`,
+      });
+    }
+
+    return Response.json({ ok: true, updated: projectItems.length });
+  }
 
   if (!id) return Response.json({ error: "ID required" }, { status: 400 });
 
-  const activeOrgId = await getActiveOrganizationId(userId, orgId);
-
   const { data: current } = await supabase
     .from("remediation_items")
-    .select("assigned_to, status, created_by")
+    .select(`
+      assigned_to, status, created_by, assignee_meta,
+      gap_title, gap_severity, gap_domain, gap_detail, project_title,
+      escalation_token, escalation_email, escalation_recipient_name,
+      escalation_role, escalation_question, escalation_note
+    `)
     .eq("id", id)
     .single();
   if (!current) return Response.json({ error: "Not found" }, { status: 404 });
@@ -144,24 +332,126 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // ── Renotify escalation recipient ─────────────────────────────────────────
+  if (renotify) {
+    if (!current.escalation_email || !current.escalation_token) {
+      return Response.json({ error: "This gap has not been escalated" }, { status: 400 });
+    }
+
+    const profiles = await resolveUserProfiles([userId]);
+    const emailResult = await dispatchEscalationEmail(
+      {
+        gap_title:        current.gap_title,
+        gap_severity:     current.gap_severity,
+        gap_domain:       current.gap_domain,
+        gap_detail:       current.gap_detail,
+        project_title:    current.project_title,
+        assigned_to:      current.assigned_to,
+        assignee_meta:    current.assignee_meta as AssigneeMeta,
+        escalation_token: current.escalation_token,
+        escalation_email: current.escalation_email,
+        escalation_recipient_name: current.escalation_recipient_name,
+        escalation_question: current.escalation_question,
+        escalation_note:  current.escalation_note,
+      },
+      profiles[userId]?.name ?? "A colleague",
+    );
+
+    await supabase
+      .from("remediation_items")
+      .update({ last_notified_at: new Date().toISOString() })
+      .eq("id", id);
+
+    await supabase.from("remediation_activity").insert({
+      remediation_id: id,
+      user_id:        userId,
+      action:         "escalation_renotify",
+      detail:         emailResult.ok
+        ? `Reminder sent to ${current.escalation_email}`
+        : `Renotify attempted — ${emailResult.error ?? "email failed"}`,
+    });
+
+    return Response.json({ ok: true, email_sent: emailResult.ok, email_error: emailResult.error });
+  }
+
   const updates: Record<string, unknown> = {};
   let activityAction = "note_added";
   let activityDetail = "";
 
   if (status) {
-    updates.status      = status;
-    activityAction      = "status_changed";
-    activityDetail      = `Status changed to ${status}`;
+    updates.status = status;
+    activityAction = "status_changed";
+    activityDetail = `Status changed to ${status.replace("_", " ")}`;
     if (status === "resolved") updates.resolved_at = new Date().toISOString();
     if (resolution_note) updates.resolution_note = resolution_note;
   }
 
-  if (escalated_to) {
-    updates.escalated_to    = escalated_to;
-    updates.status          = "escalated";
-    updates.escalation_note = escalation_note ?? null;
-    activityAction          = "escalated";
-    activityDetail          = `Escalated to ${escalated_to}`;
+  if (escalation_email) {
+    const email = String(escalation_email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return Response.json({ error: "Valid email required" }, { status: 400 });
+    }
+
+    const recipient   = await findUserByEmail(email);
+    const token       = current.escalation_token ?? randomUUID();
+    const profiles    = await resolveUserProfiles([userId]);
+    const now         = new Date().toISOString();
+
+    updates.status                    = "escalated";
+    updates.escalation_email          = email;
+    updates.escalation_recipient_name = recipient?.name ?? null;
+    updates.escalation_recipient_user_id = recipient?.id ?? null;
+    updates.escalation_role           = escalation_role?.trim() || null;
+    updates.escalation_question       = escalation_question?.trim() || null;
+    updates.escalation_note           = escalation_note?.trim() || null;
+    updates.escalated_at              = now;
+    updates.escalation_status         = "sent";
+    updates.escalation_token          = token;
+    updates.last_notified_at          = now;
+    updates.escalated_to              = escalation_role?.trim() || email;
+
+    activityAction = "escalated";
+    activityDetail = `Escalated to ${recipient?.name ?? email}${escalation_role ? ` (${escalation_role})` : ""}`;
+
+    const emailResult = await dispatchEscalationEmail(
+      {
+        gap_title:        current.gap_title,
+        gap_severity:     current.gap_severity,
+        gap_domain:       current.gap_domain,
+        gap_detail:       current.gap_detail,
+        project_title:    current.project_title,
+        assigned_to:      current.assigned_to,
+        assignee_meta:    current.assignee_meta as AssigneeMeta,
+        escalation_token: token,
+        escalation_email: email,
+        escalation_recipient_name: recipient?.name,
+        escalation_question: escalation_question?.trim(),
+        escalation_note:  escalation_note?.trim(),
+      },
+      profiles[userId]?.name ?? "A colleague",
+    );
+
+    if (!emailResult.ok) {
+      activityDetail += emailResult.error ? ` — email: ${emailResult.error}` : "";
+    }
+  }
+
+  if (escalation_status) {
+    updates.escalation_status = escalation_status;
+    activityAction            = "escalation_update";
+    activityDetail            = `Escalation status set to ${escalation_status}`;
+    if (escalation_status === "closed") updates.status = "in_progress";
+  }
+
+  if (assignee_role && assignee_id && canManageItem(current, userId)) {
+    const meta = touchAssigneeMeta(
+      (current.assignee_meta as AssigneeMeta) ?? {},
+      current.assigned_to ?? [],
+      { [String(assignee_id)]: String(assignee_role).trim() },
+    );
+    updates.assignee_meta = meta;
+    activityAction        = "assigned";
+    activityDetail          = "Assignee role updated";
   }
 
   if (due_date !== undefined) updates.due_date = due_date;
@@ -172,10 +462,14 @@ export async function PATCH(req: NextRequest) {
     const denied = await assertCanAssign(userId, activeOrgId, reassign_to);
     if (denied) return Response.json({ error: denied }, { status: 403 });
     const profiles = await resolveUserProfiles([reassign_to]);
-    newAssignees       = [reassign_to];
-    activityAction     = "assigned";
-    activityDetail     = `Reassigned to ${profiles[reassign_to]?.name ?? "assignee"}`;
+    newAssignees        = [reassign_to];
+    activityAction      = "assigned";
+    activityDetail      = `Reassigned to ${profiles[reassign_to]?.name ?? "assignee"}`;
     updates.assigned_to = newAssignees;
+    updates.assignee_meta = touchAssigneeMeta(
+      (current.assignee_meta as AssigneeMeta) ?? {},
+      newAssignees,
+    );
   } else if (reassign_email) {
     const profile = await findUserByEmail(reassign_email);
     if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
@@ -185,6 +479,10 @@ export async function PATCH(req: NextRequest) {
     activityAction      = "assigned";
     activityDetail      = `Reassigned to ${profile.name}`;
     updates.assigned_to = newAssignees;
+    updates.assignee_meta = touchAssigneeMeta(
+      (current.assignee_meta as AssigneeMeta) ?? {},
+      newAssignees,
+    );
   } else {
     if (assigned_to) newAssignees = assigned_to;
 
@@ -225,11 +523,26 @@ export async function PATCH(req: NextRequest) {
 
     if (assigned_to || add_assignee || add_assignee_email || remove_assignee) {
       updates.assigned_to = newAssignees;
+      updates.assignee_meta = touchAssigneeMeta(
+        (current.assignee_meta as AssigneeMeta) ?? {},
+        newAssignees,
+      );
       if (!activityDetail) {
         activityAction = "assigned";
         activityDetail = "Assignees updated";
       }
     }
+  }
+
+  if (updates.assigned_to && !updates.assignee_meta) {
+    updates.assignee_meta = touchAssigneeMeta(
+      (current.assignee_meta as AssigneeMeta) ?? {},
+      updates.assigned_to as string[],
+    );
+  }
+
+  if (!Object.keys(updates).length) {
+    return Response.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -253,7 +566,7 @@ export async function PATCH(req: NextRequest) {
   return Response.json({ item: data });
 }
 
-// DELETE — remove a remediation item (and its activity log via cascade)
+// DELETE — remove a remediation item
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });

@@ -1,15 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import AssigneeManager from "@/components/AssigneeManager";
-import { sortBySeverity } from "@/lib/remediation";
+import EscalateModal from "@/components/EscalateModal";
+import EscalationTracker from "@/components/EscalationTracker";
+import StatusBadge from "@/components/StatusBadge";
+import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
+import { sortBySeverity, STATUS_LABELS, STATUS_STYLES, type RemediationStatus } from "@/lib/remediation";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
-  CheckCircle, ArrowUpRight, Clock, X,
+  CheckCircle, ArrowUpRight, Clock, X, ExternalLink,
 } from "lucide-react";
+
+interface ProjectOption {
+  id:     string;
+  title:  string;
+  number: string | null;
+}
 
 interface Activity {
   id:         string;
@@ -23,6 +34,8 @@ interface RemediationItem {
   id:                   string;
   assessment_id:        string;
   assessment_number:    string | null;
+  project_title:        string | null;
+  gap_key:              string | null;
   gap_title:            string;
   gap_severity:         "critical" | "high" | "medium" | "low";
   gap_domain:           string;
@@ -32,8 +45,16 @@ interface RemediationItem {
   assigned_to:          string[];
   created_by:           string;
   status:               "open" | "in_progress" | "escalated" | "resolved" | "wont_fix";
-  escalated_to:         "compliance" | "legal" | null;
+  escalated_to:         string | null;
+  escalation_email:     string | null;
+  escalation_recipient_name?: string | null;
+  escalation_role:      string | null;
+  escalation_question:  string | null;
   escalation_note:      string | null;
+  escalated_at:         string | null;
+  escalation_status:    EscalationStatus | null;
+  last_notified_at:     string | null;
+  assignee_meta?:       AssigneeMeta;
   due_date:             string | null;
   resolved_at:          string | null;
   resolution_note:      string | null;
@@ -59,26 +80,13 @@ const SEV_STYLES: Record<string, { bg: string; color: string; bdr: string }> = {
   low:      { bg: "var(--card2)", color: "var(--fg3)", bdr: "var(--bdr2)" },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  open:        "Open",
-  in_progress: "In progress",
-  escalated:   "Escalated",
-  resolved:    "Resolved",
-  wont_fix:    "Won't fix",
-};
-
-const DOMAIN_LABELS: Record<string, string> = {
-  privacy:       "Privacy",
-  ai_governance: "AI Governance",
-  cybersecurity: "Cybersecurity",
-};
-
 const STATUS_FILTERS = [
   { value: "",            label: "All" },
   { value: "open",        label: "Open" },
   { value: "in_progress", label: "In progress" },
   { value: "escalated",   label: "Escalated" },
   { value: "resolved",    label: "Resolved" },
+  { value: "wont_fix",    label: "Won't fix" },
 ];
 
 const SEV_FILTERS = [
@@ -87,6 +95,17 @@ const SEV_FILTERS = [
   { value: "high",     label: "High" },
   { value: "medium",   label: "Medium" },
   { value: "low",      label: "Low" },
+];
+
+const DOMAIN_LABELS: Record<string, string> = {
+  privacy:       "Privacy",
+  ai_governance: "AI Governance",
+  cybersecurity: "Cybersecurity",
+};
+
+const DOMAIN_FILTERS = [
+  { value: "", label: "All domains" },
+  ...Object.entries(DOMAIN_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 function SevBadge({ sev }: { sev: string }) {
@@ -102,114 +121,49 @@ function SevBadge({ sev }: { sev: string }) {
   );
 }
 
-function EscalateModal({ item, onClose, onDone }: {
-  item:    RemediationItem;
-  onClose: () => void;
-  onDone:  () => void;
-}) {
-  const [target, setTarget] = useState<"compliance" | "legal">("compliance");
-  const [note, setNote]     = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const submit = async () => {
-    setSaving(true);
-    await fetch("/api/remediation", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: item.id, escalated_to: target, escalation_note: note }),
-    });
-    setSaving(false);
-    onDone();
-    onClose();
-  };
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
-    }}>
-      <div style={{
-        background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 12, padding: "24px 28px", width: 400,
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>Escalate gap</span>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}>
-            <X size={15} />
-          </button>
-        </div>
-        <p style={{ fontSize: 12, color: "var(--fg3)", marginBottom: 16 }}>{item.gap_title}</p>
-
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
-            Escalate to
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(["compliance", "legal"] as const).map(t => (
-              <button key={t} type="button" onClick={() => setTarget(t)} style={{
-                flex: 1, padding: "7px 0", borderRadius: 6, fontSize: 12, fontWeight: 500,
-                border: `0.5px solid ${target === t ? "var(--bdr3)" : "var(--bdr2)"}`,
-                background: target === t ? "var(--lift)" : "transparent",
-                color: target === t ? "var(--fg)" : "var(--fg3)",
-                cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                textTransform: "capitalize",
-              }}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 4 }}>
-            Note (optional)
-          </label>
-          <textarea
-            value={note} onChange={e => setNote(e.target.value)}
-            placeholder="Context for the reviewer..."
-            style={{
-              width: "100%", padding: "8px 10px", borderRadius: 6,
-              border: "0.5px solid var(--bdr2)", background: "var(--card2)",
-              color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif",
-              resize: "vertical", minHeight: 72,
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" onClick={onClose} style={{
-            padding: "7px 16px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
-            background: "transparent", color: "var(--fg2)", fontSize: 12, cursor: "pointer",
-          }}>Cancel</button>
-          <button type="button" onClick={submit} disabled={saving} style={{
-            padding: "7px 16px", borderRadius: 6, border: "none",
-            background: "var(--fg)", color: "var(--bg)",
-            fontSize: 12, fontWeight: 500, cursor: saving ? "not-allowed" : "pointer",
-          }}>
-            {saving ? "Escalating..." : "Escalate"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
+function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }: {
   item:     RemediationItem;
   profiles: Record<string, UserProfile>;
   onUpdate: () => void;
+  onStatusChange: (id: string, status: RemediationStatus) => void;
   onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
 }) {
   const [expanded, setExpanded]     = useState(false);
   const [escalating, setEscalating] = useState(false);
-  const overdue = is_overdue(item.due_date) && item.status !== "resolved";
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [localStatus, setLocalStatus] = useState(item.status);
+  const [statusError, setStatusError] = useState("");
 
-  const updateStatus = async (status: string) => {
-    await fetch("/api/remediation", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: item.id, status }),
-    });
-    onUpdate();
+  useEffect(() => {
+    setLocalStatus(item.status);
+  }, [item.status]);
+
+  const overdue = is_overdue(item.due_date) && localStatus !== "resolved";
+
+  const updateStatus = async (status: RemediationStatus) => {
+    if (status === localStatus || statusBusy) return;
+    const previous = localStatus;
+    setLocalStatus(status);
+    setStatusBusy(true);
+    setStatusError("");
+    try {
+      const res = await fetch("/api/remediation", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: item.id, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Status update failed");
+      onStatusChange(item.id, status);
+    } catch (e: unknown) {
+      setLocalStatus(previous);
+      setStatusError(e instanceof Error ? e.message : "Could not update status");
+    } finally {
+      setStatusBusy(false);
+    }
   };
+
+  const statusStyle = STATUS_STYLES[localStatus] ?? STATUS_STYLES.open;
 
   return (
     <>
@@ -228,6 +182,11 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
               {item.gap_title}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {item.project_title && (
+                <span style={{ fontSize: 10, color: "var(--fg2)", fontWeight: 500 }}>
+                  {item.project_title}
+                </span>
+              )}
               {item.assessment_number && (
                 <span style={{ fontSize: 10, color: "var(--fg3)", fontFamily: "'JetBrains Mono', monospace" }}>
                   {item.assessment_number}
@@ -245,17 +204,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
-              background: item.status === "resolved" ? "var(--rl-bg)" :
-                          item.status === "escalated" ? "var(--rm-bg)" : "var(--card2)",
-              color: item.status === "resolved" ? "var(--rl)" :
-                     item.status === "escalated" ? "var(--rm)" : "var(--fg3)",
-              border: `0.5px solid ${item.status === "resolved" ? "var(--rl-bdr)" :
-                       item.status === "escalated" ? "var(--rm-bdr)" : "var(--bdr2)"}`,
-            }}>
-              {STATUS_LABELS[item.status]}
-            </span>
+            <StatusBadge status={localStatus} />
             {item.due_date && (
               <span style={{ fontSize: 10, color: overdue ? "var(--rh)" : "var(--fg3)", display: "flex", alignItems: "center", gap: 3 }}>
                 {overdue && <AlertTriangle size={9} />}
@@ -271,6 +220,51 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
 
         {expanded && (
           <div style={{ padding: "0 16px 16px", borderTop: "0.5px solid var(--bdr)" }}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 10, flexWrap: "wrap", marginTop: 12, marginBottom: 10,
+            }}>
+              <Link
+                href={`/assess?id=${item.assessment_id}`}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  fontSize: 11, color: "var(--fg2)", textDecoration: "none",
+                }}
+              >
+                <ExternalLink size={11} />
+                View assessment
+                {item.project_title && ` · ${item.project_title}`}
+              </Link>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Status
+                </span>
+                <select
+                  value={localStatus}
+                  disabled={statusBusy}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => updateStatus(e.target.value as RemediationStatus)}
+                  className="remediation-status-select"
+                  style={{
+                    background: statusStyle.bg,
+                    color:      statusStyle.color,
+                    borderColor: statusStyle.bdr,
+                    opacity: statusBusy ? 0.7 : 1,
+                  }}
+                >
+                  {(Object.keys(STATUS_LABELS) as RemediationStatus[]).map(s => (
+                    <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {statusError && (
+              <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, marginBottom: 0 }}>{statusError}</p>
+            )}
+
             {item.gap_detail && (
               <p style={{ fontSize: 12, color: "var(--fg2)", lineHeight: 1.55, marginTop: 12, marginBottom: 10 }}>
                 {item.gap_detail}
@@ -298,6 +292,8 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                 remediation_steps:  item.remediation_steps,
               }}
               remediationId={item.id}
+              assessmentId={item.assessment_id}
+              gapKey={item.gap_key ?? undefined}
               initialMessages={item.messages ?? []}
               onMessagesChange={msgs => onMessagesChange(item.id, msgs)}
             />
@@ -305,20 +301,29 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
             <div style={{ marginBottom: 12, marginTop: 12 }}>
               <AssigneeManager
                 itemId={item.id}
+                assessmentId={item.assessment_id}
+                projectTitle={item.project_title}
                 assignedTo={item.assigned_to}
                 profiles={profiles}
                 onUpdate={onUpdate}
               />
             </div>
 
-            {item.escalated_to && (
-              <div style={{ marginBottom: 12, padding: "8px 10px", background: "var(--rm-bg)", border: "0.5px solid var(--rm-bdr)", borderRadius: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: "var(--rm)", marginBottom: item.escalation_note ? 4 : 0, textTransform: "capitalize" }}>
-                  Escalated to {item.escalated_to}
-                </div>
-                {item.escalation_note && <p style={{ fontSize: 11, color: "var(--fg2)" }}>{item.escalation_note}</p>}
-              </div>
-            )}
+            <EscalationTracker
+              itemId={item.id}
+              assignedTo={item.assigned_to}
+              profiles={profiles}
+              assigneeMeta={item.assignee_meta}
+              escalationEmail={item.escalation_email}
+              escalationRecipientName={item.escalation_recipient_name}
+              escalationRole={item.escalation_role}
+              escalationQuestion={item.escalation_question}
+              escalationNote={item.escalation_note}
+              escalatedAt={item.escalated_at}
+              escalationStatus={item.escalation_status}
+              lastNotifiedAt={item.last_notified_at}
+              onUpdate={onUpdate}
+            />
 
             {item.remediation_activity?.length > 0 && (
               <div style={{ marginBottom: 14 }}>
@@ -335,10 +340,10 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
               </div>
             )}
 
-            {item.status !== "resolved" && item.status !== "wont_fix" && (
+            {localStatus !== "resolved" && localStatus !== "wont_fix" && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {item.status === "open" && (
-                  <button type="button" onClick={() => updateStatus("in_progress")} style={{
+                {localStatus === "open" && (
+                  <button type="button" disabled={statusBusy} onClick={() => updateStatus("in_progress")} style={{
                     display: "flex", alignItems: "center", gap: 5,
                     padding: "5px 12px", borderRadius: 5, fontSize: 11,
                     border: "0.5px solid var(--bdr2)", background: "transparent",
@@ -347,7 +352,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                     <Clock size={10} /> Start
                   </button>
                 )}
-                {item.status !== "escalated" && (
+                {(!item.escalation_email || item.escalation_status === "closed") && (
                   <button type="button" onClick={() => setEscalating(true)} style={{
                     display: "flex", alignItems: "center", gap: 5,
                     padding: "5px 12px", borderRadius: 5, fontSize: 11,
@@ -357,7 +362,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                     <ArrowUpRight size={10} /> Escalate
                   </button>
                 )}
-                <button type="button" onClick={() => updateStatus("resolved")} style={{
+                <button type="button" disabled={statusBusy} onClick={() => updateStatus("resolved")} style={{
                   display: "flex", alignItems: "center", gap: 5,
                   padding: "5px 12px", borderRadius: 5, fontSize: 11,
                   border: "0.5px solid var(--rl-bdr)", background: "var(--rl-bg)",
@@ -365,7 +370,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                 }}>
                   <CheckCircle size={10} /> Resolve
                 </button>
-                <button type="button" onClick={() => updateStatus("wont_fix")} style={{
+                <button type="button" disabled={statusBusy} onClick={() => updateStatus("wont_fix")} style={{
                   display: "flex", alignItems: "center", gap: 5,
                   padding: "5px 12px", borderRadius: 5, fontSize: 11,
                   border: "0.5px solid var(--bdr2)", background: "transparent",
@@ -380,7 +385,12 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
       </div>
 
       {escalating && (
-        <EscalateModal item={item} onClose={() => setEscalating(false)} onDone={onUpdate} />
+        <EscalateModal
+          itemId={item.id}
+          gapTitle={item.gap_title}
+          onClose={() => setEscalating(false)}
+          onDone={onUpdate}
+        />
       )}
     </>
   );
@@ -389,31 +399,52 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
 export default function RemediationPage() {
   const [items, setItems]               = useState<RemediationItem[]>([]);
   const [profiles, setProfiles]         = useState<Record<string, UserProfile>>({});
+  const [projects, setProjects]         = useState<ProjectOption[]>([]);
   const [loading, setLoading]           = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSev, setFilterSev]       = useState("");
+  const [filterDomain, setFilterDomain] = useState("");
+  const [filterProject, setFilterProject] = useState("");
+  const [filterProjectNum, setFilterProjectNum] = useState("");
   const [mineOnly, setMineOnly]         = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     const params = new URLSearchParams();
-    if (filterStatus) params.set("status", filterStatus);
     if (mineOnly)     params.set("mine", "true");
+    if (filterProject) params.set("assessment_id", filterProject);
+    if (filterProjectNum) params.set("project_number", filterProjectNum);
     const res = await fetch(`/api/remediation?${params}`);
-    const { items: data, users } = await res.json();
+    const { items: data, users, projects: proj } = await res.json();
     setItems(data ?? []);
     setProfiles(users ?? {});
-    setLoading(false);
+    setProjects(proj ?? []);
+    if (!opts?.silent) setLoading(false);
   };
 
-  useEffect(() => { load(); }, [filterStatus, mineOnly]);
+  useEffect(() => { load(); }, [mineOnly, filterProject, filterProjectNum]);
+
+  const projectNumbers = useMemo(() => {
+    const nums = new Set<string>();
+    projects.forEach(p => { if (p.number) nums.add(p.number); });
+    return [...nums].sort();
+  }, [projects]);
 
   const filtered = sortBySeverity(
-    items.filter(i => !filterSev || i.gap_severity === filterSev),
+    items.filter(i =>
+      (!filterStatus || i.status === filterStatus) &&
+      (!filterSev || i.gap_severity === filterSev) &&
+      (!filterDomain || i.gap_domain === filterDomain),
+    ),
   );
 
   const updateItemMessages = (id: string, messages: GapChatMessage[]) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, messages } : i));
+  };
+
+  const handleStatusChange = (id: string, status: RemediationStatus) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    load({ silent: true });
   };
 
   const counts = {
@@ -421,6 +452,7 @@ export default function RemediationPage() {
     in_progress: items.filter(i => i.status === "in_progress").length,
     escalated:   items.filter(i => i.status === "escalated").length,
     resolved:    items.filter(i => i.status === "resolved").length,
+    wont_fix:    items.filter(i => i.status === "wont_fix").length,
     critical:    items.filter(i => i.gap_severity === "critical").length,
   };
 
@@ -446,6 +478,12 @@ export default function RemediationPage() {
     </>
   );
 
+  const headerSelectStyle: React.CSSProperties = {
+    padding: "5px 10px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
+    background: "var(--card2)", color: "var(--fg)", fontSize: 11,
+    fontFamily: "'Sora', sans-serif", cursor: "pointer",
+  };
+
   return (
     <div className="app-shell">
       <Sidebar extra={statusFilters} />
@@ -459,14 +497,47 @@ export default function RemediationPage() {
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Remediation queue</span>
 
           <select
-            value={filterSev} onChange={e => setFilterSev(e.target.value)}
-            style={{
-              padding: "5px 10px", borderRadius: 6, border: "0.5px solid var(--bdr2)",
-              background: "var(--card2)", color: "var(--fg)", fontSize: 11,
-              fontFamily: "'Sora', sans-serif", cursor: "pointer",
-            }}
+            value={filterSev}
+            onChange={e => setFilterSev(e.target.value)}
+            style={headerSelectStyle}
           >
-            {SEV_FILTERS.map(({ value, label }) => <option key={value || "all"} value={value}>{label}</option>)}
+            {SEV_FILTERS.map(({ value, label }) => (
+              <option key={value || "all"} value={value}>{label}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterDomain}
+            onChange={e => setFilterDomain(e.target.value)}
+            style={headerSelectStyle}
+          >
+            {DOMAIN_FILTERS.map(({ value, label }) => (
+              <option key={value || "all"} value={value}>{label}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterProject}
+            onChange={e => setFilterProject(e.target.value)}
+            style={{ ...headerSelectStyle, maxWidth: 220 }}
+          >
+            <option value="">All projects</option>
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.title}{p.number ? ` (${p.number})` : ""}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filterProjectNum}
+            onChange={e => setFilterProjectNum(e.target.value)}
+            style={{ ...headerSelectStyle, fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            <option value="">All numbers</option>
+            {projectNumbers.map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
           </select>
 
           <button type="button" onClick={() => setMineOnly(!mineOnly)} style={{
@@ -523,7 +594,8 @@ export default function RemediationPage() {
               key={item.id}
               item={item}
               profiles={profiles}
-              onUpdate={load}
+              onUpdate={() => load({ silent: true })}
+              onStatusChange={handleStatusChange}
               onMessagesChange={updateItemMessages}
             />
           ))}
