@@ -637,6 +637,8 @@ function Home() {
   const [error,         setError]         = useState("");
   const [contractText,  setContractText]  = useState("");
   const [contractName,  setContractName]  = useState("");
+  const [fileExtracting, setFileExtracting] = useState(false);
+  const [fileError,      setFileError]      = useState("");
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [docCatalog, setDocCatalog]       = useState<Record<string, string>>({});
   const [jurisdictions, setJurisdictions] = useState<string[]>([]);
@@ -762,19 +764,29 @@ function Home() {
     router.push("/assess");
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setContractName(file.name);
-    new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload  = ev => resolve(ev.target?.result as string || "");
-      r.onerror = reject;
-      r.readAsText(file);
-    })
-      .then(text => setContractText(text))
-      .catch(() => {});
     e.target.value = "";
+
+    setContractName(file.name);
+    setFileExtracting(true);
+    setFileError("");
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res  = await fetch("/api/documents/extract", { method: "POST", body: form });
+      const data = await res.json() as { text?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || "Could not read file");
+      setContractText(data.text ?? "");
+    } catch (err: unknown) {
+      setContractText("");
+      setContractName("");
+      setFileError(err instanceof Error ? err.message : "Could not read file");
+    } finally {
+      setFileExtracting(false);
+    }
   };
 
   const canSend = hasAssessment
@@ -1201,9 +1213,9 @@ function Home() {
           ? <ChipDropdown icon={<Briefcase size={11} strokeWidth={1.75} />} label="Sector" options={SECTOR_OPTIONS} selected={sector} onToggle={toggleSingle(setSector)} onClose={() => setOpenChip(null)} multi={false} />
           : <button type="button" className="chip" onClick={() => setOpenChip("sector")}><Briefcase size={11} strokeWidth={1.75} /> Sector{sector.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>1</span>}</button>
         }
-        <button type="button" className="chip" onClick={() => fileRef.current?.click()}>
+        <button type="button" className="chip" disabled={fileExtracting} onClick={() => fileRef.current?.click()}>
           <FileText size={11} strokeWidth={1.75} />
-          {contractName ? "Replace doc" : "Upload doc"}
+          {fileExtracting ? "Reading doc…" : contractName ? "Replace doc" : "Upload doc"}
         </button>
         <DocumentPicker
           selectedIds={selectedDocumentIds}
@@ -1211,8 +1223,13 @@ function Home() {
           disabled={loading || inferring}
           label="Reference docs"
         />
-        <input ref={fileRef} type="file" accept=".docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+        <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       </div>
+      )}
+      {fileError && (
+        <p style={{ fontSize: 11, color: "var(--rh)", margin: "0 0 8px", fontFamily: "'Sora', sans-serif" }}>
+          {fileError}
+        </p>
       )}
         <div className="mobile-composer-actions assess-composer-actions">
           <VoiceInputIcon

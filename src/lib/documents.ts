@@ -1,4 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  extractDocumentText,
+  formatDocumentBlock,
+  validateExtractedText,
+} from "@/lib/document-text";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,11 +36,14 @@ export async function fetchDocumentText(docId: string, userId: string): Promise<
 
   if (!fileData) return "";
 
-  if (["txt", "md", "csv"].includes(doc.file_type ?? "")) {
-    return `[Document: ${doc.name}]\n${await fileData.text()}`;
+  try {
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+    const text = await extractDocumentText(buffer, doc.file_type, doc.name);
+    const readable = validateExtractedText(text, doc.name);
+    return formatDocumentBlock(doc.name, readable);
+  } catch {
+    return `[Document: ${doc.name} — text could not be extracted. Re-upload as a text PDF or paste content directly.]`;
   }
-
-  return `[Document attached: ${doc.name} (${(doc.file_type ?? "file").toUpperCase()})]`;
 }
 
 export async function buildDocumentContextBlock(

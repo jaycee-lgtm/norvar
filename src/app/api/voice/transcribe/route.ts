@@ -6,6 +6,7 @@ import {
   ELEVENLABS_TRANSCRIPTION_MODEL,
   requireElevenLabsApiKey,
 } from "@/lib/elevenlabs-config";
+import { humanizeVoiceError } from "@/lib/voice-errors";
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
@@ -55,8 +56,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ text });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Transcription failed";
-    const status = message.includes("not configured") ? 503 : 500;
+    const message = humanizeVoiceError(e instanceof Error ? e.message : "Transcription failed");
+    const status = message.includes("not configured") || message.includes("ElevenLabs voice credits")
+      ? 503
+      : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

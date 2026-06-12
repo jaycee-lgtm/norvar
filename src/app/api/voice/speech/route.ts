@@ -8,6 +8,7 @@ import {
 } from "@/lib/elevenlabs-config";
 import { getUserAiSettings } from "@/lib/user-ai-settings-server";
 import { stripForSpeech } from "@/lib/voice";
+import { humanizeVoiceError } from "@/lib/voice-errors";
 
 const MAX_SPEECH_CHARS = 9000;
 
@@ -55,8 +56,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Speech generation failed";
-    const status = message.includes("not configured") ? 503 : 500;
+    const message = humanizeVoiceError(e instanceof Error ? e.message : "Speech generation failed");
+    const status = message.includes("not configured") || message.includes("ElevenLabs voice credits")
+      ? 503
+      : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
