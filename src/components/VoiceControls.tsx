@@ -12,6 +12,7 @@ type VoiceInputIconProps = {
   onStartListening: () => void;
   onStopListening: () => void;
   onStopSpeaking: () => void;
+  agentName?: string;
   size?: "md" | "sm";
 };
 
@@ -25,6 +26,7 @@ export function VoiceInputIcon({
   onStartListening,
   onStopListening,
   onStopSpeaking,
+  agentName = "Nora",
   size = "md",
 }: VoiceInputIconProps) {
   const iconSize = size === "sm" ? 14 : 16;
@@ -39,7 +41,7 @@ export function VoiceInputIcon({
     else if (!isTranscribing) onStartListening();
   };
 
-  let title = "Speak to Norvar";
+  let title = `Speak to ${agentName}`;
   if (isTranscribing) title = "Transcribing…";
   else if (isListening) title = "Stop listening";
   else if (isSpeaking) title = "Stop reading";

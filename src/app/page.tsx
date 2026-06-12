@@ -10,6 +10,7 @@ import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
+import { ASSESS_AGENT } from "@/lib/agents";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -383,7 +384,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
     <div className="msg-ai-card fade-up">
       <div className="msg-ai-label">
         <ShieldAlert size={11} strokeWidth={2} color="var(--fg3)" />
-        Norvar assessment
+        {ASSESS_AGENT.name} assessment
       </div>
 
       <div className="score-row">
@@ -1147,6 +1148,7 @@ function Home() {
           onStartListening={voice.startListening}
           onStopListening={voice.stopListening}
           onStopSpeaking={voice.stopSpeak}
+          agentName={ASSESS_AGENT.name}
         />
         <button type="button" className="send-btn" onClick={() => { void handleSend(); }} disabled={!canSend}>
           {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
@@ -1211,7 +1213,7 @@ function Home() {
                 <Logo size={40} />
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
                   <h1 className="home-heading">What are you building?</h1>
-                  <InfoTip text="Describe your deployment and Norvar will map it to the regulations that apply, score your risk, and surface compliance gaps." />
+                  <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
                   <ModeSelector current="assess" />
@@ -1256,7 +1258,7 @@ function Home() {
                                   <Loader2 size={11} className="spin" color="var(--fg3)" />
                                   {msg.status}
                                 </span>
-                              ) : isFollowUp ? "Norvar" : "Norvar is analysing..."}
+                              ) : isFollowUp ? ASSESS_AGENT.name : `${ASSESS_AGENT.name} is analysing...`}
                             </div>
                             {msg.text ? (
                               <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
@@ -1314,7 +1316,7 @@ function Home() {
                           <div className="msg-ai-card">
                             <div className="msg-ai-label">
                               <ShieldAlert size={11} color="var(--fg3)" />
-                              Norvar
+                              {ASSESS_AGENT.name}
                             </div>
                             <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.75, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
                               {msg.text || ""}
@@ -1353,6 +1355,7 @@ function Home() {
                         onStopListening={voice.stopListening}
                         onStopSpeaking={voice.stopSpeak}
                         size="sm"
+                        agentName={ASSESS_AGENT.name}
                       />
                       <button type="button" className="chat-send-btn" onClick={() => { void handleSend(); }} disabled={!canSend}>
                         {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}

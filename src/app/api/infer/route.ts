@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isAuditRequest } from "@/lib/audit";
+import { ASSESS_AGENT } from "@/lib/agents";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -11,7 +12,7 @@ const VALID_DATA_TYPES    = ["biometric", "health", "children", "location", "fin
 const VALID_SECTORS       = ["government", "healthcare", "finance", "hr_recruitment", "education", "transport", "media_adtech", "legal", "retail", "proptech", "technology"];
 
 const INFER_PROMPT = `
-You are a GRC analyst. A user has described a technology deployment.
+You are ${ASSESS_AGENT.name}, a GRC analyst. A user has described a technology deployment.
 Your job is to infer: domains, jurisdictions, data_types, and sector from the description.
 
 Return ONLY valid JSON — no prose, no markdown:

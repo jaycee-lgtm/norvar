@@ -16,7 +16,7 @@ export const MODES: {
 }[] = [
   {
     id:      "assess",
-    label:   "Norvar Assess",
+    label:   "Cassius",
     version: "1.0",
     tagline: "Formal compliance risk assessment",
     icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
@@ -24,7 +24,7 @@ export const MODES: {
   },
   {
     id:      "chat",
-    label:   "Norvar Chat",
+    label:   "Nora",
     version: "1.0",
     tagline: "Free-form GRC conversation",
     icon:    <MessageSquare size={13} strokeWidth={1.75} />,

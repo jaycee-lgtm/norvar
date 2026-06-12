@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { filterRegulatoryChunks, buildRegulatoryContextBlock, type RegulatoryChunk } from "@/lib/rag";
+import { ASSESS_AGENT } from "@/lib/agents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -47,7 +48,7 @@ async function getEmbedding(text: string): Promise<number[]> {
 }
 
 const SYSTEM_PROMPT = `
-You are a senior Governance, Risk and Compliance analyst specialising in technology regulation
+You are ${ASSESS_AGENT.name}, a senior Governance, Risk and Compliance analyst specialising in technology regulation
 across Privacy, AI Governance, and Cybersecurity globally.
 
 Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through these

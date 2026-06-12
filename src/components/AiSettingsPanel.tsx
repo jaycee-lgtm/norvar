@@ -136,7 +136,7 @@ export default function AiSettingsPanel() {
 
       <ToggleRow
         label="Read replies aloud"
-        description="Automatically use voice mode when Norvar responds in chat."
+        description="Automatically read replies aloud when Nora responds in chat."
         checked={settings.voiceSpeakResponses}
         onChange={value => update({ voiceSpeakResponses: value })}
         disabled={saving}

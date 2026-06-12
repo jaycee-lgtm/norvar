@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { GRC_SYSTEM_PROMPT } from "@/lib/grc-prompt";
+import { ASSESS_AGENT } from "@/lib/agents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -40,7 +41,7 @@ async function fetchDocumentText(docId: string, userId: string): Promise<string>
 // Follow-up prompt: used when the user is continuing a conversation about an
 // existing assessment. Standalone questions get the full GRC advisor prompt.
 const FOLLOW_UP_PROMPT = `
-You are Norvar, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
+You are ${ASSESS_AGENT.name}, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
 
 CRITICAL RULES:
 - Answer ONLY the specific question asked. Be direct and concise.

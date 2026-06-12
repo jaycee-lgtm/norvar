@@ -9,6 +9,7 @@ import Logo from "@/components/Logo";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
+import { CHAT_AGENT } from "@/lib/agents";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -261,6 +262,7 @@ function Chat() {
       onStartListening={voice.startListening}
       onStopListening={voice.stopListening}
       onStopSpeaking={voice.stopSpeak}
+      agentName={CHAT_AGENT.name}
     />
   );
 
@@ -366,7 +368,7 @@ function Chat() {
                       <div className="msg-ai-card">
                         <div className="msg-ai-label">
                           <ShieldAlert size={11} color="var(--fg3)" />
-                          Norvar
+                          {CHAT_AGENT.name}
                           {isStreaming && loading && i === messages.length - 1 && (
                             <span style={{ marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 3 }}>
                               <span className="loading-dot" />
@@ -438,6 +440,7 @@ function Chat() {
                       onStopListening={voice.stopListening}
                       onStopSpeaking={voice.stopSpeak}
                       size="sm"
+                      agentName={CHAT_AGENT.name}
                     />
                     <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                       {loading
@@ -464,7 +467,7 @@ function Chat() {
           padding: 32, textAlign: "center", background: "var(--bg)",
         }}>
           <Logo size={40} />
-          <h1 className="home-heading">Norvar GRC Chat</h1>
+          <h1 className="home-heading">Chat with {CHAT_AGENT.name}</h1>
           <p className="home-sub" style={{ marginBottom: 28 }}>
             Sign in to ask questions about governance, risk and compliance.
           </p>
