@@ -32,9 +32,9 @@ const SECTIONS = [
 
 export default function PrivacyPage() {
   return (
-    <div style={{ background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Sora', system-ui, sans-serif" }}>
+    <div className="public-page" style={{ background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Sora', sans-serif" }}>
 
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
+      <header className="public-page-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderBottom: "0.5px solid rgba(255,255,255,.07)" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <Logo size={26} />
           <span style={{ fontSize: 15, fontWeight: 500, color: H, letterSpacing: "-.03em" }}>Norvar</span>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
         <Link href="/" style={{ fontSize: 12, color: "#444442", textDecoration: "none", letterSpacing: "-.01em" }}>Back to home</Link>
       </header>
 
-      <main style={{ flex: 1, padding: "72px 52px", maxWidth: 680 }}>
+      <main className="public-page-main" style={{ flex: 1, padding: "72px 52px", maxWidth: 680 }}>
         <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: ".1em", textTransform: "uppercase", color: "#444442", marginBottom: 16, fontFamily: "'Sora', sans-serif" }}>Legal</p>
         <h1 style={{ fontSize: 32, fontWeight: 500, color: H, letterSpacing: "-.04em", marginBottom: 12, fontFamily: "'Sora', sans-serif" }}>Privacy Policy</h1>
         <p style={{ fontSize: 13, color: "#888884", marginBottom: 52, fontFamily: "'Sora', sans-serif" }}>Last updated: June 2026</p>
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         ))}
       </main>
 
-      <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
+      <footer className="public-page-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 52px", borderTop: "0.5px solid rgba(255,255,255,.07)" }}>
         <span style={{ fontSize: 11, color: "#444442", fontFamily: "'Sora', sans-serif" }}>Norvar - norvar.io</span>
         <div style={{ display: "flex", gap: 20 }}>
           <Link href="/privacy" style={{ fontSize: 11, color: "#444442", textDecoration: "none" }}>Privacy</Link>

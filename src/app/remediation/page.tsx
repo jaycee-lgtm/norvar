@@ -331,10 +331,10 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
                   Activity
                 </div>
                 {item.remediation_activity.slice(0, 5).map(a => (
-                  <div key={a.id} style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--fg3)", marginBottom: 4, alignItems: "flex-start" }}>
+                  <div key={a.id} className="remediation-activity-row" style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--fg3)", marginBottom: 4, alignItems: "flex-start" }}>
                     <Clock size={10} style={{ flexShrink: 0, marginTop: 2 }} />
                     <span>{a.detail ?? a.action}</span>
-                    <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>{fmt_date(a.created_at)}</span>
+                    <span className="remediation-activity-date" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>{fmt_date(a.created_at)}</span>
                   </div>
                 ))}
               </div>

@@ -58,11 +58,11 @@ function CreateProjectModal({ onClose, onCreated }: {
   };
 
   return (
-    <div style={{
+    <div className="app-modal-backdrop" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
     }}>
-      <div style={{
+      <div className="app-modal-panel" style={{
         background: "var(--card)", border: "0.5px solid var(--bdr2)",
         borderRadius: 12, padding: "24px 28px", width: 420,
       }}>
@@ -137,8 +137,8 @@ export default function ProjectsPage() {
     <AppShell>
       <main className="main-area">
         <div className="main-scroll">
-          <div className="chat-scroll">
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
+          <div className="page-body">
+            <div className="page-heading-row" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, gap: 12, flexWrap: "wrap" }}>
               <div>
                 <p className="stag" style={{ marginBottom: 8 }}>Projects</p>
                 <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.04em" }}>
@@ -172,7 +172,7 @@ export default function ProjectsPage() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+            <div className="projects-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
               {projects.map(p => (
                 <Link
                   key={p.id}

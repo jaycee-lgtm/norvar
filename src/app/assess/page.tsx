@@ -1401,6 +1401,14 @@ function Home() {
                 <div className="chat-input-row">
                   <div className="chat-input-inner">
                     <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+                    {isMobileView && (
+                      <div className="mobile-thread-toolbar mobile-only">
+                        <button type="button" className="mobile-thread-action" onClick={startNew}>
+                          <SquarePen size={13} strokeWidth={2} />
+                          New assessment
+                        </button>
+                      </div>
+                    )}
                     {isMobileView ? (
                       <div className="mobile-composer thread-composer">
                         <input

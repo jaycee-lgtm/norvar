@@ -83,11 +83,11 @@ export default function EscalateModal({ itemId, gapTitle, onClose, onDone }: Esc
   };
 
   return (
-    <div style={{
+    <div className="app-modal-backdrop" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
     }}>
-      <div style={{
+      <div className="app-modal-panel" style={{
         background: "var(--card)", border: "0.5px solid var(--bdr2)",
         borderRadius: 12, padding: "24px 28px", width: 440, maxHeight: "90vh", overflowY: "auto",
       }}>

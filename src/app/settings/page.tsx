@@ -18,6 +18,7 @@ export default function SettingsPage() {
           <h2 style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.03em", marginBottom: 16, fontFamily: "'Sora', sans-serif" }}>
             Sign-in &amp; security
           </h2>
+          <div className="settings-clerk">
           <UserProfile
             appearance={{
               elements: {
@@ -33,6 +34,7 @@ export default function SettingsPage() {
               },
             }}
           />
+          </div>
         </div>
       </div>
     </AppShell>

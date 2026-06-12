@@ -87,7 +87,16 @@ export default function AppShell({
   sidebarExtra?: ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="app-shell">{children}</div>}>
+    <Suspense fallback={
+      <div className="app-shell">
+        <header className="mobile-header" aria-hidden>
+          <div className="mobile-menu-btn" style={{ visibility: "hidden" }} />
+          <div className="mobile-header-spacer" />
+          <div className="mobile-header-profile" style={{ visibility: "hidden" }} />
+        </header>
+        {children}
+      </div>
+    }>
       <AppShellInner sidebarExtra={sidebarExtra}>{children}</AppShellInner>
     </Suspense>
   );

@@ -1046,10 +1046,6 @@ body {
     display: none;
   }
 
-  .sidebar-org-switcher {
-    display: none;
-  }
-
   .sidebar-top {
     padding-top: 0;
   }
@@ -1457,18 +1453,144 @@ body {
     flex-wrap: wrap;
     gap: 8px !important;
   }
-}
 
-@media (max-width: 480px) {
-  .input-chips .chip,
-  .sample-questions-trigger {
-    font-size: 10px;
-    padding: 5px 10px;
+  /* ── Public pages (contact, privacy, terms) ── */
+  .public-page-header {
+    padding: 14px 16px !important;
   }
 
-  .page-toolbar-controls select,
-  .page-toolbar-controls button {
-    flex: 1 1 100%;
+  .public-page-main {
+    padding: 32px 16px 48px !important;
+    max-width: none !important;
+  }
+
+  .public-page-main h1 {
+    font-size: 26px !important;
+  }
+
+  .public-page-footer {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    padding: 16px !important;
+  }
+
+  .public-page-footer > div {
+    flex-wrap: wrap;
+    gap: 12px !important;
+  }
+
+  /* ── Modals ── */
+  .app-modal-backdrop {
+    padding: 16px !important;
+    align-items: center !important;
+  }
+
+  .app-modal-panel {
+    width: min(440px, calc(100vw - 32px)) !important;
+    max-height: min(90vh, calc(100dvh - 32px)) !important;
+  }
+
+  /* ── Mobile thread toolbar ── */
+  .mobile-thread-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mobile-thread-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 36px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 0.5px solid var(--bdr2);
+    background: var(--card);
+    color: var(--fg2);
+    font-size: 11px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+  }
+
+  .mobile-thread-action--danger {
+    color: var(--rh);
+    border-color: var(--rl-bdr, var(--bdr2));
+  }
+
+  .mobile-thread-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ── Assessment gaps ── */
+  .gap-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gap-item > button[type="button"] {
+    align-self: flex-start;
+    min-height: 36px;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+
+  /* ── Projects grid ── */
+  .projects-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Remediation activity ── */
+  .remediation-activity-row {
+    flex-wrap: wrap;
+  }
+
+  .remediation-activity-date {
+    margin-left: 18px !important;
+    white-space: normal !important;
+  }
+
+  /* ── Settings / Clerk ── */
+  .settings-clerk .cl-navbar,
+  .settings-clerk .cl-navbarButtons {
+    display: none !important;
+  }
+
+  .settings-clerk .cl-rootBox,
+  .settings-clerk .cl-card {
+    width: 100% !important;
+  }
+
+  .settings-clerk .cl-pageScrollBox {
+    padding: 12px !important;
+  }
+
+  /* ── Touch targets ── */
+  .recent-delete {
+    min-width: 36px;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-send-btn,
+  .send-btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .gap-chat-send {
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .doc-row-actions button {
+    min-height: 36px;
+    padding: 6px 12px !important;
   }
 }
 

@@ -248,7 +248,7 @@ export default function AssigneeManager({
           ) : (
             <>
               <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 8, lineHeight: 1.5 }}>
-                No organization selected. Use the org switcher in the sidebar, or add by email below.
+                No organization selected. Open the menu and switch organization, or add by email below.
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <input

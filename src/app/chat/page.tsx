@@ -531,6 +531,25 @@ function Chat() {
                     </div>
                   </div>
                   )}
+                  {isMobileView && (
+                    <div className="mobile-thread-toolbar mobile-only">
+                      <button type="button" className="mobile-thread-action" onClick={startNew}>
+                        <SquarePen size={13} strokeWidth={2} />
+                        New chat
+                      </button>
+                      {conversationId && (
+                        <button
+                          type="button"
+                          className="mobile-thread-action mobile-thread-action--danger"
+                          onClick={() => { void deleteChat(); }}
+                          disabled={deleting || loading}
+                        >
+                          <Trash2 size={13} strokeWidth={2} />
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {isMobileView ? (
                   <div className="mobile-composer thread-composer">
                     <input
