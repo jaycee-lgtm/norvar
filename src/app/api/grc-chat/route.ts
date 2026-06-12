@@ -10,6 +10,7 @@ import {
   shouldRetrieveContext,
   type RegulatoryChunk,
 } from "@/lib/rag";
+import { buildDocumentContextBlock } from "@/lib/documents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { messages, conversation_id, message, folder_id } = await req.json();
+      const { messages, conversation_id, message, folder_id, document_ids } = await req.json();
       const resolvedMessages: ChatMessage[] | null = messages?.length
         ? messages
         : message
@@ -75,6 +76,12 @@ export async function POST(req: NextRequest) {
       const lastUser = [...typedMessages].reverse().find(m => m.role === "user")?.content ?? "";
 
       let system = SYSTEM_PROMPT;
+
+      if (Array.isArray(document_ids) && document_ids.length > 0 && userId) {
+        const docContext = await buildDocumentContextBlock(document_ids, userId);
+        if (docContext) system += docContext;
+      }
+
       if (shouldRetrieveContext(lastUser)) {
         try {
           const embedding = await getEmbedding(lastUser);

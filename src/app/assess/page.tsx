@@ -8,6 +8,7 @@ import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
+import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { ASSESS_AGENT } from "@/lib/agents";
@@ -640,6 +641,8 @@ function Home() {
   const [error,         setError]         = useState("");
   const [contractText,  setContractText]  = useState("");
   const [contractName,  setContractName]  = useState("");
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [docCatalog, setDocCatalog]       = useState<Record<string, string>>({});
   const [jurisdictions, setJurisdictions] = useState<string[]>([]);
   const [domains,       setDomains]       = useState<string[]>([]);
   const [dataTypes,     setDataTypes]     = useState<string[]>([]);
@@ -698,6 +701,17 @@ function Home() {
   }, [searchParams]);
 
   useEffect(() => {
+    fetch("/api/documents?status=active")
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, string> = {};
+        for (const doc of d.documents ?? []) map[doc.id] = doc.name;
+        setDocCatalog(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
@@ -742,6 +756,7 @@ function Home() {
     clearAll();
     setContractText("");
     setContractName("");
+    setSelectedDocumentIds([]);
     setAssessmentId(null);
     setGapChats({});
     setInferring(false);
@@ -816,6 +831,7 @@ function Home() {
           data_types:    resolvedDataTypes,
           sector:        resolvedSector,
           contract_text: contractText || undefined,
+          document_ids:  selectedDocumentIds.length ? selectedDocumentIds : undefined,
           tags,
           folder_id:     folderId || undefined,
         }),
@@ -848,6 +864,7 @@ function Home() {
           clearAll();
           setContractText("");
           setContractName("");
+          setSelectedDocumentIds([]);
           setInferredContext(null);
           setFollowUp(null);
           setPendingDesc("");
@@ -1045,6 +1062,7 @@ function Home() {
           messages: history,
           assessment_id: assessmentId,
           new_user_message: text,
+          document_ids: selectedDocumentIds.length ? selectedDocumentIds : undefined,
         }),
       });
 
@@ -1107,11 +1125,15 @@ function Home() {
 
   const InputBar = (
     <div className="input-wrap">
-      {(hasGuidedInputs || contractName) && (
+      {(hasGuidedInputs || contractName || selectedDocumentIds.length > 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
           {buildTags().map(tag => (
             <span key={tag} style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", fontFamily: "'Sora', sans-serif" }}>{tag}</span>
           ))}
+          <SelectedDocumentChips
+            documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+            onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+          />
           {contractName && (
             <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
               <FileText size={10} strokeWidth={2} />
@@ -1180,6 +1202,12 @@ function Home() {
           <FileText size={11} strokeWidth={1.75} />
           {contractName ? "Replace doc" : "Upload doc"}
         </button>
+        <DocumentPicker
+          selectedIds={selectedDocumentIds}
+          onChange={setSelectedDocumentIds}
+          disabled={loading || inferring}
+          label="Reference docs"
+        />
         <input ref={fileRef} type="file" accept=".docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       </div>
     </div>

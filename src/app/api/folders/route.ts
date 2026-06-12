@@ -54,13 +54,36 @@ async function loadProjectDetail(folderId: string, userId: string) {
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
-  const { data: documents } = await supabase
+  const linkedDocIds = (linkedItems ?? [])
+    .filter(i => i.item_type === "document")
+    .map(i => i.item_id);
+
+  const { data: documentsByFolder } = await supabase
     .from("documents")
     .select("id, name, description, file_type, file_size, status, created_at, folder_id")
     .eq("user_id", userId)
     .eq("folder_id", folderId)
     .eq("status", "active")
     .order("created_at", { ascending: false });
+
+  let documentsExtra: typeof documentsByFolder = [];
+  if (linkedDocIds.length) {
+    const { data } = await supabase
+      .from("documents")
+      .select("id, name, description, file_type, file_size, status, created_at, folder_id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .in("id", linkedDocIds);
+    documentsExtra = data ?? [];
+  }
+
+  const documentMap = new Map<string, NonNullable<typeof documentsByFolder>[number]>();
+  for (const d of [...(documentsByFolder ?? []), ...documentsExtra]) {
+    documentMap.set(d.id, d);
+  }
+  const documents = [...documentMap.values()].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   const assessmentIds = assessments.map(a => a.id);
   let gaps: Record<string, unknown>[] = [];
@@ -206,6 +229,12 @@ export async function PATCH(req: NextRequest) {
 
   if (add_item?.type && add_item?.id) {
     const type = add_item.type as "assessment" | "document" | "chat";
+    if (type === "document") {
+      await supabase.from("folder_items")
+        .delete()
+        .eq("item_type", "document")
+        .eq("item_id", add_item.id);
+    }
     await supabase.from("folder_items").upsert({
       folder_id: id,
       item_type: type,

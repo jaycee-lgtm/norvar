@@ -162,8 +162,8 @@ export default function ProjectDetailPage() {
       const res = await fetch("/api/documents?status=active");
       const json = await res.json();
       setAvailable((json.documents ?? [])
-        .filter((d: { id: string; folder_id?: string | null }) => !d.folder_id && !inProject.has(d.id))
-        .map((d: { id: string; name: string; file_type: string | null }) => ({
+        .filter((d: { id: string }) => !inProject.has(d.id))
+        .map((d: { id: string; name: string; file_type: string | null; folder_id?: string | null }) => ({
           id:    d.id,
           label: d.name,
           meta:  d.file_type?.toUpperCase() ?? undefined,

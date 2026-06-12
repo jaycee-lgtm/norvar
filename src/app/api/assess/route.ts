@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { filterRegulatoryChunks, buildRegulatoryContextBlock, type RegulatoryChunk } from "@/lib/rag";
 import { ASSESS_AGENT } from "@/lib/agents";
+import { buildDocumentContextBlock } from "@/lib/documents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -11,28 +12,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-// Fetch document text from Supabase Storage for assessment context
-async function fetchDocumentText(docId: string, userId: string): Promise<string> {
-  const { data: doc } = await supabase
-    .from("documents")
-    .select("file_path, name, file_type")
-    .eq("id", docId)
-    .eq("user_id", userId)
-    .single();
-
-  if (!doc?.file_path) return "";
-
-  const { data: fileData } = await supabase.storage
-    .from("documents")
-    .download(doc.file_path);
-
-  if (!fileData) return "";
-
-  if (["txt", "md", "csv"].includes(doc.file_type ?? "")) {
-    return `[Document: ${doc.name}]\n${await fileData.text()}`;
-  }
-  return `[Document attached: ${doc.name} (${doc.file_type?.toUpperCase()})]`;
-}
 
 async function getEmbedding(text: string): Promise<number[]> {
   const res = await fetch("https://api.voyageai.com/v1/embeddings", {
@@ -213,11 +192,8 @@ export async function POST(req: NextRequest) {
 
       // Fetch any referenced documents and inject into assessment context
       let docContext = "";
-      if (document_ids.length > 0) {
-        const texts = await Promise.all(
-          document_ids.map((id: string) => fetchDocumentText(id, userId)),
-        );
-        docContext = texts.filter(Boolean).join("\n\n");
+      if (document_ids.length > 0 && userId) {
+        docContext = await buildDocumentContextBlock(document_ids, userId);
       }
 
       const userMsg = [

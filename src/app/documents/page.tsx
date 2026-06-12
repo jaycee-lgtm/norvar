@@ -162,7 +162,7 @@ function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
         {folders.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 4 }}>
-              Folder
+              Project
             </label>
             <select
               value={folderId} onChange={e => setFolderId(e.target.value)}
@@ -172,7 +172,7 @@ function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
                 color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif",
               }}
             >
-              <option value="">No folder</option>
+              <option value="">No project</option>
               {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
           </div>
@@ -199,11 +199,14 @@ function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
   );
 }
 
-function DocRow({ doc, onAction }: {
+function DocRow({ doc, folders, onAction, onAssignProject }: {
   doc:      Document;
+  folders:  Folder[];
   onAction: (id: string, action: "archive" | "delete" | "restore") => void;
+  onAssignProject: (id: string, folderId: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const projectName = folders.find(f => f.id === doc.folder_id)?.name;
 
   return (
     <div style={{
@@ -231,6 +234,9 @@ function DocRow({ doc, onAction }: {
         </div>
         <div style={{ fontSize: 11, color: "var(--fg3)", marginTop: 1 }}>
           {fmt_size(doc.file_size)} · {fmt_date(doc.created_at)}
+          {projectName && (
+            <span style={{ marginLeft: 8, color: "var(--fg2)" }}>· {projectName}</span>
+          )}
           {doc.tags.length > 0 && (
             <span style={{ marginLeft: 8 }}>
               {doc.tags.map(t => (
@@ -248,6 +254,23 @@ function DocRow({ doc, onAction }: {
         <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "var(--card2)", color: "var(--fg3)", border: "0.5px solid var(--bdr)" }}>
           Archived
         </span>
+      )}
+
+      {folders.length > 0 && doc.status === "active" && (
+        <select
+          value={doc.folder_id ?? ""}
+          onChange={e => onAssignProject(doc.id, e.target.value || null)}
+          style={{
+            padding: "4px 8px", borderRadius: 5, fontSize: 11,
+            border: "0.5px solid var(--bdr2)", background: "var(--card2)",
+            color: "var(--fg2)", fontFamily: "'Sora', sans-serif", maxWidth: 140,
+          }}
+        >
+          <option value="">No project</option>
+          {folders.map(f => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
       )}
 
       <div style={{ position: "relative" }}>
@@ -338,6 +361,15 @@ function DocumentsPageInner() {
       method:  "PATCH",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ id, status: statusMap[action] }),
+    });
+    load();
+  };
+
+  const handleAssignProject = async (id: string, folderId: string | null) => {
+    await fetch("/api/documents", {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ id, folder_id: folderId }),
     });
     load();
   };
@@ -453,7 +485,13 @@ function DocumentsPageInner() {
             </div>
           )}
           {!loading && filtered.map(doc => (
-            <DocRow key={doc.id} doc={doc} onAction={handleAction} />
+            <DocRow
+              key={doc.id}
+              doc={doc}
+              folders={folders}
+              onAction={handleAction}
+              onAssignProject={handleAssignProject}
+            />
           ))}
           </div>
         </div>

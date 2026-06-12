@@ -8,6 +8,7 @@ import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
+import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import { useVoice } from "@/hooks/useVoice";
 import { CHAT_AGENT } from "@/lib/agents";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info } from "lucide-react";
@@ -103,6 +104,8 @@ function Chat() {
   const [error,          setError]          = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [deleting, setDeleting]             = useState(false);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [docCatalog, setDocCatalog]         = useState<Record<string, string>>({});
 
   const inputRef         = useRef<HTMLTextAreaElement>(null);
   const scrollRef        = useRef<HTMLDivElement>(null);
@@ -140,6 +143,17 @@ function Chat() {
       })
       .finally(() => setLoadingSaved(false));
   }, [searchParams]);
+
+  useEffect(() => {
+    fetch("/api/documents?status=active")
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, string> = {};
+        for (const doc of d.documents ?? []) map[doc.id] = doc.name;
+        setDocCatalog(map);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -184,6 +198,7 @@ function Chat() {
           messages:        newHistory,
           conversation_id: conversationId,
           folder_id:       !conversationId ? folderId : undefined,
+          document_ids:    selectedDocumentIds.length ? selectedDocumentIds : undefined,
         }),
       });
 
@@ -267,6 +282,7 @@ function Chat() {
     setInput("");
     setError("");
     setConversationId(null);
+    setSelectedDocumentIds([]);
     loadedIdRef.current = null;
     router.replace("/chat", { scroll: false });
   };
@@ -331,6 +347,14 @@ function Chat() {
               </div>
 
               <div className="input-wrap" style={{ marginBottom: 24 }}>
+                {(selectedDocumentIds.length > 0) && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
+                    <SelectedDocumentChips
+                      documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+                      onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+                    />
+                  </div>
+                )}
                 <div className="input-bar">
                   <textarea
                     ref={inputRef}
@@ -351,6 +375,14 @@ function Chat() {
                 {voice.voiceError && (
                   <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                 )}
+                <div className="input-chips" style={{ marginTop: 8 }}>
+                  <DocumentPicker
+                    selectedIds={selectedDocumentIds}
+                    onChange={setSelectedDocumentIds}
+                    disabled={loading}
+                    label="Reference docs"
+                  />
+                </div>
               </div>
 
               <SampleQuestionsDropdown
@@ -413,6 +445,14 @@ function Chat() {
               <div className="chat-input-row">
                 <div className="chat-input-inner">
                   <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+                  {(selectedDocumentIds.length > 0) && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+                      <SelectedDocumentChips
+                        documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+                        onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+                      />
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
                       Chat
@@ -485,6 +525,14 @@ function Chat() {
                   {voice.voiceError && (
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                   )}
+                  <div className="input-chips" style={{ marginTop: 8 }}>
+                    <DocumentPicker
+                      selectedIds={selectedDocumentIds}
+                      onChange={setSelectedDocumentIds}
+                      disabled={loading}
+                      label="Reference docs"
+                    />
+                  </div>
                   </div>
                 </div>
               </div>

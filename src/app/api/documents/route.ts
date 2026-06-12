@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
+import { syncDocumentProjectLink } from "@/lib/documents";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -108,8 +109,23 @@ export async function PATCH(req: NextRequest) {
   if (status)      updates.status      = status;
   if (name)        updates.name        = name;
   if (description) updates.description = description;
-  if (folder_id !== undefined) updates.folder_id = folder_id;
   if (tags)        updates.tags        = tags;
+
+  if (folder_id !== undefined) {
+    await syncDocumentProjectLink(userId, id, folder_id || null);
+  } else if (Object.keys(updates).length === 0) {
+    return Response.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  if (Object.keys(updates).length === 0) {
+    const { data: doc } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+    return Response.json({ document: doc });
+  }
 
   const { data, error } = await supabase
     .from("documents")

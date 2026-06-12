@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { GRC_SYSTEM_PROMPT } from "@/lib/grc-prompt";
 import { ASSESS_AGENT } from "@/lib/agents";
+import { buildDocumentContextBlock } from "@/lib/documents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -12,31 +13,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-// Fetch document text from Supabase Storage for context injection
-async function fetchDocumentText(docId: string, userId: string): Promise<string> {
-  const { data: doc } = await supabase
-    .from("documents")
-    .select("file_path, name, file_type")
-    .eq("id", docId)
-    .eq("user_id", userId)
-    .single();
-
-  if (!doc?.file_path) return "";
-
-  const { data: fileData } = await supabase.storage
-    .from("documents")
-    .download(doc.file_path);
-
-  if (!fileData) return "";
-
-  // For text-based files, read as text
-  if (["txt", "md", "csv"].includes(doc.file_type ?? "")) {
-    return `[Document: ${doc.name}]\n${await fileData.text()}`;
-  }
-
-  // For PDF/DOCX, return a placeholder — full extraction would need server-side parsing
-  return `[Document attached: ${doc.name} (${doc.file_type?.toUpperCase()})]`;
-}
 
 // Follow-up prompt: used when the user is continuing a conversation about an
 // existing assessment. Standalone questions get the full GRC advisor prompt.
@@ -85,10 +61,7 @@ export async function POST(req: NextRequest) {
       // Fetch and inject any referenced documents into context
       let docContext = "";
       if (Array.isArray(document_ids) && document_ids.length > 0 && userId) {
-        const texts = await Promise.all(
-          document_ids.map((id: string) => fetchDocumentText(id, userId)),
-        );
-        docContext = texts.filter(Boolean).join("\n\n");
+        docContext = await buildDocumentContextBlock(document_ids, userId);
       }
 
       // Audit runner sends a single `message` string — wrap it for Claude
