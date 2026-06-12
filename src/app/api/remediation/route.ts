@@ -61,6 +61,48 @@ async function canAccessRemediationItem(
   return false;
 }
 
+async function filterAccessibleItems<T extends { created_by: string; assigned_to: string[] | null }>(
+  items: T[],
+  userId: string,
+  orgId: string | null,
+) {
+  if (!items.length) return [];
+
+  const memberCache = new Map<string, boolean>();
+  const isMember = async (targetUserId: string) => {
+    if (!orgId) return false;
+    if (!memberCache.has(targetUserId)) {
+      memberCache.set(targetUserId, await isOrgMember(orgId, targetUserId));
+    }
+    return memberCache.get(targetUserId) ?? false;
+  };
+
+  const userInOrg = orgId ? await isMember(userId) : false;
+  const accessible: T[] = [];
+
+  for (const item of items) {
+    if (canManageItem(item, userId)) {
+      accessible.push(item);
+      continue;
+    }
+
+    if (!userInOrg) continue;
+    if (await isMember(item.created_by)) {
+      accessible.push(item);
+      continue;
+    }
+
+    for (const assigneeId of item.assigned_to ?? []) {
+      if (await isMember(assigneeId)) {
+        accessible.push(item);
+        break;
+      }
+    }
+  }
+
+  return accessible;
+}
+
 async function loadRemediationItem(id: string) {
   const { data, error } = await supabase
     .from("remediation_items")
@@ -132,7 +174,7 @@ function enrichItem(row: ItemRow) {
 
 // GET — list remediation items
 export async function GET(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
@@ -154,7 +196,12 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const items = sortBySeverity((data ?? []).map(r => enrichItem(r as ItemRow)));
+  const rawItems = (data ?? []).map(r => enrichItem(r as ItemRow));
+  const activeOrgId = mine ? null : await getActiveOrganizationId(userId, orgId);
+  const visibleItems = mine
+    ? rawItems
+    : await filterAccessibleItems(rawItems, userId, activeOrgId);
+  const items = sortBySeverity(visibleItems);
   const userIds = items.flatMap(i => [...(i.assigned_to ?? []), i.created_by]);
   const users   = await resolveUserProfiles(userIds);
 
@@ -187,7 +234,12 @@ export async function POST(req: NextRequest) {
     .from("assessments")
     .select("title, assessment_number, gap_chats")
     .eq("id", assessment_id)
-    .single();
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!assessment) {
+    return Response.json({ error: "Assessment not found" }, { status: 404 });
+  }
 
   const gapChats = (assessment?.gap_chats && typeof assessment.gap_chats === "object")
     ? assessment.gap_chats as Record<string, unknown[]>
@@ -272,8 +324,10 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: "No gaps found for this project" }, { status: 404 });
     }
 
-    const canManage = projectItems.some(i => canManageItem(i, userId));
-    if (!canManage) return Response.json({ error: "Forbidden" }, { status: 403 });
+    const manageableItems = await filterAccessibleItems(projectItems, userId, activeOrgId);
+    if (manageableItems.length !== projectItems.length) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     let targetId: string | null = null;
     let targetName = "assignee";
