@@ -383,7 +383,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
   };
 
   return (
-    <div className="msg-ai-card fade-up">
+    <div className="msg-ai-card fade-up assessment-card">
       <div className="msg-ai-label">
         <ShieldAlert size={11} strokeWidth={2} color="var(--fg3)" />
         {ASSESS_AGENT.name} assessment
@@ -423,7 +423,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
       <p className="assessment-summary">{a.summary}</p>
       <div className="section-divider" />
 
-      <div style={{ display: "flex", borderBottom: "0.5px solid var(--bdr)", marginBottom: 12 }}>
+      <div className="assessment-tabs" style={{ display: "flex", borderBottom: "0.5px solid var(--bdr)", marginBottom: 12 }}>
         {(["gaps", "frameworks"] as const).map(t => (
           <button key={t} type="button" onClick={() => setTab(t)} style={{
             display: "flex", alignItems: "center", gap: 5,
@@ -466,14 +466,26 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
             <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No gaps identified.</p>
           )}
           {ordered.map((gap, i) => (
-            <div key={i} className="gap-item">
-              <span className={`gap-sev ${gap.severity}`}>
-                <SevIcon sev={gap.severity} />
-                {gap.severity.charAt(0).toUpperCase() + gap.severity.slice(1)}
-              </span>
-              <div style={{ flex: 1 }}>
+            <div key={i} className="gap-item gap-item-card">
+              <div className="gap-item-header">
+                <span className={`gap-sev ${gap.severity}`}>
+                  <SevIcon sev={gap.severity} />
+                  {gap.severity.charAt(0).toUpperCase() + gap.severity.slice(1)}
+                </span>
                 <p className="gap-title">{gap.title}</p>
-                <p className="gap-reg">{gap.frameworks?.join(", ")}</p>
+                <button
+                  type="button"
+                  className="gap-queue-btn"
+                  onClick={() => addToQueue([i])}
+                  disabled={queued.has(i) || queueing === i}
+                >
+                  {queueing === i ? "..." : queued.has(i) ? "Queued" : "Queue"}
+                </button>
+              </div>
+              <div className="gap-item-body">
+                {gap.frameworks && gap.frameworks.length > 0 && (
+                  <p className="gap-reg">{gap.frameworks.join(", ")}</p>
+                )}
                 {(gap.detail || gap.description) && (
                   <p className="gap-detail">{gap.detail || gap.description}</p>
                 )}
@@ -497,23 +509,6 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
                   onMessagesChange={msgs => onGapChatsUpdate?.(String(i), msgs)}
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => addToQueue([i])}
-                disabled={queued.has(i) || queueing === i}
-                style={{
-                  flexShrink: 0, alignSelf: "flex-start", marginTop: 2,
-                  fontSize: 10, fontWeight: 500, padding: "3px 9px", borderRadius: 5,
-                  border: `0.5px solid ${queued.has(i) ? "var(--rl-bdr)" : "var(--bdr2)"}`,
-                  background: queued.has(i) ? "var(--rl-bg)" : "transparent",
-                  color: queued.has(i) ? "var(--rl)" : "var(--fg3)",
-                  cursor: queued.has(i) ? "default" : "pointer",
-                  fontFamily: "'Sora', sans-serif",
-                  transition: "all 0.15s",
-                }}
-              >
-                {queueing === i ? "..." : queued.has(i) ? "✓ Queued" : "+ Queue"}
-              </button>
             </div>
           ))}
         </div>

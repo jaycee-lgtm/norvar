@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   Upload, Archive, Trash2, FolderOpen,
-  Download, Search, ChevronDown, X,
+  Download, Search, ChevronDown, X, MoreHorizontal, SlidersHorizontal,
 } from "lucide-react";
 
 interface Document {
@@ -209,16 +210,16 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
   const projectName = folders.find(f => f.id === doc.folder_id)?.name;
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "10px 16px",
-      background: "var(--card)", border: "0.5px solid var(--bdr2)",
-      borderRadius: 8,
-    }}
+    <div
       className="doc-row"
-      onMouseEnter={e => (e.currentTarget.style.background = "var(--lift)")}
-      onMouseLeave={e => (e.currentTarget.style.background = "var(--card)")}
+      style={{
+        display: "flex", flexDirection: "column", gap: 0,
+        padding: "10px 16px",
+        background: "var(--card)", border: "0.5px solid var(--bdr2)",
+        borderRadius: 8,
+      }}
     >
+      <div className="doc-row-top" style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%" }}>
       <div style={{
         width: 36, height: 36, borderRadius: 6, background: "var(--card2)",
         border: "0.5px solid var(--bdr2)", display: "flex", flexDirection: "column",
@@ -233,33 +234,30 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {doc.name}
         </div>
-        <div style={{ fontSize: 11, color: "var(--fg3)", marginTop: 1 }}>
+        <div className="doc-row-meta" style={{ fontSize: 11, color: "var(--fg3)", marginTop: 1 }}>
           {fmt_size(doc.file_size)} · {fmt_date(doc.created_at)}
           {projectName && (
-            <span style={{ marginLeft: 8, color: "var(--fg2)" }}>· {projectName}</span>
-          )}
-          {doc.tags.length > 0 && (
-            <span style={{ marginLeft: 8 }}>
-              {doc.tags.map(t => (
-                <span key={t} style={{
-                  fontSize: 10, padding: "1px 6px", borderRadius: 10, marginRight: 4,
-                  background: "var(--card2)", color: "var(--fg3)", border: "0.5px solid var(--bdr)",
-                }}>{t}</span>
-              ))}
-            </span>
+            <span className="doc-row-project"> · {projectName}</span>
           )}
         </div>
+        {doc.tags.length > 0 && (
+          <div className="doc-row-tags">
+            {doc.tags.map(t => (
+              <span key={t} className="doc-row-tag">{t}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {doc.status === "archived" && (
+        <span className="doc-row-archived-badge">Archived</span>
+      )}
       </div>
 
       <div className="doc-row-actions">
-      {doc.status === "archived" && (
-        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "var(--card2)", color: "var(--fg3)", border: "0.5px solid var(--bdr)" }}>
-          Archived
-        </span>
-      )}
-
       {folders.length > 0 && doc.status === "active" && (
         <select
+          className="doc-row-project-select"
           value={doc.folder_id ?? ""}
           onChange={e => onAssignProject(doc.id, e.target.value || null)}
           style={{
@@ -275,17 +273,17 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
         </select>
       )}
 
-      <div style={{ position: "relative" }}>
+      <div className="doc-row-menu" style={{ position: "relative" }}>
         <button
           type="button"
+          className="doc-row-menu-btn"
+          aria-label="Document actions"
           onClick={() => setOpen(!open)}
-          style={{ background: "none", border: "0.5px solid var(--bdr2)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "var(--fg3)", display: "flex", alignItems: "center", gap: 3 }}
         >
-          <span style={{ fontSize: 11 }}>Actions</span>
-          <ChevronDown size={10} />
+          <MoreHorizontal size={16} strokeWidth={1.75} />
         </button>
         {open && (
-          <div style={{
+          <div className="doc-row-dropdown" style={{
             position: "absolute", right: 0, top: "calc(100% + 4px)", width: 160,
             background: "var(--card)", border: "0.5px solid var(--bdr2)",
             borderRadius: 8, overflow: "hidden", zIndex: 50,
@@ -297,15 +295,12 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
                 : { label: "Restore", icon: <FolderOpen size={12} />, action: () => { onAction(doc.id, "restore"); setOpen(false); } },
               { label: "Delete", icon: <Trash2 size={12} />, action: () => { onAction(doc.id, "delete"); setOpen(false); }, danger: true },
             ].map(({ label, icon, action, danger }) => (
-              <button key={label} type="button" onClick={action} style={{
+              <button key={label} type="button" className="doc-row-dropdown-item" onClick={action} style={{
                 display: "flex", alignItems: "center", gap: 8, width: "100%",
                 padding: "8px 12px", background: "none", border: "none",
                 fontSize: 12, color: danger ? "var(--rh)" : "var(--fg2)", cursor: "pointer",
                 textAlign: "left", fontFamily: "'Sora', sans-serif",
-              }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--lift)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "none")}
-              >
+              }}>
                 {icon}{label}
               </button>
             ))}
@@ -326,6 +321,7 @@ export default function DocumentsPage() {
 }
 
 function DocumentsPageInner() {
+  const isMobileView = useIsMobile();
   const searchParams = useSearchParams();
   const [docs, setDocs]                 = useState<Document[]>([]);
   const [folders, setFolders]           = useState<Folder[]>([]);
@@ -334,6 +330,7 @@ function DocumentsPageInner() {
   const [search, setSearch]             = useState("");
   const [filterStatus, setFilterStatus] = useState<"active" | "archived">("active");
   const [filterFolder, setFilterFolder] = useState("");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -409,8 +406,84 @@ function DocumentsPageInner() {
   ) : null;
 
   return (
-    <AppShell sidebarExtra={folderFilters}>
-      <main className="main-area">
+    <AppShell sidebarExtra={!isMobileView ? folderFilters : undefined}>
+      <main className={`main-area documents-page${isMobileView ? " documents-page--mobile" : ""}`}>
+        {isMobileView ? (
+          <div className="documents-mobile-head">
+            <div className="documents-mobile-title-row">
+              <FolderOpen size={16} color="var(--fg3)" />
+              <div>
+                <h1 className="documents-mobile-title">Documents</h1>
+                <p className="documents-mobile-subtitle">{filtered.length} file{filtered.length === 1 ? "" : "s"}</p>
+              </div>
+              <button type="button" className="documents-upload-btn" onClick={() => setShowUpload(true)}>
+                <Upload size={14} strokeWidth={1.75} />
+                Upload
+              </button>
+            </div>
+            <div className="documents-search-wrap">
+              <Search size={14} color="var(--fg3)" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search documents..."
+                className="documents-search-input"
+              />
+            </div>
+            <div className="documents-status-scroll">
+              {(["active", "archived"] as const).map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`documents-status-pill${filterStatus === s ? " active" : ""}`}
+                  onClick={() => setFilterStatus(s)}
+                >
+                  {s === "active" ? "Active" : "Archived"}
+                </button>
+              ))}
+            </div>
+            {folders.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  className="documents-filters-toggle"
+                  aria-expanded={showMobileFilters}
+                  onClick={() => setShowMobileFilters(v => !v)}
+                >
+                  <SlidersHorizontal size={14} strokeWidth={1.75} />
+                  <span>{filterFolder ? folders.find(f => f.id === filterFolder)?.name ?? "Folder" : "All folders"}</span>
+                  <ChevronDown
+                    size={14}
+                    strokeWidth={2}
+                    style={{ transform: showMobileFilters ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                  />
+                </button>
+                {showMobileFilters && (
+                  <div className="documents-folder-scroll">
+                    <button
+                      type="button"
+                      className={`documents-folder-pill${!filterFolder ? " active" : ""}`}
+                      onClick={() => setFilterFolder("")}
+                    >
+                      All
+                    </button>
+                    {folders.map(f => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        className={`documents-folder-pill${filterFolder === f.id ? " active" : ""}`}
+                        onClick={() => setFilterFolder(filterFolder === f.id ? "" : f.id)}
+                      >
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+        <>
         <div className="page-toolbar" style={{
           padding: "16px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", alignItems: "center", gap: 12,
@@ -473,9 +546,11 @@ function DocumentsPageInner() {
             </div>
           ))}
         </div>
+        </>
+        )}
 
         <div className="main-scroll">
-          <div className="chat-scroll">
+          <div className={`chat-scroll documents-list${isMobileView ? " documents-list--mobile" : ""}`}>
           {loading && (
             <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...
