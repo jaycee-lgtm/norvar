@@ -7,6 +7,7 @@ import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
 import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, Plus, ChevronRight } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type RecentAssessment = {
   id:         string;
@@ -43,6 +44,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { user }     = useUser();
+  const isMobileView = useIsMobile();
   const isChat     = path === "/chat" || path.startsWith("/chat/");
   const isAssess   = path === "/assess" || path === "/history";
   const isProjects = path.startsWith("/projects");
@@ -66,16 +68,14 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   };
 
   useEffect(() => {
-    if (isChat) {
+    if (isMobileView || isChat) {
       fetch("/api/conversations?limit=5")
         .then(r => r.json())
         .then(d => setConversations(d.conversations || []))
         .catch(() => {});
-      return;
     }
-    if (isAssess) {
+    if (isMobileView || isAssess) {
       loadAssessments();
-      return;
     }
     if (isProjects) {
       fetch("/api/folders")
@@ -86,7 +86,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         })
         .catch(() => {});
     }
-  }, [path, searchParams.toString(), isChat, isAssess, isProjects]);
+  }, [path, searchParams.toString(), isChat, isAssess, isProjects, isMobileView]);
 
   useEffect(() => {
     if (isAssess) setAssessNavOpen(true);
@@ -151,11 +151,9 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     >
       <div className="sidebar-drawer-header">
         <span className="sidebar-drawer-brand">Norvar</span>
-        <div className="sidebar-drawer-avatar">
-          <span>{initials}</span>
-        </div>
       </div>
 
+      {!isMobileView && (
       <div className="sidebar-top">
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px 10px" }}>
           <Logo size={24} />
@@ -168,12 +166,21 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
       </div>
+      )}
 
+      {!isMobileView && (
+      <>
       <div style={{ padding: "0 10px 8px" }}>
         <ModeSelector current={sidebarMode} compact />
       </div>
 
       <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
+      </>
+      )}
+
+      {isMobileView && (
+        <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
+      )}
 
       <div className="sidebar-org-switcher">
         <OrganizationSwitcher
@@ -204,6 +211,37 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       </div>
 
       <div className="sidebar-scroll">
+        {isMobileView ? (
+          <div className="sidebar-mobile-nav" style={{ padding: "0 0 4px" }}>
+            <Link href="/chat" className={`sidebar-nav-item${path === "/chat" || path.startsWith("/chat/") ? " active" : ""}`}>
+              <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
+              Chat
+            </Link>
+            <Link href="/assess" className={`sidebar-nav-item${path === "/assess" || path === "/history" ? " active" : ""}`}>
+              <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
+              Assessments
+            </Link>
+            {mainNav.map(({ href, label, icon: Icon, active }) => (
+              <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
+                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                {label}
+              </Link>
+            ))}
+            <Link href="/projects" className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}>
+              <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
+              Projects
+            </Link>
+            <Link href="/frameworks" className={`sidebar-nav-item${path === "/frameworks" ? " active" : ""}`}>
+              <Layers size={14} strokeWidth={path === "/frameworks" ? 2 : 1.75} />
+              Frameworks
+            </Link>
+            <Link href="/settings" className={`sidebar-nav-item${path === "/settings" ? " active" : ""}`}>
+              <Settings size={14} strokeWidth={path === "/settings" ? 2 : 1.75} />
+              Settings
+            </Link>
+          </div>
+        ) : (
+        <>
         <div style={{ padding: "0 0 4px" }}>
           <div className="sidebar-nav-group">
             <div className="sidebar-nav-group-row">
@@ -324,8 +362,10 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             Browse frameworks
           </Link>
         </div>
+        </>
+        )}
 
-        {assessments.length > 0 && (isAssess || path === "/history") && (
+        {assessments.length > 0 && (isMobileView ? sidebarMode === "assess" : (isAssess || path === "/history")) && (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent assessments</div>
@@ -363,7 +403,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </>
         )}
 
-        {conversations.length > 0 && isChat && (
+        {conversations.length > 0 && (isMobileView ? sidebarMode === "chat" : isChat) && (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent chats</div>

@@ -1186,7 +1186,7 @@ function Home() {
 
       <div className="mobile-composer-tools assess-composer-tools mobile-composer-tools--minimal">
         <div className="mobile-mode-pill">
-          <ModeSelector current="assess" compact />
+          <ModeSelector current="assess" compact menuPlacement="top" />
         </div>
       {!isMobileView && (
       <div className="input-chips assess-input-chips">
@@ -1420,7 +1420,7 @@ function Home() {
                         />
                         <div className="mobile-composer-tools mobile-composer-tools--minimal">
                           <div className="mobile-mode-pill">
-                            <ModeSelector current="assess" compact />
+                            <ModeSelector current="assess" compact menuPlacement="top" />
                           </div>
                           <div className="mobile-composer-actions">
                             <VoiceInputIcon

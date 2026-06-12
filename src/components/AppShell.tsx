@@ -16,12 +16,20 @@ function MobileProfileButton() {
     <div className="mobile-header-profile">
       <span className="mobile-header-initials" aria-hidden>{initials}</span>
       <UserButton
+        userProfileUrl="/settings"
         appearance={{
           elements: {
             userButtonAvatarBox:       { display: "none" },
             userButtonOuterIdentifier: { display: "none" },
-            userButtonTrigger:         { width: "100%", height: "100%", opacity: 0 },
-            rootBox:                   { position: "absolute", inset: 0 },
+            userButtonTrigger:         {
+              width: "100%",
+              height: "100%",
+              opacity: 0,
+              position: "absolute",
+              inset: 0,
+              zIndex: 2,
+            },
+            rootBox:                   { position: "absolute", inset: 0, zIndex: 2 },
           },
         }}
       />

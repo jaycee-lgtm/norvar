@@ -32,7 +32,15 @@ export const MODES: {
   },
 ];
 
-export default function ModeSelector({ current, compact = false }: { current: Mode; compact?: boolean }) {
+export default function ModeSelector({
+  current,
+  compact = false,
+  menuPlacement = "bottom",
+}: {
+  current: Mode;
+  compact?: boolean;
+  menuPlacement?: "bottom" | "top";
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,10 +55,19 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  const menuUp = menuPlacement === "top";
+
   return (
-    <div ref={ref} style={{ position: "relative", display: compact ? "block" : "inline-block", width: compact ? "100%" : undefined }}>
+    <div
+      ref={ref}
+      className={`mode-selector${compact ? " mode-selector--compact" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
+      style={{ position: "relative", display: compact ? "block" : "inline-block", width: compact ? "100%" : undefined }}
+    >
       <button
         type="button"
+        className="mode-selector-trigger"
+        aria-expanded={open}
+        aria-haspopup="listbox"
         onClick={() => setOpen(o => !o)}
         style={{
           display:        "inline-flex",
@@ -94,9 +111,13 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
       </button>
 
       {open && (
-        <div style={{
+        <div
+          className="mode-selector-menu"
+          role="listbox"
+          style={{
           position:     "absolute",
-          top:          "calc(100% + 6px)",
+          top:          menuUp ? undefined : "calc(100% + 6px)",
+          bottom:       menuUp ? "calc(100% + 6px)" : undefined,
           left:         0,
           right:        compact ? 0 : undefined,
           minWidth:     compact ? undefined : 260,
@@ -106,7 +127,7 @@ export default function ModeSelector({ current, compact = false }: { current: Mo
           border:       "0.5px solid var(--bdr2)",
           borderRadius: 9,
           overflow:     "hidden",
-          zIndex:       200,
+          zIndex:       300,
           boxShadow:    "0 8px 28px rgba(0,0,0,0.3)",
         }}>
           <div style={{

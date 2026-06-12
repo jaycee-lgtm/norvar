@@ -952,6 +952,12 @@ body {
     width: 36px;
     height: 36px;
     flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .mobile-header-profile .cl-rootBox,
+  .mobile-header-profile .cl-userButtonTrigger {
+    cursor: pointer;
   }
 
   .mobile-header-initials {
@@ -1024,17 +1030,12 @@ body {
     letter-spacing: -0.02em;
   }
 
-  .sidebar-drawer-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: var(--red);
-    color: #f5f5f4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
+  .sidebar-mobile-nav {
+    padding-bottom: 8px;
+  }
+
+  .sidebar-scroll {
+    padding-bottom: 88px;
   }
 
   .sidebar-top .new-assess-btn,
@@ -1165,7 +1166,8 @@ body {
   .home-composer-block {
     flex-shrink: 0;
     width: 100%;
-    padding: 0 16px max(14px, env(safe-area-inset-bottom, 14px));
+    padding: 0 16px max(20px, env(safe-area-inset-bottom, 20px));
+    overflow: visible;
   }
 
   .mobile-home-error {
@@ -1181,6 +1183,7 @@ body {
     border-radius: 26px;
     padding: 14px 16px 12px;
     box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+    overflow: visible;
   }
 
   .mobile-composer-field {
@@ -1207,6 +1210,19 @@ body {
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .mobile-mode-pill {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    z-index: 20;
+  }
+
+  .mode-selector-menu {
+    max-height: min(240px, 50vh);
+    overflow-y: auto;
   }
 
   .mobile-composer-tools--minimal {
@@ -1278,9 +1294,10 @@ body {
     right: 0;
     bottom: 0;
     z-index: 50;
-    padding: 0 16px max(12px, env(safe-area-inset-bottom, 12px));
+    padding: 0 16px max(16px, env(safe-area-inset-bottom, 16px));
     border-top: none;
     background: linear-gradient(to top, var(--bg) 70%, transparent);
+    overflow: visible;
   }
 
   .mobile-thread-layout .desktop-only {

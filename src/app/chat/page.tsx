@@ -378,7 +378,7 @@ function Chat() {
                     />
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
-                        <ModeSelector current="chat" compact />
+                        <ModeSelector current="chat" compact menuPlacement="top" />
                       </div>
                       <div className="mobile-composer-actions">
                         {voiceIcon}
@@ -561,7 +561,7 @@ function Chat() {
                     />
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
-                        <ModeSelector current="chat" compact />
+                        <ModeSelector current="chat" compact menuPlacement="top" />
                       </div>
                       <div className="mobile-composer-actions">
                         <VoiceInputIcon
