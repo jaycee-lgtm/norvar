@@ -99,11 +99,6 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
     },
   ];
 
-  const libraryNav = [
-    { href: "/projects", label: "Projects", icon: Briefcase, active: path.startsWith("/projects") },
-    { href: "/frameworks", label: "Frameworks", icon: Layers, active: path === "/frameworks" },
-  ];
-
   return (
     <aside className="sidebar">
       <div className="sidebar-top">
@@ -164,14 +159,27 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
         </div>
 
         <div className="sidebar-divider" />
-        <div className="sidebar-section">Projects & frameworks</div>
+        <div className="sidebar-section">Projects</div>
         <div style={{ padding: "0 0 4px" }}>
-          {libraryNav.map(({ href, label, icon: Icon, active }) => (
-            <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
-              <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-              {label}
-            </Link>
-          ))}
+          <Link
+            href="/projects"
+            className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}
+          >
+            <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
+            All projects
+          </Link>
+        </div>
+
+        <div className="sidebar-divider" />
+        <div className="sidebar-section">Frameworks</div>
+        <div style={{ padding: "0 0 4px" }}>
+          <Link
+            href="/frameworks"
+            className={`sidebar-nav-item${path === "/frameworks" ? " active" : ""}`}
+          >
+            <Layers size={14} strokeWidth={path === "/frameworks" ? 2 : 1.75} />
+            Browse frameworks
+          </Link>
         </div>
 
         {assessments.length > 0 && !isChat && (
