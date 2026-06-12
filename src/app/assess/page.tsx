@@ -8,6 +8,7 @@ import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
+import { splitRemediationSteps } from "@/lib/remediation-steps";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
@@ -465,9 +466,12 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
           {ordered.length === 0 && (
             <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No gaps identified.</p>
           )}
-          {ordered.map((gap, i) => (
+          {ordered.map((gap, i) => {
+            const steps = gap.remediation ? splitRemediationSteps(gap.remediation) : [];
+            return (
             <div key={i} className="gap-item gap-item-card">
               <div className="gap-item-header">
+                <span className="gap-item-number">{i + 1}</span>
                 <span className={`gap-sev ${gap.severity}`}>
                   <SevIcon sev={gap.severity} />
                   {gap.severity.charAt(0).toUpperCase() + gap.severity.slice(1)}
@@ -484,16 +488,23 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
               </div>
               <div className="gap-item-body">
                 {gap.frameworks && gap.frameworks.length > 0 && (
-                  <p className="gap-reg">{gap.frameworks.join(", ")}</p>
+                  <p className="gap-reg">{gap.frameworks.join(" · ")}</p>
                 )}
                 {(gap.detail || gap.description) && (
-                  <p className="gap-detail">{gap.detail || gap.description}</p>
+                  <section className="gap-section gap-section--issue">
+                    <div className="gap-section-label">Gap</div>
+                    <p className="gap-detail">{gap.detail || gap.description}</p>
+                  </section>
                 )}
-                {gap.remediation && (
-                  <div className="gap-fix">
-                    <div className="gap-fix-label">Fix</div>
-                    {gap.remediation}
-                  </div>
+                {steps.length > 0 && (
+                  <section className="gap-section gap-section--remediation">
+                    <div className="gap-section-label">Proposed remediation</div>
+                    <ol className="gap-remediation-steps">
+                      {steps.map((step, si) => (
+                        <li key={si}>{step}</li>
+                      ))}
+                    </ol>
+                  </section>
                 )}
                 <GapChat
                   gap={{
@@ -510,7 +521,8 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
                 />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

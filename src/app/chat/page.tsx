@@ -9,10 +9,11 @@ import Logo from "@/components/Logo";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
+import FormattedMessage from "@/components/FormattedMessage";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
-import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info } from "lucide-react";
+import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info, FileText } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -107,7 +108,12 @@ function Chat() {
   const [deleting, setDeleting]             = useState(false);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [docCatalog, setDocCatalog]         = useState<Record<string, string>>({});
+  const [attachedDocText, setAttachedDocText] = useState("");
+  const [attachedDocName, setAttachedDocName] = useState("");
+  const [fileExtracting, setFileExtracting]   = useState(false);
+  const [fileError, setFileError]             = useState("");
 
+  const fileRef          = useRef<HTMLInputElement>(null);
   const inputRef         = useRef<HTMLTextAreaElement>(null);
   const scrollRef        = useRef<HTMLDivElement>(null);
   const loadedIdRef      = useRef<string | null>(null);
@@ -167,7 +173,38 @@ function Chat() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  const canSend = input.trim().length > 2 && !loading;
+  const canSend = input.trim().length > 2 && !loading && !fileExtracting;
+
+  const hasAttachedDocs = selectedDocumentIds.length > 0 || !!attachedDocText;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setFileExtracting(true);
+    setFileError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res  = await fetch("/api/documents/extract", { method: "POST", body: form });
+      const data = await res.json() as { text?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || "Could not read file");
+      setAttachedDocText(data.text ?? "");
+      setAttachedDocName(file.name);
+    } catch (err: unknown) {
+      setAttachedDocText("");
+      setAttachedDocName("");
+      setFileError(err instanceof Error ? err.message : "Could not read file");
+    } finally {
+      setFileExtracting(false);
+    }
+  };
+
+  const clearAttachedDoc = () => {
+    setAttachedDocText("");
+    setAttachedDocName("");
+    setFileError("");
+  };
 
   const isMobileView = useIsMobile();
 
@@ -202,6 +239,7 @@ function Chat() {
           conversation_id: conversationId,
           folder_id:       !conversationId ? folderId : undefined,
           document_ids:    selectedDocumentIds.length ? selectedDocumentIds : undefined,
+          contract_text:   attachedDocText || undefined,
         }),
       });
 
@@ -286,6 +324,7 @@ function Chat() {
     setError("");
     setConversationId(null);
     setSelectedDocumentIds([]);
+    clearAttachedDoc();
     loadedIdRef.current = null;
     router.replace("/chat", { scroll: false });
   };
@@ -357,12 +396,26 @@ function Chat() {
               </div>
 
               <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
-                {!isMobileView && selectedDocumentIds.length > 0 && (
+                {hasAttachedDocs && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
                     <SelectedDocumentChips
                       documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
                       onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
                     />
+                    {attachedDocName && (
+                      <span style={{
+                        fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+                        padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        fontFamily: "'Sora', sans-serif",
+                      }}>
+                        <FileText size={10} strokeWidth={2} />
+                        {attachedDocName}
+                        <button type="button" onClick={clearAttachedDoc} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+                          ×
+                        </button>
+                      </span>
+                    )}
                   </div>
                 )}
                 {isMobileView ? (
@@ -376,9 +429,18 @@ function Chat() {
                       onKeyDown={handleKey}
                       rows={1}
                     />
-                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                      <div className="mobile-mode-pill">
-                        <ModeSelector current="chat" compact menuPlacement="top" />
+                    <div className="mobile-composer-tools">
+                      <div className="mobile-composer-attach">
+                        <DocumentPicker
+                          selectedIds={selectedDocumentIds}
+                          onChange={setSelectedDocumentIds}
+                          disabled={loading || fileExtracting}
+                          label="Attach doc"
+                        />
+                        <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
+                          <FileText size={11} strokeWidth={1.75} />
+                          {fileExtracting ? "Reading…" : attachedDocName ? "Replace" : "Upload"}
+                        </button>
                       </div>
                       <div className="mobile-composer-actions">
                         {voiceIcon}
@@ -413,9 +475,13 @@ function Chat() {
                       <DocumentPicker
                         selectedIds={selectedDocumentIds}
                         onChange={setSelectedDocumentIds}
-                        disabled={loading}
-                        label="Reference docs"
+                        disabled={loading || fileExtracting}
+                        label="Attach doc"
                       />
+                      <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
+                        <FileText size={11} strokeWidth={1.75} />
+                        {fileExtracting ? "Reading doc…" : attachedDocName ? "Replace doc" : "Upload doc"}
+                      </button>
                       <SampleQuestionsDropdown
                         align="left"
                         onSelect={q => sendWithVoice(q)}
@@ -423,6 +489,10 @@ function Chat() {
                       />
                     </div>
                   </>
+                )}
+                <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+                {fileError && (
+                  <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
                 )}
                 {voice.voiceError && (
                   <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
@@ -465,13 +535,14 @@ function Chat() {
                             </span>
                           )}
                         </div>
-                        <p style={{
-                          fontSize: 13.5, color: "var(--fg2)", lineHeight: 1.8,
-                          letterSpacing: "-0.01em", whiteSpace: "pre-wrap",
-                        }}>
-                          {msg.content}
-                          {isStreaming && streamCursor}
-                        </p>
+                        {isStreaming ? (
+                          <p className="formatted-message-p" style={{ whiteSpace: "pre-wrap" }}>
+                            {msg.content}
+                            {streamCursor}
+                          </p>
+                        ) : (
+                          <FormattedMessage content={msg.content} />
+                        )}
                       </div>
                     </div>
                   );
@@ -484,12 +555,26 @@ function Chat() {
               <div className="chat-input-row">
                 <div className="chat-input-inner">
                   <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-                  {(selectedDocumentIds.length > 0) && !isMobileView && (
+                  {(hasAttachedDocs) && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
                       <SelectedDocumentChips
                         documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
                         onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
                       />
+                      {attachedDocName && (
+                        <span style={{
+                          fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+                          padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          fontFamily: "'Sora', sans-serif",
+                        }}>
+                          <FileText size={10} strokeWidth={2} />
+                          {attachedDocName}
+                          <button type="button" onClick={clearAttachedDoc} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+                            ×
+                          </button>
+                        </span>
+                      )}
                     </div>
                   )}
                   {!isMobileView && (
@@ -559,9 +644,18 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                      <div className="mobile-mode-pill">
-                        <ModeSelector current="chat" compact menuPlacement="top" />
+                    <div className="mobile-composer-tools">
+                      <div className="mobile-composer-attach">
+                        <DocumentPicker
+                          selectedIds={selectedDocumentIds}
+                          onChange={setSelectedDocumentIds}
+                          disabled={loading || fileExtracting}
+                          label="Attach doc"
+                        />
+                        <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
+                          <FileText size={11} strokeWidth={1.75} />
+                          {fileExtracting ? "Reading…" : "Upload"}
+                        </button>
                       </div>
                       <div className="mobile-composer-actions">
                         <VoiceInputIcon
@@ -621,9 +715,13 @@ function Chat() {
                     <DocumentPicker
                       selectedIds={selectedDocumentIds}
                       onChange={setSelectedDocumentIds}
-                      disabled={loading}
-                      label="Reference docs"
+                      disabled={loading || fileExtracting}
+                      label="Attach doc"
                     />
+                    <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
+                      <FileText size={11} strokeWidth={1.75} />
+                      {fileExtracting ? "Reading doc…" : attachedDocName ? "Replace doc" : "Upload doc"}
+                    </button>
                     <SampleQuestionsDropdown
                       align="left"
                       onSelect={q => sendWithVoice(q)}
@@ -631,6 +729,9 @@ function Chat() {
                     />
                   </div>
                   </>
+                  )}
+                  {fileError && isMobileView && (
+                    <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
                   )}
                   {isMobileView && voice.voiceError && (
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />

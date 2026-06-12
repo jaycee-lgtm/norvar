@@ -22,7 +22,7 @@ export default function DocumentPicker({
   onChange,
   folderId,
   disabled = false,
-  label = "Documents",
+  label = "Attach doc",
 }: DocumentPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen]           = useState(false);

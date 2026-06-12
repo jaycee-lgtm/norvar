@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
-import { GRC_SYSTEM_PROMPT } from "@/lib/grc-prompt";
+import { GRC_SYSTEM_PROMPT, GRC_DOCUMENT_REDLINE_APPENDIX } from "@/lib/grc-prompt";
 import {
   buildRegulatoryContextBlock,
   filterRegulatoryChunks,
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { messages, conversation_id, message, folder_id, document_ids } = await req.json();
+      const { messages, conversation_id, message, folder_id, document_ids, contract_text } = await req.json();
       const resolvedMessages: ChatMessage[] | null = messages?.length
         ? messages
         : message
@@ -76,10 +76,24 @@ export async function POST(req: NextRequest) {
       const lastUser = [...typedMessages].reverse().find(m => m.role === "user")?.content ?? "";
 
       let system = SYSTEM_PROMPT;
+      let hasDocumentContext = false;
 
       if (Array.isArray(document_ids) && document_ids.length > 0 && userId) {
         const docContext = await buildDocumentContextBlock(document_ids, userId);
-        if (docContext) system += docContext;
+        if (docContext) {
+          system += docContext;
+          hasDocumentContext = true;
+        }
+      }
+
+      const inlineContract = typeof contract_text === "string" ? contract_text.trim() : "";
+      if (inlineContract) {
+        system += `\n\nCONTRACT (uploaded for this message):\n${inlineContract.slice(0, 12000)}`;
+        hasDocumentContext = true;
+      }
+
+      if (hasDocumentContext) {
+        system += GRC_DOCUMENT_REDLINE_APPENDIX;
       }
 
       if (shouldRetrieveContext(lastUser)) {
@@ -104,7 +118,7 @@ export async function POST(req: NextRequest) {
 
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
-        max_tokens: 1500,
+        max_tokens: hasDocumentContext ? 4000 : 1500,
         system,
         messages:   typedMessages,
         stream:     true,

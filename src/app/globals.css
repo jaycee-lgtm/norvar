@@ -496,9 +496,125 @@ body {
   display: block;
   border: 0.5px solid var(--bdr2);
   border-radius: 10px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
   background: var(--card2);
+}
+
+.gap-item-number {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg2);
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  margin-top: 1px;
+}
+
+.gap-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.gap-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-bottom: 6px;
+}
+
+.gap-section--issue .gap-detail {
+  margin: 0;
+}
+
+.gap-section--remediation {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--rl-bg);
+  border: 0.5px solid var(--rl-bdr);
+  border-top: 0.5px solid var(--rl-bdr);
+}
+
+.gap-section--remediation .gap-section-label {
+  color: var(--rl);
+}
+
+.gap-remediation-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--fg2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.gap-remediation-steps li + li {
+  margin-top: 6px;
+}
+
+.formatted-message {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formatted-message-heading {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin: 4px 0 0;
+  font-family: 'Sora', sans-serif;
+}
+
+.formatted-message-p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--fg2);
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+}
+
+.formatted-message-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--fg2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.formatted-message-list li + li {
+  margin-top: 6px;
+}
+
+.formatted-message-list.ordered {
+  padding-left: 20px;
+}
+
+.formatted-message-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg3);
+}
+
+.mobile-composer-attach {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .gap-item-header {
@@ -2258,11 +2374,33 @@ body {
     line-height: 1.5;
   }
 
-  .gap-fix {
-    margin-top: 8px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border-left-width: 2px;
+  .gap-item-number {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .gap-section {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .gap-section--remediation {
+    padding: 10px 12px;
+  }
+
+  .gap-remediation-steps {
+    font-size: 12px !important;
+    padding-left: 16px;
+  }
+
+  .formatted-message-heading {
+    font-size: 11px !important;
+  }
+
+  .formatted-message-p,
+  .formatted-message-list {
+    font-size: 12px !important;
   }
 
   .gap-chat-panel {

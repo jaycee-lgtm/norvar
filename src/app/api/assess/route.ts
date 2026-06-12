@@ -54,9 +54,9 @@ No markdown, no bullets, just clear prose.
       "severity":    "critical" | "high" | "medium" | "low",
       "domain":      "privacy" | "ai_governance" | "cybersecurity",
       "title":       "short gap title",
-      "detail":      "specific issue with article/section citations",
+      "detail":      "specific issue with article/section citations — 2-4 sentences",
       "frameworks":  ["applicable frameworks"],
-      "remediation": "specific actionable fix"
+      "remediation": "Proposed remediation as 2-4 numbered steps (1. ... 2. ...) or bullet lines starting with •. Each step must be a concrete action, not a restatement of the gap."
     }
   ]
 }
@@ -74,6 +74,8 @@ Rules:
 - Order gaps by severity descending.
 - Never invent regulations not present in the retrieved clauses.
 - The risk_tier must be consistent with the gaps you output — do not set it independently.
+- Keep gap "detail" and "remediation" clearly distinct: detail explains the compliance problem; remediation lists concrete fix steps only.
+- Do not repeat the gap title inside remediation.
 `;
 
 function normalizeGapDomain(raw: string): string {
