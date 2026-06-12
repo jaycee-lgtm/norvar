@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { isAuditRequest } from "@/lib/audit";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -50,8 +51,11 @@ Data type guidance:
 `;
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+  // Allow audit runner through if secret matches, otherwise require Clerk auth
+  if (!isAuditRequest(req)) {
+    const { userId } = await auth();
+    if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+  }
 
   const { description } = await req.json();
   if (!description || description.trim().length < 10) {
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   const response = await claude.messages.create({
-    model:      "claude-sonnet-4-6",
+    model:      "claude-haiku-4-5-20251001",
     max_tokens: 800,
     system:     INFER_PROMPT,
     messages:   [{ role: "user", content: description }],
