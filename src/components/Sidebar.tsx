@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, Plus, ChevronRight } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -498,7 +498,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       </div>
 
       <Link href={isAssess ? "/assess" : "/chat"} className="sidebar-mobile-fab">
-        <Plus size={16} strokeWidth={2.5} />
+        <SquarePen size={14} strokeWidth={1.75} />
         {isAssess ? "New assessment" : "New chat"}
       </Link>
 

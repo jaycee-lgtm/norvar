@@ -949,30 +949,72 @@ body {
 
   .mobile-header-profile {
     position: relative;
-    width: 36px;
-    height: 36px;
     flex-shrink: 0;
-    cursor: pointer;
+    z-index: 130;
   }
 
-  .mobile-header-profile .cl-rootBox,
-  .mobile-header-profile .cl-userButtonTrigger {
-    cursor: pointer;
-  }
-
-  .mobile-header-initials {
-    position: absolute;
-    inset: 0;
+  .mobile-header-profile-btn {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-header-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--red);
     color: #f5f5f4;
     font-size: 12px;
     font-weight: 600;
     pointer-events: none;
-    z-index: 0;
+  }
+
+  .mobile-profile-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 188px;
+    background: var(--card);
+    border: 0.5px solid var(--bdr2);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+    overflow: hidden;
+    z-index: 200;
+  }
+
+  .mobile-profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: 13px;
+    font-family: 'Sora', sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .mobile-profile-menu-item + .mobile-profile-menu-item {
+    border-top: 0.5px solid var(--bdr);
+  }
+
+  .mobile-profile-menu-item--danger {
+    color: var(--rh);
   }
 
   /* ── Drawer sidebar ── */
@@ -1000,8 +1042,8 @@ body {
     left: 0;
     bottom: 0;
     z-index: 140;
-    width: min(320px, 82vw);
-    max-width: 82vw;
+    width: min(252px, 72vw);
+    max-width: 72vw;
     transform: translateX(-105%);
     transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
@@ -1059,10 +1101,6 @@ body {
 
   .sidebar-mobile-recents-panel {
     padding: 0 4px 4px;
-  }
-
-  .sidebar-scroll {
-    padding-bottom: 88px;
   }
 
   .sidebar-top .new-assess-btn,
@@ -1127,25 +1165,27 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     position: absolute;
-    bottom: max(20px, env(safe-area-inset-bottom, 20px));
-    right: 18px;
-    left: 18px;
-    padding: 14px 20px;
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    left: 14px;
+    right: auto;
+    width: auto;
+    padding: 8px 14px;
     border-radius: 999px;
-    background: var(--fg);
-    color: var(--bg);
-    font-size: 14px;
+    background: var(--card);
+    color: var(--fg2);
+    border: 0.5px solid var(--bdr2);
+    font-size: 12px;
     font-weight: 500;
     text-decoration: none;
     font-family: 'Sora', sans-serif;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: none;
     z-index: 2;
   }
 
   .sidebar-scroll {
-    padding-bottom: 88px;
+    padding-bottom: 64px;
   }
 
   .main-area {

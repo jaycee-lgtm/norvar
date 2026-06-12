@@ -2,54 +2,9 @@
 
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { UserButton, useUser } from "@clerk/nextjs";
-import { Menu, Settings, Layers } from "lucide-react";
+import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-
-function MobileProfileButton() {
-  const { user } = useUser();
-  const initials = user
-    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
-    : "N";
-
-  return (
-    <div className="mobile-header-profile">
-      <span className="mobile-header-initials" aria-hidden>{initials}</span>
-      <UserButton
-        userProfileUrl="/settings"
-        appearance={{
-          elements: {
-            userButtonAvatarBox:       { display: "none" },
-            userButtonOuterIdentifier: { display: "none" },
-            userButtonTrigger:         {
-              width: "100%",
-              height: "100%",
-              opacity: 0,
-              position: "absolute",
-              inset: 0,
-              zIndex: 2,
-            },
-            rootBox:                   { position: "absolute", inset: 0, zIndex: 2 },
-          },
-        }}
-      >
-        <UserButton.MenuItems>
-          <UserButton.Link
-            label="Settings"
-            labelIcon={<Settings size={14} strokeWidth={1.75} />}
-            href="/settings"
-          />
-          <UserButton.Link
-            label="Frameworks"
-            labelIcon={<Layers size={14} strokeWidth={1.75} />}
-            href="/frameworks"
-          />
-          <UserButton.Action label="signOut" />
-        </UserButton.MenuItems>
-      </UserButton>
-    </div>
-  );
-}
+import MobileProfileMenu from "@/components/MobileProfileMenu";
 
 function AppShellInner({
   children,
@@ -83,7 +38,7 @@ function AppShellInner({
           <Menu size={18} strokeWidth={1.75} />
         </button>
         <div className="mobile-header-spacer" />
-        <MobileProfileButton />
+        <MobileProfileMenu />
       </header>
 
       <button
