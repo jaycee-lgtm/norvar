@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2 } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -34,12 +34,22 @@ function tierKey(t: string): keyof typeof TIER {
 
 function SidebarInner({ extra }: { extra?: ReactNode }) {
   const path         = usePathname();
+  const router       = useRouter();
   const searchParams = useSearchParams();
   const { user }     = useUser();
   const isChat       = path.startsWith("/chat");
+  const activeId     = searchParams.get("id");
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [deletingId,    setDeletingId]    = useState<string | null>(null);
+
+  const loadAssessments = () => {
+    fetch("/api/assessments?limit=5")
+      .then(r => r.json())
+      .then(d => setAssessments(d.assessments || []))
+      .catch(() => {});
+  };
 
   useEffect(() => {
     if (isChat) {
@@ -48,12 +58,29 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
         .then(d => setConversations(d.conversations || []))
         .catch(() => {});
     } else {
-      fetch("/api/assessments?limit=5")
-        .then(r => r.json())
-        .then(d => setAssessments(d.assessments || []))
-        .catch(() => {});
+      loadAssessments();
     }
   }, [path, searchParams.toString(), isChat]);
+
+  const deleteAssessment = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/assessments", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setAssessments(prev => prev.filter(a => a.id !== id));
+      if (activeId === id) router.push("/");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Could not delete assessment");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const initials = user
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
@@ -139,14 +166,29 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
             <div className="sidebar-section">Recent assessments</div>
             {assessments.map(item => {
               const c = TIER[tierKey(item.risk_tier)];
+              const isActive = activeId === item.id;
               return (
-                <Link key={item.id} href={`/?id=${item.id}`} className="recent-item">
-                  <div className="recent-dot" style={{ background: c.dot }} />
-                  <span className="recent-text">{item.title}</span>
-                  <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
-                    {item.risk_score}
-                  </span>
-                </Link>
+                <div key={item.id} className="recent-item-row">
+                  <Link
+                    href={`/?id=${item.id}`}
+                    className={`recent-item${isActive ? " active" : ""}`}
+                  >
+                    <div className="recent-dot" style={{ background: c.dot }} />
+                    <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
+                    <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
+                      {item.risk_score}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    className="recent-delete"
+                    aria-label={`Delete ${item.title}`}
+                    disabled={deletingId === item.id}
+                    onClick={() => deleteAssessment(item.id, item.title)}
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
               );
             })}
           </>

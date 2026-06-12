@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { AlertTriangle, Tag, Clock, Plus, FileSearch, ChevronRight } from "lucide-react";
+import { AlertTriangle, Tag, Clock, Plus, FileSearch, ChevronRight, Trash2 } from "lucide-react";
 
 type HistoryItem = {
   id:            string;
@@ -23,15 +23,37 @@ function tierColors(tier: string) {
 }
 
 export default function HistoryPage() {
-  const [items,   setItems]   = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items,      setItems]      = useState<HistoryItem[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     fetch("/api/assessments")
       .then(r => r.json())
       .then(d => { setItems(d.assessments || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const deleteItem = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/assessments", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setItems(prev => prev.filter(i => i.id !== id));
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Could not delete assessment");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -79,8 +101,10 @@ export default function HistoryPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {items.map(item => {
               const c = tierColors(item.risk_tier);
+              const title = item.title || item.description;
               return (
-                <Link key={item.id} href={`/?id=${item.id}`} className="history-item">
+                <div key={item.id} className="history-item" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <Link href={`/?id=${item.id}`} style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0, textDecoration: "none", color: "inherit" }}>
                   <div className="history-score" style={{ background: c.bg, border: `0.5px solid ${c.bdr}` }}>
                     <span className="history-score-num" style={{ color: c.num }}>{item.risk_score}</span>
                     <span className="history-score-den">/100</span>
@@ -116,7 +140,7 @@ export default function HistoryPage() {
                       fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
                       marginBottom: 4,
                     }}>
-                      {item.title || item.description}
+                      {title}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -131,7 +155,23 @@ export default function HistoryPage() {
                   </div>
 
                   <ChevronRight size={14} strokeWidth={1.75} color="var(--fg3)" />
-                </Link>
+                  </Link>
+
+                  <button
+                    type="button"
+                    aria-label={`Delete ${title}`}
+                    disabled={deletingId === item.id}
+                    onClick={() => deleteItem(item.id, title)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+                      border: "0.5px solid var(--bdr2)", background: "transparent",
+                      color: "var(--fg3)", cursor: deletingId === item.id ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               );
             })}
           </div>
