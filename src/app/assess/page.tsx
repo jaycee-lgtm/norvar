@@ -1124,7 +1124,7 @@ function Home() {
   const isHome = messages.length === 0 && !loading && !loadingSaved;
 
   const InputBar = (
-    <div className="input-wrap">
+    <div className="input-wrap assess-composer mobile-composer">
       {(hasGuidedInputs || contractName || selectedDocumentIds.length > 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
           {buildTags().map(tag => (
@@ -1151,11 +1151,11 @@ function Home() {
         </div>
       )}
 
-      <div className="input-bar">
+      <div className="input-bar assess-input-bar">
         <textarea
           ref={textareaRef}
-          className="input-textarea"
-          placeholder="Describe your product or deployment..."
+          className="input-textarea mobile-composer-field"
+          placeholder={`Assess with ${ASSESS_AGENT.name}`}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
@@ -1173,7 +1173,7 @@ function Home() {
           onStopSpeaking={voice.stopSpeak}
           agentName={ASSESS_AGENT.name}
         />
-        <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+        <button type="button" className="send-btn assess-send-desktop" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
           {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
         </button>
       </div>
@@ -1181,7 +1181,11 @@ function Home() {
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
 
-      <div className="input-chips">
+      <div className="mobile-composer-tools assess-composer-tools">
+        <div className="mobile-mode-pill">
+          <ModeSelector current="assess" compact />
+        </div>
+      <div className="input-chips assess-input-chips">
         {openChip === "jurisdictions"
           ? <ChipDropdown icon={<Globe size={11} strokeWidth={1.75} />} label="Jurisdictions" options={JURISDICTION_OPTIONS} selected={jurisdictions} onToggle={toggleMulti(setJurisdictions)} onClose={() => setOpenChip(null)} />
           : <button type="button" className="chip" onClick={() => setOpenChip("jurisdictions")}><Globe size={11} strokeWidth={1.75} /> Jurisdictions{jurisdictions.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{jurisdictions.length}</span>}</button>
@@ -1210,6 +1214,24 @@ function Home() {
         />
         <input ref={fileRef} type="file" accept=".docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       </div>
+        <div className="mobile-composer-actions assess-composer-actions">
+          <VoiceInputIcon
+            isListening={voice.isListening}
+            isTranscribing={voice.isTranscribing}
+            isSpeaking={voice.isSpeaking}
+            voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+            configured={voice.support.configured}
+            disabled={loading || inferring}
+            onStartListening={voice.startListening}
+            onStopListening={voice.stopListening}
+            onStopSpeaking={voice.stopSpeak}
+            agentName={ASSESS_AGENT.name}
+          />
+          <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+            {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -1224,7 +1246,7 @@ function Home() {
     <>
       <Show when="signed-in">
         <AppShell>
-          <div className="main-area">
+          <div className={`main-area${!isHome && !loadingSaved ? " mobile-thread-layout" : ""}`}>
 
             {loadingSaved && (
               <div className="home-body">
@@ -1237,17 +1259,19 @@ function Home() {
             )}
 
             {isHome && (
-              <div className="home-body">
-                <Logo size={40} />
-                <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                  <h1 className="home-heading">What are you building?</h1>
-                  <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
+              <div className="home-body mobile-home-layout">
+                <div className="home-hero-block">
+                  <Logo size={44} />
+                  <h1 className="mobile-home-serif">What are you building?</h1>
+                  <div className="desktop-only" style={{ marginTop: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                    <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
+                    <ModeSelector current="assess" />
+                  </div>
                 </div>
-                <div style={{ marginBottom: 14 }}>
-                  <ModeSelector current="assess" />
+                <div className="home-composer-block">
+                  {InputBar}
                 </div>
-                {InputBar}
-                {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
+                {error && <p className="mobile-home-error">{error}</p>}
               </div>
             )}
 

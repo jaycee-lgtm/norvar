@@ -10,6 +10,7 @@ import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import { useVoice } from "@/hooks/useVoice";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info } from "lucide-react";
 
@@ -168,6 +169,8 @@ function Chat() {
 
   const canSend = input.trim().length > 2 && !loading;
 
+  const isMobileView = useIsMobile();
+
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
     disabled: loading,
@@ -322,7 +325,7 @@ function Chat() {
     <>
       <Show when="signed-in">
         <AppShell>
-          <div className="main-area">
+          <div className={`main-area${!isHome && !loadingSaved && isMobileView ? " mobile-thread-layout" : ""}`}>
 
           {loadingSaved && (
             <div className="home-body">
@@ -335,62 +338,114 @@ function Chat() {
           )}
 
           {isHome && (
-            <div className="home-body">
-              <Logo size={40} />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                <h1 className="home-heading">How can I help?</h1>
-                <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
+            <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
+              <div className={isMobileView ? "home-hero-block" : undefined}>
+                <Logo size={isMobileView ? 44 : 40} />
+                {isMobileView ? (
+                  <h1 className="mobile-home-serif">How can I help?</h1>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                    <h1 className="home-heading">How can I help?</h1>
+                    <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
+                  </div>
+                )}
+                {isMobileView && (
+                  <div className="home-mode-desktop">
+                    <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
+                  </div>
+                )}
+                {!isMobileView && (
+                  <div style={{ marginBottom: 14 }}>
+                    <ModeSelector current="chat" />
+                  </div>
+                )}
               </div>
 
-              <div style={{ marginBottom: 14 }}>
-                <ModeSelector current="chat" />
-              </div>
-
-              <div className="input-wrap" style={{ marginBottom: 24 }}>
+              <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
                 {(selectedDocumentIds.length > 0) && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
                     <SelectedDocumentChips
                       documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
                       onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
                     />
                   </div>
                 )}
-                <div className="input-bar">
-                  <textarea
-                    ref={inputRef}
-                    className="input-textarea"
-                    placeholder="Ask a GRC question..."
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKey}
-                    rows={1}
-                  />
-                  {voiceIcon}
-                  <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                    {loading
-                      ? <Loader2 size={16} className="spin" />
-                      : <ArrowUp size={16} strokeWidth={2.5} />}
-                  </button>
-                </div>
+                {isMobileView ? (
+                  <div className="mobile-composer">
+                    <textarea
+                      ref={inputRef}
+                      className="input-textarea mobile-composer-field"
+                      placeholder={`Chat with ${CHAT_AGENT.name}`}
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={handleKey}
+                      rows={1}
+                    />
+                    <div className="mobile-composer-tools">
+                      <DocumentPicker
+                        selectedIds={selectedDocumentIds}
+                        onChange={setSelectedDocumentIds}
+                        disabled={loading}
+                        label="Reference docs"
+                      />
+                      <div className="mobile-mode-pill">
+                        <ModeSelector current="chat" compact />
+                      </div>
+                      <SampleQuestionsDropdown
+                        align="left"
+                        onSelect={q => sendWithVoice(q)}
+                        disabled={loading}
+                      />
+                      <div className="mobile-composer-actions">
+                        {voiceIcon}
+                        <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
+                          {loading
+                            ? <Loader2 size={16} className="spin" />
+                            : <ArrowUp size={16} strokeWidth={2.5} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="input-bar">
+                      <textarea
+                        ref={inputRef}
+                        className="input-textarea"
+                        placeholder="Ask a GRC question..."
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={handleKey}
+                        rows={1}
+                      />
+                      {voiceIcon}
+                      <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
+                        {loading
+                          ? <Loader2 size={16} className="spin" />
+                          : <ArrowUp size={16} strokeWidth={2.5} />}
+                      </button>
+                    </div>
+                    <div className="input-chips" style={{ marginTop: 8 }}>
+                      <DocumentPicker
+                        selectedIds={selectedDocumentIds}
+                        onChange={setSelectedDocumentIds}
+                        disabled={loading}
+                        label="Reference docs"
+                      />
+                      <SampleQuestionsDropdown
+                        align="left"
+                        onSelect={q => sendWithVoice(q)}
+                        disabled={loading}
+                      />
+                    </div>
+                  </>
+                )}
                 {voice.voiceError && (
                   <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                 )}
-                <div className="input-chips" style={{ marginTop: 8 }}>
-                  <DocumentPicker
-                    selectedIds={selectedDocumentIds}
-                    onChange={setSelectedDocumentIds}
-                    disabled={loading}
-                    label="Reference docs"
-                  />
-                  <SampleQuestionsDropdown
-                    align="left"
-                    onSelect={q => sendWithVoice(q)}
-                    disabled={loading}
-                  />
-                </div>
               </div>
 
-              {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
+              {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
             </div>
           )}
 
@@ -453,6 +508,7 @@ function Chat() {
                       />
                     </div>
                   )}
+                  {!isMobileView && (
                   <div className="chat-input-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
                       Chat
@@ -490,6 +546,55 @@ function Chat() {
                       </button>
                     </div>
                   </div>
+                  )}
+                  {isMobileView ? (
+                  <div className="mobile-composer thread-composer">
+                    <input
+                      className="chat-input-field mobile-composer-field"
+                      placeholder={`Chat with ${CHAT_AGENT.name}`}
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={handleKey}
+                    />
+                    <div className="mobile-composer-tools">
+                      <DocumentPicker
+                        selectedIds={selectedDocumentIds}
+                        onChange={setSelectedDocumentIds}
+                        disabled={loading}
+                        label="Reference docs"
+                      />
+                      <div className="mobile-mode-pill">
+                        <ModeSelector current="chat" compact />
+                      </div>
+                      <SampleQuestionsDropdown
+                        align="left"
+                        onSelect={q => sendWithVoice(q)}
+                        disabled={loading}
+                      />
+                      <div className="mobile-composer-actions">
+                        <VoiceInputIcon
+                          isListening={voice.isListening}
+                          isTranscribing={voice.isTranscribing}
+                          isSpeaking={voice.isSpeaking}
+                          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                          configured={voice.support.configured}
+                          disabled={loading}
+                          onStartListening={voice.startListening}
+                          onStopListening={voice.stopListening}
+                          onStopSpeaking={voice.stopSpeak}
+                          size="sm"
+                          agentName={CHAT_AGENT.name}
+                        />
+                        <button type="button" className="chat-send-btn send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
+                          {loading
+                            ? <Loader2 size={14} className="spin" />
+                            : <ArrowUp size={14} strokeWidth={2.5} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  ) : (
+                  <>
                   <div className="chat-input-bar">
                     <input
                       className="chat-input-field"
@@ -533,6 +638,11 @@ function Chat() {
                       disabled={loading}
                     />
                   </div>
+                  </>
+                  )}
+                  {isMobileView && voice.voiceError && (
+                    <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                  )}
                   </div>
                 </div>
               </div>

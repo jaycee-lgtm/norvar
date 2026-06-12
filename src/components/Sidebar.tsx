@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, Plus, ChevronRight } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -38,7 +38,7 @@ function tierKey(t: string): keyof typeof TIER {
   return v === "high" ? "high" : v === "medium" ? "medium" : "low";
 }
 
-function SidebarInner({ extra }: { extra?: ReactNode }) {
+function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: () => void }) {
   const path         = usePathname();
   const router       = useRouter();
   const searchParams = useSearchParams();
@@ -143,7 +143,19 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
   ];
 
   return (
-    <aside className="sidebar">
+    <aside
+      className="sidebar"
+      onClick={e => {
+        if ((e.target as HTMLElement).closest("a")) onNavigate?.();
+      }}
+    >
+      <div className="sidebar-drawer-header">
+        <span className="sidebar-drawer-brand">Norvar</span>
+        <div className="sidebar-drawer-avatar">
+          <span>{initials}</span>
+        </div>
+      </div>
+
       <div className="sidebar-top">
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px 10px" }}>
           <Logo size={24} />
@@ -344,6 +356,10 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
                 </div>
               );
             })}
+            <Link href="/history" className="sidebar-all-link">
+              All assessments
+              <ChevronRight size={14} strokeWidth={2} />
+            </Link>
           </>
         )}
 
@@ -376,6 +392,10 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
                 </div>
               );
             })}
+            <Link href="/chat/history" className="sidebar-all-link">
+              All chats
+              <ChevronRight size={14} strokeWidth={2} />
+            </Link>
           </>
         )}
 
@@ -386,6 +406,11 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
           </>
         )}
       </div>
+
+      <Link href={isAssess ? "/assess" : "/chat"} className="sidebar-mobile-fab">
+        <Plus size={16} strokeWidth={2.5} />
+        {isAssess ? "New assessment" : "New chat"}
+      </Link>
 
       <div className="sidebar-footer">
         <div className="avatar-row sidebar-account-row">
@@ -421,10 +446,10 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
   );
 }
 
-export default function Sidebar({ extra }: { extra?: ReactNode }) {
+export default function Sidebar({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: () => void }) {
   return (
     <Suspense fallback={<aside className="sidebar" />}>
-      <SidebarInner extra={extra} />
+      <SidebarInner extra={extra} onNavigate={onNavigate} />
     </Suspense>
   );
 }

@@ -2,9 +2,32 @@
 
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-import Logo from "@/components/Logo";
+
+function MobileProfileButton() {
+  const { user } = useUser();
+  const initials = user
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
+    : "N";
+
+  return (
+    <div className="mobile-header-profile">
+      <span className="mobile-header-initials" aria-hidden>{initials}</span>
+      <UserButton
+        appearance={{
+          elements: {
+            userButtonAvatarBox:       { display: "none" },
+            userButtonOuterIdentifier: { display: "none" },
+            userButtonTrigger:         { width: "100%", height: "100%", opacity: 0 },
+            rootBox:                   { position: "absolute", inset: 0 },
+          },
+        }}
+      />
+    </div>
+  );
+}
 
 function AppShellInner({
   children,
@@ -35,12 +58,10 @@ function AppShellInner({
           aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
           onClick={() => setMobileOpen(open => !open)}
         >
-          {mobileOpen ? <X size={18} strokeWidth={2} /> : <Menu size={18} strokeWidth={2} />}
+          <Menu size={18} strokeWidth={1.75} />
         </button>
-        <div className="mobile-header-brand">
-          <Logo size={22} />
-          <span>Norvar</span>
-        </div>
+        <div className="mobile-header-spacer" />
+        <MobileProfileButton />
       </header>
 
       <button
@@ -51,7 +72,7 @@ function AppShellInner({
         onClick={() => setMobileOpen(false)}
       />
 
-      <Sidebar extra={sidebarExtra} />
+      <Sidebar extra={sidebarExtra} onNavigate={() => setMobileOpen(false)} />
 
       {children}
     </div>
