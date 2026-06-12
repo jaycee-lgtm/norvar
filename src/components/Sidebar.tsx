@@ -88,7 +88,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
 
   const mainNav = [
     { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
-    { href: "/chat", label: "GRC Chat", icon: MessageSquare, active: path === "/chat" },
+    { href: "/chat", label: "Chat", icon: MessageSquare, active: path === "/chat" },
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     {

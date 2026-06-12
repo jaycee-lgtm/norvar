@@ -666,8 +666,7 @@ function Home() {
   const scrollRef      = useRef<HTMLDivElement>(null);
   const fileRef        = useRef<HTMLInputElement>(null);
   const followUpRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
-  const speakAfterRef  = useRef<(text: string, fromMic?: boolean) => void>(() => {});
-  const handleSendRef  = useRef<(text?: string) => Promise<string | null>>(async () => null);
+  const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -772,15 +771,9 @@ function Home() {
     : input.trim().length > 10 && !loading && !inferring;
 
   const voice = useVoice({
-    onTranscript: text => setInput(text),
-    onAutoSend: async text => {
-      const response = await handleSendRef.current(text);
-      if (response) speakAfterRef.current(response, true);
-    },
+    onVoiceSend: text => handleSendRef.current(text),
     disabled: loading || inferring,
   });
-
-  speakAfterRef.current = voice.speakAfterResponse;
 
   const awaitingInference = messages.some(m => m.role === "thinking" && m.isFollowUp);
 
@@ -807,10 +800,11 @@ function Home() {
     resolvedDataTypes: string[],
     resolvedSector: string,
     folderId?: string | null,
-  ) => {
+  ): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
     let streamingText = "";
+    let summaryText = "";
     try {
       const res = await fetch("/api/assess", {
         method:  "POST",
@@ -838,10 +832,12 @@ function Home() {
           setMessages(prev => updateLastMessage(prev, "thinking", { text: streamingText, status: undefined }));
         } else if (event.type === "summary") {
           streamingText = event.text;
+          summaryText = event.text;
           setMessages(prev => updateLastMessage(prev, "thinking", { text: streamingText, status: undefined }));
         } else if (event.type === "done") {
           if (!event.assessment) throw new Error("Assessment failed");
           if (event.assessment.id) setAssessmentId(event.assessment.id);
+          summaryText = event.assessment.summary || summaryText || streamingText;
           setMessages(prev => {
             const next = [...prev];
             const idx  = next.findLastIndex(m => m.role === "thinking");
@@ -862,13 +858,16 @@ function Home() {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
       setMessages(prev => prev.filter(m => m.role !== "thinking"));
+      return null;
     } finally {
       setLoading(false);
     }
+
+    return summaryText.trim() || null;
   };
 
-  const handleFollowUpSelection = async (selected: string) => {
-    if (!followUp || !inferredContext) return;
+  const handleFollowUpSelection = async (selected: string): Promise<string | null> => {
+    if (!followUp || !inferredContext) return null;
 
     const option = FOLLOWUP_OPTIONS[followUp.dimension].options.find(
       o => o.label === selected || o.label.toLowerCase().includes(selected.toLowerCase()),
@@ -896,14 +895,15 @@ function Home() {
         isFollowUp:      true,
         followUpOptions: options.map(o => o.label),
       }]);
+      return question;
     } else {
       setFollowUp(null);
       const tags = [...updated.domains, ...updated.jurisdictions, ...updated.data_types, updated.sector].filter(Boolean);
-      await runAssessment(pendingDesc, tags, updated.domains, updated.jurisdictions, updated.data_types, updated.sector, folderId);
+      return runAssessment(pendingDesc, tags, updated.domains, updated.jurisdictions, updated.data_types, updated.sector, folderId);
     }
   };
 
-  const handleInferenceOption = async (selected: string) => {
+  const handleInferenceOption = async (selected: string): Promise<string | null> => {
     setMessages(prev => prev.filter(m => !(m.role === "thinking" && m.isFollowUp)));
     setMessages(prev => [...prev, { role: "user", content: selected, tags: [] }]);
 
@@ -915,7 +915,7 @@ function Home() {
         inferredContext.sector,
       ].filter(Boolean);
       setFollowUp(null);
-      await runAssessment(
+      return runAssessment(
         pendingDesc,
         tags,
         inferredContext.domains,
@@ -924,19 +924,18 @@ function Home() {
         inferredContext.sector,
         folderId,
       );
-      return;
     }
 
     if (selected === "Let me correct something") {
       setInferring(false);
       setFollowUp(null);
-      return;
+      return "What would you like to correct? Update your description or use the chips below.";
     }
 
-    await handleFollowUpSelection(selected);
+    return handleFollowUpSelection(selected);
   };
 
-  const handleAssessment = async (text: string, tags: string[]) => {
+  const handleAssessment = async (text: string, tags: string[]): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "user", content: text, tags }]);
     setInferring(true);
     setPendingDesc(text);
@@ -989,7 +988,7 @@ function Home() {
           followUpOptions: ["Looks right — run assessment", "Let me correct something"],
         }]);
         setInferring(false);
-        return;
+        return confirmMsg;
       }
 
       if (gaps.length > 0) {
@@ -1003,15 +1002,15 @@ function Home() {
           followUpOptions: options.map(o => o.label),
         }]);
         setInferring(false);
-        return;
+        return question;
       }
 
       setInferring(false);
-      await runAssessment(text, tags, resolvedDomains, resolvedJurisdictions, resolvedDataTypes, resolvedSector, folderId);
+      return runAssessment(text, tags, resolvedDomains, resolvedJurisdictions, resolvedDataTypes, resolvedSector, folderId);
     } catch {
       setMessages(prev => prev.filter(m => m.role !== "thinking"));
       setInferring(false);
-      await runAssessment(text, tags, domains, jurisdictions, dataTypes, sector[0] ?? "", folderId);
+      return runAssessment(text, tags, domains, jurisdictions, dataTypes, sector[0] ?? "", folderId);
     }
   };
 
@@ -1075,31 +1074,33 @@ function Home() {
 
   followUpRef.current = handleFollowUp;
 
-  const handleSend = async (textOverride?: string): Promise<string | null> => {
+  const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
     const text = (textOverride ?? input).trim();
-    const minLen = hasAssessment ? 3 : 11;
-    if (text.length < minLen || loading || inferring) return null;
+    const minLen = fromVoice ? 3 : (hasAssessment ? 3 : 11);
+    if (text.length < minLen) return null;
+    if (!fromVoice && (loading || inferring)) return null;
     if (!textOverride) setInput("");
     setError("");
     setOpenChip(null);
 
     if (hasAssessment) {
-      const response = await handleFollowUp(text);
-      if (response && !textOverride) voice.speakAfterResponse(response);
-      return response;
+      return handleFollowUp(text);
     }
     if (awaitingInference || followUp) {
-      await handleInferenceOption(text);
-      return null;
+      return handleInferenceOption(text);
     }
-    await handleAssessment(text, buildTags());
-    return null;
+    return handleAssessment(text, buildTags());
   };
 
-  handleSendRef.current = handleSend;
+  handleSendRef.current = (text: string) => handleSend(text, true);
+
+  const sendWithVoice = async (text?: string) => {
+    const response = await handleSend(text, false);
+    if (response) voice.speakAfterResponse(response);
+  };
 
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSend(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendWithVoice(); }
   };
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
@@ -1150,7 +1151,7 @@ function Home() {
           onStopSpeaking={voice.stopSpeak}
           agentName={ASSESS_AGENT.name}
         />
-        <button type="button" className="send-btn" onClick={() => { void handleSend(); }} disabled={!canSend}>
+        <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
           {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
         </button>
       </div>
@@ -1357,7 +1358,7 @@ function Home() {
                         size="sm"
                         agentName={ASSESS_AGENT.name}
                       />
-                      <button type="button" className="chat-send-btn" onClick={() => { void handleSend(); }} disabled={!canSend}>
+                      <button type="button" className="chat-send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
                         {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                       </button>
                     </div>

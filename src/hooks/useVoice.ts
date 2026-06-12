@@ -13,9 +13,11 @@ import { speakWithElevenLabs, stopSpeaking, transcribeWithElevenLabs } from "@/l
 import { fetchVoiceStatus, getVoiceSupport, type VoiceSettings } from "@/lib/voice";
 import { startVoiceCapture } from "@/lib/voice-recorder";
 
+export type VoiceSendHandler = (text: string) => Promise<string | null>;
+
 type UseVoiceOptions = {
-  onTranscript?: (text: string, isFinal: boolean) => void;
-  onAutoSend?: (text: string) => void | Promise<void>;
+  /** Called after transcription — should send the message and return assistant text to read aloud. */
+  onVoiceSend?: VoiceSendHandler;
   disabled?: boolean;
 };
 
@@ -25,7 +27,7 @@ const DEFAULT_VOICE: VoiceSettings = {
 };
 
 export function useVoice(options: UseVoiceOptions = {}) {
-  const { onTranscript, onAutoSend, disabled = false } = options;
+  const { onVoiceSend, disabled = false } = options;
 
   const [settings, setSettings] = useState<VoiceSettings>(DEFAULT_VOICE);
   const [support, setSupport] = useState(getVoiceSupport);
@@ -35,13 +37,14 @@ export function useVoice(options: UseVoiceOptions = {}) {
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
   const captureRef = useRef<Awaited<ReturnType<typeof startVoiceCapture>> | null>(null);
-  const optionsRef = useRef(options);
+  const onVoiceSendRef = useRef(onVoiceSend);
+  const disabledRef = useRef(disabled);
   const settingsRef = useRef(settings);
   const aiSettingsRef = useRef<UserAiSettings>(DEFAULT_USER_AI_SETTINGS);
   const startListeningRef = useRef<() => void>(() => {});
-  const stopListeningRef = useRef<() => void>(() => {});
   const micSessionRef = useRef(false);
-  optionsRef.current = options;
+  onVoiceSendRef.current = onVoiceSend;
+  disabledRef.current = disabled;
   settingsRef.current = settings;
 
   const applyAiSettings = useCallback((ai: UserAiSettings) => {
@@ -110,11 +113,45 @@ export function useVoice(options: UseVoiceOptions = {}) {
     }
   }, [support.configured]);
 
+  const speakAfterResponse = useCallback((text: string, fromMic = false) => {
+    if (!text.trim()) {
+      micSessionRef.current = false;
+      return;
+    }
+
+    const shouldSpeak =
+      fromMic ||
+      settingsRef.current.speakResponses ||
+      settingsRef.current.voiceConversation;
+
+    const shouldLoop =
+      fromMic || settingsRef.current.voiceConversation;
+
+    if (!shouldSpeak) {
+      micSessionRef.current = false;
+      return;
+    }
+
+    void speak(text, () => {
+      if (shouldLoop && micSessionRef.current) {
+        window.setTimeout(() => startListeningRef.current(), 500);
+      } else {
+        micSessionRef.current = false;
+      }
+    });
+  }, [speak]);
+
   const startListening = useCallback(async () => {
-    if (disabled || !support.stt || isListening || isTranscribing || isSpeaking) return;
+    if (!micSessionRef.current && disabledRef.current) return;
+    if (!support.stt || isListening || isTranscribing || isSpeaking) return;
 
     if (!support.configured) {
       setVoiceError("Connect ElevenLabs on Vercel to enable AI voice.");
+      return;
+    }
+
+    if (!onVoiceSendRef.current) {
+      setVoiceError("Voice send is not available here.");
       return;
     }
 
@@ -162,10 +199,17 @@ export function useVoice(options: UseVoiceOptions = {}) {
         return;
       }
 
-      optionsRef.current.onTranscript?.(text, true);
-
-      if (optionsRef.current.onAutoSend) {
-        await optionsRef.current.onAutoSend(text);
+      try {
+        const response = await onVoiceSendRef.current(text);
+        if (response?.trim()) {
+          speakAfterResponse(response, true);
+        } else {
+          setVoiceError("Could not send your message. Try again.");
+          micSessionRef.current = false;
+        }
+      } catch (e: unknown) {
+        setVoiceError(e instanceof Error ? e.message : "Could not send your message.");
+        micSessionRef.current = false;
       }
     } catch (e: unknown) {
       captureRef.current = null;
@@ -180,35 +224,11 @@ export function useVoice(options: UseVoiceOptions = {}) {
 
       setVoiceError(e instanceof Error ? e.message : "Could not capture speech.");
     }
-  }, [disabled, isListening, isTranscribing, isSpeaking, stopSpeak, support.configured, support.stt]);
+  }, [isListening, isTranscribing, isSpeaking, speakAfterResponse, stopSpeak, support.configured, support.stt]);
 
   startListeningRef.current = () => {
     void startListening();
   };
-  stopListeningRef.current = stopListening;
-
-  const speakAfterResponse = useCallback((text: string, fromMic = false) => {
-    if (!text.trim()) return;
-    const shouldSpeak =
-      fromMic ||
-      settings.speakResponses ||
-      settings.voiceConversation ||
-      micSessionRef.current;
-
-    if (shouldSpeak) {
-      void speak(text, () => {
-        if ((settings.voiceConversation || micSessionRef.current) && !disabled) {
-          window.setTimeout(() => startListeningRef.current(), 500);
-        } else {
-          micSessionRef.current = false;
-        }
-      });
-    } else if (settings.voiceConversation && !disabled) {
-      window.setTimeout(() => startListeningRef.current(), 500);
-    } else {
-      micSessionRef.current = false;
-    }
-  }, [disabled, settings.speakResponses, settings.voiceConversation, speak]);
 
   useEffect(() => {
     return () => {
@@ -217,13 +237,6 @@ export function useVoice(options: UseVoiceOptions = {}) {
       stopSpeak();
     };
   }, [stopSpeak]);
-
-  useEffect(() => {
-    if (disabled) {
-      stopListening();
-      stopSpeak();
-    }
-  }, [disabled, stopListening, stopSpeak]);
 
   return {
     settings,

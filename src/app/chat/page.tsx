@@ -106,8 +106,7 @@ function Chat() {
   const inputRef         = useRef<HTMLTextAreaElement>(null);
   const scrollRef        = useRef<HTMLDivElement>(null);
   const loadedIdRef      = useRef<string | null>(null);
-  const handleSendRef    = useRef<(text?: string) => Promise<string | null>>(async () => null);
-  const speakAfterRef    = useRef<(text: string, fromMic?: boolean) => void>(() => {});
+  const handleSendRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -155,20 +154,15 @@ function Chat() {
   const canSend = input.trim().length > 2 && !loading;
 
   const voice = useVoice({
-    onTranscript: text => setInput(text),
-    onAutoSend: async text => {
-      const response = await handleSendRef.current(text);
-      if (response) speakAfterRef.current(response, true);
-    },
+    onVoiceSend: text => handleSendRef.current(text),
     disabled: loading,
   });
 
-  speakAfterRef.current = voice.speakAfterResponse;
-
-  const handleSend = async (text?: string): Promise<string | null> => {
-    const content = (text ?? input).trim();
-    if (!content || content.length <= 2 || loading) return null;
-    setInput("");
+  const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
+    const content = (textOverride ?? input).trim();
+    if (!content || content.length <= 2) return null;
+    if (!fromVoice && loading) return null;
+    if (!textOverride) setInput("");
     setError("");
 
     const userMsg: ChatMessage = { role: "user", content };
@@ -237,10 +231,10 @@ function Chat() {
     return finalResponse;
   };
 
-  handleSendRef.current = handleSend;
+  handleSendRef.current = (text: string) => handleSend(text, true);
 
   const sendWithVoice = async (text?: string) => {
-    const response = await handleSend(text);
+    const response = await handleSend(text, false);
     if (response) voice.speakAfterResponse(response);
   };
 
