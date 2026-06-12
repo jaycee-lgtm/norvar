@@ -374,6 +374,10 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (status && !canManageItem(current, userId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const updates: Record<string, unknown> = {};
   let activityAction = "note_added";
   let activityDetail = "";
@@ -539,6 +543,10 @@ export async function PATCH(req: NextRequest) {
       (current.assignee_meta as AssigneeMeta) ?? {},
       updates.assigned_to as string[],
     );
+  }
+
+  if (!Object.keys(updates).length) {
+    return Response.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   const { data, error } = await supabase

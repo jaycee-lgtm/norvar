@@ -121,29 +121,49 @@ function SevBadge({ sev }: { sev: string }) {
   );
 }
 
-function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
+function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }: {
   item:     RemediationItem;
   profiles: Record<string, UserProfile>;
   onUpdate: () => void;
+  onStatusChange: (id: string, status: RemediationStatus) => void;
   onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
 }) {
   const [expanded, setExpanded]     = useState(false);
   const [escalating, setEscalating] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
-  const overdue = is_overdue(item.due_date) && item.status !== "resolved";
+  const [localStatus, setLocalStatus] = useState(item.status);
+  const [statusError, setStatusError] = useState("");
 
-  const updateStatus = async (status: string) => {
+  useEffect(() => {
+    setLocalStatus(item.status);
+  }, [item.status]);
+
+  const overdue = is_overdue(item.due_date) && localStatus !== "resolved";
+
+  const updateStatus = async (status: RemediationStatus) => {
+    if (status === localStatus || statusBusy) return;
+    const previous = localStatus;
+    setLocalStatus(status);
     setStatusBusy(true);
-    await fetch("/api/remediation", {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: item.id, status }),
-    });
-    setStatusBusy(false);
-    onUpdate();
+    setStatusError("");
+    try {
+      const res = await fetch("/api/remediation", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: item.id, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Status update failed");
+      onStatusChange(item.id, status);
+    } catch (e: unknown) {
+      setLocalStatus(previous);
+      setStatusError(e instanceof Error ? e.message : "Could not update status");
+    } finally {
+      setStatusBusy(false);
+    }
   };
 
-  const statusStyle = STATUS_STYLES[item.status] ?? STATUS_STYLES.open;
+  const statusStyle = STATUS_STYLES[localStatus] ?? STATUS_STYLES.open;
 
   return (
     <>
@@ -184,7 +204,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-            <StatusBadge status={item.status} />
+            <StatusBadge status={localStatus} />
             {item.due_date && (
               <span style={{ fontSize: 10, color: overdue ? "var(--rh)" : "var(--fg3)", display: "flex", alignItems: "center", gap: 3 }}>
                 {overdue && <AlertTriangle size={9} />}
@@ -222,15 +242,16 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                   Status
                 </span>
                 <select
-                  value={item.status}
+                  value={localStatus}
                   disabled={statusBusy}
                   onClick={e => e.stopPropagation()}
-                  onChange={e => updateStatus(e.target.value)}
+                  onChange={e => updateStatus(e.target.value as RemediationStatus)}
                   className="remediation-status-select"
                   style={{
                     background: statusStyle.bg,
                     color:      statusStyle.color,
                     borderColor: statusStyle.bdr,
+                    opacity: statusBusy ? 0.7 : 1,
                   }}
                 >
                   {(Object.keys(STATUS_LABELS) as RemediationStatus[]).map(s => (
@@ -239,6 +260,10 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                 </select>
               </div>
             </div>
+
+            {statusError && (
+              <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, marginBottom: 0 }}>{statusError}</p>
+            )}
 
             {item.gap_detail && (
               <p style={{ fontSize: 12, color: "var(--fg2)", lineHeight: 1.55, marginTop: 12, marginBottom: 10 }}>
@@ -315,10 +340,10 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
               </div>
             )}
 
-            {item.status !== "resolved" && item.status !== "wont_fix" && (
+            {localStatus !== "resolved" && localStatus !== "wont_fix" && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {item.status === "open" && (
-                  <button type="button" onClick={() => updateStatus("in_progress")} style={{
+                {localStatus === "open" && (
+                  <button type="button" disabled={statusBusy} onClick={() => updateStatus("in_progress")} style={{
                     display: "flex", alignItems: "center", gap: 5,
                     padding: "5px 12px", borderRadius: 5, fontSize: 11,
                     border: "0.5px solid var(--bdr2)", background: "transparent",
@@ -337,7 +362,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                     <ArrowUpRight size={10} /> Escalate
                   </button>
                 )}
-                <button type="button" onClick={() => updateStatus("resolved")} style={{
+                <button type="button" disabled={statusBusy} onClick={() => updateStatus("resolved")} style={{
                   display: "flex", alignItems: "center", gap: 5,
                   padding: "5px 12px", borderRadius: 5, fontSize: 11,
                   border: "0.5px solid var(--rl-bdr)", background: "var(--rl-bg)",
@@ -345,7 +370,7 @@ function ItemCard({ item, profiles, onUpdate, onMessagesChange }: {
                 }}>
                   <CheckCircle size={10} /> Resolve
                 </button>
-                <button type="button" onClick={() => updateStatus("wont_fix")} style={{
+                <button type="button" disabled={statusBusy} onClick={() => updateStatus("wont_fix")} style={{
                   display: "flex", alignItems: "center", gap: 5,
                   padding: "5px 12px", borderRadius: 5, fontSize: 11,
                   border: "0.5px solid var(--bdr2)", background: "transparent",
@@ -383,10 +408,9 @@ export default function RemediationPage() {
   const [filterProjectNum, setFilterProjectNum] = useState("");
   const [mineOnly, setMineOnly]         = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     const params = new URLSearchParams();
-    if (filterStatus) params.set("status", filterStatus);
     if (mineOnly)     params.set("mine", "true");
     if (filterProject) params.set("assessment_id", filterProject);
     if (filterProjectNum) params.set("project_number", filterProjectNum);
@@ -395,10 +419,10 @@ export default function RemediationPage() {
     setItems(data ?? []);
     setProfiles(users ?? {});
     setProjects(proj ?? []);
-    setLoading(false);
+    if (!opts?.silent) setLoading(false);
   };
 
-  useEffect(() => { load(); }, [filterStatus, mineOnly, filterProject, filterProjectNum]);
+  useEffect(() => { load(); }, [mineOnly, filterProject, filterProjectNum]);
 
   const projectNumbers = useMemo(() => {
     const nums = new Set<string>();
@@ -408,6 +432,7 @@ export default function RemediationPage() {
 
   const filtered = sortBySeverity(
     items.filter(i =>
+      (!filterStatus || i.status === filterStatus) &&
       (!filterSev || i.gap_severity === filterSev) &&
       (!filterDomain || i.gap_domain === filterDomain),
     ),
@@ -415,6 +440,11 @@ export default function RemediationPage() {
 
   const updateItemMessages = (id: string, messages: GapChatMessage[]) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, messages } : i));
+  };
+
+  const handleStatusChange = (id: string, status: RemediationStatus) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    load({ silent: true });
   };
 
   const counts = {
@@ -564,7 +594,8 @@ export default function RemediationPage() {
               key={item.id}
               item={item}
               profiles={profiles}
-              onUpdate={load}
+              onUpdate={() => load({ silent: true })}
+              onStatusChange={handleStatusChange}
               onMessagesChange={updateItemMessages}
             />
           ))}
