@@ -1,19 +1,43 @@
-import { redirect } from "next/navigation";
+"use client";
 
-type HomeProps = {
-  searchParams: Promise<{ id?: string; folder?: string }>;
-};
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Show } from "@clerk/nextjs";
+import LandingPage from "@/components/LandingPage";
 
-/** Default entry: chat. Legacy assessment deep links keep working via /assess. */
-export default async function Home({ searchParams }: HomeProps) {
-  const params = await searchParams;
+function SignedInRedirect() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
 
-  if (params.id || params.folder) {
-    const qs = new URLSearchParams();
-    if (params.id) qs.set("id", params.id);
-    if (params.folder) qs.set("folder", params.folder);
-    redirect(`/assess?${qs.toString()}`);
-  }
+  useEffect(() => {
+    const id     = searchParams.get("id");
+    const folder = searchParams.get("folder");
 
-  redirect("/chat");
+    if (id || folder) {
+      const qs = new URLSearchParams();
+      if (id) qs.set("id", id);
+      if (folder) qs.set("folder", folder);
+      router.replace(`/assess?${qs.toString()}`);
+      return;
+    }
+
+    router.replace("/chat");
+  }, [router, searchParams]);
+
+  return null;
+}
+
+export default function HomePage() {
+  return (
+    <>
+      <Show when="signed-in">
+        <Suspense fallback={null}>
+          <SignedInRedirect />
+        </Suspense>
+      </Show>
+      <Show when="signed-out">
+        <LandingPage />
+      </Show>
+    </>
+  );
 }
