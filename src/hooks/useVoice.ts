@@ -3,18 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AI_SETTINGS_EVENT,
+  DEFAULT_USER_AI_SETTINGS,
   fetchUserAiSettings,
-  saveUserAiSettings,
   voiceSettingsFromAiSettings,
   type UserAiSettings,
 } from "@/lib/user-ai-settings";
-import {
-  playVoiceDetectedSound,
-  playVoiceErrorSound,
-  playVoiceSentSound,
-  playVoiceStartSound,
-  playVoiceStopSound,
-} from "@/lib/voice-sounds";
+import { playVoiceStartSound } from "@/lib/voice-sounds";
 import { speakWithElevenLabs, stopSpeaking, transcribeWithElevenLabs } from "@/lib/voice-client";
 import { fetchVoiceStatus, getVoiceSupport, type VoiceSettings } from "@/lib/voice";
 import { startVoiceCapture } from "@/lib/voice-recorder";
@@ -43,14 +37,15 @@ export function useVoice(options: UseVoiceOptions = {}) {
   const captureRef = useRef<Awaited<ReturnType<typeof startVoiceCapture>> | null>(null);
   const optionsRef = useRef(options);
   const settingsRef = useRef(settings);
+  const aiSettingsRef = useRef<UserAiSettings>(DEFAULT_USER_AI_SETTINGS);
   const startListeningRef = useRef<() => void>(() => {});
   const stopListeningRef = useRef<() => void>(() => {});
-  const persistTimerRef = useRef<number | null>(null);
   const micSessionRef = useRef(false);
   optionsRef.current = options;
   settingsRef.current = settings;
 
   const applyAiSettings = useCallback((ai: UserAiSettings) => {
+    aiSettingsRef.current = ai;
     setSettings(voiceSettingsFromAiSettings(ai));
   }, []);
 
@@ -74,16 +69,6 @@ export function useVoice(options: UseVoiceOptions = {}) {
     return () => window.removeEventListener(AI_SETTINGS_EVENT, onUpdate);
   }, [applyAiSettings]);
 
-  const persistVoiceToggles = useCallback((next: VoiceSettings) => {
-    if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
-    persistTimerRef.current = window.setTimeout(() => {
-      void saveUserAiSettings({
-        voiceSpeakResponses: next.speakResponses,
-        voiceConversation: next.voiceConversation,
-      }).catch(() => {});
-    }, 400);
-  }, []);
-
   const stopSpeak = useCallback(() => {
     stopSpeaking();
     setIsSpeaking(false);
@@ -95,7 +80,6 @@ export function useVoice(options: UseVoiceOptions = {}) {
     captureRef.current = null;
     setIsListening(false);
     setIsTranscribing(false);
-    playVoiceStopSound();
   }, []);
 
   const speak = useCallback(async (text: string, onDone?: () => void) => {
@@ -121,7 +105,6 @@ export function useVoice(options: UseVoiceOptions = {}) {
       );
     } catch (e: unknown) {
       setIsSpeaking(false);
-      playVoiceErrorSound();
       setVoiceError(e instanceof Error ? e.message : "Could not play AI voice.");
       onDone?.();
     }
@@ -132,7 +115,6 @@ export function useVoice(options: UseVoiceOptions = {}) {
 
     if (!support.configured) {
       setVoiceError("Connect ElevenLabs on Vercel to enable AI voice.");
-      playVoiceErrorSound();
       return;
     }
 
@@ -141,12 +123,12 @@ export function useVoice(options: UseVoiceOptions = {}) {
     if (captureRef.current) captureRef.current.cancel();
 
     micSessionRef.current = true;
-    playVoiceStartSound();
+    if (aiSettingsRef.current.micStartSound) {
+      playVoiceStartSound();
+    }
 
     try {
-      const capture = await startVoiceCapture({
-        onSpeechStart: () => playVoiceDetectedSound(),
-      });
+      const capture = await startVoiceCapture();
       captureRef.current = capture;
       setIsListening(true);
 
@@ -156,11 +138,9 @@ export function useVoice(options: UseVoiceOptions = {}) {
 
       if (!micSessionRef.current) return;
 
-      playVoiceStopSound();
-
       if (!audio || audio.size < 800) {
         setVoiceError("No speech detected. Try speaking closer to your microphone.");
-        playVoiceErrorSound();
+        micSessionRef.current = false;
         return;
       }
 
@@ -169,8 +149,8 @@ export function useVoice(options: UseVoiceOptions = {}) {
       try {
         text = await transcribeWithElevenLabs(audio);
       } catch (e: unknown) {
-        playVoiceErrorSound();
         setVoiceError(e instanceof Error ? e.message : "Could not transcribe speech.");
+        micSessionRef.current = false;
         return;
       } finally {
         setIsTranscribing(false);
@@ -178,16 +158,14 @@ export function useVoice(options: UseVoiceOptions = {}) {
 
       if (!text) {
         setVoiceError("No speech detected. Try again.");
-        playVoiceErrorSound();
+        micSessionRef.current = false;
         return;
       }
 
-      playVoiceSentSound();
       optionsRef.current.onTranscript?.(text, true);
 
-      const shouldAutoSend = !!optionsRef.current.onAutoSend;
-      if (shouldAutoSend) {
-        await optionsRef.current.onAutoSend!(text);
+      if (optionsRef.current.onAutoSend) {
+        await optionsRef.current.onAutoSend(text);
       }
     } catch (e: unknown) {
       captureRef.current = null;
@@ -196,12 +174,10 @@ export function useVoice(options: UseVoiceOptions = {}) {
       micSessionRef.current = false;
 
       if (e instanceof DOMException && e.name === "NotAllowedError") {
-        playVoiceErrorSound();
         setVoiceError("Microphone access was denied.");
         return;
       }
 
-      playVoiceErrorSound();
       setVoiceError(e instanceof Error ? e.message : "Could not capture speech.");
     }
   }, [disabled, isListening, isTranscribing, isSpeaking, stopSpeak, support.configured, support.stt]);
@@ -236,7 +212,6 @@ export function useVoice(options: UseVoiceOptions = {}) {
 
   useEffect(() => {
     return () => {
-      if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
       micSessionRef.current = false;
       captureRef.current?.cancel();
       stopSpeak();

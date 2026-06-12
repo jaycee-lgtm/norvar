@@ -6,6 +6,7 @@ import {
 export type UserAiSettings = {
   voiceSpeakResponses: boolean;
   voiceConversation: boolean;
+  micStartSound: boolean;
   elevenlabsVoiceId: string;
   speechSpeed: number;
   speechModel: string;
@@ -30,6 +31,7 @@ export const SPEECH_MODEL_OPTIONS = [
 export const DEFAULT_USER_AI_SETTINGS: UserAiSettings = {
   voiceSpeakResponses: false,
   voiceConversation: false,
+  micStartSound: true,
   elevenlabsVoiceId: ELEVENLABS_VOICE_ID,
   speechSpeed: 1,
   speechModel: ELEVENLABS_SPEECH_MODEL,
@@ -44,6 +46,7 @@ export function mergeUserAiSettings(raw: unknown): UserAiSettings {
   return {
     voiceSpeakResponses: !!input.voiceSpeakResponses,
     voiceConversation: !!input.voiceConversation,
+    micStartSound: input.micStartSound !== false,
     elevenlabsVoiceId: typeof input.elevenlabsVoiceId === "string" && input.elevenlabsVoiceId.length > 0
       ? input.elevenlabsVoiceId
       : DEFAULT_USER_AI_SETTINGS.elevenlabsVoiceId,

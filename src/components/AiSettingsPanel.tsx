@@ -10,6 +10,7 @@ import {
   VOICE_OPTIONS,
   type UserAiSettings,
 } from "@/lib/user-ai-settings";
+import { playVoiceStartSound } from "@/lib/voice-sounds";
 
 function ToggleRow({
   label,
@@ -149,6 +150,17 @@ export default function AiSettingsPanel() {
           voiceConversation: value,
           voiceSpeakResponses: value ? true : settings.voiceSpeakResponses,
         })}
+        disabled={saving}
+      />
+
+      <ToggleRow
+        label="Mic start sound"
+        description="Play a short tone when you turn the microphone on in chat or assessments."
+        checked={settings.micStartSound}
+        onChange={value => {
+          update({ micStartSound: value });
+          if (value) playVoiceStartSound();
+        }}
         disabled={saving}
       />
 

@@ -666,6 +666,7 @@ function Home() {
   const fileRef        = useRef<HTMLInputElement>(null);
   const followUpRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
   const speakAfterRef  = useRef<(text: string, fromMic?: boolean) => void>(() => {});
+  const handleSendRef  = useRef<(text?: string) => Promise<string | null>>(async () => null);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -772,10 +773,10 @@ function Home() {
   const voice = useVoice({
     onTranscript: text => setInput(text),
     onAutoSend: async text => {
-      const response = await followUpRef.current(text);
+      const response = await handleSendRef.current(text);
       if (response) speakAfterRef.current(response, true);
     },
-    disabled: loading || !hasAssessment,
+    disabled: loading || inferring,
   });
 
   speakAfterRef.current = voice.speakAfterResponse;
@@ -1073,25 +1074,31 @@ function Home() {
 
   followUpRef.current = handleFollowUp;
 
-  const handleSend = async () => {
-    if (!canSend) return;
-    const text = input.trim();
-    setInput("");
+  const handleSend = async (textOverride?: string): Promise<string | null> => {
+    const text = (textOverride ?? input).trim();
+    const minLen = hasAssessment ? 3 : 11;
+    if (text.length < minLen || loading || inferring) return null;
+    if (!textOverride) setInput("");
     setError("");
     setOpenChip(null);
 
     if (hasAssessment) {
       const response = await handleFollowUp(text);
-      if (response) voice.speakAfterResponse(response);
-    } else if (awaitingInference || followUp) {
-      await handleInferenceOption(text);
-    } else {
-      await handleAssessment(text, buildTags());
+      if (response && !textOverride) voice.speakAfterResponse(response);
+      return response;
     }
+    if (awaitingInference || followUp) {
+      await handleInferenceOption(text);
+      return null;
+    }
+    await handleAssessment(text, buildTags());
+    return null;
   };
 
+  handleSendRef.current = handleSend;
+
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSend(); }
   };
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
@@ -1130,10 +1137,24 @@ function Home() {
           onKeyDown={handleKey}
           rows={1}
         />
-        <button type="button" className="send-btn" onClick={handleSend} disabled={!canSend}>
+        <VoiceInputIcon
+          isListening={voice.isListening}
+          isTranscribing={voice.isTranscribing}
+          isSpeaking={voice.isSpeaking}
+          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+          configured={voice.support.configured}
+          disabled={loading || inferring}
+          onStartListening={voice.startListening}
+          onStopListening={voice.stopListening}
+          onStopSpeaking={voice.stopSpeak}
+        />
+        <button type="button" className="send-btn" onClick={() => { void handleSend(); }} disabled={!canSend}>
           {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
         </button>
       </div>
+      {voice.voiceError && (
+        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+      )}
 
       <div className="input-chips">
         {openChip === "jurisdictions"
@@ -1321,25 +1342,23 @@ function Home() {
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
                       />
-                      {hasAssessment && (
-                        <VoiceInputIcon
-                          isListening={voice.isListening}
-                          isTranscribing={voice.isTranscribing}
-                          isSpeaking={voice.isSpeaking}
-                          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                          configured={voice.support.configured}
-                          disabled={loading}
-                          onStartListening={voice.startListening}
-                          onStopListening={voice.stopListening}
-                          onStopSpeaking={voice.stopSpeak}
-                          size="sm"
-                        />
-                      )}
-                      <button type="button" className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
+                      <VoiceInputIcon
+                        isListening={voice.isListening}
+                        isTranscribing={voice.isTranscribing}
+                        isSpeaking={voice.isSpeaking}
+                        voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                        configured={voice.support.configured}
+                        disabled={loading}
+                        onStartListening={voice.startListening}
+                        onStopListening={voice.stopListening}
+                        onStopSpeaking={voice.stopSpeak}
+                        size="sm"
+                      />
+                      <button type="button" className="chat-send-btn" onClick={() => { void handleSend(); }} disabled={!canSend}>
                         {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                       </button>
                     </div>
-                    {hasAssessment && voice.voiceError && (
+                    {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                     )}
                     </div>
