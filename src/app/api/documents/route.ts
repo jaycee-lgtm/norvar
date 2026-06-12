@@ -67,6 +67,14 @@ export async function POST(req: NextRequest) {
   // Update file_path on the record
   await supabase.from("documents").update({ file_path: filePath }).eq("id", doc.id);
 
+  if (folder_id) {
+    await supabase.from("folder_items").upsert({
+      folder_id,
+      item_type: "document",
+      item_id:   doc.id,
+    });
+  }
+
   return Response.json({ document: { ...doc, file_path: filePath }, uploadUrl: uploadData.signedUrl });
 }
 

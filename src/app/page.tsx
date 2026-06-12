@@ -628,6 +628,7 @@ export default function HomePage() {
 function Home() {
   const searchParams = useSearchParams();
   const router       = useRouter();
+  const folderId     = searchParams.get("folder");
 
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [input,         setInput]         = useState("");
@@ -788,6 +789,7 @@ function Home() {
     resolvedJurisdictions: string[],
     resolvedDataTypes: string[],
     resolvedSector: string,
+    folderId?: string | null,
   ) => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
@@ -804,6 +806,7 @@ function Home() {
           sector:        resolvedSector,
           contract_text: contractText || undefined,
           tags,
+          folder_id:     folderId || undefined,
         }),
       });
       if (!res.ok) {
@@ -879,7 +882,7 @@ function Home() {
     } else {
       setFollowUp(null);
       const tags = [...updated.domains, ...updated.jurisdictions, ...updated.data_types, updated.sector].filter(Boolean);
-      await runAssessment(pendingDesc, tags, updated.domains, updated.jurisdictions, updated.data_types, updated.sector);
+      await runAssessment(pendingDesc, tags, updated.domains, updated.jurisdictions, updated.data_types, updated.sector, folderId);
     }
   };
 
@@ -902,6 +905,7 @@ function Home() {
         inferredContext.jurisdictions,
         inferredContext.data_types,
         inferredContext.sector,
+        folderId,
       );
       return;
     }
@@ -986,11 +990,11 @@ function Home() {
       }
 
       setInferring(false);
-      await runAssessment(text, tags, resolvedDomains, resolvedJurisdictions, resolvedDataTypes, resolvedSector);
+      await runAssessment(text, tags, resolvedDomains, resolvedJurisdictions, resolvedDataTypes, resolvedSector, folderId);
     } catch {
       setMessages(prev => prev.filter(m => m.role !== "thinking"));
       setInferring(false);
-      await runAssessment(text, tags, domains, jurisdictions, dataTypes, sector[0] ?? "");
+      await runAssessment(text, tags, domains, jurisdictions, dataTypes, sector[0] ?? "", folderId);
     }
   };
 

@@ -187,6 +187,7 @@ export async function POST(req: NextRequest) {
         contract_text = "",
         tags          = [] as string[],
         document_ids  = [] as string[],
+        folder_id     = null as string | null,
       } = body;
 
       if (description.trim().length < 10) {
@@ -305,12 +306,22 @@ export async function POST(req: NextRequest) {
         risk_tier:    risk.overall,
         domains,
         jurisdictions,
+        folder_id:    folder_id || null,
         // Auto-assign to the user who ran the assessment
         assigned_to:  [userId],
       }).select("id, assessment_number").single();
 
       assessment.id                = saved?.id;
       assessment.assessment_number = saved?.assessment_number;
+
+      if (folder_id && saved?.id) {
+        await supabase.from("folder_items").upsert({
+          folder_id,
+          item_type: "assessment",
+          item_id:   saved.id,
+        });
+      }
+
       await send({ type: "done", assessment });
     } catch (err: unknown) {
       console.error("Assess error:", err);

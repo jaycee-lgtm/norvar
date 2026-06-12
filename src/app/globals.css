@@ -707,6 +707,29 @@ body {
 }
 .btn-primary:hover { background: var(--red2); }
 
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card2); color: var(--fg2);
+  font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 500;
+  padding: 9px 18px; border-radius: 6px;
+  border: 0.5px solid var(--bdr2);
+  cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s;
+  letter-spacing: -0.01em;
+}
+.btn-secondary:hover { background: var(--lift); color: var(--fg); }
+
+.project-card {
+  display: block;
+  padding: 16px;
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-top: 3px solid var(--red);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.project-card:hover { background: var(--lift); border-color: var(--bdr3); }
+
 .btn-ghost {
   display: inline-flex; align-items: center; gap: 6px;
   background: transparent; color: var(--fg2);

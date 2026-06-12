@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     // List — summary rows for sidebar + history page
     const { data, error } = await supabase
       .from("assessments")
-      .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions")
+      .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions, folder_id")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(limit);

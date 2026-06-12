@@ -90,6 +90,7 @@ export default function ChatPage() {
 function Chat() {
   const searchParams = useSearchParams();
   const router       = useRouter();
+  const folderId     = searchParams.get("folder");
 
   const [messages,       setMessages]       = useState<DisplayMessage[]>([]);
   const [history,        setHistory]        = useState<ChatMessage[]>([]);
@@ -170,6 +171,7 @@ function Chat() {
         body:    JSON.stringify({
           messages:        newHistory,
           conversation_id: conversationId,
+          folder_id:       !conversationId ? folderId : undefined,
         }),
       });
 

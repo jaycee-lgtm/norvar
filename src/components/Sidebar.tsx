@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2 } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -90,6 +90,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
     { href: "/", label: "Assessments", icon: FileSearch, active: path === "/" },
     { href: "/chat", label: "GRC Chat", icon: MessageSquare, active: path === "/chat" },
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
+    { href: "/projects", label: "Projects", icon: Briefcase, active: path.startsWith("/projects") },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     {
       href: isChat ? "/chat/history" : "/history",

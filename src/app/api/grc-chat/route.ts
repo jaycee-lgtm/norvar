@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { messages, conversation_id, message } = await req.json();
+      const { messages, conversation_id, message, folder_id } = await req.json();
       const resolvedMessages: ChatMessage[] | null = messages?.length
         ? messages
         : message
@@ -158,6 +158,13 @@ export async function POST(req: NextRequest) {
                 : "Could not save chat. Has the conversations table been created in Supabase?",
             });
             return;
+          }
+          if (folder_id) {
+            await supabase.from("folder_items").upsert({
+              folder_id,
+              item_type: "chat",
+              item_id:   saved.id,
+            });
           }
           await send({ type: "done", text: fullText, conversation_id: saved.id });
         }
