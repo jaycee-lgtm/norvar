@@ -1046,6 +1046,10 @@ body {
     display: none;
   }
 
+  .sidebar-org-switcher {
+    display: none;
+  }
+
   .sidebar-top {
     padding-top: 0;
   }
@@ -1207,6 +1211,11 @@ body {
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+  }
+
+  .mobile-composer-tools--minimal {
+    flex-wrap: nowrap;
+    width: 100%;
   }
 
   .mobile-composer-actions {

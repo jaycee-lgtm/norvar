@@ -349,11 +349,6 @@ function Chat() {
                     <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
                   </div>
                 )}
-                {isMobileView && (
-                  <div className="home-mode-desktop">
-                    <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
-                  </div>
-                )}
                 {!isMobileView && (
                   <div style={{ marginBottom: 14 }}>
                     <ModeSelector current="chat" />
@@ -362,7 +357,7 @@ function Chat() {
               </div>
 
               <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
-                {(selectedDocumentIds.length > 0) && (
+                {!isMobileView && selectedDocumentIds.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
                     <SelectedDocumentChips
                       documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
@@ -381,21 +376,10 @@ function Chat() {
                       onKeyDown={handleKey}
                       rows={1}
                     />
-                    <div className="mobile-composer-tools">
-                      <DocumentPicker
-                        selectedIds={selectedDocumentIds}
-                        onChange={setSelectedDocumentIds}
-                        disabled={loading}
-                        label="Reference docs"
-                      />
+                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
                         <ModeSelector current="chat" compact />
                       </div>
-                      <SampleQuestionsDropdown
-                        align="left"
-                        onSelect={q => sendWithVoice(q)}
-                        disabled={loading}
-                      />
                       <div className="mobile-composer-actions">
                         {voiceIcon}
                         <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
@@ -451,7 +435,7 @@ function Chat() {
 
           {!isHome && !loadingSaved && (
             <>
-              <div className="mode-bar" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+              <div className="mode-bar desktop-only" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                 <ModeSelector current="chat" />
               </div>
               <div ref={scrollRef} className="main-scroll">
@@ -500,7 +484,7 @@ function Chat() {
               <div className="chat-input-row">
                 <div className="chat-input-inner">
                   <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-                  {(selectedDocumentIds.length > 0) && (
+                  {(selectedDocumentIds.length > 0) && !isMobileView && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
                       <SelectedDocumentChips
                         documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
@@ -556,21 +540,10 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <div className="mobile-composer-tools">
-                      <DocumentPicker
-                        selectedIds={selectedDocumentIds}
-                        onChange={setSelectedDocumentIds}
-                        disabled={loading}
-                        label="Reference docs"
-                      />
+                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
                         <ModeSelector current="chat" compact />
                       </div>
-                      <SampleQuestionsDropdown
-                        align="left"
-                        onSelect={q => sendWithVoice(q)}
-                        disabled={loading}
-                      />
                       <div className="mobile-composer-actions">
                         <VoiceInputIcon
                           isListening={voice.isListening}

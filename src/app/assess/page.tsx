@@ -11,6 +11,7 @@ import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT } from "@/lib/agents";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
@@ -785,6 +786,8 @@ function Home() {
     ? input.trim().length > 2 && !loading
     : input.trim().length > 10 && !loading && !inferring;
 
+  const isMobileView = useIsMobile();
+
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
     disabled: loading || inferring,
@@ -1125,7 +1128,7 @@ function Home() {
 
   const InputBar = (
     <div className="input-wrap assess-composer mobile-composer">
-      {(hasGuidedInputs || contractName || selectedDocumentIds.length > 0) && (
+      {!isMobileView && (hasGuidedInputs || contractName || selectedDocumentIds.length > 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
           {buildTags().map(tag => (
             <span key={tag} style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", fontFamily: "'Sora', sans-serif" }}>{tag}</span>
@@ -1181,10 +1184,11 @@ function Home() {
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
 
-      <div className="mobile-composer-tools assess-composer-tools">
+      <div className="mobile-composer-tools assess-composer-tools mobile-composer-tools--minimal">
         <div className="mobile-mode-pill">
           <ModeSelector current="assess" compact />
         </div>
+      {!isMobileView && (
       <div className="input-chips assess-input-chips">
         {openChip === "jurisdictions"
           ? <ChipDropdown icon={<Globe size={11} strokeWidth={1.75} />} label="Jurisdictions" options={JURISDICTION_OPTIONS} selected={jurisdictions} onToggle={toggleMulti(setJurisdictions)} onClose={() => setOpenChip(null)} />
@@ -1214,6 +1218,7 @@ function Home() {
         />
         <input ref={fileRef} type="file" accept=".docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       </div>
+      )}
         <div className="mobile-composer-actions assess-composer-actions">
           <VoiceInputIcon
             isListening={voice.isListening}
@@ -1246,7 +1251,7 @@ function Home() {
     <>
       <Show when="signed-in">
         <AppShell>
-          <div className={`main-area${!isHome && !loadingSaved ? " mobile-thread-layout" : ""}`}>
+          <div className={`main-area${!isHome && !loadingSaved && isMobileView ? " mobile-thread-layout" : ""}`}>
 
             {loadingSaved && (
               <div className="home-body">
@@ -1259,25 +1264,33 @@ function Home() {
             )}
 
             {isHome && (
-              <div className="home-body mobile-home-layout">
-                <div className="home-hero-block">
-                  <Logo size={44} />
-                  <h1 className="mobile-home-serif">What are you building?</h1>
-                  <div className="desktop-only" style={{ marginTop: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-                    <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
-                    <ModeSelector current="assess" />
-                  </div>
+              <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
+                <div className={isMobileView ? "home-hero-block" : undefined}>
+                  <Logo size={isMobileView ? 44 : 40} />
+                  {isMobileView ? (
+                    <h1 className="mobile-home-serif">What are you building?</h1>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                        <h1 className="home-heading">What are you building?</h1>
+                        <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
+                      </div>
+                      <div style={{ marginBottom: 14 }}>
+                        <ModeSelector current="assess" />
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="home-composer-block">
+                <div className={isMobileView ? "home-composer-block" : undefined}>
                   {InputBar}
                 </div>
-                {error && <p className="mobile-home-error">{error}</p>}
+                {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
               </div>
             )}
 
             {!isHome && !loadingSaved && (
               <>
-                <div className="mode-bar" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
+                <div className="mode-bar desktop-only" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
                   <ModeSelector current="assess" />
                 </div>
                 <div ref={scrollRef} className="main-scroll">
@@ -1388,6 +1401,40 @@ function Home() {
                 <div className="chat-input-row">
                   <div className="chat-input-inner">
                     <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+                    {isMobileView ? (
+                      <div className="mobile-composer thread-composer">
+                        <input
+                          className="chat-input-field mobile-composer-field"
+                          placeholder={hasAssessment ? "Ask a follow-up..." : `Assess with ${ASSESS_AGENT.name}`}
+                          value={input}
+                          onChange={e => setInput(e.target.value)}
+                          onKeyDown={handleKey}
+                        />
+                        <div className="mobile-composer-tools mobile-composer-tools--minimal">
+                          <div className="mobile-mode-pill">
+                            <ModeSelector current="assess" compact />
+                          </div>
+                          <div className="mobile-composer-actions">
+                            <VoiceInputIcon
+                              isListening={voice.isListening}
+                              isTranscribing={voice.isTranscribing}
+                              isSpeaking={voice.isSpeaking}
+                              voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                              configured={voice.support.configured}
+                              disabled={loading}
+                              onStartListening={voice.startListening}
+                              onStopListening={voice.stopListening}
+                              onStopSpeaking={voice.stopSpeak}
+                              size="sm"
+                              agentName={ASSESS_AGENT.name}
+                            />
+                            <button type="button" className="chat-send-btn send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+                              {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
                     <div className="chat-input-bar">
                       <input
                         className="chat-input-field"
@@ -1413,6 +1460,7 @@ function Home() {
                         {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                       </button>
                     </div>
+                    )}
                     {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                     )}
