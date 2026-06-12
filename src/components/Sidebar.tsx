@@ -60,6 +60,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
   const [chatNavOpen, setChatNavOpen]     = useState(isChat && !isAssess);
   const [mobileChatsOpen, setMobileChatsOpen] = useState(false);
+  const [mobileAssessmentsOpen, setMobileAssessmentsOpen] = useState(false);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -364,6 +365,59 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         )}
 
         {assessments.length > 0 && (isMobileView ? sidebarMode === "assess" : (isAssess || path === "/history")) && (
+          isMobileView ? (
+            <>
+              <div className="sidebar-divider" />
+              <button
+                type="button"
+                className="sidebar-mobile-recents-toggle"
+                aria-expanded={mobileAssessmentsOpen}
+                onClick={() => setMobileAssessmentsOpen(v => !v)}
+              >
+                <span>Recent assessments</span>
+                <ChevronDown
+                  size={14}
+                  strokeWidth={2}
+                  style={{ transform: mobileAssessmentsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                />
+              </button>
+              {mobileAssessmentsOpen && (
+                <div className="sidebar-mobile-recents-panel">
+                  {assessments.map(item => {
+                    const c = TIER[tierKey(item.risk_tier)];
+                    const isActive = activeId === item.id;
+                    return (
+                      <div key={item.id} className="recent-item-row">
+                        <Link
+                          href={`/assess?id=${item.id}`}
+                          className={`recent-item${isActive ? " active" : ""}`}
+                        >
+                          <div className="recent-dot" style={{ background: c.dot }} />
+                          <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
+                          <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
+                            {item.risk_score}
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          className="recent-delete"
+                          aria-label={`Delete ${item.title}`}
+                          disabled={deletingId === item.id}
+                          onClick={() => deleteAssessment(item.id, item.title)}
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <Link href="/history" className="sidebar-all-link">
+                    All assessments
+                    <ChevronRight size={14} strokeWidth={2} />
+                  </Link>
+                </div>
+              )}
+            </>
+          ) : (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent assessments</div>
@@ -399,6 +453,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
               <ChevronRight size={14} strokeWidth={2} />
             </Link>
           </>
+          )
         )}
 
         {conversations.length > 0 && (isMobileView ? sidebarMode === "chat" : isChat) && (
