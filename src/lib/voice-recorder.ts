@@ -3,10 +3,13 @@ type CaptureOptions = {
   maxMs?: number;
   silenceThreshold?: number;
   onLevel?: (level: number) => void;
+  onSpeechStart?: () => void;
 };
 
-type CaptureHandle = {
-  stop: () => Promise<Blob | null>;
+export type CaptureHandle = {
+  /** Resolves when recording finishes (silence detected, max time, or manual stop). */
+  finished: Promise<Blob | null>;
+  stop: () => void;
   cancel: () => void;
 };
 
@@ -22,10 +25,11 @@ function pickMimeType(): string | undefined {
 
 export async function startVoiceCapture(options: CaptureOptions = {}): Promise<CaptureHandle> {
   const {
-    silenceMs = 1600,
-    maxMs = 45000,
-    silenceThreshold = 0.012,
+    silenceMs = 2200,
+    maxMs = 60000,
+    silenceThreshold = 0.008,
     onLevel,
+    onSpeechStart,
   } = options;
 
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -47,6 +51,10 @@ export async function startVoiceCapture(options: CaptureOptions = {}): Promise<C
   };
 
   const audioContext = new AudioContext();
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+
   const source = audioContext.createMediaStreamSource(stream);
   const analyser = audioContext.createAnalyser();
   analyser.fftSize = 2048;
@@ -55,13 +63,20 @@ export async function startVoiceCapture(options: CaptureOptions = {}): Promise<C
   const samples = new Float32Array(analyser.fftSize);
   let cancelled = false;
   let finished = false;
-  let resolveStop: (blob: Blob | null) => void = () => {};
+  let resolveFinish: (blob: Blob | null) => void = () => {};
+  const finishedPromise = new Promise<Blob | null>(resolve => {
+    resolveFinish = resolve;
+  });
+
   let silenceStartedAt: number | null = null;
   let startedAt = performance.now();
   let speechStartedAt: number | null = null;
   let heardSpeech = false;
+  let speechNotified = false;
+  let rafId = 0;
 
   const cleanup = () => {
+    cancelAnimationFrame(rafId);
     stream.getTracks().forEach(track => track.stop());
     void audioContext.close();
   };
@@ -70,7 +85,7 @@ export async function startVoiceCapture(options: CaptureOptions = {}): Promise<C
     if (finished) return;
     finished = true;
     cleanup();
-    resolveStop(blob);
+    resolveFinish(blob);
   };
 
   recorder.onstop = () => {
@@ -100,10 +115,14 @@ export async function startVoiceCapture(options: CaptureOptions = {}): Promise<C
     }
 
     if (rms >= silenceThreshold) {
+      if (!speechNotified) {
+        speechNotified = true;
+        onSpeechStart?.();
+      }
       heardSpeech = true;
       speechStartedAt ??= now;
       silenceStartedAt = null;
-    } else if (heardSpeech && speechStartedAt && now - speechStartedAt >= 700) {
+    } else if (heardSpeech && speechStartedAt && now - speechStartedAt >= 500) {
       silenceStartedAt ??= now;
       if (now - silenceStartedAt >= silenceMs && recorder.state === "recording") {
         recorder.stop();
@@ -111,18 +130,19 @@ export async function startVoiceCapture(options: CaptureOptions = {}): Promise<C
       }
     }
 
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
   };
 
-  requestAnimationFrame(tick);
+  rafId = requestAnimationFrame(tick);
 
   return {
-    stop: () => new Promise<Blob | null>((resolve) => {
-      resolveStop = resolve;
+    finished: finishedPromise,
+    stop: () => {
+      if (finished || cancelled) return;
       if (recorder.state === "recording") recorder.stop();
-      else finish(chunks.length > 0 ? new Blob(chunks, { type: recorder.mimeType || "audio/webm" }) : null);
-    }),
+    },
     cancel: () => {
+      if (finished) return;
       cancelled = true;
       if (recorder.state === "recording") recorder.stop();
       else finish(null);

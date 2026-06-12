@@ -3,13 +3,6 @@ export type VoiceSettings = {
   voiceConversation: boolean;
 };
 
-const STORAGE_KEY = "norvar-voice-settings";
-
-const DEFAULT_SETTINGS: VoiceSettings = {
-  speakResponses: false,
-  voiceConversation: false,
-};
-
 export type VoiceSupport = {
   tts: boolean;
   stt: boolean;
@@ -37,26 +30,6 @@ export async function fetchVoiceStatus(): Promise<{ configured: boolean }> {
   } catch {
     return { configured: false };
   }
-}
-
-export function loadVoiceSettings(): VoiceSettings {
-  if (typeof window === "undefined") return DEFAULT_SETTINGS;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<VoiceSettings>;
-    return {
-      speakResponses: !!parsed.speakResponses,
-      voiceConversation: !!parsed.voiceConversation,
-    };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-export function saveVoiceSettings(settings: VoiceSettings) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
 export function stripForSpeech(text: string): string {

@@ -92,7 +92,14 @@ export async function speakWithElevenLabs(
 
 export async function transcribeWithElevenLabs(audio: Blob): Promise<string> {
   const form = new FormData();
-  form.append("audio", audio, audio.type.includes("webm") ? "speech.webm" : "speech.mp4");
+  const name = audio.type.includes("webm")
+    ? "speech.webm"
+    : audio.type.includes("ogg")
+      ? "speech.ogg"
+      : audio.type.includes("mp4") || audio.type.includes("aac")
+        ? "speech.m4a"
+        : "speech.webm";
+  form.append("audio", audio, name);
 
   const res = await fetch("/api/voice/transcribe", {
     method: "POST",

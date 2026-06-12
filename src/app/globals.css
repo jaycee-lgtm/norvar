@@ -312,6 +312,23 @@ body {
 }
 .send-btn:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
 
+.voice-input-btn {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--fg3);
+  transition: color 0.15s, background 0.15s;
+}
+.voice-input-btn:hover:not(:disabled) { color: var(--fg2); background: var(--card2); }
+.voice-input-btn.active { color: var(--fg); }
+.voice-input-btn.listening { color: var(--rh); animation: pulse-dot 1.2s ease infinite; }
+.voice-input-btn.transcribing { color: var(--fg2); }
+.voice-input-btn:disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+.voice-input-btn-sm { width: 30px; height: 30px; border-radius: 7px; }
+
 .input-chips {
   display: flex;
   align-items: center;
@@ -684,6 +701,8 @@ body {
   color: var(--bg); border: none; transition: opacity 0.15s;
 }
 .chat-send-btn:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
+
+.chat-input-bar .voice-input-btn-sm { margin-right: -2px; }
 
 /* ══════════════════════════════════════════════════════════════════
    HISTORY PAGE

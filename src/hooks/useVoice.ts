@@ -2,13 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  fetchVoiceStatus,
-  getVoiceSupport,
-  loadVoiceSettings,
-  saveVoiceSettings,
-  type VoiceSettings,
-} from "@/lib/voice";
+  AI_SETTINGS_EVENT,
+  fetchUserAiSettings,
+  saveUserAiSettings,
+  voiceSettingsFromAiSettings,
+  type UserAiSettings,
+} from "@/lib/user-ai-settings";
+import {
+  playVoiceDetectedSound,
+  playVoiceErrorSound,
+  playVoiceSentSound,
+  playVoiceStartSound,
+  playVoiceStopSound,
+} from "@/lib/voice-sounds";
 import { speakWithElevenLabs, stopSpeaking, transcribeWithElevenLabs } from "@/lib/voice-client";
+import { fetchVoiceStatus, getVoiceSupport, type VoiceSettings } from "@/lib/voice";
 import { startVoiceCapture } from "@/lib/voice-recorder";
 
 type UseVoiceOptions = {
@@ -17,12 +25,18 @@ type UseVoiceOptions = {
   disabled?: boolean;
 };
 
+const DEFAULT_VOICE: VoiceSettings = {
+  speakResponses: false,
+  voiceConversation: false,
+};
+
 export function useVoice(options: UseVoiceOptions = {}) {
   const { onTranscript, onAutoSend, disabled = false } = options;
 
-  const [settings, setSettings] = useState<VoiceSettings>(loadVoiceSettings);
+  const [settings, setSettings] = useState<VoiceSettings>(DEFAULT_VOICE);
   const [support, setSupport] = useState(getVoiceSupport);
   const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
@@ -31,41 +45,43 @@ export function useVoice(options: UseVoiceOptions = {}) {
   const settingsRef = useRef(settings);
   const startListeningRef = useRef<() => void>(() => {});
   const stopListeningRef = useRef<() => void>(() => {});
+  const persistTimerRef = useRef<number | null>(null);
+  const micSessionRef = useRef(false);
   optionsRef.current = options;
   settingsRef.current = settings;
 
+  const applyAiSettings = useCallback((ai: UserAiSettings) => {
+    setSettings(voiceSettingsFromAiSettings(ai));
+  }, []);
+
   useEffect(() => {
     const base = getVoiceSupport();
-    void fetchVoiceStatus().then(status => {
-      setSupport({ ...base, configured: status.configured });
-    });
-    setSettings(loadVoiceSettings());
-  }, []);
+    void Promise.all([fetchVoiceStatus(), fetchUserAiSettings()])
+      .then(([status, aiSettings]) => {
+        setSupport({ ...base, configured: status.configured });
+        applyAiSettings(aiSettings);
+      })
+      .catch(() => {
+        setSupport(base);
+      });
+  }, [applyAiSettings]);
 
   useEffect(() => {
-    saveVoiceSettings(settings);
-  }, [settings]);
+    const onUpdate = (event: Event) => {
+      applyAiSettings((event as CustomEvent<UserAiSettings>).detail);
+    };
+    window.addEventListener(AI_SETTINGS_EVENT, onUpdate);
+    return () => window.removeEventListener(AI_SETTINGS_EVENT, onUpdate);
+  }, [applyAiSettings]);
 
-  const toggleSpeakResponses = useCallback(() => {
-    setSettings(prev => ({ ...prev, speakResponses: !prev.speakResponses }));
-    setVoiceError(null);
-  }, []);
-
-  const toggleVoiceConversation = useCallback(() => {
-    setSettings(prev => {
-      const voiceConversation = !prev.voiceConversation;
-      if (voiceConversation) {
-        window.setTimeout(() => startListeningRef.current(), 250);
-      } else {
-        stopListeningRef.current();
-      }
-      return {
-        ...prev,
-        voiceConversation,
-        speakResponses: voiceConversation ? true : prev.speakResponses,
-      };
-    });
-    setVoiceError(null);
+  const persistVoiceToggles = useCallback((next: VoiceSettings) => {
+    if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = window.setTimeout(() => {
+      void saveUserAiSettings({
+        voiceSpeakResponses: next.speakResponses,
+        voiceConversation: next.voiceConversation,
+      }).catch(() => {});
+    }, 400);
   }, []);
 
   const stopSpeak = useCallback(() => {
@@ -74,9 +90,12 @@ export function useVoice(options: UseVoiceOptions = {}) {
   }, []);
 
   const stopListening = useCallback(() => {
+    micSessionRef.current = false;
     captureRef.current?.cancel();
     captureRef.current = null;
     setIsListening(false);
+    setIsTranscribing(false);
+    playVoiceStopSound();
   }, []);
 
   const speak = useCallback(async (text: string, onDone?: () => void) => {
@@ -102,86 +121,127 @@ export function useVoice(options: UseVoiceOptions = {}) {
       );
     } catch (e: unknown) {
       setIsSpeaking(false);
+      playVoiceErrorSound();
       setVoiceError(e instanceof Error ? e.message : "Could not play AI voice.");
       onDone?.();
     }
   }, [support.configured]);
 
   const startListening = useCallback(async () => {
-    if (disabled || !support.stt || isListening || isSpeaking) return;
+    if (disabled || !support.stt || isListening || isTranscribing || isSpeaking) return;
 
     if (!support.configured) {
       setVoiceError("Connect ElevenLabs on Vercel to enable AI voice.");
+      playVoiceErrorSound();
       return;
     }
 
     setVoiceError(null);
-    stopListening();
     stopSpeak();
+    if (captureRef.current) captureRef.current.cancel();
+
+    micSessionRef.current = true;
+    playVoiceStartSound();
 
     try {
-      const capture = await startVoiceCapture();
+      const capture = await startVoiceCapture({
+        onSpeechStart: () => playVoiceDetectedSound(),
+      });
       captureRef.current = capture;
       setIsListening(true);
 
-      const audio = await capture.stop();
+      const audio = await capture.finished;
       captureRef.current = null;
       setIsListening(false);
 
-      if (!audio || audio.size === 0) return;
+      if (!micSessionRef.current) return;
 
-      setIsListening(true);
+      playVoiceStopSound();
+
+      if (!audio || audio.size < 800) {
+        setVoiceError("No speech detected. Try speaking closer to your microphone.");
+        playVoiceErrorSound();
+        return;
+      }
+
+      setIsTranscribing(true);
       let text = "";
       try {
         text = await transcribeWithElevenLabs(audio);
+      } catch (e: unknown) {
+        playVoiceErrorSound();
+        setVoiceError(e instanceof Error ? e.message : "Could not transcribe speech.");
+        return;
       } finally {
-        setIsListening(false);
+        setIsTranscribing(false);
       }
 
-      if (!text) return;
+      if (!text) {
+        setVoiceError("No speech detected. Try again.");
+        playVoiceErrorSound();
+        return;
+      }
 
+      playVoiceSentSound();
       optionsRef.current.onTranscript?.(text, true);
 
-      if (settingsRef.current.voiceConversation && optionsRef.current.onAutoSend) {
-        await optionsRef.current.onAutoSend(text);
+      const shouldAutoSend = !!optionsRef.current.onAutoSend;
+      if (shouldAutoSend) {
+        await optionsRef.current.onAutoSend!(text);
       }
     } catch (e: unknown) {
       captureRef.current = null;
       setIsListening(false);
+      setIsTranscribing(false);
+      micSessionRef.current = false;
 
       if (e instanceof DOMException && e.name === "NotAllowedError") {
+        playVoiceErrorSound();
         setVoiceError("Microphone access was denied.");
         return;
       }
 
+      playVoiceErrorSound();
       setVoiceError(e instanceof Error ? e.message : "Could not capture speech.");
     }
-  }, [disabled, isListening, isSpeaking, stopListening, stopSpeak, support.configured, support.stt]);
+  }, [disabled, isListening, isTranscribing, isSpeaking, stopSpeak, support.configured, support.stt]);
 
   startListeningRef.current = () => {
     void startListening();
   };
   stopListeningRef.current = stopListening;
 
-  const speakAfterResponse = useCallback((text: string) => {
+  const speakAfterResponse = useCallback((text: string, fromMic = false) => {
     if (!text.trim()) return;
-    if (settings.speakResponses || settings.voiceConversation) {
+    const shouldSpeak =
+      fromMic ||
+      settings.speakResponses ||
+      settings.voiceConversation ||
+      micSessionRef.current;
+
+    if (shouldSpeak) {
       void speak(text, () => {
-        if (settings.voiceConversation && !disabled) {
-          window.setTimeout(() => startListeningRef.current(), 400);
+        if ((settings.voiceConversation || micSessionRef.current) && !disabled) {
+          window.setTimeout(() => startListeningRef.current(), 500);
+        } else {
+          micSessionRef.current = false;
         }
       });
     } else if (settings.voiceConversation && !disabled) {
-      window.setTimeout(() => startListeningRef.current(), 400);
+      window.setTimeout(() => startListeningRef.current(), 500);
+    } else {
+      micSessionRef.current = false;
     }
   }, [disabled, settings.speakResponses, settings.voiceConversation, speak]);
 
   useEffect(() => {
     return () => {
-      stopListening();
+      if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
+      micSessionRef.current = false;
+      captureRef.current?.cancel();
       stopSpeak();
     };
-  }, [stopListening, stopSpeak]);
+  }, [stopSpeak]);
 
   useEffect(() => {
     if (disabled) {
@@ -194,10 +254,10 @@ export function useVoice(options: UseVoiceOptions = {}) {
     settings,
     support,
     isListening,
+    isTranscribing,
     isSpeaking,
+    isBusy: isListening || isTranscribing || isSpeaking,
     voiceError,
-    toggleSpeakResponses,
-    toggleVoiceConversation,
     startListening: () => { void startListening(); },
     stopListening,
     speak,

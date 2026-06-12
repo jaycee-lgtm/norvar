@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
-import VoiceControls, { VoiceErrorBanner } from "@/components/VoiceControls";
+import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
 
@@ -106,7 +106,7 @@ function Chat() {
   const scrollRef        = useRef<HTMLDivElement>(null);
   const loadedIdRef      = useRef<string | null>(null);
   const handleSendRef    = useRef<(text?: string) => Promise<string | null>>(async () => null);
-  const speakAfterRef    = useRef<(text: string) => void>(() => {});
+  const speakAfterRef    = useRef<(text: string, fromMic?: boolean) => void>(() => {});
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -157,7 +157,7 @@ function Chat() {
     onTranscript: text => setInput(text),
     onAutoSend: async text => {
       const response = await handleSendRef.current(text);
-      if (response) speakAfterRef.current(response);
+      if (response) speakAfterRef.current(response, true);
     },
     disabled: loading,
   });
@@ -250,32 +250,18 @@ function Chat() {
     }
   };
 
-  const voiceBar = (
-    <>
-      <VoiceControls
-        speakEnabled={voice.settings.speakResponses}
-        conversationEnabled={voice.settings.voiceConversation}
-        onToggleSpeak={voice.toggleSpeakResponses}
-        onToggleConversation={voice.toggleVoiceConversation}
-        isListening={voice.isListening}
-        isSpeaking={voice.isSpeaking}
-        onStartListening={voice.startListening}
-        onStopListening={voice.stopListening}
-        onStopSpeaking={voice.stopSpeak}
-        ttsSupported={voice.support.tts}
-        sttSupported={voice.support.stt}
-        configured={voice.support.configured}
-        disabled={loading}
-      />
-      {!voice.support.configured && (
-        <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>
-          Install the ElevenLabs integration on Vercel to enable AI voice.
-        </p>
-      )}
-      {voice.voiceError && (
-        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
-      )}
-    </>
+  const voiceIcon = (
+    <VoiceInputIcon
+      isListening={voice.isListening}
+      isTranscribing={voice.isTranscribing}
+      isSpeaking={voice.isSpeaking}
+      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+      configured={voice.support.configured}
+      disabled={loading}
+      onStartListening={voice.startListening}
+      onStopListening={voice.stopListening}
+      onStopSpeaking={voice.stopSpeak}
+    />
   );
 
   const startNew = () => {
@@ -326,7 +312,6 @@ function Chat() {
               </div>
 
               <div className="input-wrap" style={{ marginBottom: 24 }}>
-                {voiceBar}
                 <div className="input-bar">
                   <textarea
                     ref={inputRef}
@@ -337,12 +322,16 @@ function Chat() {
                     onKeyDown={handleKey}
                     rows={1}
                   />
+                  {voiceIcon}
                   <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                     {loading
                       ? <Loader2 size={16} className="spin" />
                       : <ArrowUp size={16} strokeWidth={2.5} />}
                   </button>
                 </div>
+                {voice.voiceError && (
+                  <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                )}
               </div>
 
               <SampleQuestionsDropdown
@@ -430,7 +419,6 @@ function Chat() {
                       </button>
                     </div>
                   </div>
-                  {voiceBar}
                   <div className="chat-input-bar">
                     <input
                       className="chat-input-field"
@@ -439,12 +427,27 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
+                    <VoiceInputIcon
+                      isListening={voice.isListening}
+                      isTranscribing={voice.isTranscribing}
+                      isSpeaking={voice.isSpeaking}
+                      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                      configured={voice.support.configured}
+                      disabled={loading}
+                      onStartListening={voice.startListening}
+                      onStopListening={voice.stopListening}
+                      onStopSpeaking={voice.stopSpeak}
+                      size="sm"
+                    />
                     <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                       {loading
                         ? <Loader2 size={14} className="spin" />
                         : <ArrowUp size={14} strokeWidth={2.5} />}
                     </button>
                   </div>
+                  {voice.voiceError && (
+                    <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                  )}
                   </div>
                 </div>
               </div>

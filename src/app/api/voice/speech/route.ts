@@ -4,10 +4,9 @@ import { experimental_generateSpeech as generateSpeech } from "ai";
 import { createElevenLabs } from "@ai-sdk/elevenlabs";
 import {
   ELEVENLABS_SPEECH_INSTRUCTIONS,
-  ELEVENLABS_SPEECH_MODEL,
-  ELEVENLABS_VOICE_ID,
   requireElevenLabsApiKey,
 } from "@/lib/elevenlabs-config";
+import { getUserAiSettings } from "@/lib/user-ai-settings-server";
 import { stripForSpeech } from "@/lib/voice";
 
 const MAX_SPEECH_CHARS = 9000;
@@ -35,15 +34,17 @@ export async function POST(req: NextRequest) {
     : cleaned;
 
   try {
+    const userSettings = await getUserAiSettings(userId);
     const elevenlabs = createElevenLabs({ apiKey: requireElevenLabsApiKey() });
 
     const result = await generateSpeech({
-      model: elevenlabs.speech(ELEVENLABS_SPEECH_MODEL),
+      model: elevenlabs.speech(userSettings.speechModel),
       text,
-      voice: ELEVENLABS_VOICE_ID,
+      voice: userSettings.elevenlabsVoiceId,
       outputFormat: "mp3",
       instructions: ELEVENLABS_SPEECH_INSTRUCTIONS,
       language: "en",
+      speed: userSettings.speechSpeed,
     });
 
     return new NextResponse(Buffer.from(result.audio.uint8Array), {

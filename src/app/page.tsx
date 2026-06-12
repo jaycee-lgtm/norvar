@@ -8,7 +8,7 @@ import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
-import VoiceControls, { VoiceErrorBanner } from "@/components/VoiceControls";
+import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
@@ -665,7 +665,7 @@ function Home() {
   const scrollRef      = useRef<HTMLDivElement>(null);
   const fileRef        = useRef<HTMLInputElement>(null);
   const followUpRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
-  const speakAfterRef  = useRef<(text: string) => void>(() => {});
+  const speakAfterRef  = useRef<(text: string, fromMic?: boolean) => void>(() => {});
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -773,7 +773,7 @@ function Home() {
     onTranscript: text => setInput(text),
     onAutoSend: async text => {
       const response = await followUpRef.current(text);
-      if (response) speakAfterRef.current(response);
+      if (response) speakAfterRef.current(response, true);
     },
     disabled: loading || !hasAssessment,
   });
@@ -1313,29 +1313,6 @@ function Home() {
                 <div className="chat-input-row">
                   <div className="chat-input-inner">
                     <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-                      <VoiceControls
-                        speakEnabled={voice.settings.speakResponses}
-                        conversationEnabled={voice.settings.voiceConversation}
-                        onToggleSpeak={voice.toggleSpeakResponses}
-                        onToggleConversation={voice.toggleVoiceConversation}
-                        isListening={voice.isListening}
-                        isSpeaking={voice.isSpeaking}
-                        onStartListening={voice.startListening}
-                        onStopListening={voice.stopListening}
-                        onStopSpeaking={voice.stopSpeak}
-                        ttsSupported={voice.support.tts}
-                        sttSupported={voice.support.stt}
-                        configured={voice.support.configured}
-                        disabled={loading}
-                      />
-                      {!voice.support.configured && (
-                        <p style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>
-                          Install the ElevenLabs integration on Vercel to enable AI voice.
-                        </p>
-                      )}
-                      {voice.voiceError && (
-                        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
-                      )}
                     <div className="chat-input-bar">
                       <input
                         className="chat-input-field"
@@ -1344,10 +1321,27 @@ function Home() {
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
                       />
+                      {hasAssessment && (
+                        <VoiceInputIcon
+                          isListening={voice.isListening}
+                          isTranscribing={voice.isTranscribing}
+                          isSpeaking={voice.isSpeaking}
+                          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                          configured={voice.support.configured}
+                          disabled={loading}
+                          onStartListening={voice.startListening}
+                          onStopListening={voice.stopListening}
+                          onStopSpeaking={voice.stopSpeak}
+                          size="sm"
+                        />
+                      )}
                       <button type="button" className="chat-send-btn" onClick={handleSend} disabled={!canSend}>
                         {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                       </button>
                     </div>
+                    {hasAssessment && voice.voiceError && (
+                      <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+                    )}
                     </div>
                   </div>
                 </div>
