@@ -599,14 +599,14 @@ body {
 .sample-questions-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 5px;
+  padding: 6px 13px;
   border-radius: 20px;
   border: 0.5px solid var(--bdr2);
   background: var(--card);
   color: var(--fg2);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 400;
   font-family: 'Sora', sans-serif;
   letter-spacing: -0.01em;
   cursor: pointer;

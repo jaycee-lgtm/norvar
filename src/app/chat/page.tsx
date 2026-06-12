@@ -382,13 +382,13 @@ function Chat() {
                     disabled={loading}
                     label="Reference docs"
                   />
+                  <SampleQuestionsDropdown
+                    align="left"
+                    onSelect={q => sendWithVoice(q)}
+                    disabled={loading}
+                  />
                 </div>
               </div>
-
-              <SampleQuestionsDropdown
-                onSelect={q => sendWithVoice(q)}
-                disabled={loading}
-              />
 
               {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)" }}>{error}</p>}
             </div>
@@ -458,11 +458,6 @@ function Chat() {
                       Chat
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <SampleQuestionsDropdown
-                        align="left"
-                        onSelect={q => sendWithVoice(q)}
-                        disabled={loading}
-                      />
                       {conversationId && (
                         <button
                           type="button"
@@ -531,6 +526,11 @@ function Chat() {
                       onChange={setSelectedDocumentIds}
                       disabled={loading}
                       label="Reference docs"
+                    />
+                    <SampleQuestionsDropdown
+                      align="left"
+                      onSelect={q => sendWithVoice(q)}
+                      disabled={loading}
                     />
                   </div>
                   </div>
