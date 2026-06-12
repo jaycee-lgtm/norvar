@@ -207,18 +207,26 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
   onAssignProject: (id: string, folderId: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const projectName = folders.find(f => f.id === doc.folder_id)?.name;
 
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [open]);
+
   return (
-    <div
-      className="doc-row"
-      style={{
-        display: "flex", flexDirection: "column", gap: 0,
-        padding: "10px 16px",
-        background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 8,
-      }}
-    >
+    <div className={`doc-row${open ? " doc-row--menu-open" : ""}`}>
       <div className="doc-row-top" style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%" }}>
       <div style={{
         width: 36, height: 36, borderRadius: 6, background: "var(--card2)",
@@ -260,11 +268,6 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
           className="doc-row-project-select"
           value={doc.folder_id ?? ""}
           onChange={e => onAssignProject(doc.id, e.target.value || null)}
-          style={{
-            padding: "4px 8px", borderRadius: 5, fontSize: 11,
-            border: "0.5px solid var(--bdr2)", background: "var(--card2)",
-            color: "var(--fg2)", fontFamily: "'Sora', sans-serif", maxWidth: 140,
-          }}
         >
           <option value="">No project</option>
           {folders.map(f => (
@@ -273,21 +276,18 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
         </select>
       )}
 
-      <div className="doc-row-menu" style={{ position: "relative" }}>
+      <div ref={menuRef} className="doc-row-menu">
         <button
           type="button"
           className="doc-row-menu-btn"
           aria-label="Document actions"
-          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          onClick={() => setOpen(v => !v)}
         >
           <MoreHorizontal size={16} strokeWidth={1.75} />
         </button>
         {open && (
-          <div className="doc-row-dropdown" style={{
-            position: "absolute", right: 0, top: "calc(100% + 4px)", width: 160,
-            background: "var(--card)", border: "0.5px solid var(--bdr2)",
-            borderRadius: 8, overflow: "hidden", zIndex: 50,
-          }}>
+          <div className="doc-row-dropdown" role="menu">
             {[
               { label: "Download", icon: <Download size={12} />, action: () => {} },
               doc.status === "active"
@@ -295,11 +295,8 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
                 : { label: "Restore", icon: <FolderOpen size={12} />, action: () => { onAction(doc.id, "restore"); setOpen(false); } },
               { label: "Delete", icon: <Trash2 size={12} />, action: () => { onAction(doc.id, "delete"); setOpen(false); }, danger: true },
             ].map(({ label, icon, action, danger }) => (
-              <button key={label} type="button" className="doc-row-dropdown-item" onClick={action} style={{
-                display: "flex", alignItems: "center", gap: 8, width: "100%",
-                padding: "8px 12px", background: "none", border: "none",
-                fontSize: 12, color: danger ? "var(--rh)" : "var(--fg2)", cursor: "pointer",
-                textAlign: "left", fontFamily: "'Sora', sans-serif",
+              <button key={label} type="button" className="doc-row-dropdown-item" role="menuitem" onClick={action} style={{
+                color: danger ? "var(--rh)" : undefined,
               }}>
                 {icon}{label}
               </button>

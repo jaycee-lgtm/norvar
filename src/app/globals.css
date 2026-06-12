@@ -539,6 +539,78 @@ body {
   border-color: var(--rl-bdr);
 }
 
+.doc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 10px 16px;
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 8px;
+  position: relative;
+}
+
+.doc-row--menu-open {
+  z-index: 30;
+}
+
+.doc-row-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.doc-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-row-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.doc-row-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  width: 168px;
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.doc-row-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--fg2);
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Sora', sans-serif;
+}
+
+.doc-row-project-select {
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card2);
+  color: var(--fg2);
+  font-family: 'Sora', sans-serif;
+  max-width: 140;
+}
+
 .doc-row-tag {
   font-size: 10px;
   padding: 2px 7px;
@@ -1922,7 +1994,11 @@ body {
     gap: 0 !important;
     padding: 0 !important;
     border-radius: 12px !important;
-    overflow: hidden;
+    overflow: visible;
+  }
+
+  .doc-row--menu-open {
+    z-index: 40;
   }
 
   .doc-row-top {
@@ -1948,6 +2024,19 @@ body {
     padding: 10px 14px 12px;
     border-top: 0.5px solid var(--bdr);
     background: var(--card);
+    overflow: visible;
+  }
+
+  .doc-row-dropdown {
+    bottom: calc(100% + 6px);
+    top: auto;
+    width: min(200px, calc(100vw - 48px));
+    z-index: 100;
+  }
+
+  .doc-row-dropdown-item {
+    min-height: 44px;
+    padding: 12px 14px;
   }
 
   .doc-row-project-select {
@@ -2215,6 +2304,7 @@ body {
   /* ── Documents mobile ── */
   .documents-page--mobile .main-scroll {
     background: var(--bg);
+    overflow-x: visible;
   }
 
   .documents-mobile-head {
@@ -2354,6 +2444,7 @@ body {
   .documents-list--mobile {
     padding: 12px 14px 24px !important;
     gap: 10px !important;
+    overflow: visible;
   }
 
   /* ── Projects grid ── */
