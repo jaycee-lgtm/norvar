@@ -665,23 +665,390 @@ body {
 .remediation-status-badge {
   display: inline-block;
   font-size: 10px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 .remediation-status-select {
   padding: 5px 8px;
   border-radius: 5px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   font-family: 'Sora', sans-serif;
   cursor: pointer;
   border: 0.5px solid var(--bdr2);
   background: var(--card2);
   color: var(--fg);
+}
+
+/* ── Remediation cards (shared) ── */
+.remediation-item-card {
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.remediation-item-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.remediation-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.remediation-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 3px;
+  line-height: 1.35;
+}
+
+.remediation-item-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: var(--fg3);
+}
+
+.remediation-item-meta-project {
+  color: var(--fg2);
+  font-weight: 500;
+}
+
+.remediation-item-meta-num {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.remediation-item-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.remediation-item-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--fg3);
+}
+
+.remediation-item-due.overdue {
+  color: var(--rh);
+}
+
+.remediation-item-chevron {
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: transform 0.15s;
+}
+
+.remediation-item-card.expanded .remediation-item-chevron {
+  transform: rotate(180deg);
+}
+
+.remediation-detail-panel {
+  padding: 0 16px 16px;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.remediation-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  margin-bottom: 4px;
+}
+
+.remediation-assessment-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--fg2);
+  text-decoration: none;
+}
+
+.remediation-status-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remediation-status-control-label {
+  font-size: 11px;
+  color: var(--fg3);
+}
+
+.remediation-detail-section {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.remediation-detail-section--chat {
+  padding-top: 12px;
+}
+
+.remediation-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg3);
+  margin-bottom: 8px;
+  font-family: 'Sora', sans-serif;
+}
+
+.remediation-body-text {
+  font-size: 13px;
+  color: var(--fg2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.remediation-body-text.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.remediation-steps-text {
+  padding: 10px 12px;
+  background: var(--card2);
+  border-radius: 8px;
+  border: 0.5px solid var(--bdr);
+}
+
+.remediation-text-toggle {
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg2);
+  font-size: 11px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.remediation-inline-error {
+  font-size: 11px;
+  color: var(--rh);
+  margin: 8px 0 0;
+}
+
+.remediation-assignees-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.remediation-assignees-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.remediation-assignee-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.remediation-assignee-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 8px 6px 10px;
+  border-radius: 8px;
+  background: var(--card2);
+  border: 0.5px solid var(--bdr2);
+  color: var(--fg2);
+}
+
+.remediation-assignee-chip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.remediation-assignee-chip-role {
+  font-size: 10px;
+  color: var(--fg3);
+}
+
+.remediation-assignee-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: 2px;
+  border: none;
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+}
+
+.remediation-assignees-note {
+  margin: 10px 0 0;
+  font-size: 10px;
+  color: var(--fg4);
+  line-height: 1.45;
+  font-family: 'Sora', sans-serif;
+}
+
+.remediation-assignees-note a {
+  color: var(--fg2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.remediation-escalation-target {
+  margin-bottom: 10px;
+}
+
+.remediation-escalation-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.remediation-escalation-meta {
+  font-size: 11px;
+  color: var(--fg3);
+  margin-top: 3px;
+}
+
+.remediation-escalation-context {
+  font-size: 12px;
+  color: var(--fg2);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.remediation-escalation-context p {
+  margin: 0 0 4px;
+}
+
+.remediation-escalation-steps {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.remediation-escalation-step {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--card2);
+  color: var(--fg3);
+  border: 0.5px solid var(--bdr2);
+}
+
+.remediation-escalation-step.done {
+  background: var(--rl-bg);
+  color: var(--rl);
+  border-color: var(--rl-bdr);
+}
+
+.remediation-escalation-step.current {
+  background: var(--rm-bg);
+  color: var(--rm);
+  border-color: var(--rm-bdr);
+}
+
+.remediation-escalation-actions,
+.remediation-quick-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.remediation-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card2);
+  color: var(--fg2);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+}
+
+.remediation-action-btn.subtle {
+  background: transparent;
+  color: var(--fg3);
+}
+
+.remediation-action-btn.warn {
+  background: var(--rm-bg);
+  color: var(--rm);
+  border-color: var(--rm-bdr);
+}
+
+.remediation-action-btn.success {
+  background: var(--rl-bg);
+  color: var(--rl);
+  border-color: var(--rl-bdr);
+}
+
+.remediation-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.remediation-activity-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 11px;
+  color: var(--fg3);
+  margin-bottom: 8px;
+}
+
+.remediation-activity-detail {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.remediation-activity-date {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--fg4);
 }
 
 .sample-questions-wrap {
@@ -1996,12 +2363,11 @@ body {
 
   /* ── Remediation activity ── */
   .remediation-activity-row {
-    flex-wrap: wrap;
+    align-items: center;
   }
 
   .remediation-activity-date {
-    margin-left: 18px !important;
-    white-space: normal !important;
+    margin-left: auto !important;
   }
 
   /* ── Settings / Clerk ── */
@@ -2161,7 +2527,6 @@ body {
 
   .remediation-item-card {
     border-radius: 12px !important;
-    overflow: hidden;
   }
 
   .remediation-item-summary {
@@ -2179,9 +2544,73 @@ body {
     gap: 8px !important;
   }
 
-  .remediation-item-main > div:first-child {
+  .remediation-item-title {
     font-size: 14px !important;
-    line-height: 1.35;
+  }
+
+  .remediation-item-card.expanded .remediation-item-side .remediation-status-badge {
+    display: none;
+  }
+
+  .remediation-detail-panel {
+    padding: 0 14px 14px !important;
+  }
+
+  .remediation-detail-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .remediation-assessment-link {
+    font-size: 12px;
+  }
+
+  .remediation-status-control {
+    justify-content: space-between;
+  }
+
+  .remediation-status-select {
+    min-width: 140px;
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .remediation-detail-section {
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+
+  .remediation-body-text {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .remediation-assignee-chip {
+    width: 100%;
+  }
+
+  .remediation-quick-actions {
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 0.5px solid var(--bdr);
+  }
+
+  .remediation-quick-actions .remediation-action-btn {
+    flex: 1 1 calc(50% - 3px);
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .remediation-mobile-head {
+    padding: 12px 14px 0;
+  }
+
+  .remediation-status-scroll {
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0 -2px;
   }
 }
 

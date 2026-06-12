@@ -10,7 +10,7 @@ import EscalateModal from "@/components/EscalateModal";
 import EscalationTracker from "@/components/EscalationTracker";
 import StatusBadge from "@/components/StatusBadge";
 import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
-import { sortBySeverity, STATUS_LABELS, STATUS_STYLES, type RemediationStatus } from "@/lib/remediation";
+import { sortBySeverity, STATUS_LABELS, type RemediationStatus } from "@/lib/remediation";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
@@ -122,9 +122,10 @@ function SevBadge({ sev }: { sev: string }) {
   );
 }
 
-function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }: {
+function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessagesChange }: {
   item:     RemediationItem;
   profiles: Record<string, UserProfile>;
+  isMobile: boolean;
   onUpdate: () => void;
   onStatusChange: (id: string, status: RemediationStatus) => void;
   onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
@@ -134,6 +135,7 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
   const [statusBusy, setStatusBusy] = useState(false);
   const [localStatus, setLocalStatus] = useState(item.status);
   const [statusError, setStatusError] = useState("");
+  const [detailExpanded, setDetailExpanded] = useState(false);
 
   useEffect(() => {
     setLocalStatus(item.status);
@@ -164,51 +166,42 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
     }
   };
 
-  const statusStyle = STATUS_STYLES[localStatus] ?? STATUS_STYLES.open;
+  const isTerminal  = localStatus === "resolved" || localStatus === "wont_fix";
+  const longDetail  = (item.gap_detail?.length ?? 0) > 220;
 
   return (
     <>
-      <div className="remediation-item-card" style={{
-        background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 8,
-      }}>
-        <div
+      <div className={`remediation-item-card${expanded ? " expanded" : ""}`}>
+        <button
+          type="button"
           className="remediation-item-summary"
-          style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 10 }}
+          aria-expanded={expanded}
           onClick={() => setExpanded(!expanded)}
         >
           <SevBadge sev={item.gap_severity} />
 
-          <div className="remediation-item-main" style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", marginBottom: 3 }}>
-              {item.gap_title}
-            </div>
-            <div className="remediation-item-meta" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              {item.project_title && (
-                <span style={{ fontSize: 10, color: "var(--fg2)", fontWeight: 500 }}>
-                  {item.project_title}
-                </span>
-              )}
-              {item.assessment_number && (
-                <span style={{ fontSize: 10, color: "var(--fg3)", fontFamily: "'JetBrains Mono', monospace" }}>
-                  {item.assessment_number}
-                </span>
-              )}
-              <span style={{ fontSize: 10, color: "var(--fg3)" }}>
-                {DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain}
-              </span>
-              {item.gap_frameworks.length > 0 && (
-                <span style={{ fontSize: 10, color: "var(--fg3)" }}>
-                  {item.gap_frameworks.slice(0, 2).join(", ")}
-                </span>
-              )}
-            </div>
+          <div className="remediation-item-main">
+            <div className="remediation-item-title">{item.gap_title}</div>
+            {!isMobile && (
+              <div className="remediation-item-meta">
+                {item.project_title && (
+                  <span className="remediation-item-meta-project">{item.project_title}</span>
+                )}
+                {item.assessment_number && (
+                  <span className="remediation-item-meta-num">{item.assessment_number}</span>
+                )}
+                <span>{DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain}</span>
+                {item.gap_frameworks.length > 0 && (
+                  <span>{item.gap_frameworks.slice(0, 2).join(", ")}</span>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="remediation-item-side" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <div className="remediation-item-side">
             <StatusBadge status={localStatus} />
             {item.due_date && (
-              <span style={{ fontSize: 10, color: overdue ? "var(--rh)" : "var(--fg3)", display: "flex", alignItems: "center", gap: 3 }}>
+              <span className={`remediation-item-due${overdue ? " overdue" : ""}`}>
                 {overdue && <AlertTriangle size={9} />}
                 <Calendar size={9} />
                 {fmt_date(item.due_date)}
@@ -216,106 +209,103 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
             )}
           </div>
 
-          <ChevronDown size={13} color="var(--fg3)"
-            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0, marginTop: 2 }} />
-        </div>
+          <ChevronDown size={14} color="var(--fg3)" className="remediation-item-chevron" />
+        </button>
 
         {expanded && (
-          <div style={{ padding: "0 16px 16px", borderTop: "0.5px solid var(--bdr)" }}>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              gap: 10, flexWrap: "wrap", marginTop: 12, marginBottom: 10,
-            }}>
+          <div className="remediation-detail-panel">
+            <div className="remediation-detail-toolbar">
               <Link
                 href={`/assess?id=${item.assessment_id}`}
                 onClick={e => e.stopPropagation()}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 5,
-                  fontSize: 11, color: "var(--fg2)", textDecoration: "none",
-                }}
+                className="remediation-assessment-link"
               >
                 <ExternalLink size={11} />
                 View assessment
                 {item.project_title && ` · ${item.project_title}`}
               </Link>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Status
-                </span>
-                <select
-                  value={localStatus}
-                  disabled={statusBusy}
-                  onClick={e => e.stopPropagation()}
-                  onChange={e => updateStatus(e.target.value as RemediationStatus)}
-                  className="remediation-status-select"
-                  style={{
-                    background: statusStyle.bg,
-                    color:      statusStyle.color,
-                    borderColor: statusStyle.bdr,
-                    opacity: statusBusy ? 0.7 : 1,
-                  }}
-                >
-                  {(Object.keys(STATUS_LABELS) as RemediationStatus[]).map(s => (
-                    <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                  ))}
-                </select>
-              </div>
+              {!isTerminal ? (
+                <label className="remediation-status-control">
+                  <span className="remediation-status-control-label">Status</span>
+                  <select
+                    value={localStatus}
+                    disabled={statusBusy}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => updateStatus(e.target.value as RemediationStatus)}
+                    className="remediation-status-select"
+                  >
+                    {(Object.keys(STATUS_LABELS) as RemediationStatus[]).map(s => (
+                      <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <StatusBadge status={localStatus} />
+              )}
             </div>
 
-            {statusError && (
-              <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, marginBottom: 0 }}>{statusError}</p>
-            )}
+            {statusError && <p className="remediation-inline-error">{statusError}</p>}
 
             {item.gap_detail && (
-              <p style={{ fontSize: 12, color: "var(--fg2)", lineHeight: 1.55, marginTop: 12, marginBottom: 10 }}>
-                {item.gap_detail}
-              </p>
+              <section className="remediation-detail-section">
+                <div className="remediation-section-label">Gap detail</div>
+                <p className={`remediation-body-text${longDetail && !detailExpanded ? " clamped" : ""}`}>
+                  {item.gap_detail}
+                </p>
+                {longDetail && (
+                  <button
+                    type="button"
+                    className="remediation-text-toggle"
+                    onClick={e => { e.stopPropagation(); setDetailExpanded(v => !v); }}
+                  >
+                    {detailExpanded ? "Show less" : "Read more"}
+                  </button>
+                )}
+              </section>
             )}
 
             {item.remediation_steps && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                  Remediation steps
-                </div>
-                <p style={{ fontSize: 12, color: "var(--fg2)", lineHeight: 1.55, padding: "8px 10px", background: "var(--card2)", borderRadius: 6, border: "0.5px solid var(--bdr)" }}>
+              <section className="remediation-detail-section">
+                <div className="remediation-section-label">Remediation steps</div>
+                <p className="remediation-body-text remediation-steps-text">
                   {item.remediation_steps}
                 </p>
-              </div>
+              </section>
             )}
 
-            <GapChat
-              gap={{
-                title:              item.gap_title,
-                severity:           item.gap_severity,
-                domain:             DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain,
-                detail:             item.gap_detail,
-                frameworks:         item.gap_frameworks,
-                remediation_steps:  item.remediation_steps,
-              }}
-              remediationId={item.id}
-              assessmentId={item.assessment_id}
-              gapKey={item.gap_key ?? undefined}
-              initialMessages={item.messages ?? []}
-              onMessagesChange={msgs => onMessagesChange(item.id, msgs)}
-            />
+            <section className="remediation-detail-section remediation-detail-section--chat">
+              <GapChat
+                gap={{
+                  title:              item.gap_title,
+                  severity:           item.gap_severity,
+                  domain:             DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain,
+                  detail:             item.gap_detail,
+                  frameworks:         item.gap_frameworks,
+                  remediation_steps:  item.remediation_steps,
+                }}
+                remediationId={item.id}
+                assessmentId={item.assessment_id}
+                gapKey={item.gap_key ?? undefined}
+                initialMessages={item.messages ?? []}
+                onMessagesChange={msgs => onMessagesChange(item.id, msgs)}
+              />
+            </section>
 
-            <div style={{ marginBottom: 12, marginTop: 12 }}>
+            <section className="remediation-detail-section">
               <AssigneeManager
                 itemId={item.id}
                 assessmentId={item.assessment_id}
                 projectTitle={item.project_title}
                 assignedTo={item.assigned_to}
+                assigneeMeta={item.assignee_meta}
                 profiles={profiles}
                 onUpdate={onUpdate}
               />
-            </div>
+            </section>
 
             <EscalationTracker
               itemId={item.id}
-              assignedTo={item.assigned_to}
-              profiles={profiles}
-              assigneeMeta={item.assignee_meta}
               escalationEmail={item.escalation_email}
               escalationRecipientName={item.escalation_recipient_name}
               escalationRole={item.escalation_role}
@@ -328,56 +318,36 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
             />
 
             {item.remediation_activity?.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                  Activity
-                </div>
-                {item.remediation_activity.slice(0, 5).map(a => (
-                  <div key={a.id} className="remediation-activity-row" style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--fg3)", marginBottom: 4, alignItems: "flex-start" }}>
-                    <Clock size={10} style={{ flexShrink: 0, marginTop: 2 }} />
-                    <span>{a.detail ?? a.action}</span>
-                    <span className="remediation-activity-date" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>{fmt_date(a.created_at)}</span>
-                  </div>
-                ))}
-              </div>
+              <section className="remediation-detail-section remediation-activity">
+                <div className="remediation-section-label">Activity</div>
+                <ul className="remediation-activity-list">
+                  {item.remediation_activity.slice(0, 5).map(a => (
+                    <li key={a.id} className="remediation-activity-row">
+                      <Clock size={10} />
+                      <span className="remediation-activity-detail">{a.detail ?? a.action}</span>
+                      <span className="remediation-activity-date">{fmt_date(a.created_at)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
 
-            {localStatus !== "resolved" && localStatus !== "wont_fix" && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {!isTerminal && (
+              <div className="remediation-quick-actions">
                 {localStatus === "open" && (
-                  <button type="button" disabled={statusBusy} onClick={() => updateStatus("in_progress")} style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "5px 12px", borderRadius: 5, fontSize: 11,
-                    border: "0.5px solid var(--bdr2)", background: "transparent",
-                    color: "var(--fg2)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                  }}>
+                  <button type="button" disabled={statusBusy} onClick={() => updateStatus("in_progress")} className="remediation-action-btn">
                     <Clock size={10} /> Start
                   </button>
                 )}
                 {(!item.escalation_email || item.escalation_status === "closed") && (
-                  <button type="button" onClick={() => setEscalating(true)} style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "5px 12px", borderRadius: 5, fontSize: 11,
-                    border: "0.5px solid var(--rm-bdr)", background: "var(--rm-bg)",
-                    color: "var(--rm)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                  }}>
+                  <button type="button" onClick={() => setEscalating(true)} className="remediation-action-btn warn">
                     <ArrowUpRight size={10} /> Escalate
                   </button>
                 )}
-                <button type="button" disabled={statusBusy} onClick={() => updateStatus("resolved")} style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "5px 12px", borderRadius: 5, fontSize: 11,
-                  border: "0.5px solid var(--rl-bdr)", background: "var(--rl-bg)",
-                  color: "var(--rl)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                }}>
+                <button type="button" disabled={statusBusy} onClick={() => updateStatus("resolved")} className="remediation-action-btn success">
                   <CheckCircle size={10} /> Resolve
                 </button>
-                <button type="button" disabled={statusBusy} onClick={() => updateStatus("wont_fix")} style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "5px 12px", borderRadius: 5, fontSize: 11,
-                  border: "0.5px solid var(--bdr2)", background: "transparent",
-                  color: "var(--fg3)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                }}>
+                <button type="button" disabled={statusBusy} onClick={() => updateStatus("wont_fix")} className="remediation-action-btn subtle">
                   <X size={10} /> Won&apos;t fix
                 </button>
               </div>
@@ -633,6 +603,7 @@ export default function RemediationPage() {
               key={item.id}
               item={item}
               profiles={profiles}
+              isMobile={isMobileView}
               onUpdate={() => load({ silent: true })}
               onStatusChange={handleStatusChange}
               onMessagesChange={updateItemMessages}

@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 import { User, UserPlus, X, ArrowRightLeft, Search, Loader2 } from "lucide-react";
 import type { UserProfile } from "@/lib/clerk-users";
+import type { AssigneeMeta } from "@/lib/escalation";
 
 type OrgInfo = { id: string; name: string };
 
@@ -11,6 +13,7 @@ type AssigneeManagerProps = {
   assessmentId:  string;
   projectTitle?: string | null;
   assignedTo:    string[];
+  assigneeMeta?: AssigneeMeta | null;
   profiles:      Record<string, UserProfile>;
   onUpdate:      () => void;
 };
@@ -20,6 +23,7 @@ export default function AssigneeManager({
   assessmentId,
   projectTitle,
   assignedTo,
+  assigneeMeta,
   profiles,
   onUpdate,
 }: AssigneeManagerProps) {
@@ -121,18 +125,12 @@ export default function AssigneeManager({
     : "this gap";
 
   return (
-    <div onClick={e => e.stopPropagation()}>
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: 8, gap: 8, flexWrap: "wrap",
-      }}>
-        <div style={{
-          fontSize: 10, fontWeight: 600, color: "var(--fg3)",
-          textTransform: "uppercase", letterSpacing: "0.08em",
-        }}>
-          Assigned to ({assignedTo.length})
+    <div className="remediation-assignees" onClick={e => e.stopPropagation()}>
+      <div className="remediation-assignees-head">
+        <div className="remediation-section-label">
+          Gap owners
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div className="remediation-assignees-actions">
           <button
             type="button"
             disabled={busy}
@@ -152,31 +150,35 @@ export default function AssigneeManager({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: mode !== "idle" ? 10 : 0 }}>
-        {assignedTo.map(uid => (
-          <span key={uid} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            fontSize: 11, padding: "3px 8px 3px 6px", borderRadius: 20,
-            background: "var(--card2)", color: "var(--fg2)", border: "0.5px solid var(--bdr2)",
-          }}>
-            <User size={9} />
-            {label(uid)}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => remove(uid)}
-              title="Remove assignee"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: "transparent", border: "none", cursor: busy ? "not-allowed" : "pointer",
-                padding: 0, color: "var(--fg3)", marginLeft: 2,
-              }}
-            >
-              <X size={10} />
-            </button>
-          </span>
-        ))}
+      <div className="remediation-assignee-chips">
+        {assignedTo.map(uid => {
+          const role = assigneeMeta?.[uid]?.role?.trim();
+          return (
+            <span key={uid} className="remediation-assignee-chip">
+              <User size={10} />
+              <span className="remediation-assignee-chip-text">
+                <span>{label(uid)}</span>
+                {role && <span className="remediation-assignee-chip-role">{role}</span>}
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => remove(uid)}
+                title="Remove assignee"
+                className="remediation-assignee-chip-remove"
+              >
+                <X size={10} />
+              </button>
+            </span>
+          );
+        })}
       </div>
+
+      <p className="remediation-assignees-note">
+        Roles are set once in{" "}
+        <Link href="/settings">Settings</Link>
+        {" "}and apply to all gaps.
+      </p>
 
       {mode !== "idle" && (
         <div className="assignee-picker">
