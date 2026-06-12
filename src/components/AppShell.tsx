@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { Menu } from "lucide-react";
+import { Menu, Settings, Layers } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 
 function MobileProfileButton() {
@@ -32,7 +32,21 @@ function MobileProfileButton() {
             rootBox:                   { position: "absolute", inset: 0, zIndex: 2 },
           },
         }}
-      />
+      >
+        <UserButton.MenuItems>
+          <UserButton.Link
+            label="Settings"
+            labelIcon={<Settings size={14} strokeWidth={1.75} />}
+            href="/settings"
+          />
+          <UserButton.Link
+            label="Frameworks"
+            labelIcon={<Layers size={14} strokeWidth={1.75} />}
+            href="/frameworks"
+          />
+          <UserButton.Action label="signOut" />
+        </UserButton.MenuItems>
+      </UserButton>
     </div>
   );
 }

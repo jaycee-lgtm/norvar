@@ -1017,21 +1017,48 @@ body {
   .sidebar-drawer-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 18px 18px 8px;
+    justify-content: flex-start;
+    padding: 16px 18px 10px;
     flex-shrink: 0;
   }
 
-  .sidebar-drawer-brand {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 26px;
-    font-weight: 400;
+  .sidebar-drawer-brand-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-drawer-brand-text {
+    font-size: 14px;
+    font-weight: 500;
     color: var(--fg);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    font-family: 'Sora', sans-serif;
   }
 
   .sidebar-mobile-nav {
     padding-bottom: 8px;
+  }
+
+  .sidebar-mobile-recents-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(100% - 20px);
+    margin: 0 10px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--fg2);
+    font-size: 14px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .sidebar-mobile-recents-panel {
+    padding: 0 4px 4px;
   }
 
   .sidebar-scroll {
@@ -1608,6 +1635,146 @@ body {
   .doc-row-actions button {
     min-height: 36px;
     padding: 6px 12px !important;
+  }
+
+  /* ── Remediation mobile ── */
+  .remediation-page--mobile .main-scroll {
+    background: var(--bg);
+  }
+
+  .remediation-mobile-head {
+    padding: 12px 14px 0;
+    border-bottom: 0.5px solid var(--bdr);
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+
+  .remediation-mobile-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .remediation-mobile-title {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+    margin: 0;
+    font-family: 'Sora', sans-serif;
+  }
+
+  .remediation-mobile-subtitle {
+    font-size: 11px;
+    color: var(--fg3);
+    margin: 2px 0 0;
+    font-family: 'Sora', sans-serif;
+  }
+
+  .remediation-status-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .remediation-status-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .remediation-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 0.5px solid var(--bdr2);
+    background: var(--card);
+    color: var(--fg2);
+    font-size: 12px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .remediation-status-pill.active {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+
+  .remediation-status-pill-count {
+    font-size: 10px;
+    opacity: 0.75;
+  }
+
+  .remediation-filters-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 0 12px;
+    border: none;
+    border-top: 0.5px solid var(--bdr);
+    background: transparent;
+    color: var(--fg2);
+    font-size: 12px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+  }
+
+  .remediation-filters-toggle span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .remediation-mobile-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  .remediation-mobile-filters .remediation-filter-select,
+  .remediation-mobile-filters .remediation-mine-toggle {
+    width: 100%;
+    font-size: 13px !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+  }
+
+  .remediation-list--mobile {
+    padding: 12px 14px 24px !important;
+    gap: 10px !important;
+  }
+
+  .remediation-item-card {
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+
+  .remediation-item-summary {
+    padding: 14px !important;
+    gap: 8px !important;
+  }
+
+  .remediation-item-meta {
+    display: none !important;
+  }
+
+  .remediation-item-side {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .remediation-item-main > div:first-child {
+    font-size: 14px !important;
+    line-height: 1.35;
   }
 }
 

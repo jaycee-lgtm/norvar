@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import AssigneeManager from "@/components/AssigneeManager";
 import EscalateModal from "@/components/EscalateModal";
@@ -13,7 +14,7 @@ import { sortBySeverity, STATUS_LABELS, STATUS_STYLES, type RemediationStatus } 
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
-  CheckCircle, ArrowUpRight, Clock, X, ExternalLink,
+  CheckCircle, ArrowUpRight, Clock, X, ExternalLink, SlidersHorizontal,
 } from "lucide-react";
 
 interface ProjectOption {
@@ -167,21 +168,22 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
 
   return (
     <>
-      <div style={{
+      <div className="remediation-item-card" style={{
         background: "var(--card)", border: "0.5px solid var(--bdr2)",
         borderRadius: 8,
       }}>
         <div
+          className="remediation-item-summary"
           style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 10 }}
           onClick={() => setExpanded(!expanded)}
         >
           <SevBadge sev={item.gap_severity} />
 
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="remediation-item-main" style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", marginBottom: 3 }}>
               {item.gap_title}
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="remediation-item-meta" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               {item.project_title && (
                 <span style={{ fontSize: 10, color: "var(--fg2)", fontWeight: 500 }}>
                   {item.project_title}
@@ -203,7 +205,7 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <div className="remediation-item-side" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
             <StatusBadge status={localStatus} />
             {item.due_date && (
               <span style={{ fontSize: 10, color: overdue ? "var(--rh)" : "var(--fg3)", display: "flex", alignItems: "center", gap: 3 }}>
@@ -397,6 +399,7 @@ function ItemCard({ item, profiles, onUpdate, onStatusChange, onMessagesChange }
 }
 
 export default function RemediationPage() {
+  const isMobileView = useIsMobile();
   const [items, setItems]               = useState<RemediationItem[]>([]);
   const [profiles, setProfiles]         = useState<Record<string, UserProfile>>({});
   const [projects, setProjects]         = useState<ProjectOption[]>([]);
@@ -407,6 +410,7 @@ export default function RemediationPage() {
   const [filterProject, setFilterProject] = useState("");
   const [filterProjectNum, setFilterProjectNum] = useState("");
   const [mineOnly, setMineOnly]         = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const load = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
@@ -484,10 +488,96 @@ export default function RemediationPage() {
     fontFamily: "'Sora', sans-serif", cursor: "pointer",
   };
 
+  const advancedFilters = (
+    <>
+      <select value={filterSev} onChange={e => setFilterSev(e.target.value)} style={headerSelectStyle} className="remediation-filter-select">
+        {SEV_FILTERS.map(({ value, label }) => (
+          <option key={value || "all"} value={value}>{label}</option>
+        ))}
+      </select>
+      <select value={filterDomain} onChange={e => setFilterDomain(e.target.value)} style={headerSelectStyle} className="remediation-filter-select">
+        {DOMAIN_FILTERS.map(({ value, label }) => (
+          <option key={value || "all"} value={value}>{label}</option>
+        ))}
+      </select>
+      <select value={filterProject} onChange={e => setFilterProject(e.target.value)} style={{ ...headerSelectStyle, maxWidth: 220 }} className="remediation-filter-select">
+        <option value="">All projects</option>
+        {projects.map(p => (
+          <option key={p.id} value={p.id}>
+            {p.title}{p.number ? ` (${p.number})` : ""}
+          </option>
+        ))}
+      </select>
+      <select value={filterProjectNum} onChange={e => setFilterProjectNum(e.target.value)} style={{ ...headerSelectStyle, fontFamily: "'JetBrains Mono', monospace" }} className="remediation-filter-select">
+        <option value="">All numbers</option>
+        {projectNumbers.map(n => (
+          <option key={n} value={n}>{n}</option>
+        ))}
+      </select>
+      <button type="button" onClick={() => setMineOnly(!mineOnly)} className={`remediation-mine-toggle${mineOnly ? " active" : ""}`} style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 500,
+        border: `0.5px solid ${mineOnly ? "var(--bdr3)" : "var(--bdr2)"}`,
+        background: mineOnly ? "var(--lift)" : "transparent",
+        color: mineOnly ? "var(--fg)" : "var(--fg3)", cursor: "pointer",
+        fontFamily: "'Sora', sans-serif", whiteSpace: "nowrap", flexShrink: 0,
+      }}>
+        <User size={10} />
+        Mine only
+      </button>
+    </>
+  );
+
   return (
-    <AppShell sidebarExtra={statusFilters}>
-      <main className="main-area">
-        <div className="page-toolbar" style={{
+    <AppShell sidebarExtra={!isMobileView ? statusFilters : undefined}>
+      <main className={`main-area remediation-page${isMobileView ? " remediation-page--mobile" : ""}`}>
+        {isMobileView ? (
+          <div className="remediation-mobile-head">
+            <div className="remediation-mobile-title-row">
+              <ShieldAlert size={16} color="var(--fg3)" />
+              <div>
+                <h1 className="remediation-mobile-title">Remediation</h1>
+                <p className="remediation-mobile-subtitle">{filtered.length} item{filtered.length === 1 ? "" : "s"} in queue</p>
+              </div>
+            </div>
+            <div className="remediation-status-scroll">
+              {STATUS_FILTERS.map(({ value, label }) => (
+                <button
+                  key={value || "all"}
+                  type="button"
+                  className={`remediation-status-pill${filterStatus === value ? " active" : ""}`}
+                  onClick={() => setFilterStatus(value)}
+                >
+                  {label}
+                  {value && counts[value as keyof typeof counts] !== undefined && (
+                    <span className="remediation-status-pill-count">{counts[value as keyof typeof counts]}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="remediation-filters-toggle"
+              aria-expanded={showMobileFilters}
+              onClick={() => setShowMobileFilters(v => !v)}
+            >
+              <SlidersHorizontal size={14} strokeWidth={1.75} />
+              <span>More filters</span>
+              <ChevronDown
+                size={14}
+                strokeWidth={2}
+                style={{ transform: showMobileFilters ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              />
+            </button>
+            {showMobileFilters && (
+              <div className="remediation-mobile-filters">
+                {advancedFilters}
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
+        <div className="page-toolbar remediation-desktop-toolbar" style={{
           padding: "16px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", alignItems: "center", gap: 12,
           background: "var(--card)", flexShrink: 0, flexWrap: "wrap",
@@ -496,65 +586,11 @@ export default function RemediationPage() {
           <span className="page-toolbar-title" style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", flex: 1 }}>Remediation queue</span>
 
           <div className="page-toolbar-controls">
-          <select
-            value={filterSev}
-            onChange={e => setFilterSev(e.target.value)}
-            style={headerSelectStyle}
-          >
-            {SEV_FILTERS.map(({ value, label }) => (
-              <option key={value || "all"} value={value}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterDomain}
-            onChange={e => setFilterDomain(e.target.value)}
-            style={headerSelectStyle}
-          >
-            {DOMAIN_FILTERS.map(({ value, label }) => (
-              <option key={value || "all"} value={value}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterProject}
-            onChange={e => setFilterProject(e.target.value)}
-            style={{ ...headerSelectStyle, maxWidth: 220 }}
-          >
-            <option value="">All projects</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.title}{p.number ? ` (${p.number})` : ""}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={filterProjectNum}
-            onChange={e => setFilterProjectNum(e.target.value)}
-            style={{ ...headerSelectStyle, fontFamily: "'JetBrains Mono', monospace" }}
-          >
-            <option value="">All numbers</option>
-            {projectNumbers.map(n => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-
-          <button type="button" onClick={() => setMineOnly(!mineOnly)} style={{
-            display: "inline-flex", alignItems: "center", gap: 4,
-            padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 500,
-            border: `0.5px solid ${mineOnly ? "var(--bdr3)" : "var(--bdr2)"}`,
-            background: mineOnly ? "var(--lift)" : "transparent",
-            color: mineOnly ? "var(--fg)" : "var(--fg3)", cursor: "pointer",
-            fontFamily: "'Sora', sans-serif", whiteSpace: "nowrap", flexShrink: 0,
-          }}>
-            <User size={10} />
-            Mine only
-          </button>
+          {advancedFilters}
           </div>
         </div>
 
-        <div className="page-stats-bar" style={{
+        <div className="page-stats-bar remediation-desktop-stats" style={{
           padding: "10px 24px", borderBottom: "0.5px solid var(--bdr)",
           display: "flex", gap: 24, background: "var(--card2)", flexWrap: "wrap",
           flexShrink: 0,
@@ -571,9 +607,11 @@ export default function RemediationPage() {
             </div>
           ))}
         </div>
+        </>
+        )}
 
         <div className="main-scroll">
-          <div className="chat-scroll">
+          <div className={`chat-scroll remediation-list${isMobileView ? " remediation-list--mobile" : ""}`}>
           {loading && (
             <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
               Loading...

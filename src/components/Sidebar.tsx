@@ -59,6 +59,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
   const [chatNavOpen, setChatNavOpen]     = useState(isChat && !isAssess);
+  const [mobileChatsOpen, setMobileChatsOpen] = useState(false);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -150,7 +151,10 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       }}
     >
       <div className="sidebar-drawer-header">
-        <span className="sidebar-drawer-brand">Norvar</span>
+        <div className="sidebar-drawer-brand-row">
+          <Logo size={24} />
+          <span className="sidebar-drawer-brand-text">Norvar</span>
+        </div>
       </div>
 
       {!isMobileView && (
@@ -182,6 +186,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
       )}
 
+      {!isMobileView && (
       <div className="sidebar-org-switcher">
         <OrganizationSwitcher
           hidePersonal={false}
@@ -209,6 +214,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           }}
         />
       </div>
+      )}
 
       <div className="sidebar-scroll">
         {isMobileView ? (
@@ -230,14 +236,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             <Link href="/projects" className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}>
               <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
               Projects
-            </Link>
-            <Link href="/frameworks" className={`sidebar-nav-item${path === "/frameworks" ? " active" : ""}`}>
-              <Layers size={14} strokeWidth={path === "/frameworks" ? 2 : 1.75} />
-              Frameworks
-            </Link>
-            <Link href="/settings" className={`sidebar-nav-item${path === "/settings" ? " active" : ""}`}>
-              <Settings size={14} strokeWidth={path === "/settings" ? 2 : 1.75} />
-              Settings
             </Link>
           </div>
         ) : (
@@ -404,6 +402,57 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         )}
 
         {conversations.length > 0 && (isMobileView ? sidebarMode === "chat" : isChat) && (
+          isMobileView ? (
+            <>
+              <div className="sidebar-divider" />
+              <button
+                type="button"
+                className="sidebar-mobile-recents-toggle"
+                aria-expanded={mobileChatsOpen}
+                onClick={() => setMobileChatsOpen(v => !v)}
+              >
+                <span>Recent chats</span>
+                <ChevronDown
+                  size={14}
+                  strokeWidth={2}
+                  style={{ transform: mobileChatsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                />
+              </button>
+              {mobileChatsOpen && (
+                <div className="sidebar-mobile-recents-panel">
+                  {conversations.map(item => {
+                    const isActive = activeId === item.id;
+                    return (
+                      <div key={item.id} className="recent-item-row">
+                        <Link
+                          href={`/chat?id=${item.id}`}
+                          className={`recent-item${isActive ? " active" : ""}`}
+                        >
+                          <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                          <span className={`recent-text${isActive ? " active-text" : ""}`}>
+                            {item.title || "Untitled chat"}
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          className="recent-delete"
+                          aria-label={`Delete ${item.title || "chat"}`}
+                          disabled={deletingChatId === item.id}
+                          onClick={() => deleteConversation(item.id, item.title)}
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <Link href="/chat/history" className="sidebar-all-link">
+                    All chats
+                    <ChevronRight size={14} strokeWidth={2} />
+                  </Link>
+                </div>
+              )}
+            </>
+          ) : (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent chats</div>
@@ -437,6 +486,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
               <ChevronRight size={14} strokeWidth={2} />
             </Link>
           </>
+          )
         )}
 
         {extra && (
