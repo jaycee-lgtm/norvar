@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, OrganizationSwitcher, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 
@@ -44,7 +44,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
   const searchParams = useSearchParams();
   const { user }     = useUser();
   const isChat     = path === "/chat" || path.startsWith("/chat/");
-  const isAssess   = path === "/assess";
+  const isAssess   = path === "/assess" || path === "/history";
   const isProjects = path.startsWith("/projects");
   const sidebarMode = isAssess ? "assess" as const : "chat" as const;
   const activeId     = searchParams.get("id");
@@ -55,6 +55,8 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
   const [projects,      setProjects]      = useState<RecentProject[]>([]);
   const [deletingId,    setDeletingId]    = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
+  const [chatNavOpen, setChatNavOpen]     = useState(isChat && !isAssess);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -85,6 +87,11 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
         .catch(() => {});
     }
   }, [path, searchParams.toString(), isChat, isAssess, isProjects]);
+
+  useEffect(() => {
+    if (isAssess) setAssessNavOpen(true);
+    if (isChat && !isAssess) setChatNavOpen(true);
+  }, [path, isAssess, isChat]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -131,16 +138,8 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
     : "N";
 
   const mainNav = [
-    { href: "/chat", label: "Chat", icon: MessageSquare, active: path === "/chat" },
-    { href: "/assess", label: "Assessments", icon: FileSearch, active: isAssess },
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
-    {
-      href: isAssess || path === "/history" ? "/history" : "/chat/history",
-      label: "History",
-      icon: LayoutDashboard,
-      active: path === "/history" || path === "/chat/history",
-    },
   ];
 
   return (
@@ -194,6 +193,74 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
 
       <div className="sidebar-scroll">
         <div style={{ padding: "0 0 4px" }}>
+          <div className="sidebar-nav-group">
+            <div className="sidebar-nav-group-row">
+              <Link
+                href="/chat"
+                className={`sidebar-nav-item sidebar-nav-group-main${path === "/chat" ? " active" : ""}`}
+              >
+                <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
+                Chat
+              </Link>
+              <button
+                type="button"
+                className="sidebar-nav-toggle"
+                aria-expanded={chatNavOpen}
+                aria-label={chatNavOpen ? "Collapse chat menu" : "Expand chat menu"}
+                onClick={() => setChatNavOpen(v => !v)}
+              >
+                <ChevronDown
+                  size={12}
+                  strokeWidth={2}
+                  style={{ transform: chatNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                />
+              </button>
+            </div>
+            {chatNavOpen && (
+              <Link
+                href="/chat/history"
+                className={`sidebar-nav-subitem${path === "/chat/history" ? " active" : ""}`}
+              >
+                <LayoutDashboard size={12} strokeWidth={path === "/chat/history" ? 2 : 1.75} />
+                History
+              </Link>
+            )}
+          </div>
+
+          <div className="sidebar-nav-group">
+            <div className="sidebar-nav-group-row">
+              <Link
+                href="/assess"
+                className={`sidebar-nav-item sidebar-nav-group-main${path === "/assess" ? " active" : ""}`}
+              >
+                <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
+                Assessments
+              </Link>
+              <button
+                type="button"
+                className="sidebar-nav-toggle"
+                aria-expanded={assessNavOpen}
+                aria-label={assessNavOpen ? "Collapse assessments menu" : "Expand assessments menu"}
+                onClick={() => setAssessNavOpen(v => !v)}
+              >
+                <ChevronDown
+                  size={12}
+                  strokeWidth={2}
+                  style={{ transform: assessNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                />
+              </button>
+            </div>
+            {assessNavOpen && (
+              <Link
+                href="/history"
+                className={`sidebar-nav-subitem${path === "/history" ? " active" : ""}`}
+              >
+                <LayoutDashboard size={12} strokeWidth={path === "/history" ? 2 : 1.75} />
+                History
+              </Link>
+            )}
+          </div>
+
           {mainNav.map(({ href, label, icon: Icon, active }) => (
             <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
               <Icon size={14} strokeWidth={active ? 2 : 1.75} />
@@ -246,7 +313,7 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
           </Link>
         </div>
 
-        {assessments.length > 0 && isAssess && (
+        {assessments.length > 0 && (isAssess || path === "/history") && (
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent assessments</div>
