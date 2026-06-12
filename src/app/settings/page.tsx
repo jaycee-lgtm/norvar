@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import AiSettingsPanel from "@/components/AiSettingsPanel";
+import GapOwnerRolesPanel from "@/components/GapOwnerRolesPanel";
 import { UserProfile } from "@clerk/nextjs";
 
 export default function SettingsPage() {
@@ -13,6 +14,8 @@ export default function SettingsPage() {
           </h1>
 
           <AiSettingsPanel />
+
+          <GapOwnerRolesPanel />
 
           <p className="stag" style={{ marginBottom: 8 }}>Account</p>
           <h2 style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.03em", marginBottom: 16, fontFamily: "'Sora', sans-serif" }}>

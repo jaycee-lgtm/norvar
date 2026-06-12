@@ -8,6 +8,7 @@ import { gapKeyFromTitle } from "@/lib/gap-chat";
 import { sortBySeverity } from "@/lib/remediation";
 import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
 import { sendEscalationEmail } from "@/lib/email";
+import { rolesForAssignees } from "@/lib/org-assignee-roles-server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -175,8 +176,10 @@ export async function GET(req: NextRequest) {
 
 // POST — add gap(s) to remediation queue
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
 
   const { assessment_id, assessment_number, project_title, gaps, assigned_to, due_date } = await req.json();
   if (!assessment_id || !gaps?.length) {
@@ -196,6 +199,11 @@ export async function POST(req: NextRequest) {
   const resolvedTitle  = project_title ?? assessment?.title ?? null;
   const resolvedNumber = assessment_number ?? assessment?.assessment_number ?? null;
 
+  const assigneeIds = assigned_to?.length
+    ? Array.from(new Set([userId, ...assigned_to]))
+    : [userId];
+  const defaultRoles = await rolesForAssignees(activeOrgId, assigneeIds);
+
   const items = gaps.map((gap: Record<string, unknown>) => {
     const gapKey = (gap.gap_key as string)
       ?? gapKeyFromTitle(String(gap.title), String(gap.severity));
@@ -213,12 +221,8 @@ export async function POST(req: NextRequest) {
       gap_frameworks:    gap.frameworks ?? [],
       remediation_steps: gap.remediation,
       messages:          priorMessages,
-      assigned_to:       assigned_to?.length
-                           ? Array.from(new Set([userId, ...assigned_to]))
-                           : [userId],
-      assignee_meta:     touchAssigneeMeta({}, assigned_to?.length
-                           ? Array.from(new Set([userId, ...assigned_to]))
-                           : [userId]),
+      assigned_to:       assigneeIds,
+      assignee_meta:     touchAssigneeMeta({}, assigneeIds, defaultRoles),
       created_by:        userId,
       due_date:          due_date ?? null,
       status:            "open",
@@ -308,6 +312,8 @@ export async function PATCH(req: NextRequest) {
 
     if (!targetId) return Response.json({ error: "Invalid assignee" }, { status: 400 });
 
+    const projectDefaultRoles = await rolesForAssignees(activeOrgId, [targetId]);
+
     for (const item of projectItems) {
       let newAssignees = [...(item.assigned_to ?? [])];
       if (reassign_to || reassign_email) {
@@ -318,6 +324,7 @@ export async function PATCH(req: NextRequest) {
       const assignee_meta = touchAssigneeMeta(
         (item.assignee_meta as AssigneeMeta) ?? {},
         newAssignees,
+        projectDefaultRoles,
       );
       await supabase.from("remediation_items").update({ assigned_to: newAssignees, assignee_meta }).eq("id", item.id);
       await supabase.from("remediation_activity").insert({
@@ -491,20 +498,24 @@ export async function PATCH(req: NextRequest) {
     if (escalation_status === "closed") updates.status = "in_progress";
   }
 
-  if (assignee_role && assignee_id && (await canManage())) {
-    const meta = touchAssigneeMeta(
-      (current.assignee_meta as AssigneeMeta) ?? {},
-      current.assigned_to ?? [],
-      { [String(assignee_id)]: String(assignee_role).trim() },
+  if (assignee_role || assignee_id) {
+    return Response.json(
+      { error: "Gap owner roles can only be changed in Settings" },
+      { status: 400 },
     );
-    updates.assignee_meta = meta;
-    activityAction        = "assigned";
-    activityDetail          = "Assignee role updated";
   }
 
   if (due_date !== undefined) updates.due_date = due_date;
 
   let newAssignees = [...(current.assigned_to ?? [])];
+  let assigneeDefaultRoles: Record<string, string> = {};
+
+  const applyAssigneeMeta = (userIds: string[]) =>
+    touchAssigneeMeta(
+      (current.assignee_meta as AssigneeMeta) ?? {},
+      userIds,
+      assigneeDefaultRoles,
+    );
 
   if (reassign_to) {
     const denied = await assertCanAssign(userId, activeOrgId, reassign_to);
@@ -513,11 +524,9 @@ export async function PATCH(req: NextRequest) {
     newAssignees        = [reassign_to];
     activityAction      = "assigned";
     activityDetail      = `Reassigned to ${profiles[reassign_to]?.name ?? "assignee"}`;
+    assigneeDefaultRoles = await rolesForAssignees(activeOrgId, newAssignees);
     updates.assigned_to = newAssignees;
-    updates.assignee_meta = touchAssigneeMeta(
-      (current.assignee_meta as AssigneeMeta) ?? {},
-      newAssignees,
-    );
+    updates.assignee_meta = applyAssigneeMeta(newAssignees);
   } else if (reassign_email) {
     const profile = await findUserByEmail(reassign_email);
     if (!profile) return Response.json({ error: "No Norvar user found with that email" }, { status: 404 });
@@ -526,11 +535,9 @@ export async function PATCH(req: NextRequest) {
     newAssignees        = [profile.id];
     activityAction      = "assigned";
     activityDetail      = `Reassigned to ${profile.name}`;
+    assigneeDefaultRoles = await rolesForAssignees(activeOrgId, newAssignees);
     updates.assigned_to = newAssignees;
-    updates.assignee_meta = touchAssigneeMeta(
-      (current.assignee_meta as AssigneeMeta) ?? {},
-      newAssignees,
-    );
+    updates.assignee_meta = applyAssigneeMeta(newAssignees);
   } else {
     if (assigned_to) newAssignees = assigned_to;
 
@@ -570,11 +577,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (assigned_to || add_assignee || add_assignee_email || remove_assignee) {
+      assigneeDefaultRoles = await rolesForAssignees(activeOrgId, newAssignees);
       updates.assigned_to = newAssignees;
-      updates.assignee_meta = touchAssigneeMeta(
-        (current.assignee_meta as AssigneeMeta) ?? {},
-        newAssignees,
-      );
+      updates.assignee_meta = applyAssigneeMeta(newAssignees);
       if (!activityDetail) {
         activityAction = "assigned";
         activityDetail = "Assignees updated";
@@ -583,9 +588,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (updates.assigned_to && !updates.assignee_meta) {
+    const userIds = updates.assigned_to as string[];
+    const defaultRoles = await rolesForAssignees(activeOrgId, userIds);
     updates.assignee_meta = touchAssigneeMeta(
       (current.assignee_meta as AssigneeMeta) ?? {},
-      updates.assigned_to as string[],
+      userIds,
+      defaultRoles,
     );
   }
 

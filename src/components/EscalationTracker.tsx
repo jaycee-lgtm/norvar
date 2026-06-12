@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Bell, Clock, User } from "lucide-react";
 import {
@@ -51,9 +52,7 @@ export default function EscalationTracker({
 }: EscalationTrackerProps) {
   const [renotifyBusy, setRenotifyBusy] = useState(false);
   const [statusBusy, setStatusBusy]     = useState(false);
-  const [roleBusy, setRoleBusy]         = useState(false);
   const [error, setError]               = useState("");
-  const [roleEdits, setRoleEdits]       = useState<Record<string, string>>({});
 
   const currentStep = escalationStepIndex(escalationStatus ?? undefined);
   const meta        = assigneeMeta ?? {};
@@ -96,27 +95,6 @@ export default function EscalationTracker({
     }
   };
 
-  const saveAssigneeRole = async (userId: string) => {
-    const role = roleEdits[userId]?.trim();
-    if (!role) return;
-    setRoleBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/remediation", {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ id: itemId, assignee_id: userId, assignee_role: role }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not save role");
-      onUpdate();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not save role");
-    } finally {
-      setRoleBusy(false);
-    }
-  };
-
   if (!escalationEmail && assignedTo.length === 0) return null;
 
   return (
@@ -151,34 +129,17 @@ export default function EscalationTracker({
                       <> · held {formatDuration(since)} (since {fmtDate(since)})</>
                     )}
                   </div>
-                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                    <input
-                      value={roleEdits[id] ?? entry?.role ?? ""}
-                      onChange={e => setRoleEdits(prev => ({ ...prev, [id]: e.target.value }))}
-                      placeholder="Role / function"
-                      style={{
-                        flex: 1, padding: "4px 8px", borderRadius: 4, fontSize: 11,
-                        border: "0.5px solid var(--bdr2)", background: "var(--card)",
-                        color: "var(--fg)", fontFamily: "'Sora', sans-serif",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={roleBusy}
-                      onClick={() => saveAssigneeRole(id)}
-                      style={{
-                        padding: "4px 8px", borderRadius: 4, fontSize: 10,
-                        border: "0.5px solid var(--bdr2)", background: "var(--lift)",
-                        color: "var(--fg2)", cursor: "pointer",
-                      }}
-                    >
-                      Save
-                    </button>
-                  </div>
                 </div>
               </div>
             );
           })}
+          <p style={{ fontSize: 10, color: "var(--fg4)", marginTop: 8, marginBottom: 0, fontFamily: "'Sora', sans-serif" }}>
+            Roles are managed in{" "}
+            <Link href="/settings" style={{ color: "var(--fg2)", textDecoration: "underline" }}>
+              Settings
+            </Link>
+            .
+          </p>
         </div>
       )}
 

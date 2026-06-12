@@ -30,15 +30,16 @@ export function formatDuration(iso: string | null | undefined): string {
 export function touchAssigneeMeta(
   current: AssigneeMeta,
   userIds: string[],
-  roles?: Record<string, string>,
+  defaultRoles?: Record<string, string>,
 ): AssigneeMeta {
   const now  = new Date().toISOString();
   const next: AssigneeMeta = { ...current };
   for (const id of userIds) {
+    const role = defaultRoles?.[id]?.trim() ?? "";
     if (!next[id]) {
-      next[id] = { role: roles?.[id] ?? "", since: now };
-    } else if (roles?.[id] && roles[id] !== next[id].role) {
-      next[id] = { ...next[id], role: roles[id] };
+      next[id] = { role, since: now };
+    } else if (!next[id].role && role) {
+      next[id] = { ...next[id], role };
     }
   }
   for (const id of Object.keys(next)) {
