@@ -21,6 +21,12 @@ type RecentConversation = {
   updated_at: string;
 };
 
+type RecentProject = {
+  id:    string;
+  name:  string;
+  color: string;
+};
+
 const TIER = {
   high:   { dot: "var(--rh)", badge: "var(--rh)", bg: "var(--rh-bg)", bdr: "var(--rh-bdr)" },
   medium: { dot: "var(--rm)", badge: "var(--rm)", bg: "var(--rm-bg)", bdr: "var(--rm-bdr)" },
@@ -37,14 +43,18 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { user }     = useUser();
-  const isChat   = path === "/chat" || path.startsWith("/chat/");
-  const isAssess = path === "/assess";
+  const isChat     = path === "/chat" || path.startsWith("/chat/");
+  const isAssess   = path === "/assess";
+  const isProjects = path.startsWith("/projects");
   const sidebarMode = isAssess ? "assess" as const : "chat" as const;
   const activeId     = searchParams.get("id");
+  const activeProjectId = path.startsWith("/projects/") ? path.split("/")[2] : null;
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [projects,      setProjects]      = useState<RecentProject[]>([]);
   const [deletingId,    setDeletingId]    = useState<string | null>(null);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -59,10 +69,22 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
         .then(r => r.json())
         .then(d => setConversations(d.conversations || []))
         .catch(() => {});
-    } else {
-      loadAssessments();
+      return;
     }
-  }, [path, searchParams.toString(), isChat]);
+    if (isAssess) {
+      loadAssessments();
+      return;
+    }
+    if (isProjects) {
+      fetch("/api/folders")
+        .then(r => r.json())
+        .then(d => {
+          const rows = (d.folders ?? []) as RecentProject[];
+          setProjects(rows.slice(0, 8));
+        })
+        .catch(() => {});
+    }
+  }, [path, searchParams.toString(), isChat, isAssess, isProjects]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -81,6 +103,26 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
       alert(e instanceof Error ? e.message : "Could not delete assessment");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const deleteConversation = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title || "Untitled chat"}"?`)) return;
+    setDeletingChatId(id);
+    try {
+      const res = await fetch("/api/conversations", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setConversations(prev => prev.filter(c => c.id !== id));
+      if (activeId === id) router.push("/chat");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Could not delete chat");
+    } finally {
+      setDeletingChatId(null);
     }
   };
 
@@ -165,11 +207,31 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
         <div style={{ padding: "0 0 4px" }}>
           <Link
             href="/projects"
-            className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}
+            className={`sidebar-nav-item${path === "/projects" ? " active" : ""}`}
           >
-            <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
+            <Briefcase size={14} strokeWidth={path === "/projects" ? 2 : 1.75} />
             All projects
           </Link>
+          {isProjects && projects.map(project => (
+            <Link
+              key={project.id}
+              href={`/projects/${project.id}`}
+              className={`sidebar-nav-item recent-project-item${activeProjectId === project.id ? " active" : ""}`}
+              style={{ paddingLeft: 22 }}
+            >
+              <span
+                style={{
+                  width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                  background: project.color || "var(--fg3)",
+                }}
+              />
+              <span style={{
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {project.name}
+              </span>
+            </Link>
+          ))}
         </div>
 
         <div className="sidebar-divider" />
@@ -222,12 +284,31 @@ function SidebarInner({ extra }: { extra?: ReactNode }) {
           <>
             <div className="sidebar-divider" />
             <div className="sidebar-section">Recent chats</div>
-            {conversations.map(item => (
-              <Link key={item.id} href={`/chat?id=${item.id}`} className="recent-item">
-                <div className="recent-dot" style={{ background: "var(--fg3)" }} />
-                <span className="recent-text">{item.title || "Untitled chat"}</span>
-              </Link>
-            ))}
+            {conversations.map(item => {
+              const isActive = activeId === item.id;
+              return (
+                <div key={item.id} className="recent-item-row">
+                  <Link
+                    href={`/chat?id=${item.id}`}
+                    className={`recent-item${isActive ? " active" : ""}`}
+                  >
+                    <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                    <span className={`recent-text${isActive ? " active-text" : ""}`}>
+                      {item.title || "Untitled chat"}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    className="recent-delete"
+                    aria-label={`Delete ${item.title || "chat"}`}
+                    disabled={deletingChatId === item.id}
+                    onClick={() => deleteConversation(item.id, item.title)}
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+              );
+            })}
           </>
         )}
 

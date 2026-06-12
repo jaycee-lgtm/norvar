@@ -42,3 +42,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });
   }
 }
+
+// DELETE — remove a saved conversation
+export async function DELETE(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!existing) {
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    }
+
+    await supabase
+      .from("folder_items")
+      .delete()
+      .eq("item_type", "chat")
+      .eq("item_id", id);
+
+    const { error } = await supabase
+      .from("conversations")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  } catch (err: unknown) {
+    console.error("Delete conversation error:", err);
+    return NextResponse.json({ error: "Failed to delete conversation" }, { status: 500 });
+  }
+}

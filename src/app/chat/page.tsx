@@ -10,7 +10,7 @@ import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { CHAT_AGENT } from "@/lib/agents";
-import { ArrowUp, Loader2, ShieldAlert, SquarePen, Info } from "lucide-react";
+import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -102,6 +102,7 @@ function Chat() {
   const [loadingSaved,   setLoadingSaved]   = useState(false);
   const [error,          setError]          = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [deleting, setDeleting]             = useState(false);
 
   const inputRef         = useRef<HTMLTextAreaElement>(null);
   const scrollRef        = useRef<HTMLDivElement>(null);
@@ -270,6 +271,28 @@ function Chat() {
     router.replace("/chat", { scroll: false });
   };
 
+  const deleteChat = async () => {
+    if (!conversationId) return;
+    const title = messages.find(m => m.role === "user")?.content.slice(0, 60) || "this chat";
+    if (!confirm(`Delete "${title}"?`)) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/conversations", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: conversationId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      startNew();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not delete chat");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const isHome = messages.length === 0 && !loadingSaved;
 
   const streamCursor = (
@@ -400,6 +423,23 @@ function Chat() {
                         onSelect={q => sendWithVoice(q)}
                         disabled={loading}
                       />
+                      {conversationId && (
+                        <button
+                          type="button"
+                          onClick={() => { void deleteChat(); }}
+                          disabled={deleting || loading}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 5,
+                            fontSize: 11, color: "var(--rh)", background: "transparent",
+                            border: "none", cursor: deleting || loading ? "not-allowed" : "pointer",
+                            fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em", padding: 0,
+                            opacity: deleting || loading ? 0.5 : 1,
+                          }}
+                        >
+                          <Trash2 size={11} strokeWidth={2} />
+                          Delete chat
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={startNew}
