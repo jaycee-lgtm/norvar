@@ -577,6 +577,7 @@ function Home() {
   const followUpRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
   const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef  = useRef<TypewriterDrain | null>(null);
+  const assessingRef   = useRef(false);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -752,6 +753,9 @@ function Home() {
   };
 
   const completeGuidedAssessment = async (answers: AssessmentAnswers) => {
+    if (assessingRef.current) return;
+    assessingRef.current = true;
+
     setGuidedActive(false);
     setActiveGuidedQuestionId(null);
     const { description, meta } = compileAssessmentPrompt(answers, pendingDesc);
@@ -768,16 +772,21 @@ function Home() {
 
     const tags = buildTagsFromValues(guidedJurisdictions, guidedDomains, guidedDataTypes, guidedSector);
     setMessages(prev => prev.filter(m => m.role !== "thinking" || !!m.status));
-    await runAssessment(
-      description,
-      tags,
-      guidedDomains,
-      guidedJurisdictions,
-      guidedDataTypes,
-      guidedSector,
-      folderId,
-      { guidedScoping: true },
-    );
+
+    try {
+      await runAssessment(
+        description,
+        tags,
+        guidedDomains,
+        guidedJurisdictions,
+        guidedDataTypes,
+        guidedSector,
+        folderId,
+        { guidedScoping: true },
+      );
+    } finally {
+      assessingRef.current = false;
+    }
   };
 
   const commitGuidedAnswer = (questionId: string, value: string | string[], userLabel: string) => {
@@ -916,6 +925,7 @@ function Home() {
       }
       let receivedDone = false;
       await readSSEStream(res, (event) => {
+        if (event.type === "ping") return;
         if (event.type === "status") {
           setMessages(prev => updateLastMessage(prev, "thinking", { status: event.text }));
         } else if (event.type === "token") {
@@ -928,34 +938,48 @@ function Home() {
           const delta = summary.slice(streamingText.length);
           streamingText = summary;
           if (delta) typewriterRef.current?.enqueue(delta);
-        } else if (event.type === "done") {
+        } else if (event.type === "done" || event.type === "saved") {
           receivedDone = true;
           typewriterRef.current?.reset();
           const assessment = event.assessment as Assessment | undefined;
           if (!assessment) throw new Error("Assessment failed");
           if (assessment.id) setAssessmentId(assessment.id);
           summaryText = assessment.summary || summaryText || streamingText;
-          setMessages(prev => {
-            const next = [...prev];
-            const idx  = next.findLastIndex(m => m.role === "thinking");
-            if (idx >= 0) next[idx] = { role: "assistant", assessment };
-            else next.push({ role: "assistant", assessment });
-            return next;
-          });
-          clearAll();
-          setContractText("");
-          setContractName("");
-          setSelectedDocumentIds([]);
-          setPendingDesc("");
-          setGuidedActive(false);
-          setGuidedAnswers({});
-          setGuidedMultiSelections([]);
-          setActiveGuidedQuestionId(null);
+          if (event.type === "done") {
+            setMessages(prev => {
+              const next = [...prev];
+              const idx  = next.findLastIndex(m => m.role === "thinking");
+              if (idx >= 0) next[idx] = { role: "assistant", assessment };
+              else next.push({ role: "assistant", assessment });
+              return next;
+            });
+            clearAll();
+            setContractText("");
+            setContractName("");
+            setSelectedDocumentIds([]);
+            setPendingDesc("");
+            setGuidedActive(false);
+            setGuidedAnswers({});
+            setGuidedMultiSelections([]);
+            setActiveGuidedQuestionId(null);
+          } else if (event.type === "saved") {
+            setMessages(prev => {
+              const next = [...prev];
+              const idx  = next.findLastIndex(m => m.role === "assistant");
+              if (idx >= 0) {
+                const msg = next[idx] as Extract<Message, { role: "assistant" }>;
+                next[idx] = { role: "assistant", assessment: { ...msg.assessment, ...assessment } };
+              }
+              return next;
+            });
+          }
+        } else if (event.type === "warning") {
+          setError(event.text ?? "Assessment saved with warnings.");
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
       });
-      if (!receivedDone) throw new Error("Assessment did not complete. Please try again.");
+      if (!receivedDone) throw new Error("Assessment did not complete. The connection may have timed out — please try again.");
     } catch (e: unknown) {
       typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -1237,15 +1261,17 @@ function Home() {
             {isHome && (
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
                 <div className={isMobileView ? "home-hero-block" : undefined}>
-                  <Logo size={isMobileView ? 44 : 40} />
-                  {isMobileView ? (
-                    <h1 className="mobile-home-serif">What are you building?</h1>
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                      <h1 className="home-heading">What are you building?</h1>
-                      <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
-                    </div>
-                  )}
+                  <div className="home-hero-row">
+                    <Logo variant="icon" size={isMobileView ? 36 : 32} />
+                    {isMobileView ? (
+                      <h1 className="mobile-home-serif">What are you building?</h1>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <h1 className="home-heading">What are you building?</h1>
+                        <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {InputBar}
                 {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}

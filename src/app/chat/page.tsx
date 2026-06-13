@@ -381,15 +381,17 @@ function Chat() {
           {isHome && (
             <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
               <div className={isMobileView ? "home-hero-block" : undefined}>
-                <Logo size={isMobileView ? 44 : 40} />
-                {isMobileView ? (
-                  <h1 className="mobile-home-serif">How can I help?</h1>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                    <h1 className="home-heading">How can I help?</h1>
-                    <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
-                  </div>
-                )}
+                <div className="home-hero-row">
+                  <Logo variant="icon" size={isMobileView ? 36 : 32} />
+                  {isMobileView ? (
+                    <h1 className="mobile-home-serif">How can I help?</h1>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <h1 className="home-heading">How can I help?</h1>
+                      <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>

@@ -304,6 +304,23 @@ body {
   font-family: 'Sora', sans-serif;
 }
 
+.home-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.home-hero-row .home-heading {
+  margin-bottom: 0;
+}
+
+.home-hero-row .mobile-home-serif {
+  margin-top: 0;
+  text-align: left;
+}
+
 .home-sub {
   font-size: 13px; color: var(--fg2);
   line-height: 1.65; max-width: 340px;
@@ -2137,6 +2154,10 @@ body {
     justify-content: center;
     padding: 24px 20px 16px;
     min-height: 0;
+  }
+
+  .home-hero-block .home-hero-row {
+    margin-bottom: 0;
   }
 
   .mobile-home-serif {

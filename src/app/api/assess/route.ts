@@ -79,6 +79,8 @@ function sse(data: object) {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   const enc = new TextEncoder();
   const { readable, writable } = new TransformStream<Uint8Array>();
@@ -165,8 +167,13 @@ export async function POST(req: NextRequest) {
       let fullText    = "";
       let pastSep     = false;
       let proseSentLen = 0;
+      let lastPing     = Date.now();
 
       for await (const event of stream as AsyncIterable<{ type: string; delta?: { type?: string; text?: string } }>) {
+        if (Date.now() - lastPing > 12_000) {
+          await send({ type: "ping" });
+          lastPing = Date.now();
+        }
         if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
           const chunk = event.delta.text ?? "";
           fullText += chunk;
@@ -220,7 +227,11 @@ export async function POST(req: NextRequest) {
 
       assessment.summary = fullText.split("---JSON---")[0].trim() || (assessment.summary as string) || "";
 
-      await send({ type: "status", text: "Finalising assessment..." });
+      // Deliver results to the client before persistence so a slow/failed save
+      // cannot strand the UI after Claude has already finished.
+      await send({ type: "done", assessment: { ...assessment } });
+
+      await send({ type: "status", text: "Saving assessment..." });
 
       const messageTags = tags.length > 0
         ? tags
@@ -244,23 +255,21 @@ export async function POST(req: NextRequest) {
 
       if (saveError) {
         console.error("Assess save error:", saveError);
-        await send({ type: "error", text: "Could not save assessment. Please try again." });
-        await writer.close();
-        return;
+        await send({ type: "warning", text: "Assessment completed but could not be saved to history." });
+      } else {
+        assessment.id                = saved?.id;
+        assessment.assessment_number = saved?.assessment_number;
+
+        if (folder_id && saved?.id) {
+          await supabase.from("folder_items").upsert({
+            folder_id,
+            item_type: "assessment",
+            item_id:   saved.id,
+          });
+        }
+
+        await send({ type: "saved", assessment: { ...assessment } });
       }
-
-      assessment.id                = saved?.id;
-      assessment.assessment_number = saved?.assessment_number;
-
-      if (folder_id && saved?.id) {
-        await supabase.from("folder_items").upsert({
-          folder_id,
-          item_type: "assessment",
-          item_id:   saved.id,
-        });
-      }
-
-      await send({ type: "done", assessment });
     } catch (err: unknown) {
       console.error("Assess error:", err);
       await send({ type: "error", text: err instanceof Error ? err.message : "Assessment failed" });

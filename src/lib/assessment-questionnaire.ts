@@ -686,7 +686,12 @@ export function hasAssessmentAnswer(answers: AssessmentAnswers, question: Assess
 }
 
 export function getNextAssessmentQuestion(answers: AssessmentAnswers): AssessmentQuestion | null {
-  return getAssessmentQuestions(answers).find(q => !hasAssessmentAnswer(answers, q)) ?? null;
+  for (const q of getAssessmentQuestions(answers)) {
+    if (hasAssessmentAnswer(answers, q)) continue;
+    if (q.type === "text" && !q.required) continue;
+    return q;
+  }
+  return null;
 }
 
 export function mapQuestionnaireDomain(d: string): string {
