@@ -137,7 +137,7 @@ export default function ProjectsPage() {
     <AppShell>
       <main className="main-area">
         <div className="main-scroll">
-          <div className="page-body">
+          <div className="page-body" style={{ margin: "0 auto" }}>
             <div className="page-heading-row" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, gap: 12, flexWrap: "wrap" }}>
               <div>
                 <p className="stag" style={{ marginBottom: 8 }}>Projects</p>
