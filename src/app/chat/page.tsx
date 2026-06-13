@@ -382,7 +382,7 @@ function Chat() {
             <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
               <div className={isMobileView ? "home-hero-block" : undefined}>
                 <div className="home-hero-row">
-                  <Logo variant="hero" size={isMobileView ? 40 : 44} />
+                  <Logo variant="hero" className="home-hero-logo" size={isMobileView ? 46 : 52} />
                   <div className="home-hero-heading-wrap">
                     <h1 className="home-hero-title">How can I help?</h1>
                     {!isMobileView && (

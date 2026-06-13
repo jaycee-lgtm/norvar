@@ -308,8 +308,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 0;
   margin-bottom: 16px;
+}
+
+.home-hero-logo {
+  margin-right: -2px;
+  filter:
+    drop-shadow(0 0 10px rgba(139, 26, 26, 0.55))
+    drop-shadow(0 0 4px rgba(226, 226, 224, 0.35));
 }
 
 .home-hero-heading-wrap {
@@ -319,12 +326,12 @@ body {
 }
 
 .home-hero-title {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-size: clamp(32px, 4.5vw, 42px);
-  font-weight: 400;
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 500;
   color: var(--fg);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
   margin: 0;
 }
 
