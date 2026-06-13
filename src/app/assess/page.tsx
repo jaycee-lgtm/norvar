@@ -1197,10 +1197,13 @@ function Home() {
   );
 
   const InputBar = (
-    <div className={`input-wrap assess-composer${isMobileView ? " mobile-composer" : ""}`}>
-      {!isMobileView && (hasGuidedInputs || hasAttachedDocs) && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
-          {buildTags().map(tag => (
+    <div
+      className={isMobileView ? "home-composer-block" : "input-wrap"}
+      style={isMobileView ? undefined : { marginBottom: 24 }}
+    >
+      {(hasGuidedInputs || hasAttachedDocs) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
+          {!isMobileView && buildTags().map(tag => (
             <span key={tag} style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", fontFamily: "'Sora', sans-serif" }}>{tag}</span>
           ))}
           <SelectedDocumentChips
@@ -1216,7 +1219,7 @@ function Home() {
               </button>
             </span>
           )}
-          {hasGuidedInputs && (
+          {!isMobileView && hasGuidedInputs && (
             <button type="button" onClick={clearAll} style={{ fontSize: 10, color: "var(--fg3)", background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", fontFamily: "'Sora', sans-serif", display: "flex", alignItems: "center", gap: 3 }}>
               <X size={10} strokeWidth={2} /> Clear all
             </button>
@@ -1224,137 +1227,105 @@ function Home() {
         </div>
       )}
 
-      {isMobileView && hasAttachedDocs && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
-          <SelectedDocumentChips
-            documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
-            onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
-          />
-          {contractName && (
-            <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
-              <FileText size={10} strokeWidth={2} />
-              {contractName}
-              <button type="button" onClick={() => { setContractText(""); setContractName(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-                <X size={10} strokeWidth={2} color="var(--fg3)" />
-              </button>
-            </span>
-          )}
-        </div>
-      )}
-
       {isMobileView ? (
-        <div className="mobile-composer-input-row">
-          {!input.trim() && (
-            <span className="mobile-composer-prompt-label">
-              Assess with {ASSESS_AGENT.name}
-            </span>
-          )}
-          <div className="mobile-composer-attach">
-            {attachControl}
+        <div className="mobile-composer">
+          <div className="mobile-composer-input-row">
+            {!input.trim() && (
+              <span className="mobile-composer-prompt-label">
+                Assess with {ASSESS_AGENT.name}
+              </span>
+            )}
+            <div className="mobile-composer-attach">
+              {attachControl}
+            </div>
+            <textarea
+              ref={textareaRef}
+              className="input-textarea mobile-composer-field"
+              placeholder=""
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              rows={1}
+            />
           </div>
-          <textarea
-            ref={textareaRef}
-            className="input-textarea mobile-composer-field"
-            placeholder=""
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            rows={1}
-          />
+          <div className="mobile-composer-tools mobile-composer-tools--minimal">
+            <div className="mobile-mode-pill">
+              <ModeSelector current="assess" compact menuPlacement="top" />
+            </div>
+            <div className="mobile-composer-actions">
+              <VoiceInputIcon
+                isListening={voice.isListening}
+                isTranscribing={voice.isTranscribing}
+                isSpeaking={voice.isSpeaking}
+                voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                configured={voice.support.configured}
+                disabled={loading || inferring}
+                onStartListening={voice.startListening}
+                onStopListening={voice.stopListening}
+                onStopSpeaking={voice.stopSpeak}
+                agentName={ASSESS_AGENT.name}
+              />
+              <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+                {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
-      <>
-      <div className="input-bar assess-input-bar">
-        <textarea
-          ref={textareaRef}
-          className="input-textarea assess-input-textarea"
-          placeholder="Describe your product or deployment..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          rows={3}
-        />
-        {attachControl}
-        <VoiceInputIcon
-          isListening={voice.isListening}
-          isTranscribing={voice.isTranscribing}
-          isSpeaking={voice.isSpeaking}
-          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-          configured={voice.support.configured}
-          disabled={loading || inferring}
-          onStartListening={voice.startListening}
-          onStopListening={voice.stopListening}
-          onStopSpeaking={voice.stopSpeak}
-          agentName={ASSESS_AGENT.name}
-        />
-        <button type="button" className="send-btn assess-send-desktop" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-          {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-        </button>
-      </div>
-      {voice.voiceError && (
-        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
-      )}
-      <div className="input-chips assess-input-chips">
-        {openChip === "jurisdictions"
-          ? <ChipDropdown icon={<Globe size={11} strokeWidth={1.75} />} label="Jurisdictions" options={JURISDICTION_OPTIONS} selected={jurisdictions} onToggle={toggleMulti(setJurisdictions)} onClose={() => setOpenChip(null)} />
-          : <button type="button" className="chip" onClick={() => setOpenChip("jurisdictions")}><Globe size={11} strokeWidth={1.75} /> Jurisdictions{jurisdictions.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{jurisdictions.length}</span>}</button>
-        }
-        {openChip === "domains"
-          ? <ChipDropdown icon={<Layers size={11} strokeWidth={1.75} />} label="Domains" options={DOMAIN_OPTIONS} selected={domains} onToggle={toggleMulti(setDomains)} onClose={() => setOpenChip(null)} />
-          : <button type="button" className="chip" onClick={() => setOpenChip("domains")}><Layers size={11} strokeWidth={1.75} /> Domains{domains.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{domains.length}</span>}</button>
-        }
-        {openChip === "datatypes"
-          ? <ChipDropdown icon={<Database size={11} strokeWidth={1.75} />} label="Data types" options={DATA_TYPE_OPTIONS} selected={dataTypes} onToggle={toggleMulti(setDataTypes)} onClose={() => setOpenChip(null)} />
-          : <button type="button" className="chip" onClick={() => setOpenChip("datatypes")}><Database size={11} strokeWidth={1.75} /> Data types{dataTypes.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{dataTypes.length}</span>}</button>
-        }
-        {openChip === "sector"
-          ? <ChipDropdown icon={<Briefcase size={11} strokeWidth={1.75} />} label="Sector" options={SECTOR_OPTIONS} selected={sector} onToggle={toggleSingle(setSector)} onClose={() => setOpenChip(null)} multi={false} />
-          : <button type="button" className="chip" onClick={() => setOpenChip("sector")}><Briefcase size={11} strokeWidth={1.75} /> Sector{sector.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>1</span>}</button>
-        }
-      </div>
-      {fileError && (
-        <p style={{ fontSize: 11, color: "var(--rh)", margin: "8px 0 0", fontFamily: "'Sora', sans-serif" }}>
-          {fileError}
-        </p>
-      )}
-      </>
+        <>
+          <div className="input-bar">
+            <textarea
+              ref={textareaRef}
+              className="input-textarea"
+              placeholder="Describe your product or deployment..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              rows={1}
+            />
+            {attachControl}
+            <VoiceInputIcon
+              isListening={voice.isListening}
+              isTranscribing={voice.isTranscribing}
+              isSpeaking={voice.isSpeaking}
+              voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+              configured={voice.support.configured}
+              disabled={loading || inferring}
+              onStartListening={voice.startListening}
+              onStopListening={voice.stopListening}
+              onStopSpeaking={voice.stopSpeak}
+              agentName={ASSESS_AGENT.name}
+            />
+            <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+              {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+            </button>
+          </div>
+          <div className="input-chips" style={{ marginTop: 8 }}>
+            {openChip === "jurisdictions"
+              ? <ChipDropdown icon={<Globe size={11} strokeWidth={1.75} />} label="Jurisdictions" options={JURISDICTION_OPTIONS} selected={jurisdictions} onToggle={toggleMulti(setJurisdictions)} onClose={() => setOpenChip(null)} />
+              : <button type="button" className="chip" onClick={() => setOpenChip("jurisdictions")}><Globe size={11} strokeWidth={1.75} /> Jurisdictions{jurisdictions.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{jurisdictions.length}</span>}</button>
+            }
+            {openChip === "domains"
+              ? <ChipDropdown icon={<Layers size={11} strokeWidth={1.75} />} label="Domains" options={DOMAIN_OPTIONS} selected={domains} onToggle={toggleMulti(setDomains)} onClose={() => setOpenChip(null)} />
+              : <button type="button" className="chip" onClick={() => setOpenChip("domains")}><Layers size={11} strokeWidth={1.75} /> Domains{domains.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{domains.length}</span>}</button>
+            }
+            {openChip === "datatypes"
+              ? <ChipDropdown icon={<Database size={11} strokeWidth={1.75} />} label="Data types" options={DATA_TYPE_OPTIONS} selected={dataTypes} onToggle={toggleMulti(setDataTypes)} onClose={() => setOpenChip(null)} />
+              : <button type="button" className="chip" onClick={() => setOpenChip("datatypes")}><Database size={11} strokeWidth={1.75} /> Data types{dataTypes.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{dataTypes.length}</span>}</button>
+            }
+            {openChip === "sector"
+              ? <ChipDropdown icon={<Briefcase size={11} strokeWidth={1.75} />} label="Sector" options={SECTOR_OPTIONS} selected={sector} onToggle={toggleSingle(setSector)} onClose={() => setOpenChip(null)} multi={false} />
+              : <button type="button" className="chip" onClick={() => setOpenChip("sector")}><Briefcase size={11} strokeWidth={1.75} /> Sector{sector.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>1</span>}</button>
+            }
+          </div>
+        </>
       )}
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
-
-      {isMobileView && (
-      <>
+      {fileError && (
+        <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
+      )}
       {voice.voiceError && (
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
-      )}
-
-      <div className="mobile-composer-tools assess-composer-tools mobile-composer-tools--minimal">
-        <div className="mobile-mode-pill">
-          <ModeSelector current="assess" compact menuPlacement="top" />
-        </div>
-        <div className="mobile-composer-actions assess-composer-actions">
-          <VoiceInputIcon
-            isListening={voice.isListening}
-            isTranscribing={voice.isTranscribing}
-            isSpeaking={voice.isSpeaking}
-            voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-            configured={voice.support.configured}
-            disabled={loading || inferring}
-            onStartListening={voice.startListening}
-            onStopListening={voice.stopListening}
-            onStopSpeaking={voice.stopSpeak}
-            agentName={ASSESS_AGENT.name}
-          />
-          <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-            {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-          </button>
-        </div>
-      </div>
-      {fileError && (
-        <p style={{ fontSize: 11, color: "var(--rh)", margin: "8px 0 0", fontFamily: "'Sora', sans-serif" }}>
-          {fileError}
-        </p>
-      )}
-      </>
       )}
     </div>
   );
@@ -1400,9 +1371,7 @@ function Home() {
                     </>
                   )}
                 </div>
-                <div className={isMobileView ? "home-composer-block" : undefined}>
-                  {InputBar}
-                </div>
+                {InputBar}
                 {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
               </div>
             )}
