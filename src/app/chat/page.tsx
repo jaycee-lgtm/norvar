@@ -434,18 +434,23 @@ function Chat() {
                 {isMobileView ? (
                   <div className="mobile-composer">
                     <div className="mobile-composer-input-row">
+                      {!input.trim() && (
+                        <span className="mobile-composer-prompt-label">
+                          Chat with {CHAT_AGENT.name}
+                        </span>
+                      )}
+                      <div className="mobile-composer-attach">
+                        {attachControl}
+                      </div>
                       <textarea
                         ref={inputRef}
                         className="input-textarea mobile-composer-field"
-                        placeholder={`Chat with ${CHAT_AGENT.name}`}
+                        placeholder=""
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
                         rows={1}
                       />
-                      <div className="mobile-composer-attach">
-                        {attachControl}
-                      </div>
                     </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
@@ -638,16 +643,21 @@ function Chat() {
                   {isMobileView ? (
                   <div className="mobile-composer thread-composer">
                     <div className="mobile-composer-input-row">
+                      {!input.trim() && (
+                        <span className="mobile-composer-prompt-label">
+                          Chat with {CHAT_AGENT.name}
+                        </span>
+                      )}
+                      <div className="mobile-composer-attach">
+                        {attachControl}
+                      </div>
                       <input
                         className="chat-input-field mobile-composer-field"
-                        placeholder={`Chat with ${CHAT_AGENT.name}`}
+                        placeholder=""
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
                       />
-                      <div className="mobile-composer-attach">
-                        {attachControl}
-                      </div>
                     </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">

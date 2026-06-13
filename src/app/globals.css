@@ -748,13 +748,23 @@ body {
 .mobile-composer-input-row {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
 }
 
 .mobile-composer-input-row .mobile-composer-field {
   flex: 1;
   min-width: 0;
   width: auto;
+}
+
+.mobile-composer-prompt-label {
+  flex-shrink: 0;
+  font-size: 16px;
+  font-family: 'Sora', sans-serif;
+  color: var(--fg3);
+  line-height: 1.5;
+  padding: 0 0 10px 2px;
+  white-space: nowrap;
 }
 
 .mobile-composer-input-row .mobile-composer-attach {

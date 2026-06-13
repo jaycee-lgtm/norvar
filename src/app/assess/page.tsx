@@ -1166,9 +1166,24 @@ function Home() {
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
 
+  const hasAttachedDocs = !!contractName || selectedDocumentIds.length > 0;
+
+  const attachControl = (
+    <DocumentPicker
+      selectedIds={selectedDocumentIds}
+      onChange={setSelectedDocumentIds}
+      folderId={folderId}
+      disabled={loading || inferring || fileExtracting}
+      variant="icon"
+      onUpload={() => fileRef.current?.click()}
+      uploading={fileExtracting}
+      uploadAttached={!!contractName}
+    />
+  );
+
   const InputBar = (
     <div className="input-wrap assess-composer mobile-composer">
-      {!isMobileView && (hasGuidedInputs || contractName || selectedDocumentIds.length > 0) && (
+      {!isMobileView && (hasGuidedInputs || hasAttachedDocs) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
           {buildTags().map(tag => (
             <span key={tag} style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", fontFamily: "'Sora', sans-serif" }}>{tag}</span>
@@ -1194,6 +1209,45 @@ function Home() {
         </div>
       )}
 
+      {isMobileView && hasAttachedDocs && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+          <SelectedDocumentChips
+            documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+            onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+          />
+          {contractName && (
+            <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
+              <FileText size={10} strokeWidth={2} />
+              {contractName}
+              <button type="button" onClick={() => { setContractText(""); setContractName(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+                <X size={10} strokeWidth={2} color="var(--fg3)" />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
+
+      {isMobileView ? (
+        <div className="mobile-composer-input-row">
+          {!input.trim() && (
+            <span className="mobile-composer-prompt-label">
+              Assess with {ASSESS_AGENT.name}
+            </span>
+          )}
+          <div className="mobile-composer-attach">
+            {attachControl}
+          </div>
+          <textarea
+            ref={textareaRef}
+            className="input-textarea mobile-composer-field"
+            placeholder=""
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            rows={1}
+          />
+        </div>
+      ) : (
       <div className="input-bar assess-input-bar">
         <textarea
           ref={textareaRef}
@@ -1204,6 +1258,7 @@ function Home() {
           onKeyDown={handleKey}
           rows={1}
         />
+        {attachControl}
         <VoiceInputIcon
           isListening={voice.isListening}
           isTranscribing={voice.isTranscribing}
@@ -1220,6 +1275,8 @@ function Home() {
           {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
         </button>
       </div>
+      )}
+      <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       {voice.voiceError && (
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
@@ -1246,17 +1303,6 @@ function Home() {
           ? <ChipDropdown icon={<Briefcase size={11} strokeWidth={1.75} />} label="Sector" options={SECTOR_OPTIONS} selected={sector} onToggle={toggleSingle(setSector)} onClose={() => setOpenChip(null)} multi={false} />
           : <button type="button" className="chip" onClick={() => setOpenChip("sector")}><Briefcase size={11} strokeWidth={1.75} /> Sector{sector.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>1</span>}</button>
         }
-        <button type="button" className="chip" disabled={fileExtracting} onClick={() => fileRef.current?.click()}>
-          <FileText size={11} strokeWidth={1.75} />
-          {fileExtracting ? "Reading doc…" : contractName ? "Replace doc" : "Upload doc"}
-        </button>
-        <DocumentPicker
-          selectedIds={selectedDocumentIds}
-          onChange={setSelectedDocumentIds}
-          disabled={loading || inferring}
-          label="Reference docs"
-        />
-        <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       </div>
       )}
       {fileError && (
@@ -1456,13 +1502,40 @@ function Home() {
                     )}
                     {isMobileView ? (
                       <div className="mobile-composer thread-composer">
-                        <input
-                          className="chat-input-field mobile-composer-field"
-                          placeholder={hasAssessment ? "Ask a follow-up..." : `Assess with ${ASSESS_AGENT.name}`}
-                          value={input}
-                          onChange={e => setInput(e.target.value)}
-                          onKeyDown={handleKey}
-                        />
+                        {hasAttachedDocs && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+                            <SelectedDocumentChips
+                              documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+                              onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+                            />
+                            {contractName && (
+                              <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
+                                <FileText size={10} strokeWidth={2} />
+                                {contractName}
+                                <button type="button" onClick={() => { setContractText(""); setContractName(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+                                  <X size={10} strokeWidth={2} color="var(--fg3)" />
+                                </button>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div className="mobile-composer-input-row">
+                          {!input.trim() && (
+                            <span className="mobile-composer-prompt-label">
+                              {hasAssessment ? "Ask a follow-up..." : `Assess with ${ASSESS_AGENT.name}`}
+                            </span>
+                          )}
+                          <div className="mobile-composer-attach">
+                            {attachControl}
+                          </div>
+                          <input
+                            className="chat-input-field mobile-composer-field"
+                            placeholder=""
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={handleKey}
+                          />
+                        </div>
                         <div className="mobile-composer-tools mobile-composer-tools--minimal">
                           <div className="mobile-mode-pill">
                             <ModeSelector current="assess" compact menuPlacement="top" />
@@ -1489,6 +1562,7 @@ function Home() {
                       </div>
                     ) : (
                     <div className="chat-input-bar">
+                      {attachControl}
                       <input
                         className="chat-input-field"
                         placeholder={hasAssessment ? "Ask a follow-up question about this assessment..." : "Describe another deployment..."}
