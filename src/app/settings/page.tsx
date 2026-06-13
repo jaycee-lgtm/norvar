@@ -1,6 +1,7 @@
 import AppShell from "@/components/AppShell";
 import AiSettingsPanel from "@/components/AiSettingsPanel";
 import GapOwnerRolesPanel from "@/components/GapOwnerRolesPanel";
+import OrgSettingsPanel from "@/components/OrgSettingsPanel";
 import { UserProfile } from "@clerk/nextjs";
 
 export default function SettingsPage() {
@@ -14,6 +15,8 @@ export default function SettingsPage() {
           </h1>
 
           <AiSettingsPanel />
+
+          <OrgSettingsPanel />
 
           <GapOwnerRolesPanel />
 

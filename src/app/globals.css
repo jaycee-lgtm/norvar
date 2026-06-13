@@ -1505,19 +1505,13 @@ body {
 }
 .assignee-picker-row:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.sidebar-org-switcher {
-  padding: 0 10px 8px;
+.settings-org-switcher {
+  max-width: 320px;
 }
-.sidebar-org-switcher .cl-organizationSwitcherTrigger {
+
+.settings-org-switcher .cl-organizationSwitcherTrigger {
   width: 100%;
   justify-content: flex-start;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 0.5px solid var(--bdr2);
-  background: var(--card);
-  color: var(--fg2);
-  font-size: 11px;
-  font-family: 'Sora', sans-serif;
 }
 
 .result-actions {
