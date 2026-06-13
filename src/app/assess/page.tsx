@@ -10,7 +10,17 @@ import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import { splitRemediationSteps } from "@/lib/remediation-steps";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
-import AssessmentQuestionnaire, { type QuestionnaireMeta } from "@/components/AssessmentQuestionnaire";
+import {
+  type AssessmentAnswers,
+  type AssessmentQuestion,
+  buildInitialAnswersFromInference,
+  compileAssessmentPrompt,
+  formatGuidedQuestionText,
+  getNextAssessmentQuestion,
+  guidedQuestionOptions,
+  mapQuestionnaireDomain,
+  ASSESSMENT_QUESTIONS,
+} from "@/lib/assessment-questionnaire";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -100,7 +110,7 @@ type Assessment = {
 type Message =
   | { role: "user"; content: string; tags?: string[] }
   | { role: "assistant"; assessment: Assessment }
-  | { role: "thinking"; text: string; status?: string; isFollowUp?: boolean; followUpOptions?: string[] }
+  | { role: "thinking"; text: string; status?: string; isFollowUp?: boolean; followUpOptions?: string[]; guidedQuestionId?: string; guidedMulti?: boolean; guidedText?: boolean; riskTag?: string }
   | { role: "chat"; text: string };
 
 type StoredMessage =
@@ -556,20 +566,12 @@ function Home() {
   const [assessmentId,  setAssessmentId]  = useState<string | null>(null);
   const [gapChats,      setGapChats]      = useState<Record<string, GapChatMessage[]>>({});
 
-  const [inferring,       setInferring]       = useState(false);
-  const [pendingDesc,     setPendingDesc]     = useState("");
-  const [followUp,        setFollowUp]        = useState<{
-    dimension: "jurisdictions" | "data_types" | "sector";
-    question:  string;
-    options:   { value: string; label: string }[];
-  } | null>(null);
-  const [inferredContext, setInferredContext] = useState<{
-    domains:       string[];
-    jurisdictions: string[];
-    data_types:    string[];
-    sector:        string;
-  } | null>(null);
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [pendingDesc, setPendingDesc] = useState("");
+  const [guidedActive, setGuidedActive] = useState(false);
+  const [guidedAnswers, setGuidedAnswers] = useState<AssessmentAnswers>({});
+  const [guidedMultiSelections, setGuidedMultiSelections] = useState<string[]>([]);
+  const [activeGuidedQuestionId, setActiveGuidedQuestionId] = useState<string | null>(null);
+  const [prefillingGuided, setPrefillingGuided] = useState(false);
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -652,19 +654,14 @@ function Home() {
     setSelectedDocumentIds([]);
     setAssessmentId(null);
     setGapChats({});
-    setInferring(false);
     setPendingDesc("");
-    setFollowUp(null);
-    setInferredContext(null);
-    setShowQuestionnaire(false);
+    setGuidedActive(false);
+    setGuidedAnswers({});
+    setGuidedMultiSelections([]);
+    setActiveGuidedQuestionId(null);
+    setPrefillingGuided(false);
     router.push("/assess");
   }
-
-  const mapQuestionnaireDomain = (d: string) => {
-    if (d === "ai_governance") return "ai";
-    if (d === "cybersecurity") return "cyber";
-    return d;
-  };
 
   const buildTagsFromValues = (
     guidedJurisdictions: string[],
@@ -677,33 +674,6 @@ function Home() {
     ...guidedDataTypes.map(v => DATA_TYPE_OPTIONS.find(x => x.value === v)?.label ?? v),
     ...(guidedSector ? [SECTOR_OPTIONS.find(x => x.value === guidedSector)?.label ?? guidedSector] : []),
   ];
-
-  const handleQuestionnaireComplete = async (description: string, meta: QuestionnaireMeta) => {
-    const guidedDomains       = (meta.domains ?? []).map(mapQuestionnaireDomain);
-    const guidedJurisdictions = meta.jurisdictions ?? [];
-    const guidedDataTypes     = meta.data_types ?? [];
-    const guidedSector        = meta.sector ?? "";
-
-    setDomains(guidedDomains);
-    setJurisdictions(guidedJurisdictions);
-    setDataTypes(guidedDataTypes);
-    setSector(guidedSector ? [guidedSector] : []);
-    setShowQuestionnaire(false);
-    setInput(description);
-    setError("");
-
-    const tags = buildTagsFromValues(guidedJurisdictions, guidedDomains, guidedDataTypes, guidedSector);
-    setMessages(prev => [...prev, { role: "user", content: description, tags }]);
-    await runAssessment(
-      description,
-      tags,
-      guidedDomains,
-      guidedJurisdictions,
-      guidedDataTypes,
-      guidedSector,
-      folderId,
-    );
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -730,15 +700,21 @@ function Home() {
     }
   };
 
+  const activeGuidedQuestion = activeGuidedQuestionId
+    ? ASSESSMENT_QUESTIONS.find(q => q.id === activeGuidedQuestionId) ?? null
+    : null;
+
   const canSend = hasAssessment
     ? input.trim().length > 2 && !loading
-    : input.trim().length > 10 && !loading && !inferring;
+    : guidedActive
+    ? activeGuidedQuestion?.type === "text" && input.trim().length > 0 && !loading && !prefillingGuided
+    : input.trim().length > 8 && !loading && !prefillingGuided;
 
   const isMobileView = useIsMobile();
 
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
-    disabled: loading || inferring,
+    disabled: loading || prefillingGuided,
   });
 
   const noraFollowUpChips = hasAssessment && noraFollowUps.length > 0 ? (
@@ -757,21 +733,150 @@ function Home() {
     </div>
   ) : null;
 
-  const awaitingInference = messages.some(m => m.role === "thinking" && m.isFollowUp);
+  const presentGuidedQuestion = (question: AssessmentQuestion, intro?: string) => {
+    setActiveGuidedQuestionId(question.id);
+    if (question.type === "multi") setGuidedMultiSelections([]);
 
-  const FOLLOWUP_OPTIONS: Record<string, { question: string; options: { value: string; label: string }[] }> = {
-    jurisdictions: {
-      question: "Where are your users or data subjects located?",
-      options: JURISDICTION_OPTIONS,
-    },
-    data_types: {
-      question: "What types of personal data does your system process?",
-      options: DATA_TYPE_OPTIONS,
-    },
-    sector: {
-      question: "What industry or sector does your product operate in?",
-      options: SECTOR_OPTIONS,
-    },
+    const text = [intro, formatGuidedQuestionText(question)].filter(Boolean).join("\n\n");
+    setMessages(prev => {
+      const filtered = prev.filter(m => !(m.role === "thinking" && (m.isFollowUp || m.guidedText || m.guidedQuestionId)));
+      return [...filtered, {
+        role:             "thinking",
+        text,
+        isFollowUp:       question.type !== "text",
+        followUpOptions:  guidedQuestionOptions(question),
+        guidedQuestionId: question.id,
+        guidedMulti:      question.type === "multi",
+        guidedText:       question.type === "text",
+        riskTag:          question.riskTag,
+      }];
+    });
+  };
+
+  const completeGuidedAssessment = async (answers: AssessmentAnswers) => {
+    setGuidedActive(false);
+    setActiveGuidedQuestionId(null);
+    const { description, meta } = compileAssessmentPrompt(answers, pendingDesc);
+
+    const guidedDomains       = (meta.domains ?? []).map(mapQuestionnaireDomain);
+    const guidedJurisdictions = meta.jurisdictions ?? [];
+    const guidedDataTypes     = meta.data_types ?? [];
+    const guidedSector        = meta.sector ?? "";
+
+    setDomains(guidedDomains);
+    setJurisdictions(guidedJurisdictions);
+    setDataTypes(guidedDataTypes);
+    setSector(guidedSector ? [guidedSector] : []);
+
+    const tags = buildTagsFromValues(guidedJurisdictions, guidedDomains, guidedDataTypes, guidedSector);
+    setMessages(prev => prev.filter(m => m.role !== "thinking" || !!m.status));
+    await runAssessment(description, tags, guidedDomains, guidedJurisdictions, guidedDataTypes, guidedSector, folderId);
+  };
+
+  const commitGuidedAnswer = (questionId: string, value: string | string[], userLabel: string) => {
+    setGuidedAnswers(prev => {
+      const nextAnswers = { ...prev, [questionId]: value };
+      setMessages(msgs => [
+        ...msgs.filter(m => !(m.role === "thinking" && (m.isFollowUp || m.guidedText || m.guidedQuestionId))),
+        { role: "user", content: userLabel },
+      ]);
+      setGuidedMultiSelections([]);
+      const nextQ = getNextAssessmentQuestion(nextAnswers);
+      if (!nextQ) {
+        void completeGuidedAssessment(nextAnswers);
+      } else {
+        presentGuidedQuestion(nextQ);
+      }
+      return nextAnswers;
+    });
+  };
+
+  const handleGuidedOption = (optionLabel: string) => {
+    const question = activeGuidedQuestion;
+    if (!question) return;
+
+    if (question.type === "multi") {
+      if (optionLabel === "Continue") {
+        if (question.required && guidedMultiSelections.length === 0) return;
+        const labels = guidedMultiSelections.map(value =>
+          question.options?.find(o => o.value === value)?.label ?? value,
+        );
+        commitGuidedAnswer(question.id, guidedMultiSelections, labels.join(", ") || "Continue");
+        return;
+      }
+      const opt = question.options?.find(o => o.label === optionLabel);
+      if (!opt) return;
+      setGuidedMultiSelections(prev =>
+        prev.includes(opt.value) ? prev.filter(v => v !== opt.value) : [...prev, opt.value],
+      );
+      return;
+    }
+
+    const opt = question.options?.find(o => o.label === optionLabel);
+    commitGuidedAnswer(question.id, opt?.value ?? optionLabel, optionLabel);
+  };
+
+  const handleGuidedTextAnswer = (text: string) => {
+    const question = activeGuidedQuestion;
+    if (!question) return null;
+
+    if (question.type === "text") {
+      commitGuidedAnswer(question.id, text, text);
+      return null;
+    }
+
+    if (question.type === "single") {
+      const opt = question.options?.find(
+        o => o.label.toLowerCase() === text.toLowerCase() || o.label.toLowerCase().includes(text.toLowerCase()),
+      );
+      commitGuidedAnswer(question.id, opt?.value ?? text, opt?.label ?? text);
+      return null;
+    }
+
+    return null;
+  };
+
+  const startGuidedAssessment = async (text: string): Promise<string | null> => {
+    setMessages([{ role: "user", content: text }]);
+    setPendingDesc(text);
+    setGuidedActive(true);
+    setGuidedAnswers({});
+    setGuidedMultiSelections([]);
+    setActiveGuidedQuestionId(null);
+    setPrefillingGuided(true);
+    setError("");
+
+    setMessages(prev => [...prev, { role: "thinking", text: "", status: "Reviewing your description..." }]);
+
+    let answers: AssessmentAnswers = {};
+    try {
+      const res = await fetch("/api/infer", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ description: text }),
+      });
+      const data = await res.json();
+      if (res.ok) answers = buildInitialAnswersFromInference(data.inferred);
+    } catch {
+      // Continue with empty prefill if inference fails.
+    }
+
+    setGuidedAnswers(answers);
+    setPrefillingGuided(false);
+    setMessages(prev => prev.filter(m => m.role !== "thinking" || !!m.status));
+
+    const nextQ = getNextAssessmentQuestion(answers);
+    if (!nextQ) {
+      await completeGuidedAssessment(answers);
+      return null;
+    }
+
+    const intro = Object.keys(answers).length > 0
+      ? `Thanks — I've noted a few details from your description. I'll ask the remaining scoping questions one at a time, then run your assessment.`
+      : `Thanks — I'll ask a few scoping questions one at a time, then run your assessment.`;
+
+    presentGuidedQuestion(nextQ, intro);
+    return `${intro}\n\n${formatGuidedQuestionText(nextQ)}`;
   };
 
   const runAssessment = async (
@@ -853,9 +958,11 @@ function Home() {
           setContractText("");
           setContractName("");
           setSelectedDocumentIds([]);
-          setInferredContext(null);
-          setFollowUp(null);
           setPendingDesc("");
+          setGuidedActive(false);
+          setGuidedAnswers({});
+          setGuidedMultiSelections([]);
+          setActiveGuidedQuestionId(null);
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
@@ -873,152 +980,8 @@ function Home() {
     return summaryText.trim() || null;
   };
 
-  const handleFollowUpSelection = async (selected: string): Promise<string | null> => {
-    if (!followUp || !inferredContext) return null;
-
-    const option = FOLLOWUP_OPTIONS[followUp.dimension].options.find(
-      o => o.label === selected || o.label.toLowerCase().includes(selected.toLowerCase()),
-    );
-    const value = option?.value ?? selected.toLowerCase().replace(/\s+/g, "_");
-
-    let updated = { ...inferredContext };
-    if (followUp.dimension === "jurisdictions") updated.jurisdictions = [...updated.jurisdictions, value];
-    if (followUp.dimension === "data_types")    updated.data_types    = [...updated.data_types, value];
-    if (followUp.dimension === "sector")         updated.sector        = value;
-    setInferredContext(updated);
-
-    const remainingGaps: Array<"jurisdictions" | "data_types" | "sector"> = [];
-    if (updated.jurisdictions.length === 0) remainingGaps.push("jurisdictions");
-    if (updated.data_types.length    === 0) remainingGaps.push("data_types");
-    if (!updated.sector)                     remainingGaps.push("sector");
-
-    if (remainingGaps.length > 0) {
-      const dim = remainingGaps[0];
-      const { question, options } = FOLLOWUP_OPTIONS[dim];
-      setFollowUp({ dimension: dim, question, options });
-      setMessages(prev => [...prev, {
-        role:            "thinking",
-        text:            question,
-        isFollowUp:      true,
-        followUpOptions: options.map(o => o.label),
-      }]);
-      return question;
-    } else {
-      setFollowUp(null);
-      const tags = [...updated.domains, ...updated.jurisdictions, ...updated.data_types, updated.sector].filter(Boolean);
-      return runAssessment(pendingDesc, tags, updated.domains, updated.jurisdictions, updated.data_types, updated.sector, folderId);
-    }
-  };
-
-  const handleInferenceOption = async (selected: string): Promise<string | null> => {
-    setMessages(prev => prev.filter(m => !(m.role === "thinking" && m.isFollowUp)));
-    setMessages(prev => [...prev, { role: "user", content: selected, tags: [] }]);
-
-    if (selected === "Looks right — run assessment" && inferredContext && pendingDesc) {
-      const tags = [
-        ...inferredContext.domains,
-        ...inferredContext.jurisdictions,
-        ...inferredContext.data_types,
-        inferredContext.sector,
-      ].filter(Boolean);
-      setFollowUp(null);
-      return runAssessment(
-        pendingDesc,
-        tags,
-        inferredContext.domains,
-        inferredContext.jurisdictions,
-        inferredContext.data_types,
-        inferredContext.sector,
-        folderId,
-      );
-    }
-
-    if (selected === "Let me correct something") {
-      setInferring(false);
-      setFollowUp(null);
-      return "What would you like to correct? Update your description and try again.";
-    }
-
-    return handleFollowUpSelection(selected);
-  };
-
-  const handleAssessment = async (text: string, tags: string[]): Promise<string | null> => {
-    setMessages(prev => [...prev, { role: "user", content: text, tags }]);
-    setInferring(true);
-    setPendingDesc(text);
-
-    try {
-      setMessages(prev => [...prev, { role: "thinking", text: "", status: "Understanding your deployment..." }]);
-      const res  = await fetch("/api/infer", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ description: text }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Inference failed");
-      const { inferred } = data;
-
-      const resolvedDomains       = domains.length       > 0 ? domains       : (inferred.domains?.values       ?? []);
-      const resolvedJurisdictions = jurisdictions.length > 0 ? jurisdictions : (inferred.jurisdictions?.values ?? []);
-      const resolvedDataTypes     = dataTypes.length     > 0 ? dataTypes     : (inferred.data_types?.values    ?? []);
-      const resolvedSector        = sector.length        > 0 ? sector[0]     : (inferred.sector?.values?.[0]   ?? "");
-
-      setInferredContext({
-        domains:       resolvedDomains,
-        jurisdictions: resolvedJurisdictions,
-        data_types:    resolvedDataTypes,
-        sector:        resolvedSector,
-      });
-
-      setMessages(prev => prev.filter(m => m.role !== "thinking"));
-
-      const gaps: Array<"jurisdictions" | "data_types" | "sector"> = [];
-      if (inferred.jurisdictions?.confidence === "low" || resolvedJurisdictions.length === 0) gaps.push("jurisdictions");
-      if (inferred.data_types?.confidence    === "low" || resolvedDataTypes.length    === 0) gaps.push("data_types");
-      if (inferred.sector?.confidence        === "low" || !resolvedSector)                   gaps.push("sector");
-
-      const mediumDims: string[] = [];
-      if (inferred.domains?.confidence       === "medium") mediumDims.push(`domain: ${resolvedDomains.join(", ")}`);
-      if (inferred.jurisdictions?.confidence === "medium" && !gaps.includes("jurisdictions")) mediumDims.push(`jurisdiction: ${resolvedJurisdictions.join(", ")}`);
-      if (inferred.sector?.confidence        === "medium" && !gaps.includes("sector"))        mediumDims.push(`sector: ${resolvedSector}`);
-
-      if (mediumDims.length > 0) {
-        const confirmMsg = [
-          `Based on your description, I'm assuming:\n`,
-          ...mediumDims.map(d => `• ${d}`),
-          `\nDoes that look right? You can confirm or correct below.`,
-        ].join("\n");
-        setMessages(prev => [...prev, {
-          role:            "thinking",
-          text:            confirmMsg,
-          isFollowUp:      true,
-          followUpOptions: ["Looks right — run assessment", "Let me correct something"],
-        }]);
-        setInferring(false);
-        return confirmMsg;
-      }
-
-      if (gaps.length > 0) {
-        const dim = gaps[0];
-        const { question, options } = FOLLOWUP_OPTIONS[dim];
-        setFollowUp({ dimension: dim, question, options });
-        setMessages(prev => [...prev, {
-          role:            "thinking",
-          text:            question,
-          isFollowUp:      true,
-          followUpOptions: options.map(o => o.label),
-        }]);
-        setInferring(false);
-        return question;
-      }
-
-      setInferring(false);
-      return runAssessment(text, tags, resolvedDomains, resolvedJurisdictions, resolvedDataTypes, resolvedSector, folderId);
-    } catch {
-      setMessages(prev => prev.filter(m => m.role !== "thinking"));
-      setInferring(false);
-      return runAssessment(text, tags, domains, jurisdictions, dataTypes, sector[0] ?? "", folderId);
-    }
+  const handleAssessment = async (text: string): Promise<string | null> => {
+    return startGuidedAssessment(text);
   };
 
   const handleFollowUp = async (text: string): Promise<string | null> => {
@@ -1098,19 +1061,19 @@ function Home() {
 
   const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
     const text = (textOverride ?? input).trim();
-    const minLen = fromVoice ? 3 : (hasAssessment ? 3 : 11);
+    const minLen = fromVoice ? 3 : (hasAssessment ? 3 : guidedActive ? 1 : 9);
     if (text.length < minLen) return null;
-    if (!fromVoice && (loading || inferring)) return null;
+    if (!fromVoice && (loading || prefillingGuided)) return null;
     if (!textOverride) setInput("");
     setError("");
 
     if (hasAssessment) {
       return handleFollowUp(text);
     }
-    if (awaitingInference || followUp) {
-      return handleInferenceOption(text);
+    if (guidedActive) {
+      return handleGuidedTextAnswer(text);
     }
-    return handleAssessment(text, []);
+    return handleAssessment(text);
   };
 
   handleSendRef.current = (text: string) => handleSend(text, true);
@@ -1128,12 +1091,20 @@ function Home() {
 
   const hasAttachedDocs = !!contractName || selectedDocumentIds.length > 0;
 
+  const guidedComposerPlaceholder = hasAssessment
+    ? "Ask a follow-up question about this assessment..."
+    : guidedActive && activeGuidedQuestion?.type === "text"
+    ? "Type your answer..."
+    : guidedActive
+    ? "Select an option above..."
+    : "Describe another deployment...";
+
   const attachControl = (
     <DocumentPicker
       selectedIds={selectedDocumentIds}
       onChange={setSelectedDocumentIds}
       folderId={folderId}
-      disabled={loading || inferring || fileExtracting}
+      disabled={loading || prefillingGuided || fileExtracting}
       variant="icon"
       onUpload={() => fileRef.current?.click()}
       uploading={fileExtracting}
@@ -1194,7 +1165,7 @@ function Home() {
                 isSpeaking={voice.isSpeaking}
                 voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
                 configured={voice.support.configured}
-                disabled={loading || inferring}
+                disabled={loading || prefillingGuided}
                 onStartListening={voice.startListening}
                 onStopListening={voice.stopListening}
                 onStopSpeaking={voice.stopSpeak}
@@ -1211,7 +1182,7 @@ function Home() {
           <textarea
             ref={textareaRef}
             className="input-textarea"
-            placeholder="Describe your product or deployment..."
+              placeholder="Describe what you're building in a sentence..."
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
@@ -1229,7 +1200,7 @@ function Home() {
                 isSpeaking={voice.isSpeaking}
                 voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
                 configured={voice.support.configured}
-                disabled={loading || inferring}
+                disabled={loading || prefillingGuided}
                 onStartListening={voice.startListening}
                 onStopListening={voice.stopListening}
                 onStopSpeaking={voice.stopSpeak}
@@ -1279,50 +1250,16 @@ function Home() {
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
                 <div className={isMobileView ? "home-hero-block" : undefined}>
                   <Logo size={isMobileView ? 44 : 40} />
-                  {showQuestionnaire ? (
-                    <h1
-                      className={isMobileView ? "mobile-home-serif" : "home-heading"}
-                      style={!isMobileView ? { marginBottom: 28 } : undefined}
-                    >
-                      Let us scope your assessment
-                    </h1>
-                  ) : isMobileView ? (
+                  {isMobileView ? (
                     <h1 className="mobile-home-serif">What are you building?</h1>
                   ) : (
-                    <>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                        <h1 className="home-heading">What are you building?</h1>
-                        <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
-                      </div>
-                    </>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                      <h1 className="home-heading">What are you building?</h1>
+                      <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
+                    </div>
                   )}
                 </div>
-
-                {showQuestionnaire ? (
-                  <AssessmentQuestionnaire onComplete={handleQuestionnaireComplete} />
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowQuestionnaire(true)}
-                      style={{
-                        width: "100%", padding: "13px 18px", marginBottom: 12,
-                        background: "var(--red)", color: "#f5f5f4", border: "none",
-                        borderRadius: 7, fontSize: 13, fontWeight: 500,
-                        fontFamily: "'Sora', sans-serif", cursor: "pointer",
-                        letterSpacing: "-.01em",
-                      }}
-                    >
-                      Start guided assessment
-                    </button>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                      <div style={{ flex: 1, height: "0.5px", background: "var(--bdr2)" }} />
-                      <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>or describe manually</span>
-                      <div style={{ flex: 1, height: "0.5px", background: "var(--bdr2)" }} />
-                    </div>
-                    {InputBar}
-                  </>
-                )}
+                {InputBar}
                 {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
               </div>
             )}
@@ -1359,7 +1296,12 @@ function Home() {
                                   <Loader2 size={11} className="spin" color="var(--fg3)" />
                                   {msg.status}
                                 </span>
-                              ) : isFollowUp ? ASSESS_AGENT.name : `${ASSESS_AGENT.name} is analysing...`}
+                              ) : isFollowUp || msg.guidedText ? ASSESS_AGENT.name : `${ASSESS_AGENT.name} is analysing...`}
+                              {msg.riskTag && (
+                                <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--rh)", letterSpacing: ".04em", textTransform: "uppercase" }}>
+                                  {msg.riskTag}
+                                </span>
+                              )}
                             </div>
                             {msg.text ? (
                               <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
@@ -1375,21 +1317,32 @@ function Home() {
                             )}
                             {isFollowUp && msg.followUpOptions && (
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                                {msg.followUpOptions.map(opt => (
+                                {msg.followUpOptions.map(opt => {
+                                  const question = msg.guidedQuestionId
+                                    ? ASSESSMENT_QUESTIONS.find(q => q.id === msg.guidedQuestionId)
+                                    : null;
+                                  const optValue = question?.options?.find(o => o.label === opt)?.value;
+                                  const selected = !!(msg.guidedMulti && optValue && guidedMultiSelections.includes(optValue));
+                                  const isContinue = opt === "Continue";
+                                  return (
                                   <button
                                     key={opt}
                                     type="button"
-                                    onClick={() => handleInferenceOption(opt)}
+                                    onClick={() => handleGuidedOption(opt)}
                                     style={{
                                       fontSize: 11, padding: "5px 12px", borderRadius: 16,
-                                      border: "0.5px solid var(--bdr2)", background: "var(--card2)",
-                                      color: "var(--fg2)", cursor: "pointer",
+                                      border: selected || isContinue ? "0.5px solid var(--red)" : "0.5px solid var(--bdr2)",
+                                      background: selected ? "rgba(139,26,26,0.09)" : isContinue ? "var(--lift)" : "var(--card2)",
+                                      color: selected || isContinue ? "var(--fg)" : "var(--fg2)",
+                                      cursor: "pointer",
                                       fontFamily: "'Sora', sans-serif",
+                                      fontWeight: isContinue ? 500 : 400,
                                     }}
                                   >
                                     {opt}
                                   </button>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -1472,7 +1425,7 @@ function Home() {
                           )}
                           <input
                             className="chat-input-field mobile-composer-field"
-                            placeholder=""
+                            placeholder={guidedComposerPlaceholder}
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKey}
@@ -1507,7 +1460,7 @@ function Home() {
                     <div className="chat-input-bar">
                       <input
                         className="chat-input-field"
-                        placeholder={hasAssessment ? "Ask a follow-up question about this assessment..." : "Describe another deployment..."}
+                        placeholder={guidedComposerPlaceholder}
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}

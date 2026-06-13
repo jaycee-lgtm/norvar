@@ -1,22 +1,15 @@
-"use client";
-
-import { useState } from "react";
-import { ChevronRight, ChevronLeft, Check, Plus } from "lucide-react";
-
-type Option = { value: string; label: string };
-
-type Question = {
+export type AssessmentQuestion = {
   id:           string;
   text:         string;
   sub?:         string;
   type:         "single" | "multi" | "text";
-  options?:     Option[];
+  options?:     { value: string; label: string }[];
   domains?:     string[];
   required?:    boolean;
   riskTag?:     string;
 };
 
-type Answers = Record<string, string | string[]>;
+export type AssessmentAnswers = Record<string, string | string[]>;
 
 export type QuestionnaireMeta = {
   domains?:       string[];
@@ -27,11 +20,7 @@ export type QuestionnaireMeta = {
   deployment?:    string;
 };
 
-interface Props {
-  onComplete: (description: string, meta: QuestionnaireMeta) => void;
-}
-
-const ALL_QUESTIONS: Question[] = [
+export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
   {
     id: "domains", required: true,
     text: "Which compliance domains apply to your project?",
@@ -537,7 +526,7 @@ const ALL_QUESTIONS: Question[] = [
   },
 ];
 
-function compilePrompt(answers: Answers): { description: string; meta: QuestionnaireMeta } {
+function compilePrompt(answers: AssessmentAnswers): { description: string; meta: QuestionnaireMeta } {
   const get  = (id: string) => answers[id];
   const getA = (id: string) => (answers[id] as string[]) || [];
 
@@ -620,236 +609,75 @@ function compilePrompt(answers: Answers): { description: string; meta: Questionn
   return { description: lines.join("\n"), meta };
 }
 
-export default function AssessmentQuestionnaire({ onComplete }: Props) {
-  const [answers, setAnswers] = useState<Answers>({});
-  const [step, setStep]       = useState(0);
-  const [custom, setCustom]   = useState("");
-  const [adding, setAdding]   = useState(false);
-
+export function getAssessmentQuestions(answers: AssessmentAnswers): AssessmentQuestion[] {
   const selectedDomains = (answers.domains as string[]) || [];
-
-  const questions = ALL_QUESTIONS.filter(q =>
+  return ASSESSMENT_QUESTIONS.filter(q =>
     !q.domains || q.domains.some(d => selectedDomains.includes(d)),
   );
+}
 
-  const current  = questions[step];
-  const isLast   = step === questions.length - 1;
-  const progress = questions.length ? Math.round((step / questions.length) * 100) : 0;
-  const answer   = current ? answers[current.id] : undefined;
+export function hasAssessmentAnswer(answers: AssessmentAnswers, question: AssessmentQuestion): boolean {
+  const val = answers[question.id];
+  if (question.type === "text") return typeof val === "string" && val.trim().length > 0;
+  if (question.type === "single") return typeof val === "string" && val.length > 0;
+  return Array.isArray(val) && val.length > 0;
+}
 
-  const isAnswered = !current
-    ? false
-    : current.type === "text"
-    ? !!(answer || custom)
-    : current.type === "single"
-    ? !!answer
-    : !!(answer && (answer as string[]).length > 0);
+export function getNextAssessmentQuestion(answers: AssessmentAnswers): AssessmentQuestion | null {
+  return getAssessmentQuestions(answers).find(q => !hasAssessmentAnswer(answers, q)) ?? null;
+}
 
-  const canNext = isAnswered || !current?.required;
+export function mapQuestionnaireDomain(d: string): string {
+  if (d === "ai_governance") return "ai";
+  if (d === "cybersecurity") return "cyber";
+  return d;
+}
 
-  const select = (value: string) => {
-    if (!current) return;
-    if (current.type === "single") {
-      setAnswers(a => ({ ...a, [current.id]: value }));
-    } else {
-      const prev = (answers[current.id] as string[]) || [];
-      const next = prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value];
-      setAnswers(a => ({ ...a, [current.id]: next }));
-    }
+export function mapInferDomainToQuestionnaire(d: string): string {
+  if (d === "ai") return "ai_governance";
+  if (d === "cyber") return "cybersecurity";
+  return d;
+}
+
+type InferredField = { values?: string[]; confidence?: string };
+
+export function buildInitialAnswersFromInference(inferred: {
+  domains?:       InferredField;
+  jurisdictions?: InferredField;
+  sector?:        InferredField;
+}): AssessmentAnswers {
+  const answers: AssessmentAnswers = {};
+  if (inferred.domains?.confidence === "high" && inferred.domains.values?.length) {
+    answers.domains = inferred.domains.values.map(mapInferDomainToQuestionnaire);
+  }
+  if (inferred.jurisdictions?.confidence === "high" && inferred.jurisdictions.values?.length) {
+    answers.jurisdictions = inferred.jurisdictions.values;
+  }
+  if (inferred.sector?.confidence === "high" && inferred.sector.values?.[0]) {
+    answers.sector = inferred.sector.values[0];
+  }
+  return answers;
+}
+
+export function compileAssessmentPrompt(
+  answers: AssessmentAnswers,
+  initialDescription?: string,
+): { description: string; meta: QuestionnaireMeta } {
+  const { description, meta } = compilePrompt(answers);
+  if (!initialDescription?.trim()) return { description, meta };
+  return {
+    description: `INITIAL DESCRIPTION:\n${initialDescription.trim()}\n\n${description}`,
+    meta,
   };
+}
 
-  const isSelected = (value: string) =>
-    !current
-      ? false
-      : current.type === "single"
-      ? answer === value
-      : ((answer as string[]) || []).includes(value);
+export function formatGuidedQuestionText(question: AssessmentQuestion): string {
+  return [question.text, question.sub].filter(Boolean).join("\n\n");
+}
 
-  const addCustom = () => {
-    if (!custom.trim() || !current) return;
-    if (current.type === "text") {
-      setAnswers(a => ({ ...a, [current.id]: custom }));
-    } else {
-      const prev = (answers[current.id] as string[]) || [];
-      setAnswers(a => ({ ...a, [current.id]: [...prev, `custom:${custom}`] }));
-    }
-    setCustom("");
-    setAdding(false);
-  };
-
-  const next = () => {
-    if (!current) return;
-    if (adding && custom.trim()) addCustom();
-    if (current.type === "text" && custom.trim()) {
-      setAnswers(a => ({ ...a, [current.id]: custom }));
-    }
-    if (isLast) {
-      const finalAnswers = current.type === "text" && custom.trim()
-        ? { ...answers, [current.id]: custom }
-        : answers;
-      const { description, meta } = compilePrompt(finalAnswers);
-      onComplete(description, meta);
-    } else {
-      setStep(s => s + 1);
-      setCustom("");
-      setAdding(false);
-    }
-  };
-
-  const back = () => {
-    if (step > 0) {
-      setStep(s => s - 1);
-      setCustom("");
-      setAdding(false);
-    }
-  };
-
-  if (!current) return null;
-
-  return (
-    <div style={{ width: "100%", maxWidth: 580, margin: "0 auto" }}>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-          <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
-            Question {step + 1} of {questions.length}
-          </span>
-          {current.riskTag && (
-            <span style={{ fontSize: 10, color: "var(--rh)", fontFamily: "'Sora', sans-serif", letterSpacing: ".04em", textTransform: "uppercase" }}>
-              {current.riskTag}
-            </span>
-          )}
-        </div>
-        <div style={{ height: 2, background: "var(--card2)", borderRadius: 2 }}>
-          <div style={{ height: 2, background: "var(--red)", borderRadius: 2, width: `${progress}%`, transition: "width 0.3s" }} />
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 18 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 500, color: "var(--fg)", letterSpacing: "-.02em", marginBottom: 5, fontFamily: "'Sora', sans-serif", lineHeight: 1.45 }}>
-          {current.text}
-        </h2>
-        {current.sub && (
-          <p style={{ fontSize: 11.5, color: "var(--fg3)", fontFamily: "'Sora', sans-serif", lineHeight: 1.55 }}>
-            {current.sub}
-          </p>
-        )}
-      </div>
-
-      {current.options && current.type !== "text" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 12 }}>
-          {current.options.map(opt => {
-            const sel = isSelected(opt.value);
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => select(opt.value)}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "10px 14px", borderRadius: 7, textAlign: "left",
-                  border: sel ? "0.5px solid var(--red)" : "0.5px solid var(--bdr2)",
-                  background: sel ? "rgba(139,26,26,0.09)" : "var(--card)",
-                  cursor: "pointer", transition: "all 0.12s",
-                }}
-                onMouseEnter={e => { if (!sel) e.currentTarget.style.borderColor = "var(--bdr3)"; }}
-                onMouseLeave={e => { if (!sel) e.currentTarget.style.borderColor = "var(--bdr2)"; }}
-              >
-                <span style={{ fontSize: 13, color: sel ? "var(--fg)" : "var(--fg2)", fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em" }}>
-                  {opt.label}
-                </span>
-                {sel && <Check size={13} strokeWidth={2.5} color="var(--red)" style={{ flexShrink: 0 }} />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {current.type !== "text" && (
-        <div style={{ marginBottom: 14 }}>
-          {!adding ? (
-            <button
-              type="button"
-              onClick={() => setAdding(true)}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 5,
-                fontSize: 11.5, color: "var(--fg3)", background: "transparent",
-                border: "0.5px dashed var(--bdr2)", borderRadius: 6,
-                padding: "7px 12px", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-              }}
-            >
-              <Plus size={11} strokeWidth={2} /> Add your own answer
-            </button>
-          ) : (
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                autoFocus
-                value={custom}
-                onChange={e => setCustom(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && addCustom()}
-                placeholder="Type your answer..."
-                style={{
-                  flex: 1, background: "var(--card)", border: "0.5px solid var(--bdr2)",
-                  borderRadius: 6, padding: "8px 12px", fontSize: 13, color: "var(--fg)",
-                  fontFamily: "'Sora', sans-serif", outline: "none",
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = "var(--bdr3)"; }}
-                onBlur={e => { e.currentTarget.style.borderColor = "var(--bdr2)"; }}
-              />
-              <button type="button" onClick={addCustom} style={{
-                fontSize: 12, background: "var(--card2)", color: "var(--fg2)",
-                border: "0.5px solid var(--bdr2)", borderRadius: 6,
-                padding: "8px 12px", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-              }}>Add</button>
-              <button type="button" onClick={() => { setAdding(false); setCustom(""); }} style={{
-                fontSize: 12, background: "transparent", color: "var(--fg3)",
-                border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-              }}>Cancel</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {current.type === "text" && (
-        <textarea
-          value={custom}
-          onChange={e => setCustom(e.target.value)}
-          placeholder="Type your answer..."
-          rows={3}
-          style={{
-            width: "100%", background: "var(--card)", border: "0.5px solid var(--bdr2)",
-            borderRadius: 7, padding: "10px 14px", fontSize: 13, color: "var(--fg)",
-            fontFamily: "'Sora', sans-serif", letterSpacing: "-.01em", resize: "vertical",
-            outline: "none", lineHeight: 1.6, marginBottom: 14,
-          }}
-          onFocus={e => { e.currentTarget.style.borderColor = "var(--bdr3)"; }}
-          onBlur={e => { e.currentTarget.style.borderColor = "var(--bdr2)"; }}
-        />
-      )}
-
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        {step > 0 && (
-          <button type="button" onClick={back} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            fontSize: 13, color: "var(--fg2)", padding: "10px 16px",
-            border: "0.5px solid var(--bdr2)", borderRadius: 6,
-            background: "transparent", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-          }}>
-            <ChevronLeft size={14} strokeWidth={2} /> Back
-          </button>
-        )}
-        <button type="button" onClick={next} disabled={!canNext} style={{
-          display: "inline-flex", alignItems: "center", gap: 6, flex: 1,
-          justifyContent: "center", fontSize: 13, fontWeight: 500,
-          background: canNext ? "var(--red)" : "var(--card2)",
-          color: canNext ? "#f5f5f4" : "var(--fg4)",
-          padding: "11px 22px", borderRadius: 6, border: "none",
-          cursor: canNext ? "pointer" : "not-allowed",
-          fontFamily: "'Sora', sans-serif", transition: "background 0.15s",
-        }}>
-          {isLast ? "Run assessment" : "Next"}
-          {!isLast && <ChevronRight size={14} strokeWidth={2.5} />}
-        </button>
-      </div>
-    </div>
-  );
+export function guidedQuestionOptions(question: AssessmentQuestion): string[] | undefined {
+  if (question.type === "text") return undefined;
+  const labels = question.options?.map(o => o.label) ?? [];
+  if (question.type === "multi") return [...labels, "Continue"];
+  return labels;
 }
