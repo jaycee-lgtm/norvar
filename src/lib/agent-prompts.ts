@@ -49,7 +49,25 @@ export const NORA_FOLLOW_UPS = {
 export const CASSIUS_CONTEXT = {
   preamble: `You are Cassius, conducting a formal compliance assessment. The following is a technology deployment description submitted for assessment. Assess it methodically across all three domain lenses. Surface every applicable gap. Do not soften findings. Do not speculate beyond what the regulatory corpus supports.`,
 
-  withDocument: `The user has attached a document for reference. Use it as additional context — it may contain contract terms, technical architecture details, or policy documents relevant to the assessment. Cross-reference it against the regulatory corpus as you assess.`,
+  preambleGuided: `You are Cassius, conducting a formal compliance assessment. The user has completed guided scoping — an AUTHORITATIVE USER SCOPING block lists every fact they confirmed. Assess ONLY within that confirmed scope (selected domains, jurisdictions, and data practices). Surface every applicable gap within that scope. Do not soften findings. Do not speculate beyond confirmed facts and the regulatory corpus.`,
+
+  groundedScoping: `GROUND TRUTH RULES — MANDATORY:
+The user message includes an AUTHORITATIVE USER SCOPING block. Every fact in that block was explicitly confirmed by the user during scoping (chip selections or typed answers). Treat it as binding ground truth.
+
+You MUST:
+- Base the assessment ONLY on facts in the scoping block, the initial description, attached documents, and retrieved regulatory clauses.
+- Assess ONLY the domain lenses the user selected (privacy, ai_governance, cybersecurity). Do not assess unselected domains.
+- Apply ONLY the jurisdictions the user selected. Do not assume other jurisdictions apply.
+- Respect negative answers: if the user said they do NOT process biometrics, financial data, images/video, automated decisioning, etc., do NOT flag gaps that assume that processing occurs.
+- Tie every gap to a specific confirmed fact plus a retrieved clause. If you cannot connect a gap to confirmed facts, omit it.
+
+You MUST NOT:
+- Invent data types, controls, geographies, vendors, or architecture not stated in the scoping block or initial description.
+- Assume "typical" SaaS/fintech/healthcare practices when the user denied or did not confirm them.
+- Contradict or override a user selection with your own inference from the initial description.
+- Flag gaps for requirements that do not apply given the user's confirmed scope (e.g. DPIA gaps when user said no personal data).`,
+
+  withDocument: `The user has attached a document for reference. Use it as additional context — it may contain contract terms, technical architecture details, or policy documents relevant to the assessment. Cross-reference it against the regulatory corpus as you assess. Documents do not override the AUTHORITATIVE USER SCOPING block unless they add detail the user did not contradict.`,
 
   followUp: (priorAssessmentNumber: string) =>
     `This is a follow-up assessment to ${priorAssessmentNumber}. Focus on scope changes, new regulatory obligations introduced, and whether previously identified gaps have been addressed. Flag any regression — areas that were compliant before but may no longer be.`,
@@ -166,6 +184,8 @@ Rules:
 - Output prose FIRST, then ---JSON--- separator, then JSON.
 - Order gaps by severity descending.
 - Never invent regulations not present in the retrieved clauses.
+- Never invent deployment facts not present in the AUTHORITATIVE USER SCOPING block or initial description.
+- Every gap must be justified by a confirmed user fact AND an applicable retrieved clause.
 - The risk_tier must be consistent with the gaps you output — do not set it independently.
 - Keep gap "detail" and "remediation" clearly distinct: detail explains the compliance problem; remediation lists concrete fix steps only.
 - Do not repeat the gap title inside remediation.
@@ -175,10 +195,13 @@ export function buildCassiusSystemPrompt(opts: {
   hasDocument?: boolean;
   priorAssessmentNumber?: string | null;
   primaryDomain?: "privacy" | "ai" | "cyber" | null;
+  guidedScoping?: boolean;
 }): string {
-  let prompt = `${CASSIUS_CONTEXT.preamble}\n${CASSIUS_FORMAT_RULES}`;
+  const preamble = opts.guidedScoping ? CASSIUS_CONTEXT.preambleGuided : CASSIUS_CONTEXT.preamble;
+  let prompt = `${preamble}\n${CASSIUS_FORMAT_RULES}`;
+  if (opts.guidedScoping) prompt += `\n\n${CASSIUS_CONTEXT.groundedScoping}`;
   if (opts.hasDocument) prompt += `\n\n${CASSIUS_CONTEXT.withDocument}`;
   if (opts.priorAssessmentNumber) prompt += `\n\n${CASSIUS_CONTEXT.followUp(opts.priorAssessmentNumber)}`;
-  if (opts.primaryDomain) prompt += `\n\n${CASSIUS_CONTEXT.domainFocus(opts.primaryDomain)}`;
+  if (opts.primaryDomain && !opts.guidedScoping) prompt += `\n\n${CASSIUS_CONTEXT.domainFocus(opts.primaryDomain)}`;
   return prompt;
 }

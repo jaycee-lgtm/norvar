@@ -13,7 +13,6 @@ import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPick
 import {
   type AssessmentAnswers,
   type AssessmentQuestion,
-  buildInitialAnswersFromInference,
   compileAssessmentPrompt,
   formatGuidedQuestionText,
   getNextAssessmentQuestion,
@@ -571,7 +570,6 @@ function Home() {
   const [guidedAnswers, setGuidedAnswers] = useState<AssessmentAnswers>({});
   const [guidedMultiSelections, setGuidedMultiSelections] = useState<string[]>([]);
   const [activeGuidedQuestionId, setActiveGuidedQuestionId] = useState<string | null>(null);
-  const [prefillingGuided, setPrefillingGuided] = useState(false);
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -707,14 +705,14 @@ function Home() {
   const canSend = hasAssessment
     ? input.trim().length > 2 && !loading
     : guidedActive
-    ? activeGuidedQuestion?.type === "text" && input.trim().length > 0 && !loading && !prefillingGuided
-    : input.trim().length > 8 && !loading && !prefillingGuided;
+    ? activeGuidedQuestion?.type === "text" && input.trim().length > 0 && !loading
+    : input.trim().length > 8 && !loading;
 
   const isMobileView = useIsMobile();
 
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
-    disabled: loading || prefillingGuided,
+    disabled: loading,
   });
 
   const noraFollowUpChips = hasAssessment && noraFollowUps.length > 0 ? (
@@ -770,7 +768,16 @@ function Home() {
 
     const tags = buildTagsFromValues(guidedJurisdictions, guidedDomains, guidedDataTypes, guidedSector);
     setMessages(prev => prev.filter(m => m.role !== "thinking" || !!m.status));
-    await runAssessment(description, tags, guidedDomains, guidedJurisdictions, guidedDataTypes, guidedSector, folderId);
+    await runAssessment(
+      description,
+      tags,
+      guidedDomains,
+      guidedJurisdictions,
+      guidedDataTypes,
+      guidedSector,
+      folderId,
+      { guidedScoping: true },
+    );
   };
 
   const commitGuidedAnswer = (questionId: string, value: string | string[], userLabel: string) => {
@@ -843,37 +850,16 @@ function Home() {
     setGuidedAnswers({});
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
-    setPrefillingGuided(true);
     setError("");
 
-    setMessages(prev => [...prev, { role: "thinking", text: "", status: "Reviewing your description..." }]);
-
-    let answers: AssessmentAnswers = {};
-    try {
-      const res = await fetch("/api/infer", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ description: text }),
-      });
-      const data = await res.json();
-      if (res.ok) answers = buildInitialAnswersFromInference(data.inferred);
-    } catch {
-      // Continue with empty prefill if inference fails.
-    }
-
-    setGuidedAnswers(answers);
-    setPrefillingGuided(false);
-    setMessages(prev => prev.filter(m => m.role !== "thinking" || !!m.status));
-
+    const answers: AssessmentAnswers = {};
     const nextQ = getNextAssessmentQuestion(answers);
     if (!nextQ) {
       await completeGuidedAssessment(answers);
       return null;
     }
 
-    const intro = Object.keys(answers).length > 0
-      ? `Thanks — I've noted a few details from your description. I'll ask the remaining scoping questions one at a time, then run your assessment.`
-      : `Thanks — I'll ask a few scoping questions one at a time, then run your assessment.`;
+    const intro = `Thanks — I'll ask a few scoping questions one at a time. Your selections will define the assessment scope — I won't assume anything you don't confirm.`;
 
     presentGuidedQuestion(nextQ, intro);
     return `${intro}\n\n${formatGuidedQuestionText(nextQ)}`;
@@ -887,6 +873,7 @@ function Home() {
     resolvedDataTypes: string[],
     resolvedSector: string,
     folderId?: string | null,
+    opts?: { guidedScoping?: boolean },
   ): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
@@ -920,6 +907,7 @@ function Home() {
           document_ids:  selectedDocumentIds.length ? selectedDocumentIds : undefined,
           tags,
           folder_id:     folderId || undefined,
+          guided_scoping: opts?.guidedScoping ?? false,
         }),
       });
       if (!res.ok) {
@@ -1063,7 +1051,7 @@ function Home() {
     const text = (textOverride ?? input).trim();
     const minLen = fromVoice ? 3 : (hasAssessment ? 3 : guidedActive ? 1 : 9);
     if (text.length < minLen) return null;
-    if (!fromVoice && (loading || prefillingGuided)) return null;
+    if (!fromVoice && loading) return null;
     if (!textOverride) setInput("");
     setError("");
 
@@ -1104,7 +1092,7 @@ function Home() {
       selectedIds={selectedDocumentIds}
       onChange={setSelectedDocumentIds}
       folderId={folderId}
-      disabled={loading || prefillingGuided || fileExtracting}
+      disabled={loading || fileExtracting}
       variant="icon"
       onUpload={() => fileRef.current?.click()}
       uploading={fileExtracting}
@@ -1165,7 +1153,7 @@ function Home() {
                 isSpeaking={voice.isSpeaking}
                 voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
                 configured={voice.support.configured}
-                disabled={loading || prefillingGuided}
+                disabled={loading}
                 onStartListening={voice.startListening}
                 onStopListening={voice.stopListening}
                 onStopSpeaking={voice.stopSpeak}
@@ -1200,7 +1188,7 @@ function Home() {
                 isSpeaking={voice.isSpeaking}
                 voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
                 configured={voice.support.configured}
-                disabled={loading || prefillingGuided}
+                disabled={loading}
                 onStartListening={voice.startListening}
                 onStopListening={voice.stopListening}
                 onStopSpeaking={voice.stopSpeak}

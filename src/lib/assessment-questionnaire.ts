@@ -526,6 +526,68 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
   },
 ];
 
+const QUESTION_BY_ID = Object.fromEntries(
+  ASSESSMENT_QUESTIONS.map(q => [q.id, q]),
+) as Record<string, AssessmentQuestion>;
+
+const DOMAIN_LABELS: Record<string, string> = {
+  privacy:       "Privacy",
+  ai_governance: "AI Governance",
+  cybersecurity: "Cybersecurity",
+};
+
+function labelFor(questionId: string, value: string): string {
+  if (value.startsWith("custom:")) return value.slice(7).trim();
+  const q = QUESTION_BY_ID[questionId];
+  return q?.options?.find(o => o.value === value)?.label ?? value;
+}
+
+function formatAnswerDisplay(questionId: string, answer: string | string[] | undefined): string | null {
+  if (answer === undefined || answer === null) return null;
+  if (Array.isArray(answer)) {
+    if (!answer.length) return null;
+    return answer.map(v => labelFor(questionId, v)).join("; ");
+  }
+  const text = String(answer).trim();
+  if (!text) return null;
+  return labelFor(questionId, text);
+}
+
+function formatListLabels(questionId: string, values: string[]): string {
+  return values.map(v => labelFor(questionId, v)).join("; ");
+}
+
+export function buildScopingGroundTruthBlock(
+  answers: AssessmentAnswers,
+  initialDescription?: string,
+): string {
+  const lines: string[] = [
+    "=== AUTHORITATIVE USER SCOPING (GROUND TRUTH) ===",
+    "Every item below was explicitly confirmed by the user during scoping. These are binding constraints — do not contradict them.",
+    "",
+  ];
+
+  if (initialDescription?.trim()) {
+    lines.push("Initial description (user-provided, supplementary only):");
+    lines.push(`"${initialDescription.trim()}"`);
+    lines.push("");
+  }
+
+  lines.push("Confirmed scoping answers:");
+  const questions = getAssessmentQuestions(answers);
+  let index = 1;
+  for (const q of questions) {
+    const display = formatAnswerDisplay(q.id, answers[q.id]);
+    if (!display) continue;
+    lines.push(`${index}. ${q.text} → ${display}`);
+    index += 1;
+  }
+
+  lines.push("");
+  lines.push("=== END GROUND TRUTH ===");
+  return lines.join("\n");
+}
+
 function compilePrompt(answers: AssessmentAnswers): { description: string; meta: QuestionnaireMeta } {
   const get  = (id: string) => answers[id];
   const getA = (id: string) => (answers[id] as string[]) || [];
@@ -551,57 +613,57 @@ function compilePrompt(answers: AssessmentAnswers): { description: string; meta:
   };
 
   const lines: string[] = [
-    "COMPLIANCE ASSESSMENT REQUEST",
-    `Domains: ${domains.join(", ") || "not specified"}`,
-    `Jurisdictions: ${jurisdictions.join(", ") || "not specified"}`,
-    `Sector: ${sector || "not specified"}`,
-    `Project stage: ${get("stage") || "not specified"}`,
-    `Deployment type: ${get("deployment_type") || "not specified"}`,
+    "COMPLIANCE ASSESSMENT REQUEST (structured summary of confirmed facts)",
+    `Domains: ${domains.map(d => DOMAIN_LABELS[d] ?? d).join("; ") || "not specified"}`,
+    `Jurisdictions: ${formatListLabels("jurisdictions", jurisdictions) || "not specified"}`,
+    `Sector: ${formatAnswerDisplay("sector", sector) || "not specified"}`,
+    `Project stage: ${formatAnswerDisplay("stage", get("stage") as string) || "not specified"}`,
+    `Deployment type: ${formatAnswerDisplay("deployment_type", get("deployment_type") as string) || "not specified"}`,
   ];
 
   if (domains.includes("privacy")) {
     lines.push("\nPRIVACY CONTEXT:");
-    if (getA("data_subjects").length)        lines.push(`Data subjects: ${getA("data_subjects").join(", ")}`);
-    if (get("biometrics"))                   lines.push(`Biometric data: ${get("biometrics")}`);
-    if (get("images_video"))                 lines.push(`Images and video: ${get("images_video")}`);
-    if (get("financial_data"))               lines.push(`Financial transaction data: ${get("financial_data")}`);
-    if (get("automated_decisioning_privacy")) lines.push(`Automated decisioning: ${get("automated_decisioning_privacy")}`);
-    if (getA("sensitive_categories").length) lines.push(`Special category data: ${getA("sensitive_categories").join(", ")}`);
-    if (get("lawful_basis"))                 lines.push(`Lawful basis: ${get("lawful_basis")}`);
-    if (get("data_transfers"))               lines.push(`Cross-border transfers: ${get("data_transfers")}`);
-    if (get("data_retention"))               lines.push(`Data retention policy: ${get("data_retention")}`);
-    if (get("dpia_status"))                  lines.push(`DPIA status: ${get("dpia_status")}`);
-    if (getA("third_party_processors").length) lines.push(`Third-party processors: ${getA("third_party_processors").join(", ")}`);
+    if (getA("data_subjects").length)        lines.push(`Data subjects: ${formatListLabels("data_subjects", getA("data_subjects"))}`);
+    if (get("biometrics"))                   lines.push(`Biometric data: ${formatAnswerDisplay("biometrics", get("biometrics") as string)}`);
+    if (get("images_video"))                 lines.push(`Images and video: ${formatAnswerDisplay("images_video", get("images_video") as string)}`);
+    if (get("financial_data"))               lines.push(`Financial transaction data: ${formatAnswerDisplay("financial_data", get("financial_data") as string)}`);
+    if (get("automated_decisioning_privacy")) lines.push(`Automated decisioning: ${formatAnswerDisplay("automated_decisioning_privacy", get("automated_decisioning_privacy") as string)}`);
+    if (getA("sensitive_categories").length) lines.push(`Special category data: ${formatListLabels("sensitive_categories", getA("sensitive_categories"))}`);
+    if (get("lawful_basis"))                 lines.push(`Lawful basis: ${formatAnswerDisplay("lawful_basis", get("lawful_basis") as string)}`);
+    if (get("data_transfers"))               lines.push(`Cross-border transfers: ${formatAnswerDisplay("data_transfers", get("data_transfers") as string)}`);
+    if (get("data_retention"))               lines.push(`Data retention policy: ${formatAnswerDisplay("data_retention", get("data_retention") as string)}`);
+    if (get("dpia_status"))                  lines.push(`DPIA status: ${formatAnswerDisplay("dpia_status", get("dpia_status") as string)}`);
+    if (getA("third_party_processors").length) lines.push(`Third-party processors: ${formatListLabels("third_party_processors", getA("third_party_processors"))}`);
   }
 
   if (domains.includes("ai_governance")) {
     lines.push("\nAI GOVERNANCE CONTEXT:");
-    if (getA("ai_use_case").length)          lines.push(`AI use case: ${getA("ai_use_case").join(", ")}`);
-    if (get("ai_decision_making"))           lines.push(`Decision-making: ${get("ai_decision_making")}`);
-    if (get("ai_computer_vision"))           lines.push(`Computer vision: ${get("ai_computer_vision")}`);
-    if (get("ai_biometrics"))                lines.push(`AI biometric processing: ${get("ai_biometrics")}`);
-    if (get("ai_images_video"))             lines.push(`Images and video processing: ${get("ai_images_video")}`);
-    if (get("ai_automated_decisioning"))     lines.push(`Automated decisioning technology: ${get("ai_automated_decisioning")}`);
-    if (getA("ai_training_data").length)    lines.push(`Training data: ${getA("ai_training_data").join(", ")}`);
-    if (get("ai_human_oversight"))           lines.push(`Human oversight: ${get("ai_human_oversight")}`);
-    if (get("ai_explainability"))           lines.push(`Explainability: ${get("ai_explainability")}`);
-    if (get("ai_bias_testing"))             lines.push(`Bias testing: ${get("ai_bias_testing")}`);
-    if (get("ai_third_party_models"))       lines.push(`Third-party models: ${get("ai_third_party_models")}`);
+    if (getA("ai_use_case").length)          lines.push(`AI use case: ${formatListLabels("ai_use_case", getA("ai_use_case"))}`);
+    if (get("ai_decision_making"))           lines.push(`Decision-making: ${formatAnswerDisplay("ai_decision_making", get("ai_decision_making") as string)}`);
+    if (get("ai_computer_vision"))           lines.push(`Computer vision: ${formatAnswerDisplay("ai_computer_vision", get("ai_computer_vision") as string)}`);
+    if (get("ai_biometrics"))                lines.push(`AI biometric processing: ${formatAnswerDisplay("ai_biometrics", get("ai_biometrics") as string)}`);
+    if (get("ai_images_video"))             lines.push(`Images and video processing: ${formatAnswerDisplay("ai_images_video", get("ai_images_video") as string)}`);
+    if (get("ai_automated_decisioning"))     lines.push(`Automated decisioning technology: ${formatAnswerDisplay("ai_automated_decisioning", get("ai_automated_decisioning") as string)}`);
+    if (getA("ai_training_data").length)    lines.push(`Training data: ${formatListLabels("ai_training_data", getA("ai_training_data"))}`);
+    if (get("ai_human_oversight"))           lines.push(`Human oversight: ${formatAnswerDisplay("ai_human_oversight", get("ai_human_oversight") as string)}`);
+    if (get("ai_explainability"))           lines.push(`Explainability: ${formatAnswerDisplay("ai_explainability", get("ai_explainability") as string)}`);
+    if (get("ai_bias_testing"))             lines.push(`Bias testing: ${formatAnswerDisplay("ai_bias_testing", get("ai_bias_testing") as string)}`);
+    if (get("ai_third_party_models"))       lines.push(`Third-party models: ${formatAnswerDisplay("ai_third_party_models", get("ai_third_party_models") as string)}`);
   }
 
   if (domains.includes("cybersecurity")) {
     lines.push("\nCYBERSECURITY CONTEXT:");
-    if (get("cyber_exposure"))               lines.push(`Exposure level: ${get("cyber_exposure")}`);
-    if (get("cyber_financial_data"))         lines.push(`Financial data: ${get("cyber_financial_data")}`);
-    if (get("cyber_biometrics"))             lines.push(`Biometric data storage: ${get("cyber_biometrics")}`);
-    if (get("cyber_images_video"))           lines.push(`Image and video surveillance: ${get("cyber_images_video")}`);
-    if (get("cyber_automated_decisioning"))  lines.push(`Automated security decisioning: ${get("cyber_automated_decisioning")}`);
-    if (getA("cyber_third_party").length)   lines.push(`Third-party access: ${getA("cyber_third_party").join(", ")}`);
-    if (get("cyber_incident_response"))      lines.push(`Incident response: ${get("cyber_incident_response")}`);
-    if (get("cyber_encryption"))              lines.push(`Encryption: ${get("cyber_encryption")}`);
-    if (get("cyber_mfa"))                    lines.push(`MFA: ${get("cyber_mfa")}`);
-    if (get("cyber_pen_testing"))            lines.push(`Penetration testing: ${get("cyber_pen_testing")}`);
-    if (getA("cyber_certifications").length) lines.push(`Security certifications: ${getA("cyber_certifications").join(", ")}`);
+    if (get("cyber_exposure"))               lines.push(`Exposure level: ${formatAnswerDisplay("cyber_exposure", get("cyber_exposure") as string)}`);
+    if (get("cyber_financial_data"))         lines.push(`Financial data: ${formatAnswerDisplay("cyber_financial_data", get("cyber_financial_data") as string)}`);
+    if (get("cyber_biometrics"))             lines.push(`Biometric data storage: ${formatAnswerDisplay("cyber_biometrics", get("cyber_biometrics") as string)}`);
+    if (get("cyber_images_video"))           lines.push(`Image and video surveillance: ${formatAnswerDisplay("cyber_images_video", get("cyber_images_video") as string)}`);
+    if (get("cyber_automated_decisioning"))  lines.push(`Automated security decisioning: ${formatAnswerDisplay("cyber_automated_decisioning", get("cyber_automated_decisioning") as string)}`);
+    if (getA("cyber_third_party").length)   lines.push(`Third-party access: ${formatListLabels("cyber_third_party", getA("cyber_third_party"))}`);
+    if (get("cyber_incident_response"))      lines.push(`Incident response: ${formatAnswerDisplay("cyber_incident_response", get("cyber_incident_response") as string)}`);
+    if (get("cyber_encryption"))              lines.push(`Encryption: ${formatAnswerDisplay("cyber_encryption", get("cyber_encryption") as string)}`);
+    if (get("cyber_mfa"))                    lines.push(`MFA: ${formatAnswerDisplay("cyber_mfa", get("cyber_mfa") as string)}`);
+    if (get("cyber_pen_testing"))            lines.push(`Penetration testing: ${formatAnswerDisplay("cyber_pen_testing", get("cyber_pen_testing") as string)}`);
+    if (getA("cyber_certifications").length) lines.push(`Security certifications: ${formatListLabels("cyber_certifications", getA("cyber_certifications"))}`);
   }
 
   if (get("additional_context")) lines.push(`\nADDITIONAL CONTEXT: ${get("additional_context")}`);
@@ -664,9 +726,9 @@ export function compileAssessmentPrompt(
   initialDescription?: string,
 ): { description: string; meta: QuestionnaireMeta } {
   const { description, meta } = compilePrompt(answers);
-  if (!initialDescription?.trim()) return { description, meta };
+  const groundTruth = buildScopingGroundTruthBlock(answers, initialDescription);
   return {
-    description: `INITIAL DESCRIPTION:\n${initialDescription.trim()}\n\n${description}`,
+    description: `${groundTruth}\n\n${description}`,
     meta,
   };
 }

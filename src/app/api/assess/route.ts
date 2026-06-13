@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
         document_ids  = [] as string[],
         folder_id     = null as string | null,
         prior_assessment_number = null as string | null,
+        guided_scoping = false,
       } = body;
 
       if (description.trim().length < 10) {
@@ -129,15 +130,20 @@ export async function POST(req: NextRequest) {
         docContext = await buildDocumentContextBlock(document_ids, userId);
       }
 
+      const contextLabel = guided_scoping ? "USER-CONFIRMED SCOPING" : "CONTEXT";
       const userMsg = [
-        `DEPLOYMENT: ${description}`,
-        `CONTEXT: domains=${domains.join(",") || "inferred"} | jurisdictions=${jurisdictions.join(",") || "inferred"} | data=${data_types.join(",") || "inferred"} | sector=${sector || "inferred"}`,
+        description,
+        ``,
+        `${contextLabel}: domains=${domains.join(",") || "none"} | jurisdictions=${jurisdictions.join(",") || "none"} | data=${data_types.join(",") || "none"} | sector=${sector || "none"}`,
+        guided_scoping
+          ? `NOTE: The deployment description above includes an AUTHORITATIVE USER SCOPING block. Every gap must follow from those confirmed answers — do not assume facts outside that block.`
+          : "",
         ``,
         `REGULATORY CLAUSES:`,
         clauseText || "No clauses retrieved.",
         contract_text ? `\nCONTRACT:\n${contract_text.slice(0, 6000)}` : "",
         docContext ? `\nREFERENCED DOCUMENTS:\n${docContext.slice(0, 4000)}` : "",
-      ].join("\n");
+      ].filter(Boolean).join("\n");
 
       const hasDocument = document_ids.length > 0 || !!contract_text.trim();
       const primaryDomain = domains.length === 1 ? mapDomainToFocus(domains[0]) : null;
@@ -145,6 +151,7 @@ export async function POST(req: NextRequest) {
         hasDocument,
         priorAssessmentNumber: prior_assessment_number,
         primaryDomain,
+        guidedScoping: guided_scoping,
       });
 
       const stream = await claude.messages.create({

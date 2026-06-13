@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX } from "@/lib/grc-prompt";
-import { NORA_GREETINGS } from "@/lib/agent-prompts";
+import { CASSIUS_CONTEXT, NORA_GREETINGS } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
@@ -90,6 +90,23 @@ export async function POST(req: NextRequest) {
       let systemPrompt = docContext
         ? `${basePrompt}\n\nREFERENCED DOCUMENTS:\n${docContext}`
         : basePrompt;
+
+      if (assessment_id && userId && !isStandalone) {
+        const { data: assessmentRow } = await supabase.from("assessments")
+          .select("messages")
+          .eq("id", assessment_id)
+          .eq("user_id", userId)
+          .single();
+
+        const firstUser = Array.isArray(assessmentRow?.messages)
+          ? (assessmentRow.messages as { role?: string; content?: string }[]).find(m => m.role === "user")
+          : null;
+
+        const scopingContent = firstUser?.content ?? "";
+        if (scopingContent.includes("AUTHORITATIVE USER SCOPING")) {
+          systemPrompt += `\n\n${CASSIUS_CONTEXT.groundedScoping}\n\nORIGINAL ASSESSMENT SCOPING (binding — do not contradict):\n${scopingContent}`;
+        }
+      }
 
       if (docContext) {
         systemPrompt += GRC_DOCUMENT_REDLINE_APPENDIX;
