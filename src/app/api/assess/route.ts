@@ -5,6 +5,13 @@ import { createClient } from "@supabase/supabase-js";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { retrieveRegulatoryContext } from "@/lib/regulatory-rag";
 import { buildCassiusSystemPrompt, mapDomainToFocus } from "@/lib/agent-prompts";
+import {
+  AssessmentGapStreamParser,
+  buildProcessingResult,
+  deriveRiskFromGaps,
+  normalizeStreamGap,
+  type StreamGap,
+} from "@/lib/streaming-assessment";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -12,46 +19,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-
 function normalizeGapDomain(raw: string): string {
   const d = raw.toLowerCase();
   if (d === "ai" || d === "ai_governance") return "ai_governance";
   if (d === "cyber" || d === "cybersecurity") return "cybersecurity";
   return "privacy";
-}
-
-// Gap-driven risk scoring — derived entirely from Claude's gap analysis output.
-// No lookup tables. No pre-calculated weights.
-function deriveRiskFromGaps(gaps: Array<{ severity: string; domain: string }>) {
-  const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
-  const domains = ["privacy", "ai_governance", "cybersecurity"];
-
-  // Overall tier
-  const maxSeverity = gaps.reduce((max, g) => {
-    const rank = severityRank[g.severity?.toLowerCase()] ?? 0;
-    return rank > max ? rank : max;
-  }, 0);
-
-  const overallTier =
-    maxSeverity >= 4 ? "critical" :
-    maxSeverity >= 3 ? "high" :
-    maxSeverity >= 2 ? "medium" : "low";
-
-  // Per-domain tier
-  const byDomain: Record<string, { tier: string; gap_count: number }> = {};
-  for (const domain of domains) {
-    const domainGaps = gaps.filter(g => g.domain === domain);
-    const domainMax  = domainGaps.reduce((max, g) => {
-      const rank = severityRank[g.severity?.toLowerCase()] ?? 0;
-      return rank > max ? rank : max;
-    }, 0);
-    byDomain[domain] = {
-      tier: domainMax >= 4 ? "critical" : domainMax >= 3 ? "high" : domainMax >= 2 ? "medium" : "low",
-      gap_count: domainGaps.length,
-    };
-  }
-
-  return { overall: overallTier, byDomain };
 }
 
 function parseJSON(raw: string) {
@@ -81,6 +53,38 @@ function sse(data: object) {
 
 export const maxDuration = 300;
 
+type PersistInput = {
+  assessmentId: string;
+  userId:         string;
+  description:    string;
+  messageTags:    string[];
+  domains:        string[];
+  jurisdictions:  string[];
+  folderId:       string | null;
+  result:         Record<string, unknown>;
+  riskTier:       string;
+  title?:         string;
+};
+
+async function persistAssessment(row: PersistInput) {
+  const assistantAssessment = {
+    ...row.result,
+    id: row.assessmentId,
+  };
+
+  await supabase.from("assessments").update({
+    title:     row.title ?? (row.result.title as string) ?? row.description.slice(0, 80),
+    result:    row.result,
+    risk_tier: row.riskTier,
+    messages:  [
+      { role: "user", content: row.description, tags: row.messageTags },
+      { role: "assistant", assessment: assistantAssessment },
+    ],
+  })
+    .eq("id", row.assessmentId)
+    .eq("user_id", row.userId);
+}
+
 export async function POST(req: NextRequest) {
   const enc = new TextEncoder();
   const { readable, writable } = new TransformStream<Uint8Array>();
@@ -88,6 +92,10 @@ export async function POST(req: NextRequest) {
   const send   = (d: object) => writer.write(enc.encode(sse(d)));
 
   (async () => {
+    let assessmentId: string | null = null;
+    let streamedGaps: StreamGap[]   = [];
+    let summaryText                   = "";
+
     try {
       const { userId } = await auth();
       if (!userId) {
@@ -117,6 +125,56 @@ export async function POST(req: NextRequest) {
         return;
       }
 
+      const messageTags = tags.length > 0
+        ? tags
+        : [...domains, ...jurisdictions, ...data_types, sector].filter(Boolean);
+
+      const initialResult = buildProcessingResult([], {
+        title:   description.slice(0, 80) || "Compliance assessment",
+        status:  "processing",
+        summary: "",
+      });
+
+      const { data: created, error: createError } = await supabase.from("assessments").insert({
+        user_id:       userId,
+        title:         description.slice(0, 80) || "Compliance assessment",
+        description:   description.slice(0, 500),
+        result:        initialResult,
+        messages:      [
+          { role: "user", content: description, tags: messageTags },
+          { role: "assistant", assessment: { ...initialResult, status: "processing" } },
+        ],
+        risk_tier:     "low",
+        domains,
+        jurisdictions,
+        folder_id:     folder_id || null,
+        assigned_to:   [userId],
+      }).select("id, assessment_number").single();
+
+      if (createError || !created?.id) {
+        console.error("Assess create error:", createError);
+        await send({ type: "error", text: "Could not start assessment. Please try again." });
+        await writer.close();
+        return;
+      }
+
+      assessmentId = created.id;
+
+      if (folder_id) {
+        await supabase.from("folder_items").upsert({
+          folder_id,
+          item_type: "assessment",
+          item_id:   created.id,
+        });
+      }
+
+      await send({
+        type:                "started",
+        assessment_id:       created.id,
+        assessment_number:   created.assessment_number,
+        assessment:          { ...initialResult, id: created.id, assessment_number: created.assessment_number },
+      });
+
       await send({ type: "status", text: "Searching regulatory corpus..." });
       const { contextBlock: clauseText } = await retrieveRegulatoryContext(supabase, description, {
         matchThreshold: 0.40,
@@ -126,7 +184,6 @@ export async function POST(req: NextRequest) {
 
       await send({ type: "status", text: "Analysing your deployment..." });
 
-      // Fetch any referenced documents and inject into assessment context
       let docContext = "";
       if (document_ids.length > 0 && userId) {
         docContext = await buildDocumentContextBlock(document_ids, userId);
@@ -164,10 +221,45 @@ export async function POST(req: NextRequest) {
         stream:     true,
       });
 
-      let fullText    = "";
-      let pastSep     = false;
+      let fullText     = "";
+      let pastSep      = false;
       let proseSentLen = 0;
+      let jsonEmittedLen = 0;
       let lastPing     = Date.now();
+      const gapParser  = new AssessmentGapStreamParser();
+
+      const flushGaps = async (newGaps: StreamGap[]) => {
+        if (!newGaps.length || !assessmentId) return;
+
+        streamedGaps = [...streamedGaps, ...newGaps];
+        const result = buildProcessingResult(streamedGaps, {
+          title:   description.slice(0, 80) || "Compliance assessment",
+          summary: summaryText,
+          status:  "processing",
+        });
+
+        await persistAssessment({
+          assessmentId,
+          userId,
+          description,
+          messageTags,
+          domains,
+          jurisdictions,
+          folderId: folder_id,
+          result,
+          riskTier: result.risk_tier as string,
+        });
+
+        for (let i = 0; i < newGaps.length; i++) {
+          const index = streamedGaps.length - newGaps.length + i;
+          await send({
+            type: "gap",
+            gap:  newGaps[i],
+            index,
+            assessment: { ...result, id: assessmentId, assessment_number: created.assessment_number },
+          });
+        }
+      };
 
       for await (const event of stream as AsyncIterable<{ type: string; delta?: { type?: string; text?: string } }>) {
         if (Date.now() - lastPing > 12_000) {
@@ -177,15 +269,26 @@ export async function POST(req: NextRequest) {
         if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
           const chunk = event.delta.text ?? "";
           fullText += chunk;
-          if (pastSep) continue;
 
           const sepIdx = fullText.indexOf("---JSON---");
           if (sepIdx >= 0) {
-            pastSep = true;
-            const prose = fullText.slice(0, sepIdx);
-            const remainder = prose.slice(proseSentLen);
-            if (remainder) await send({ type: "token", text: remainder });
-            proseSentLen += remainder.length;
+            if (!pastSep) {
+              pastSep = true;
+              const prose = fullText.slice(0, sepIdx);
+              const remainder = prose.slice(proseSentLen);
+              if (remainder) await send({ type: "token", text: remainder });
+              proseSentLen += remainder.length;
+              summaryText = prose.trim();
+              await send({ type: "status", text: "Surfacing gaps..." });
+            }
+
+            const jsonFull = fullText.slice(sepIdx + "---JSON---".length);
+            const jsonDelta = jsonFull.slice(jsonEmittedLen);
+            jsonEmittedLen = jsonFull.length;
+            if (jsonDelta) {
+              gapParser.append(jsonDelta);
+              await flushGaps(gapParser.drainNewGaps());
+            }
           } else {
             await send({ type: "token", text: chunk });
             proseSentLen += chunk.length;
@@ -193,85 +296,94 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      summaryText = fullText.split("---JSON---")[0].trim() || summaryText;
       const jsonPart = fullText.includes("---JSON---") ? fullText.split("---JSON---")[1] : fullText;
+
       let assessment: Record<string, unknown> = {};
+      let parseFailed = false;
       try {
         assessment = parseJSON(jsonPart);
       } catch {
-        await send({ type: "error", text: "Failed to parse assessment. Please try again." });
-        await writer.close();
-        return;
+        parseFailed = true;
+        if (streamedGaps.length === 0) {
+          await send({ type: "error", text: "Failed to parse assessment. Please try again." });
+          if (assessmentId) {
+            await persistAssessment({
+              assessmentId,
+              userId,
+              description,
+              messageTags,
+              domains,
+              jurisdictions,
+              folderId: folder_id,
+              result: buildProcessingResult([], { status: "failed", summary: summaryText }),
+              riskTier: "low",
+            });
+          }
+          await writer.close();
+          return;
+        }
+        assessment = buildProcessingResult(streamedGaps, {
+          title:   description.slice(0, 80),
+          summary: summaryText,
+          status:  "partial",
+        });
       }
 
-      // Normalise gaps
-      const gaps = Array.isArray(assessment.gaps)
-        ? (assessment.gaps as Record<string, unknown>[]).map(g => ({
-            ...g,
-            severity:    String(g.severity || "medium").toLowerCase(),
-            domain:      normalizeGapDomain(String(g.domain || "privacy")),
-            detail:      g.detail      || g.description || "",
-            remediation: g.remediation || g.fix         || "",
-            frameworks:  Array.isArray(g.frameworks) ? g.frameworks : [],
-          }))
-        : [];
+      if (!parseFailed) {
+        const gaps = Array.isArray(assessment.gaps)
+          ? (assessment.gaps as Record<string, unknown>[]).map(g => ({
+              ...normalizeStreamGap(g),
+              domain: normalizeGapDomain(String(g.domain || "privacy")),
+            }))
+          : streamedGaps;
 
-      assessment.gaps = gaps;
+        assessment.gaps = gaps;
+        const risk = deriveRiskFromGaps(gaps as Array<{ severity: string; domain: string }>);
+        assessment.risk_tier      = risk.overall;
+        assessment.risk_by_domain = risk.byDomain;
+        delete assessment.risk_score;
+        assessment.summary = summaryText || (assessment.summary as string) || "";
+        assessment.status  = "complete";
+        streamedGaps       = gaps as StreamGap[];
+      }
 
-      // Derive risk entirely from gap analysis — no lookup tables
-      const risk = deriveRiskFromGaps(gaps as Array<{ severity: string; domain: string }>);
-      assessment.risk_tier      = risk.overall;
-      assessment.risk_by_domain = risk.byDomain;
+      assessment.id                = assessmentId;
+      assessment.assessment_number = created.assessment_number;
 
-      // Remove any legacy numeric score from Claude's output
-      delete assessment.risk_score;
+      await send({ type: "done", assessment });
 
-      assessment.summary = fullText.split("---JSON---")[0].trim() || (assessment.summary as string) || "";
-
-      // Deliver results to the client before persistence so a slow/failed save
-      // cannot strand the UI after Claude has already finished.
-      await send({ type: "done", assessment: { ...assessment } });
-
-      await send({ type: "status", text: "Saving assessment..." });
-
-      const messageTags = tags.length > 0
-        ? tags
-        : [...domains, ...jurisdictions, ...data_types, sector].filter(Boolean);
-
-      const { data: saved, error: saveError } = await supabase.from("assessments").insert({
-        user_id:      userId,
-        title:        (assessment.title as string) || description.slice(0, 80),
-        description:  description.slice(0, 500),
-        result:       assessment,
-        messages:     [
-          { role: "user",      content: description, tags: messageTags },
-          { role: "assistant", assessment },
-        ],
-        risk_tier:    risk.overall,
+      await persistAssessment({
+        assessmentId: assessmentId!,
+        userId,
+        description,
+        messageTags,
         domains,
         jurisdictions,
-        folder_id:    folder_id || null,
-        assigned_to:  [userId],
-      }).select("id, assessment_number").single();
+        folderId: folder_id,
+        result:     assessment,
+        riskTier:   String(assessment.risk_tier || "low"),
+        title:      assessment.title as string | undefined,
+      });
 
-      if (saveError) {
-        console.error("Assess save error:", saveError);
-        await send({ type: "warning", text: "Assessment completed but could not be saved to history." });
-      } else {
-        assessment.id                = saved?.id;
-        assessment.assessment_number = saved?.assessment_number;
-
-        if (folder_id && saved?.id) {
-          await supabase.from("folder_items").upsert({
-            folder_id,
-            item_type: "assessment",
-            item_id:   saved.id,
-          });
-        }
-
-        await send({ type: "saved", assessment: { ...assessment } });
-      }
+      await send({ type: "saved", assessment });
     } catch (err: unknown) {
       console.error("Assess error:", err);
+      if (assessmentId) {
+        const partial = buildProcessingResult(streamedGaps, {
+          summary: summaryText,
+          status:  streamedGaps.length ? "partial" : "failed",
+        });
+        partial.id = assessmentId;
+        await supabase.from("assessments").update({
+          result:    partial,
+          risk_tier: partial.risk_tier,
+        }).eq("id", assessmentId);
+
+        if (streamedGaps.length) {
+          await send({ type: "done", assessment: partial });
+        }
+      }
       await send({ type: "error", text: err instanceof Error ? err.message : "Assessment failed" });
     } finally {
       await writer.close();

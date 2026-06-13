@@ -91,6 +91,12 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   }, [path, searchParams.toString(), isChat, isAssess, isProjects, isMobileView]);
 
   useEffect(() => {
+    const handler = () => loadAssessments();
+    window.addEventListener("norvar:assessments-updated", handler);
+    return () => window.removeEventListener("norvar:assessments-updated", handler);
+  }, []);
+
+  useEffect(() => {
     if (isAssess) setAssessNavOpen(true);
     if (isChat && !isAssess) setChatNavOpen(true);
   }, [path, isAssess, isChat]);

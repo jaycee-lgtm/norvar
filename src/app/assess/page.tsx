@@ -102,6 +102,7 @@ type Assessment = {
   risk_tier?:      string;
   risk_by_domain?: Record<string, { tier: string; gap_count: number }>;
   assessment_number?: string;
+  status?:         "processing" | "partial" | "complete" | "failed";
   gaps:            Gap[];
   frameworks?:     string[];
 };
@@ -138,12 +139,14 @@ function restoreMessages(
       }
       if (m.role === "assistant" && m.assessment) {
         const a = m.assessment;
+        const resultStatus = (row.result as Assessment | undefined)?.status;
         return [{
           role: "assistant",
           assessment: {
             ...a,
             id: row.id,
             title: a.title ?? row.title,
+            status: a.status ?? resultStatus,
             risk_score: a.risk_score ?? {
               composite: row.risk_score,
               tier: row.risk_tier,
@@ -164,6 +167,8 @@ function restoreMessages(
         ...result,
         id: row.id,
         title: result.title ?? row.title,
+        gaps: result.gaps ?? [],
+        status: result.status,
         risk_score: result.risk_score ?? {
           composite: row.risk_score,
           tier: row.risk_tier,
@@ -177,7 +182,12 @@ type SSEEvent =
   | { type: "status"; text: string }
   | { type: "token"; text: string }
   | { type: "summary"; text: string }
+  | { type: "started"; assessment_id: string; assessment_number?: string; assessment?: Assessment }
+  | { type: "gap"; gap: Gap; index: number; assessment?: Assessment }
   | { type: "done"; assessment?: Assessment; text?: string }
+  | { type: "saved"; assessment?: Assessment }
+  | { type: "warning"; text: string }
+  | { type: "ping" }
   | { type: "error"; text: string };
 
 // ── Severity icon ──────────────────────────────────────────────────────────────
@@ -273,6 +283,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
   const overallTier = a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low";
   const byDomain    = a.risk_by_domain ?? null;
   const gaps        = a.gaps ?? [];
+  const isProcessing = a.status === "processing";
   const ordered     = [
     ...gaps.filter(g => g.severity === "critical"),
     ...gaps.filter(g => g.severity === "high"),
@@ -326,9 +337,17 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
           {overallTier.charAt(0).toUpperCase() + overallTier.slice(1)} risk
         </span>
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)" }}>
-          {gaps.length} gap{gaps.length !== 1 ? "s" : ""} · {a.frameworks?.length ?? 0} frameworks
+          {isProcessing ? "Analysing..." : `${gaps.length} gap${gaps.length !== 1 ? "s" : ""} · ${a.frameworks?.length ?? 0} frameworks`}
         </span>
       </div>
+
+      {isProcessing && gaps.length === 0 && (
+        <div style={{ display: "flex", gap: 5, padding: "6px 0 10px" }}>
+          <span className="loading-dot" />
+          <span className="loading-dot" />
+          <span className="loading-dot" />
+        </div>
+      )}
 
       {byDomain && (
         <div style={{ display: "flex", gap: 8, marginTop: 8, marginBottom: 4, flexWrap: "wrap" }}>
@@ -351,7 +370,9 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
         </div>
       )}
 
-      <p className="assessment-summary">{a.summary}</p>
+      <p className="assessment-summary">
+        {a.summary || (isProcessing ? "Analysing your deployment. Gaps will appear as they are identified." : "")}
+      </p>
       <div className="section-divider" />
 
       <div className="assessment-tabs" style={{ display: "flex", borderBottom: "0.5px solid var(--bdr)", marginBottom: 12 }}>
@@ -369,17 +390,20 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
             {t === "gaps" && (
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {`Gaps (${gaps.length})`}
-                {tab === "gaps" && ordered.length > 0 && !queuedAll && (
-                  <span
-                    onClick={e => { e.stopPropagation(); addToQueue(ordered.map((_, i) => i)); }}
+                {tab === "gaps" && ordered.length > 0 && a.id && !queuedAll && (
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); void addToQueue(ordered.map((_, i) => i)); }}
+                    disabled={queueing !== null}
                     style={{
                       fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 10,
                       background: "var(--card2)", color: "var(--fg3)", border: "0.5px solid var(--bdr2)",
-                      cursor: "pointer", letterSpacing: "0.05em", textTransform: "uppercase",
+                      cursor: queueing !== null ? "not-allowed" : "pointer",
+                      letterSpacing: "0.05em", textTransform: "uppercase",
                     }}
                   >
-                    + Add all
-                  </span>
+                    {queueing === -1 ? "..." : "+ Add all"}
+                  </button>
                 )}
                 {queuedAll && (
                   <span style={{ fontSize: 9, color: "var(--rl)", fontWeight: 600 }}>✓ All queued</span>
@@ -474,6 +498,20 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
       <div className="section-divider" />
 
       <div className="result-actions">
+        {ordered.length > 0 && a.id && !queuedAll && (
+          <button
+            type="button"
+            className="result-action"
+            onClick={() => addToQueue(ordered.map((_, i) => i))}
+            disabled={queueing !== null}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: queueing !== null ? "not-allowed" : "pointer" }}
+          >
+            {queueing === -1 ? "Queueing..." : "Queue all gaps"}
+          </button>
+        )}
+        {queuedAll && (
+          <span className="result-action" style={{ color: "var(--rl)", fontSize: 11 }}>All gaps queued</span>
+        )}
         <button type="button" className="result-action" onClick={() => exportAssessment(a)} style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
           <Download size={11} strokeWidth={2} /> Export
         </button>
@@ -600,6 +638,8 @@ function Home() {
         setAssessmentId(id);
         setGapChats(d.assessment.gap_chats ?? {});
         setMessages(restoreMessages(d.assessment));
+        const status = (d.assessment.result as Assessment | undefined)?.status;
+        if (status === "processing") setLoading(true);
       })
       .catch((e: unknown) => {
         setMessages([]);
@@ -607,6 +647,35 @@ function Home() {
       })
       .finally(() => setLoadingSaved(false));
   }, [searchParams]);
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+
+    const assistant = [...messages].reverse().find(
+      (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
+    );
+    if (assistant?.assessment.status !== "processing") return;
+
+    const poll = () => {
+      fetch(`/api/assessments?id=${id}`)
+        .then(r => r.json())
+        .then(d => {
+          if (!d.assessment) return;
+          setGapChats(d.assessment.gap_chats ?? {});
+          setMessages(restoreMessages(d.assessment));
+          const status = (d.assessment.result as Assessment | undefined)?.status;
+          if (status && status !== "processing") {
+            setLoading(false);
+            setError("");
+          }
+        })
+        .catch(() => {});
+    };
+
+    const timer = setInterval(poll, 3000);
+    return () => clearInterval(timer);
+  }, [searchParams, messages]);
 
   useEffect(() => {
     fetch("/api/documents?status=active")
@@ -901,6 +970,8 @@ function Home() {
 
     let streamingText = "";
     let summaryText = "";
+    let receivedDone    = false;
+    let receivedStarted = false;
     try {
       const res = await fetch("/api/assess", {
         method:  "POST",
@@ -922,36 +993,86 @@ function Home() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Assessment failed");
       }
-      let receivedDone = false;
+      let showCard        = false;
+
+      const applyAssessment = (assessment: Assessment) => {
+        setMessages(prev => {
+          const next = prev.filter(m => !(m.role === "thinking" && !m.isFollowUp && !m.guidedQuestionId));
+          const idx  = next.findLastIndex(m => m.role === "assistant");
+          if (idx >= 0) next[idx] = { role: "assistant", assessment };
+          else next.push({ role: "assistant", assessment });
+          return next;
+        });
+      };
+
       await readSSEStream(res, (event) => {
-        if (event.type === "ping") return;
-        if (event.type === "status") {
-          setMessages(prev => updateLastMessage(prev, "thinking", { status: event.text }));
-        } else if (event.type === "token") {
-          streamingText += event.text ?? "";
-          typewriterRef.current?.enqueue(event.text ?? "");
-        } else if (event.type === "summary") {
-          // Legacy fallback: append only text not already streamed.
-          const summary = event.text ?? "";
-          summaryText = summary;
-          const delta = summary.slice(streamingText.length);
-          streamingText = summary;
-          if (delta) typewriterRef.current?.enqueue(delta);
-        } else if (event.type === "done" || event.type === "saved") {
-          receivedDone = true;
+        const ev = event as SSEEvent;
+        if (ev.type === "ping") return;
+
+        if (ev.type === "started") {
+          receivedStarted = true;
+          showCard = true;
           typewriterRef.current?.reset();
-          const assessment = event.assessment as Assessment | undefined;
+          const assessment = ev.assessment;
+          if (ev.assessment_id) {
+            setAssessmentId(ev.assessment_id);
+            router.replace(`/assess?id=${ev.assessment_id}`, { scroll: false });
+            window.dispatchEvent(new Event("norvar:assessments-updated"));
+          }
+          if (assessment) {
+            applyAssessment({
+              ...assessment,
+              id: ev.assessment_id ?? assessment.id,
+              gaps: assessment.gaps ?? [],
+              status: assessment.status ?? "processing",
+            });
+          }
+          return;
+        }
+
+        if (ev.type === "status") {
+          if (!showCard) setMessages(prev => updateLastMessage(prev, "thinking", { status: ev.text }));
+          return;
+        }
+
+        if (ev.type === "token") {
+          if (!showCard) {
+            streamingText += ev.text ?? "";
+            typewriterRef.current?.enqueue(ev.text ?? "");
+          }
+          return;
+        }
+
+        if (ev.type === "summary") {
+          const summary = ev.text ?? "";
+          summaryText = summary;
+          if (!showCard) {
+            const delta = summary.slice(streamingText.length);
+            streamingText = summary;
+            if (delta) typewriterRef.current?.enqueue(delta);
+          }
+          return;
+        }
+
+        if (ev.type === "gap") {
+          showCard = true;
+          typewriterRef.current?.reset();
+          if (ev.assessment) {
+            applyAssessment(ev.assessment);
+          }
+          return;
+        }
+
+        if (ev.type === "done" || ev.type === "saved") {
+          receivedDone = ev.type === "done" ? true : receivedDone;
+          typewriterRef.current?.reset();
+          const assessment = ev.assessment;
           if (!assessment) throw new Error("Assessment failed");
           if (assessment.id) setAssessmentId(assessment.id);
           summaryText = assessment.summary || summaryText || streamingText;
-          if (event.type === "done") {
-            setMessages(prev => {
-              const next = [...prev];
-              const idx  = next.findLastIndex(m => m.role === "thinking");
-              if (idx >= 0) next[idx] = { role: "assistant", assessment };
-              else next.push({ role: "assistant", assessment });
-              return next;
-            });
+
+          if (ev.type === "done") {
+            applyAssessment({ ...assessment, status: assessment.status ?? "complete" });
             clearAll();
             setContractText("");
             setContractName("");
@@ -961,31 +1082,44 @@ function Home() {
             setGuidedAnswers({});
             setGuidedMultiSelections([]);
             setActiveGuidedQuestionId(null);
-          } else if (event.type === "saved") {
-            setMessages(prev => {
-              const next = [...prev];
-              const idx  = next.findLastIndex(m => m.role === "assistant");
-              if (idx >= 0) {
-                const msg = next[idx] as Extract<Message, { role: "assistant" }>;
-                next[idx] = { role: "assistant", assessment: { ...msg.assessment, ...assessment } };
-              }
-              return next;
-            });
+            window.dispatchEvent(new Event("norvar:assessments-updated"));
+          } else if (ev.type === "saved") {
+            applyAssessment(assessment);
           }
-        } else if (event.type === "warning") {
-          setError(event.text ?? "Assessment saved with warnings.");
-        } else if (event.type === "error") {
-          throw new Error(event.text);
+          return;
+        }
+
+        if (ev.type === "warning") {
+          setError(ev.text ?? "Assessment saved with warnings.");
+          return;
+        }
+
+        if (ev.type === "error") {
+          if (receivedStarted) {
+            setError(ev.text ?? "Assessment interrupted. Showing saved progress.");
+            return;
+          }
+          throw new Error(ev.text);
         }
       });
-      if (!receivedDone) throw new Error("Assessment did not complete. The connection may have timed out — please try again.");
+
+      if (!receivedDone && !receivedStarted) {
+        throw new Error("Assessment did not complete. The connection may have timed out — please try again.");
+      }
+      if (!receivedDone && receivedStarted) {
+        setError("Connection interrupted. Resuming from your saved assessment...");
+      }
     } catch (e: unknown) {
       typewriterRef.current?.reset();
-      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
-      setMessages(prev => prev.filter(m => m.role !== "thinking"));
+      if (!receivedStarted) {
+        setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+        setMessages(prev => prev.filter(m => m.role !== "thinking"));
+      } else {
+        setError(e instanceof Error ? e.message : "Assessment interrupted. Showing saved progress.");
+      }
       return null;
     } finally {
-      setLoading(false);
+      if (receivedDone) setLoading(false);
     }
 
     return summaryText.trim() || null;
