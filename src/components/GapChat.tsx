@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ArrowUp, Loader2, MessageSquare } from "lucide-react";
 import { readSSEStream } from "@/lib/sse";
+import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 
 export type GapChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -37,6 +38,7 @@ export default function GapChat({
   const [input, setInput]       = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+  const typewriterRef           = useRef<TypewriterDrain | null>(null);
 
   const canSend = input.trim().length > 0 && !loading;
 
@@ -50,6 +52,18 @@ export default function GapChat({
     setLoading(true);
 
     setMessages([...prior, { role: "user", content: text }, { role: "assistant", content: "" }]);
+
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.length - 1;
+        if (idx >= 0 && next[idx].role === "assistant") {
+          next[idx] = { role: "assistant", content: next[idx].content + ch };
+        }
+        return next;
+      });
+    });
 
     let reply = "";
 
@@ -75,14 +89,7 @@ export default function GapChat({
       await readSSEStream(res, event => {
         if (event.type === "token") {
           reply += event.text ?? "";
-          setMessages(prev => {
-            const next = [...prev];
-            const idx  = next.length - 1;
-            if (idx >= 0 && next[idx].role === "assistant") {
-              next[idx] = { role: "assistant", content: reply };
-            }
-            return next;
-          });
+          typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "done") {
           const saved = (event as { messages?: GapChatMessage[] }).messages;
           if (saved?.length) {
@@ -98,6 +105,7 @@ export default function GapChat({
         }
       });
     } catch (e: unknown) {
+      typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setMessages(prior);
     } finally {

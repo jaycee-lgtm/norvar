@@ -13,6 +13,7 @@ import FormattedMessage from "@/components/FormattedMessage";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
+import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info, FileText } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -118,6 +119,7 @@ function Chat() {
   const scrollRef        = useRef<HTMLDivElement>(null);
   const loadedIdRef      = useRef<string | null>(null);
   const handleSendRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
+  const typewriterRef    = useRef<TypewriterDrain | null>(null);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -227,6 +229,19 @@ function Chat() {
     setHistory(newHistory);
     setLoading(true);
 
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "streaming");
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<DisplayMessage, { role: "streaming" }>;
+          next[idx] = { role: "streaming", content: msg.content + ch };
+        }
+        return next;
+      });
+    });
+
     let streamText = "";
     let finalResponse: string | null = null;
 
@@ -251,12 +266,7 @@ function Chat() {
       await readSSEStream(res, event => {
         if (event.type === "token") {
           streamText += event.text;
-          setMessages(prev => {
-            const next = [...prev];
-            const idx  = next.findLastIndex(m => m.role === "streaming");
-            if (idx >= 0) next[idx] = { role: "streaming", content: streamText };
-            return next;
-          });
+          typewriterRef.current?.enqueue(event.text);
         } else if (event.type === "done") {
           const finalText = streamText || event.text || "";
           finalResponse = finalText;
@@ -277,6 +287,7 @@ function Chat() {
         }
       });
     } catch (e: unknown) {
+      typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setMessages(prev => prev.filter(m => m.role !== "streaming"));
       setHistory(prev => prev.slice(0, -1));

@@ -15,6 +15,7 @@ import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT } from "@/lib/agents";
 import { pickNoraFollowUps } from "@/lib/agent-prompts";
+import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -681,6 +682,7 @@ function Home() {
   const fileRef        = useRef<HTMLInputElement>(null);
   const followUpRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
   const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
+  const typewriterRef  = useRef<TypewriterDrain | null>(null);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -861,6 +863,20 @@ function Home() {
   ): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
+
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "thinking");
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<Message, { role: "thinking" }>;
+          next[idx] = { ...msg, text: msg.text + ch, status: undefined };
+        }
+        return next;
+      });
+    });
+
     let streamingText = "";
     let summaryText = "";
     try {
@@ -888,11 +904,24 @@ function Home() {
           setMessages(prev => updateLastMessage(prev, "thinking", { status: event.text }));
         } else if (event.type === "token") {
           streamingText += event.text;
-          setMessages(prev => updateLastMessage(prev, "thinking", { text: streamingText, status: undefined }));
+          typewriterRef.current?.enqueue(event.text);
         } else if (event.type === "summary") {
           streamingText = event.text;
           summaryText = event.text;
-          setMessages(prev => updateLastMessage(prev, "thinking", { text: streamingText, status: undefined }));
+          typewriterRef.current?.reset();
+          setMessages(prev => updateLastMessage(prev, "thinking", { text: "", status: undefined }));
+          typewriterRef.current = createTypewriterDrain(ch => {
+            setMessages(prev => {
+              const next = [...prev];
+              const idx  = next.findLastIndex(m => m.role === "thinking");
+              if (idx >= 0) {
+                const msg = next[idx] as Extract<Message, { role: "thinking" }>;
+                next[idx] = { ...msg, text: msg.text + ch, status: undefined };
+              }
+              return next;
+            });
+          });
+          typewriterRef.current?.enqueue(event.text);
         } else if (event.type === "done") {
           if (!event.assessment) throw new Error("Assessment failed");
           if (event.assessment.id) setAssessmentId(event.assessment.id);
@@ -916,6 +945,7 @@ function Home() {
         }
       });
     } catch (e: unknown) {
+      typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
       setMessages(prev => prev.filter(m => m.role !== "thinking"));
       return null;
@@ -1079,6 +1109,19 @@ function Home() {
     setLoading(true);
     setMessages(prev => [...prev, { role: "chat", text: "" }]);
 
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "chat");
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<Message, { role: "chat" }>;
+          next[idx] = { ...msg, text: msg.text + ch };
+        }
+        return next;
+      });
+    });
+
     const history: { role: "user" | "assistant"; content: string }[] = [];
     for (const m of messages) {
       if (m.role === "user") {
@@ -1117,7 +1160,7 @@ function Home() {
       await readSSEStream(res, (event) => {
         if (event.type === "token") {
           chatText += event.text;
-          setMessages(prev => updateLastMessage(prev, "chat", { text: chatText }));
+          typewriterRef.current?.enqueue(event.text);
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
@@ -1125,6 +1168,7 @@ function Home() {
 
       return chatText || null;
     } catch (e: unknown) {
+      typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setMessages(prev => prev.filter(m => m.role !== "chat" || m.text));
       return null;
