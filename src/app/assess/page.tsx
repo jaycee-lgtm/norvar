@@ -1130,8 +1130,8 @@ function Home() {
 
       await readSSEStream(res, (event) => {
         if (event.type === "token") {
-          chatText += event.text;
-          typewriterRef.current?.enqueue(event.text);
+          chatText += event.text ?? "";
+          typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
