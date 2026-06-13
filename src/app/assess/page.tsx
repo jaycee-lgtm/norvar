@@ -883,22 +883,12 @@ function Home() {
           streamingText += event.text ?? "";
           typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "summary") {
-          streamingText = event.text ?? "";
-          summaryText = event.text ?? "";
-          typewriterRef.current?.reset();
-          setMessages(prev => updateLastMessage(prev, "thinking", { text: "", status: undefined }));
-          typewriterRef.current = createTypewriterDrain(ch => {
-            setMessages(prev => {
-              const next = [...prev];
-              const idx  = next.findLastIndex(m => m.role === "thinking");
-              if (idx >= 0) {
-                const msg = next[idx] as Extract<Message, { role: "thinking" }>;
-                next[idx] = { ...msg, text: msg.text + ch, status: undefined };
-              }
-              return next;
-            });
-          });
-          typewriterRef.current?.enqueue(event.text ?? "");
+          // Legacy fallback: append only text not already streamed.
+          const summary = event.text ?? "";
+          summaryText = summary;
+          const delta = summary.slice(streamingText.length);
+          streamingText = summary;
+          if (delta) typewriterRef.current?.enqueue(delta);
         } else if (event.type === "done") {
           receivedDone = true;
           typewriterRef.current?.reset();

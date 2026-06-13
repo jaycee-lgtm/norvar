@@ -173,21 +173,26 @@ export async function POST(req: NextRequest) {
         stream:     true,
       });
 
-      let fullText = "";
-      let pastSep  = false;
+      let fullText    = "";
+      let pastSep     = false;
+      let proseSentLen = 0;
 
       for await (const event of stream as AsyncIterable<{ type: string; delta?: { type?: string; text?: string } }>) {
         if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
           const chunk = event.delta.text ?? "";
           fullText += chunk;
-          if (!pastSep) {
-            if (fullText.includes("---JSON---")) {
-              pastSep = true;
-              const summaryPart = fullText.split("---JSON---")[0].trim();
-              if (summaryPart) await send({ type: "summary", text: summaryPart });
-            } else {
-              await send({ type: "token", text: chunk });
-            }
+          if (pastSep) continue;
+
+          const sepIdx = fullText.indexOf("---JSON---");
+          if (sepIdx >= 0) {
+            pastSep = true;
+            const prose = fullText.slice(0, sepIdx);
+            const remainder = prose.slice(proseSentLen);
+            if (remainder) await send({ type: "token", text: remainder });
+            proseSentLen += remainder.length;
+          } else {
+            await send({ type: "token", text: chunk });
+            proseSentLen += chunk.length;
           }
         }
       }
