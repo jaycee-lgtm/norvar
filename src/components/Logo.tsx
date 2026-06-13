@@ -1,12 +1,17 @@
 // Norvar logo mark — three fading slashes. Motion, scanning, tiers.
 
+const BRAND_RED = "#8b1a1a";
+const SLASH_LIGHT = "#e2e2e0";
+
 type LogoProps = {
   size?: number;
-  /** "mark" = red tile + slashes (sidebar, etc.). "icon" = slashes only for inline hero use. */
-  variant?: "mark" | "icon";
+  /** "mark" = red tile + slashes. "icon" = slashes only. "hero" = slashes only, first stroke red. */
+  variant?: "mark" | "icon" | "hero";
 };
 
 export default function Logo({ size = 26, variant = "mark" }: LogoProps) {
+  const firstStroke = variant === "hero" ? BRAND_RED : SLASH_LIGHT;
+
   return (
     <svg
       width={size}
@@ -17,10 +22,10 @@ export default function Logo({ size = 26, variant = "mark" }: LogoProps) {
       style={{ display: "block", flexShrink: 0 }}
       aria-hidden
     >
-      {variant === "mark" && <rect width="52" height="52" rx="11" fill="#8b1a1a" />}
-      <line x1="16" y1="38" x2="22" y2="14" stroke="#e2e2e0" strokeWidth="3" strokeLinecap="round" />
-      <line x1="24" y1="38" x2="28" y2="14" stroke="#e2e2e0" strokeWidth="3" strokeLinecap="round" opacity="0.55" />
-      <line x1="30" y1="38" x2="36" y2="14" stroke="#e2e2e0" strokeWidth="3" strokeLinecap="round" opacity="0.3" />
+      {variant === "mark" && <rect width="52" height="52" rx="11" fill={BRAND_RED} />}
+      <line x1="16" y1="38" x2="22" y2="14" stroke={firstStroke} strokeWidth={variant === "hero" ? 3.5 : 3} strokeLinecap="round" />
+      <line x1="24" y1="38" x2="28" y2="14" stroke={SLASH_LIGHT} strokeWidth="3" strokeLinecap="round" opacity="0.55" />
+      <line x1="30" y1="38" x2="36" y2="14" stroke={SLASH_LIGHT} strokeWidth="3" strokeLinecap="round" opacity="0.3" />
     </svg>
   );
 }

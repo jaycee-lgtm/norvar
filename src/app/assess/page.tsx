@@ -1261,15 +1261,13 @@ function Home() {
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
                 <div className={isMobileView ? "home-hero-block" : undefined}>
                   <div className="home-hero-row">
-                    <Logo variant="icon" size={isMobileView ? 36 : 32} />
-                    {isMobileView ? (
-                      <h1 className="mobile-home-serif">What are you building?</h1>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <h1 className="home-heading">What are you building?</h1>
+                    <Logo variant="hero" size={isMobileView ? 40 : 44} />
+                    <div className="home-hero-heading-wrap">
+                      <h1 className="home-hero-title">What are you building?</h1>
+                      {!isMobileView && (
                         <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
                 {InputBar}

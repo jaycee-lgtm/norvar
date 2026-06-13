@@ -308,8 +308,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.home-hero-heading-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-hero-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(32px, 4.5vw, 42px);
+  font-weight: 400;
+  color: var(--fg);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
 }
 
 .home-hero-row .home-heading {
