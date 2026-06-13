@@ -743,6 +743,13 @@ body {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.mobile-composer-actions .attach-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
 }
 
 .gap-item-header {

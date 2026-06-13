@@ -3,8 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
-import { GRC_SYSTEM_PROMPT } from "@/lib/grc-prompt";
-import { ASSESS_AGENT } from "@/lib/agents";
+import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS } from "@/lib/grc-prompt";
+import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -17,7 +17,7 @@ const supabase = createClient(
 // Follow-up prompt: used when the user is continuing a conversation about an
 // existing assessment. Standalone questions get the full GRC advisor prompt.
 const FOLLOW_UP_PROMPT = `
-You are ${ASSESS_AGENT.name}, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
+You are ${CHAT_AGENT.name}, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
 
 CRITICAL RULES:
 - Answer ONLY the specific question asked. Be direct and concise.
@@ -27,7 +27,7 @@ CRITICAL RULES:
 - Reference specific regulation articles when relevant.
 - Plain prose only. No markdown headers. Short focused paragraphs.
 - If the question has already been answered, say so briefly and add anything new.
-`;
+${GRC_GUARDRAILS}`;
 
 function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;

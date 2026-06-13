@@ -442,9 +442,9 @@ function Chat() {
                       onKeyDown={handleKey}
                       rows={1}
                     />
-                    <div className="mobile-composer-tools">
-                      <div className="mobile-composer-attach">
-                        {attachControl}
+                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
+                      <div className="mobile-mode-pill">
+                        <ModeSelector current="chat" compact menuPlacement="top" />
                       </div>
                       <div className="mobile-composer-actions">
                         {voiceIcon}
@@ -453,6 +453,9 @@ function Chat() {
                             ? <Loader2 size={16} className="spin" />
                             : <ArrowUp size={16} strokeWidth={2.5} />}
                         </button>
+                        <div className="mobile-composer-attach">
+                          {attachControl}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -639,9 +642,9 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <div className="mobile-composer-tools">
-                      <div className="mobile-composer-attach">
-                        {attachControl}
+                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
+                      <div className="mobile-mode-pill">
+                        <ModeSelector current="chat" compact menuPlacement="top" />
                       </div>
                       <div className="mobile-composer-actions">
                         <VoiceInputIcon
@@ -662,6 +665,9 @@ function Chat() {
                             ? <Loader2 size={14} className="spin" />
                             : <ArrowUp size={14} strokeWidth={2.5} />}
                         </button>
+                        <div className="mobile-composer-attach">
+                          {attachControl}
+                        </div>
                       </div>
                     </div>
                   </div>
