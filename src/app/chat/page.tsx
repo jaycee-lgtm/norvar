@@ -14,6 +14,7 @@ import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
+import { readSSEStream } from "@/lib/sse";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info, FileText } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -27,29 +28,6 @@ type SSEEvent =
   | { type: "token"; text: string }
   | { type: "done"; text?: string; conversation_id?: string }
   | { type: "error"; text: string };
-
-async function readSSEStream(response: Response, onEvent: (e: SSEEvent) => void) {
-  const reader  = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer    = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() ?? "";
-    for (const part of parts) {
-      const line = part.trim();
-      if (!line.startsWith("data: ")) continue;
-      try {
-        onEvent(JSON.parse(line.slice(6)) as SSEEvent);
-      } catch {
-        // ignore malformed chunks
-      }
-    }
-  }
-}
 
 // ── Chat page ──────────────────────────────────────────────────────────────────
 
@@ -265,8 +243,8 @@ function Chat() {
 
       await readSSEStream(res, event => {
         if (event.type === "token") {
-          streamText += event.text;
-          typewriterRef.current?.enqueue(event.text);
+          streamText += event.text ?? "";
+          typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "done") {
           const finalText = streamText || event.text || "";
           finalResponse = finalText;

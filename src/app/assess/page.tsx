@@ -16,6 +16,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT } from "@/lib/agents";
 import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
+import { readSSEStream } from "@/lib/sse";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -560,31 +561,6 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
   );
 }
 
-// ── Stream reader ──────────────────────────────────────────────────────────────
-
-async function readSSEStream(response: Response, onEvent: (event: SSEEvent) => void) {
-  const reader  = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer    = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() ?? "";
-    for (const part of parts) {
-      const line = part.trim();
-      if (!line.startsWith("data: ")) continue;
-      try {
-        onEvent(JSON.parse(line.slice(6)) as SSEEvent);
-      } catch {
-        // ignore malformed chunks
-      }
-    }
-  }
-}
-
 function updateLastMessage(
   prev: Message[],
   role: "thinking" | "chat",
@@ -899,15 +875,16 @@ function Home() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Assessment failed");
       }
+      let receivedDone = false;
       await readSSEStream(res, (event) => {
         if (event.type === "status") {
           setMessages(prev => updateLastMessage(prev, "thinking", { status: event.text }));
         } else if (event.type === "token") {
-          streamingText += event.text;
-          typewriterRef.current?.enqueue(event.text);
+          streamingText += event.text ?? "";
+          typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "summary") {
-          streamingText = event.text;
-          summaryText = event.text;
+          streamingText = event.text ?? "";
+          summaryText = event.text ?? "";
           typewriterRef.current?.reset();
           setMessages(prev => updateLastMessage(prev, "thinking", { text: "", status: undefined }));
           typewriterRef.current = createTypewriterDrain(ch => {
@@ -921,16 +898,19 @@ function Home() {
               return next;
             });
           });
-          typewriterRef.current?.enqueue(event.text);
+          typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "done") {
-          if (!event.assessment) throw new Error("Assessment failed");
-          if (event.assessment.id) setAssessmentId(event.assessment.id);
-          summaryText = event.assessment.summary || summaryText || streamingText;
+          receivedDone = true;
+          typewriterRef.current?.reset();
+          const assessment = event.assessment as Assessment | undefined;
+          if (!assessment) throw new Error("Assessment failed");
+          if (assessment.id) setAssessmentId(assessment.id);
+          summaryText = assessment.summary || summaryText || streamingText;
           setMessages(prev => {
             const next = [...prev];
             const idx  = next.findLastIndex(m => m.role === "thinking");
-            if (idx >= 0) next[idx] = { role: "assistant", assessment: event.assessment! };
-            else next.push({ role: "assistant", assessment: event.assessment! });
+            if (idx >= 0) next[idx] = { role: "assistant", assessment };
+            else next.push({ role: "assistant", assessment });
             return next;
           });
           clearAll();
@@ -944,6 +924,7 @@ function Home() {
           throw new Error(event.text);
         }
       });
+      if (!receivedDone) throw new Error("Assessment did not complete. Please try again.");
     } catch (e: unknown) {
       typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");

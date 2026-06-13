@@ -226,11 +226,13 @@ export async function POST(req: NextRequest) {
 
       assessment.summary = fullText.split("---JSON---")[0].trim() || (assessment.summary as string) || "";
 
+      await send({ type: "status", text: "Finalising assessment..." });
+
       const messageTags = tags.length > 0
         ? tags
         : [...domains, ...jurisdictions, ...data_types, sector].filter(Boolean);
 
-      const { data: saved } = await supabase.from("assessments").insert({
+      const { data: saved, error: saveError } = await supabase.from("assessments").insert({
         user_id:      userId,
         title:        (assessment.title as string) || description.slice(0, 80),
         description:  description.slice(0, 500),
@@ -243,9 +245,15 @@ export async function POST(req: NextRequest) {
         domains,
         jurisdictions,
         folder_id:    folder_id || null,
-        // Auto-assign to the user who ran the assessment
         assigned_to:  [userId],
       }).select("id, assessment_number").single();
+
+      if (saveError) {
+        console.error("Assess save error:", saveError);
+        await send({ type: "error", text: "Could not save assessment. Please try again." });
+        await writer.close();
+        return;
+      }
 
       assessment.id                = saved?.id;
       assessment.assessment_number = saved?.assessment_number;
