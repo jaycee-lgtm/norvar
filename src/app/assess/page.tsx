@@ -658,7 +658,6 @@ function Home() {
     setGuidedAnswers({});
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
-    setPrefillingGuided(false);
     router.push("/assess");
   }
 
