@@ -10,6 +10,7 @@ import Logo from "@/components/Logo";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import { splitRemediationSteps } from "@/lib/remediation-steps";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
+import AssessmentQuestionnaire, { type QuestionnaireMeta } from "@/components/AssessmentQuestionnaire";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -18,10 +19,10 @@ import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import {
-  ArrowUp, Globe, Layers, Database, FileText,
+  ArrowUp, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
-  ShieldAlert, X, Check, ChevronDown, Download,
-  History, SquarePen, Briefcase,
+  ShieldAlert, X, Download,
+  History, SquarePen,
 } from "lucide-react";
 
 // ── Option sets ────────────────────────────────────────────────────────────────
@@ -33,8 +34,10 @@ const JURISDICTION_OPTIONS = [
   { value: "us_state",   label: "US States"     },
   { value: "canada",     label: "Canada"        },
   { value: "apac",       label: "Asia-Pacific"  },
+  { value: "africa",     label: "Africa"        },
   { value: "latam",      label: "Latin America" },
   { value: "mena",       label: "MENA"          },
+  { value: "global",     label: "Global"        },
 ];
 
 // Three core domain lenses. CV, ADMT, and Robotics are assessment subjects
@@ -167,91 +170,6 @@ type SSEEvent =
   | { type: "summary"; text: string }
   | { type: "done"; assessment?: Assessment; text?: string }
   | { type: "error"; text: string };
-
-// ── Chip dropdown ──────────────────────────────────────────────────────────────
-
-function ChipDropdown({
-  icon, label, options, selected, onToggle, onClose, multi = true,
-}: {
-  icon:     React.ReactNode;
-  label:    string;
-  options:  { value: string; label: string }[];
-  selected: string[];
-  onToggle: (v: string) => void;
-  onClose:  () => void;
-  multi?:   boolean;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        type="button"
-        onClick={onClose}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 5,
-          padding: "6px 12px", borderRadius: 20,
-          border: `0.5px solid ${selected.length > 0 ? "var(--bdr3)" : "var(--bdr2)"}`,
-          background: selected.length > 0 ? "var(--lift)" : "var(--card)",
-          fontSize: 11, color: selected.length > 0 ? "var(--fg)" : "var(--fg2)",
-          fontWeight: selected.length > 0 ? 500 : 400,
-          cursor: "pointer", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
-        }}
-      >
-        {icon}
-        {label}
-        {selected.length > 0 && (
-          <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>
-            {selected.length}
-          </span>
-        )}
-        <ChevronDown size={10} strokeWidth={2} />
-      </button>
-      <div style={{
-        position: "absolute", bottom: "calc(100% + 8px)", left: 0,
-        minWidth: 200, background: "var(--card)", border: "0.5px solid var(--bdr2)",
-        borderRadius: 8, overflow: "hidden", zIndex: 100,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-      }}>
-        <div style={{
-          padding: "7px 12px", borderBottom: "0.5px solid var(--bdr)",
-          fontSize: 10, fontWeight: 600, letterSpacing: ".08em",
-          textTransform: "uppercase" as const, color: "var(--fg3)",
-          fontFamily: "'Sora', sans-serif",
-        }}>{label}</div>
-        {options.map(opt => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => { onToggle(opt.value); if (!multi) onClose(); }}
-            style={{
-              width: "100%", display: "flex", alignItems: "center",
-              justifyContent: "space-between", padding: "8px 12px",
-              background: "transparent", border: "none", fontSize: 13,
-              fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
-              cursor: "pointer", textAlign: "left" as const,
-              color: selected.includes(opt.value) ? "var(--fg)" : "var(--fg2)",
-              fontWeight: selected.includes(opt.value) ? 500 : 400,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = "var(--lift)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-          >
-            {opt.label}
-            {selected.includes(opt.value) && <Check size={13} strokeWidth={2.5} color="var(--fg3)" />}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Severity icon ──────────────────────────────────────────────────────────────
 
@@ -635,7 +553,6 @@ function Home() {
   const [domains,       setDomains]       = useState<string[]>([]);
   const [dataTypes,     setDataTypes]     = useState<string[]>([]);
   const [sector,        setSector]        = useState<string[]>([]);
-  const [openChip,      setOpenChip]      = useState<string | null>(null);
   const [assessmentId,  setAssessmentId]  = useState<string | null>(null);
   const [gapChats,      setGapChats]      = useState<Record<string, GapChatMessage[]>>({});
 
@@ -652,6 +569,7 @@ function Home() {
     data_types:    string[];
     sector:        string;
   } | null>(null);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -711,24 +629,6 @@ function Home() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  function toggleMulti(setter: React.Dispatch<React.SetStateAction<string[]>>) {
-    return (v: string) => setter(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
-  }
-
-  function toggleSingle(setter: React.Dispatch<React.SetStateAction<string[]>>) {
-    return (v: string) => setter(p => p.includes(v) ? [] : [v]);
-  }
-
-  function buildTags() {
-    return [
-      ...jurisdictions.map(v => JURISDICTION_OPTIONS.find(x => x.value === v)?.label ?? v),
-      ...domains.map(v => DOMAIN_OPTIONS.find(x => x.value === v)?.label ?? v),
-      ...dataTypes.map(v => DATA_TYPE_OPTIONS.find(x => x.value === v)?.label ?? v),
-      ...sector.map(v => SECTOR_OPTIONS.find(x => x.value === v)?.label ?? v),
-    ];
-  }
-
-  const hasGuidedInputs = jurisdictions.length > 0 || domains.length > 0 || dataTypes.length > 0 || sector.length > 0;
   const hasAssessment   = messages.some(m => m.role === "assistant");
   const latestAssessment = [...messages].reverse().find(
     (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
@@ -756,8 +656,54 @@ function Home() {
     setPendingDesc("");
     setFollowUp(null);
     setInferredContext(null);
+    setShowQuestionnaire(false);
     router.push("/assess");
   }
+
+  const mapQuestionnaireDomain = (d: string) => {
+    if (d === "ai_governance") return "ai";
+    if (d === "cybersecurity") return "cyber";
+    return d;
+  };
+
+  const buildTagsFromValues = (
+    guidedJurisdictions: string[],
+    guidedDomains: string[],
+    guidedDataTypes: string[],
+    guidedSector: string,
+  ) => [
+    ...guidedJurisdictions.map(v => JURISDICTION_OPTIONS.find(x => x.value === v)?.label ?? v),
+    ...guidedDomains.map(v => DOMAIN_OPTIONS.find(x => x.value === v)?.label ?? v),
+    ...guidedDataTypes.map(v => DATA_TYPE_OPTIONS.find(x => x.value === v)?.label ?? v),
+    ...(guidedSector ? [SECTOR_OPTIONS.find(x => x.value === guidedSector)?.label ?? guidedSector] : []),
+  ];
+
+  const handleQuestionnaireComplete = async (description: string, meta: QuestionnaireMeta) => {
+    const guidedDomains       = (meta.domains ?? []).map(mapQuestionnaireDomain);
+    const guidedJurisdictions = meta.jurisdictions ?? [];
+    const guidedDataTypes     = meta.data_types ?? [];
+    const guidedSector        = meta.sector ?? "";
+
+    setDomains(guidedDomains);
+    setJurisdictions(guidedJurisdictions);
+    setDataTypes(guidedDataTypes);
+    setSector(guidedSector ? [guidedSector] : []);
+    setShowQuestionnaire(false);
+    setInput(description);
+    setError("");
+
+    const tags = buildTagsFromValues(guidedJurisdictions, guidedDomains, guidedDataTypes, guidedSector);
+    setMessages(prev => [...prev, { role: "user", content: description, tags }]);
+    await runAssessment(
+      description,
+      tags,
+      guidedDomains,
+      guidedJurisdictions,
+      guidedDataTypes,
+      guidedSector,
+      folderId,
+    );
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -990,7 +936,7 @@ function Home() {
     if (selected === "Let me correct something") {
       setInferring(false);
       setFollowUp(null);
-      return "What would you like to correct? Update your description or use the chips below.";
+      return "What would you like to correct? Update your description and try again.";
     }
 
     return handleFollowUpSelection(selected);
@@ -1157,7 +1103,6 @@ function Home() {
     if (!fromVoice && (loading || inferring)) return null;
     if (!textOverride) setInput("");
     setError("");
-    setOpenChip(null);
 
     if (hasAssessment) {
       return handleFollowUp(text);
@@ -1165,7 +1110,7 @@ function Home() {
     if (awaitingInference || followUp) {
       return handleInferenceOption(text);
     }
-    return handleAssessment(text, buildTags());
+    return handleAssessment(text, []);
   };
 
   handleSendRef.current = (text: string) => handleSend(text, true);
@@ -1201,11 +1146,8 @@ function Home() {
       className={isMobileView ? "home-composer-block" : "input-wrap"}
       style={isMobileView ? undefined : { marginBottom: 24 }}
     >
-      {(hasGuidedInputs || hasAttachedDocs) && (
+      {hasAttachedDocs && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
-          {!isMobileView && buildTags().map(tag => (
-            <span key={tag} style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", fontFamily: "'Sora', sans-serif" }}>{tag}</span>
-          ))}
           <SelectedDocumentChips
             documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
             onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
@@ -1219,11 +1161,6 @@ function Home() {
               </button>
             </span>
           )}
-          {!isMobileView && hasGuidedInputs && (
-            <button type="button" onClick={clearAll} style={{ fontSize: 10, color: "var(--fg3)", background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", fontFamily: "'Sora', sans-serif", display: "flex", alignItems: "center", gap: 3 }}>
-              <X size={10} strokeWidth={2} /> Clear all
-            </button>
-          )}
         </div>
       )}
 
@@ -1235,9 +1172,6 @@ function Home() {
                 Assess with {ASSESS_AGENT.name}
               </span>
             )}
-            <div className="mobile-composer-attach">
-              {attachControl}
-            </div>
             <textarea
               ref={textareaRef}
               className="input-textarea mobile-composer-field"
@@ -1249,9 +1183,10 @@ function Home() {
             />
           </div>
           <div className="mobile-composer-tools mobile-composer-tools--minimal">
-            <div className="mobile-mode-pill">
-              <ModeSelector current="assess" compact menuPlacement="top" />
+            <div className="composer-toolbar-start">
+              {attachControl}
             </div>
+            <ModeSelector current="assess" embedded menuPlacement="top" />
             <div className="mobile-composer-actions">
               <VoiceInputIcon
                 isListening={voice.isListening}
@@ -1272,53 +1207,40 @@ function Home() {
           </div>
         </div>
       ) : (
-        <>
-          <div className="input-bar">
-            <textarea
-              ref={textareaRef}
-              className="input-textarea"
-              placeholder="Describe your product or deployment..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-            />
-            {attachControl}
-            <VoiceInputIcon
-              isListening={voice.isListening}
-              isTranscribing={voice.isTranscribing}
-              isSpeaking={voice.isSpeaking}
-              voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-              configured={voice.support.configured}
-              disabled={loading || inferring}
-              onStartListening={voice.startListening}
-              onStopListening={voice.stopListening}
-              onStopSpeaking={voice.stopSpeak}
-              agentName={ASSESS_AGENT.name}
-            />
-            <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-              {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-            </button>
+        <div className="input-bar">
+          <textarea
+            ref={textareaRef}
+            className="input-textarea"
+            placeholder="Describe your product or deployment..."
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            rows={1}
+          />
+          <div className="composer-toolbar">
+            <div className="composer-toolbar-start">
+              {attachControl}
+            </div>
+            <div className="composer-toolbar-end">
+              <ModeSelector current="assess" embedded menuPlacement="top" />
+              <VoiceInputIcon
+                isListening={voice.isListening}
+                isTranscribing={voice.isTranscribing}
+                isSpeaking={voice.isSpeaking}
+                voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                configured={voice.support.configured}
+                disabled={loading || inferring}
+                onStartListening={voice.startListening}
+                onStopListening={voice.stopListening}
+                onStopSpeaking={voice.stopSpeak}
+                agentName={ASSESS_AGENT.name}
+              />
+              <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+                {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+              </button>
+            </div>
           </div>
-          <div className="input-chips" style={{ marginTop: 8 }}>
-            {openChip === "jurisdictions"
-              ? <ChipDropdown icon={<Globe size={11} strokeWidth={1.75} />} label="Jurisdictions" options={JURISDICTION_OPTIONS} selected={jurisdictions} onToggle={toggleMulti(setJurisdictions)} onClose={() => setOpenChip(null)} />
-              : <button type="button" className="chip" onClick={() => setOpenChip("jurisdictions")}><Globe size={11} strokeWidth={1.75} /> Jurisdictions{jurisdictions.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{jurisdictions.length}</span>}</button>
-            }
-            {openChip === "domains"
-              ? <ChipDropdown icon={<Layers size={11} strokeWidth={1.75} />} label="Domains" options={DOMAIN_OPTIONS} selected={domains} onToggle={toggleMulti(setDomains)} onClose={() => setOpenChip(null)} />
-              : <button type="button" className="chip" onClick={() => setOpenChip("domains")}><Layers size={11} strokeWidth={1.75} /> Domains{domains.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{domains.length}</span>}</button>
-            }
-            {openChip === "datatypes"
-              ? <ChipDropdown icon={<Database size={11} strokeWidth={1.75} />} label="Data types" options={DATA_TYPE_OPTIONS} selected={dataTypes} onToggle={toggleMulti(setDataTypes)} onClose={() => setOpenChip(null)} />
-              : <button type="button" className="chip" onClick={() => setOpenChip("datatypes")}><Database size={11} strokeWidth={1.75} /> Data types{dataTypes.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>{dataTypes.length}</span>}</button>
-            }
-            {openChip === "sector"
-              ? <ChipDropdown icon={<Briefcase size={11} strokeWidth={1.75} />} label="Sector" options={SECTOR_OPTIONS} selected={sector} onToggle={toggleSingle(setSector)} onClose={() => setOpenChip(null)} multi={false} />
-              : <button type="button" className="chip" onClick={() => setOpenChip("sector")}><Briefcase size={11} strokeWidth={1.75} /> Sector{sector.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>1</span>}</button>
-            }
-          </div>
-        </>
+        </div>
       )}
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       {fileError && (
@@ -1357,7 +1279,14 @@ function Home() {
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
                 <div className={isMobileView ? "home-hero-block" : undefined}>
                   <Logo size={isMobileView ? 44 : 40} />
-                  {isMobileView ? (
+                  {showQuestionnaire ? (
+                    <h1
+                      className={isMobileView ? "mobile-home-serif" : "home-heading"}
+                      style={!isMobileView ? { marginBottom: 28 } : undefined}
+                    >
+                      Let us scope your assessment
+                    </h1>
+                  ) : isMobileView ? (
                     <h1 className="mobile-home-serif">What are you building?</h1>
                   ) : (
                     <>
@@ -1365,22 +1294,41 @@ function Home() {
                         <h1 className="home-heading">What are you building?</h1>
                         <InfoTip text={`Describe your deployment and ${ASSESS_AGENT.name} will map it to the regulations that apply, score your risk, and surface compliance gaps.`} />
                       </div>
-                      <div style={{ marginBottom: 14 }}>
-                        <ModeSelector current="assess" />
-                      </div>
                     </>
                   )}
                 </div>
-                {InputBar}
+
+                {showQuestionnaire ? (
+                  <AssessmentQuestionnaire onComplete={handleQuestionnaireComplete} />
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuestionnaire(true)}
+                      style={{
+                        width: "100%", padding: "13px 18px", marginBottom: 12,
+                        background: "var(--red)", color: "#f5f5f4", border: "none",
+                        borderRadius: 7, fontSize: 13, fontWeight: 500,
+                        fontFamily: "'Sora', sans-serif", cursor: "pointer",
+                        letterSpacing: "-.01em",
+                      }}
+                    >
+                      Start guided assessment
+                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                      <div style={{ flex: 1, height: "0.5px", background: "var(--bdr2)" }} />
+                      <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>or describe manually</span>
+                      <div style={{ flex: 1, height: "0.5px", background: "var(--bdr2)" }} />
+                    </div>
+                    {InputBar}
+                  </>
+                )}
                 {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
               </div>
             )}
 
             {!isHome && !loadingSaved && (
               <>
-                <div className="mode-bar desktop-only" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
-                  <ModeSelector current="assess" />
-                </div>
                 <div ref={scrollRef} className="main-scroll">
                 <div className="chat-scroll">
                   {messages.map((msg, i) => {
@@ -1522,9 +1470,6 @@ function Home() {
                               {hasAssessment ? "Ask a follow-up..." : `Assess with ${ASSESS_AGENT.name}`}
                             </span>
                           )}
-                          <div className="mobile-composer-attach">
-                            {attachControl}
-                          </div>
                           <input
                             className="chat-input-field mobile-composer-field"
                             placeholder=""
@@ -1534,9 +1479,10 @@ function Home() {
                           />
                         </div>
                         <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                          <div className="mobile-mode-pill">
-                            <ModeSelector current="assess" compact menuPlacement="top" />
+                          <div className="composer-toolbar-start">
+                            {attachControl}
                           </div>
+                          <ModeSelector current="assess" embedded menuPlacement="top" />
                           <div className="mobile-composer-actions">
                             <VoiceInputIcon
                               isListening={voice.isListening}
@@ -1559,7 +1505,6 @@ function Home() {
                       </div>
                     ) : (
                     <div className="chat-input-bar">
-                      {attachControl}
                       <input
                         className="chat-input-field"
                         placeholder={hasAssessment ? "Ask a follow-up question about this assessment..." : "Describe another deployment..."}
@@ -1567,22 +1512,30 @@ function Home() {
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
                       />
-                      <VoiceInputIcon
-                        isListening={voice.isListening}
-                        isTranscribing={voice.isTranscribing}
-                        isSpeaking={voice.isSpeaking}
-                        voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                        configured={voice.support.configured}
-                        disabled={loading}
-                        onStartListening={voice.startListening}
-                        onStopListening={voice.stopListening}
-                        onStopSpeaking={voice.stopSpeak}
-                        size="sm"
-                        agentName={ASSESS_AGENT.name}
-                      />
-                      <button type="button" className="chat-send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-                        {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
-                      </button>
+                      <div className="composer-toolbar">
+                        <div className="composer-toolbar-start">
+                          {attachControl}
+                        </div>
+                        <div className="composer-toolbar-end">
+                          <ModeSelector current="assess" embedded menuPlacement="top" />
+                          <VoiceInputIcon
+                            isListening={voice.isListening}
+                            isTranscribing={voice.isTranscribing}
+                            isSpeaking={voice.isSpeaking}
+                            voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                            configured={voice.support.configured}
+                            disabled={loading}
+                            onStartListening={voice.startListening}
+                            onStopListening={voice.stopListening}
+                            onStopSpeaking={voice.stopSpeak}
+                            size="sm"
+                            agentName={ASSESS_AGENT.name}
+                          />
+                          <button type="button" className="chat-send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
+                            {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     )}
                     {voice.voiceError && (

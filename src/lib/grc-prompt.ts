@@ -1,6 +1,6 @@
 // Shared system prompt for the Nora GRC chat persona.
-// Used by /api/grc-chat (always) and /api/chat (standalone questions without
-// assessment context), so both stay in sync on domain coverage and scope rules.
+// Used by /api/grc-chat (main chat), /api/chat (assessment follow-ups and standalone),
+// and gap remediation chat — all pull from the same Supabase regulatory corpus as Cassius.
 
 import { NORA_GREETINGS, NORA_REDIRECTS } from "./agent-prompts";
 // Shared guardrails for Nora follow-up chat and standalone GRC chat.

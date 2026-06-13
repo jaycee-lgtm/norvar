@@ -390,11 +390,6 @@ function Chat() {
                     <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
                   </div>
                 )}
-                {!isMobileView && (
-                  <div style={{ marginBottom: 14 }}>
-                    <ModeSelector current="chat" />
-                  </div>
-                )}
               </div>
 
               <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
@@ -428,9 +423,6 @@ function Chat() {
                           Chat with {CHAT_AGENT.name}
                         </span>
                       )}
-                      <div className="mobile-composer-attach">
-                        {attachControl}
-                      </div>
                       <textarea
                         ref={inputRef}
                         className="input-textarea mobile-composer-field"
@@ -442,9 +434,10 @@ function Chat() {
                       />
                     </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                      <div className="mobile-mode-pill">
-                        <ModeSelector current="chat" compact menuPlacement="top" />
+                      <div className="composer-toolbar-start">
+                        {attachControl}
                       </div>
+                      <ModeSelector current="chat" embedded menuPlacement="top" />
                       <div className="mobile-composer-actions">
                         {voiceIcon}
                         <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
@@ -467,13 +460,20 @@ function Chat() {
                         onKeyDown={handleKey}
                         rows={1}
                       />
-                      {attachControl}
-                      {voiceIcon}
-                      <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                        {loading
-                          ? <Loader2 size={16} className="spin" />
-                          : <ArrowUp size={16} strokeWidth={2.5} />}
-                      </button>
+                      <div className="composer-toolbar">
+                        <div className="composer-toolbar-start">
+                          {attachControl}
+                        </div>
+                        <div className="composer-toolbar-end">
+                          <ModeSelector current="chat" embedded menuPlacement="top" />
+                          {voiceIcon}
+                          <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
+                            {loading
+                              ? <Loader2 size={16} className="spin" />
+                              : <ArrowUp size={16} strokeWidth={2.5} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <div className="input-chips" style={{ marginTop: 8 }}>
                       <SampleQuestionsDropdown
@@ -499,9 +499,6 @@ function Chat() {
 
           {!isHome && !loadingSaved && (
             <>
-              <div className="mode-bar desktop-only" style={{ padding: "14px 32px 0", flexShrink: 0 }}>
-                <ModeSelector current="chat" />
-              </div>
               <div ref={scrollRef} className="main-scroll">
                 <div className="thread-inner" style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
                 {messages.map((msg, i) => {
@@ -637,9 +634,6 @@ function Chat() {
                           Chat with {CHAT_AGENT.name}
                         </span>
                       )}
-                      <div className="mobile-composer-attach">
-                        {attachControl}
-                      </div>
                       <input
                         className="chat-input-field mobile-composer-field"
                         placeholder=""
@@ -649,9 +643,10 @@ function Chat() {
                       />
                     </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                      <div className="mobile-mode-pill">
-                        <ModeSelector current="chat" compact menuPlacement="top" />
+                      <div className="composer-toolbar-start">
+                        {attachControl}
                       </div>
+                      <ModeSelector current="chat" embedded menuPlacement="top" />
                       <div className="mobile-composer-actions">
                         <VoiceInputIcon
                           isListening={voice.isListening}
@@ -677,7 +672,6 @@ function Chat() {
                   ) : (
                   <>
                   <div className="chat-input-bar">
-                    {attachControl}
                     <input
                       className="chat-input-field"
                       placeholder="Ask a follow-up question..."
@@ -685,24 +679,32 @@ function Chat() {
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                     />
-                    <VoiceInputIcon
-                      isListening={voice.isListening}
-                      isTranscribing={voice.isTranscribing}
-                      isSpeaking={voice.isSpeaking}
-                      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                      configured={voice.support.configured}
-                      disabled={loading}
-                      onStartListening={voice.startListening}
-                      onStopListening={voice.stopListening}
-                      onStopSpeaking={voice.stopSpeak}
-                      size="sm"
-                      agentName={CHAT_AGENT.name}
-                    />
-                    <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                      {loading
-                        ? <Loader2 size={14} className="spin" />
-                        : <ArrowUp size={14} strokeWidth={2.5} />}
-                    </button>
+                    <div className="composer-toolbar">
+                      <div className="composer-toolbar-start">
+                        {attachControl}
+                      </div>
+                      <div className="composer-toolbar-end">
+                        <ModeSelector current="chat" embedded menuPlacement="top" />
+                        <VoiceInputIcon
+                          isListening={voice.isListening}
+                          isTranscribing={voice.isTranscribing}
+                          isSpeaking={voice.isSpeaking}
+                          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                          configured={voice.support.configured}
+                          disabled={loading}
+                          onStartListening={voice.startListening}
+                          onStopListening={voice.stopListening}
+                          onStopSpeaking={voice.stopSpeak}
+                          size="sm"
+                          agentName={CHAT_AGENT.name}
+                        />
+                        <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
+                          {loading
+                            ? <Loader2 size={14} className="spin" />
+                            : <ArrowUp size={14} strokeWidth={2.5} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   {voice.voiceError && (
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />

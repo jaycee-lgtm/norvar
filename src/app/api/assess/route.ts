@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
-import { filterRegulatoryChunks, buildRegulatoryContextBlock, type RegulatoryChunk } from "@/lib/rag";
 import { buildDocumentContextBlock } from "@/lib/documents";
+import { retrieveRegulatoryContext } from "@/lib/regulatory-rag";
 import { buildCassiusSystemPrompt, mapDomainToFocus } from "@/lib/agent-prompts";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -12,19 +12,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-
-async function getEmbedding(text: string): Promise<number[]> {
-  const res = await fetch("https://api.voyageai.com/v1/embeddings", {
-    method:  "POST",
-    headers: {
-      Authorization:  `Bearer ${process.env.VOYAGE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ input: [text], model: "voyage-3-large", input_type: "query" }),
-  });
-  const json = await res.json();
-  return json.data?.[0]?.embedding ?? [];
-}
 
 function normalizeGapDomain(raw: string): string {
   const d = raw.toLowerCase();
@@ -127,17 +114,12 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      await send({ type: "status", text: "Searching 93 regulations..." });
-      const embedding = await getEmbedding(description);
-
-      const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
-        query_embedding: embedding,
-        match_threshold: 0.40,
-        match_count:     12,
+      await send({ type: "status", text: "Searching regulatory corpus..." });
+      const { contextBlock: clauseText } = await retrieveRegulatoryContext(supabase, description, {
+        matchThreshold: 0.40,
+        matchCount:     12,
+        minSimilarity:  0.40,
       });
-
-      const filtered   = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[], 0.40);
-      const clauseText = buildRegulatoryContextBlock(filtered);
 
       await send({ type: "status", text: "Analysing your deployment..." });
 

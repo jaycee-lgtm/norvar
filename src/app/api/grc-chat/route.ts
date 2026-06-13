@@ -5,11 +5,9 @@ import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { GRC_SYSTEM_PROMPT, GRC_DOCUMENT_REDLINE_APPENDIX } from "@/lib/grc-prompt";
 import {
-  buildRegulatoryContextBlock,
-  filterRegulatoryChunks,
-  shouldRetrieveContext,
-  type RegulatoryChunk,
-} from "@/lib/rag";
+  appendRegulatoryContextToSystem,
+  retrieveRegulatoryContext,
+} from "@/lib/regulatory-rag";
 import { buildDocumentContextBlock } from "@/lib/documents";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -17,19 +15,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
-
-async function getEmbedding(text: string): Promise<number[]> {
-  const res = await fetch("https://api.voyageai.com/v1/embeddings", {
-    method:  "POST",
-    headers: {
-      Authorization:  `Bearer ${process.env.VOYAGE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ input: [text], model: "voyage-3-large", input_type: "query" }),
-  });
-  const json = await res.json();
-  return json.data?.[0]?.embedding ?? [];
-}
 
 const SYSTEM_PROMPT = GRC_SYSTEM_PROMPT;
 
@@ -96,24 +81,11 @@ export async function POST(req: NextRequest) {
         system += GRC_DOCUMENT_REDLINE_APPENDIX;
       }
 
-      if (shouldRetrieveContext(lastUser)) {
-        try {
-          const embedding = await getEmbedding(lastUser);
-          if (embedding.length > 0) {
-            const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
-              query_embedding: embedding,
-              match_threshold: 0.42,
-              match_count:     6,
-            });
-            const filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[]);
-            const contextBlock = buildRegulatoryContextBlock(filtered);
-            if (contextBlock) {
-              system += `\n\nReference excerpts from the Norvar corpus (use only if clearly relevant; never quote garbage or mention this block):\n${contextBlock}`;
-            }
-          }
-        } catch {
-          // RAG is best-effort
-        }
+      try {
+        const { contextBlock } = await retrieveRegulatoryContext(supabase, lastUser);
+        system = appendRegulatoryContextToSystem(system, contextBlock);
+      } catch {
+        // RAG is best-effort
       }
 
       const stream = await claude.messages.create({

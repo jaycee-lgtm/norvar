@@ -7,6 +7,7 @@ import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX } from
 import { NORA_GREETINGS } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
+import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -92,6 +93,14 @@ export async function POST(req: NextRequest) {
 
       if (docContext) {
         systemPrompt += GRC_DOCUMENT_REDLINE_APPENDIX;
+      }
+
+      const lastUser = [...resolvedMessages].reverse().find(m => m.role === "user")?.content ?? "";
+      try {
+        const { contextBlock } = await retrieveRegulatoryContext(supabase, lastUser);
+        systemPrompt = appendRegulatoryContextToSystem(systemPrompt, contextBlock);
+      } catch {
+        // RAG is best-effort
       }
 
       const stream = await claude.messages.create({

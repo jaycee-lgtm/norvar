@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, FileText, FolderOpen, Loader2, Paperclip, Search, Upload, X } from "lucide-react";
+import { ChevronLeft, FileText, FolderOpen, Loader2, Plus, Search, Upload, X } from "lucide-react";
 import type { UserDocument } from "@/lib/documents";
 
 type DocumentPickerProps = {
@@ -198,15 +198,15 @@ export default function DocumentPicker({
       {isIcon ? (
         <button
           type="button"
-          className="attach-icon-btn"
+          className="attach-icon-btn attach-plus-btn"
           disabled={disabled || uploading}
           onClick={toggle}
-          aria-label="Attach document"
-          title="Attach document"
+          aria-label="Add document"
+          title="Add document"
         >
           {uploading
             ? <Loader2 size={16} className="spin" strokeWidth={2} />
-            : <Paperclip size={16} strokeWidth={1.75} />}
+            : <Plus size={18} strokeWidth={2} />}
           {attachmentCount > 0 && (
             <span className="attach-icon-badge">{attachmentCount}</span>
           )}

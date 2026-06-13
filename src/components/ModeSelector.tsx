@@ -35,10 +35,12 @@ export const MODES: {
 export default function ModeSelector({
   current,
   compact = false,
+  embedded = false,
   menuPlacement = "bottom",
 }: {
   current: Mode;
   compact?: boolean;
+  embedded?: boolean;
   menuPlacement?: "bottom" | "top";
 }) {
   const router = useRouter();
@@ -60,8 +62,8 @@ export default function ModeSelector({
   return (
     <div
       ref={ref}
-      className={`mode-selector${compact ? " mode-selector--compact" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
-      style={{ position: "relative", display: compact ? "block" : "inline-block", width: compact ? "100%" : undefined }}
+      className={`mode-selector${compact ? " mode-selector--compact" : ""}${embedded ? " mode-selector--embedded" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
+      style={{ position: "relative", display: (compact && !embedded) ? "block" : "inline-block", width: (compact && !embedded) ? "100%" : undefined }}
     >
       <button
         type="button"
@@ -72,38 +74,44 @@ export default function ModeSelector({
         style={{
           display:        "inline-flex",
           alignItems:     "center",
-          gap:            7,
-          padding:        compact ? "5px 10px" : "6px 12px",
-          borderRadius:   8,
-          border:         "0.5px solid var(--bdr2)",
-          background:     open ? "var(--lift)" : "var(--card)",
+          gap:            embedded ? 5 : 7,
+          padding:        embedded ? "4px 8px" : compact ? "5px 10px" : "6px 12px",
+          borderRadius:   embedded ? 7 : 8,
+          border:         embedded ? "none" : "0.5px solid var(--bdr2)",
+          background:     embedded ? (open ? "var(--card2)" : "transparent") : open ? "var(--lift)" : "var(--card)",
           cursor:         "pointer",
           fontFamily:     "'Sora', sans-serif",
           letterSpacing:  "-0.01em",
           transition:     "background 0.15s, border-color 0.15s",
-          width:          compact ? "100%" : "auto",
+          width:          (compact && !embedded) ? "100%" : "auto",
         }}
         onMouseEnter={e => {
-          if (!open) e.currentTarget.style.background = "var(--card2)";
+          if (!open) e.currentTarget.style.background = embedded ? "var(--card2)" : "var(--card2)";
         }}
         onMouseLeave={e => {
-          if (!open) e.currentTarget.style.background = "var(--card)";
+          if (!open) e.currentTarget.style.background = embedded ? "transparent" : "var(--card)";
         }}
       >
-        <span style={{ color: "var(--fg2)", display: "flex", alignItems: "center" }}>
-          {active.icon}
+        {!embedded && (
+          <span style={{ color: "var(--fg2)", display: "flex", alignItems: "center" }}>
+            {active.icon}
+          </span>
+        )}
+        <span style={{ fontSize: 12, fontWeight: 500, color: embedded ? "var(--fg2)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
+          {embedded ? `${active.label} ${active.version}` : active.label}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--fg3)", letterSpacing: "-0.02em" }}>
-          {active.label}
-        </span>
+        {!embedded && (
         <span style={{
           fontSize: 10, color: "var(--fg3)",
-          background: "var(--card2)", padding: "1px 6px",
-          borderRadius: 4, border: "0.5px solid var(--bdr)",
+          background: "var(--card2)",
+          padding: "1px 6px",
+          borderRadius: 4,
+          border: "0.5px solid var(--bdr)",
           fontWeight: 400,
         }}>
           {active.version}
         </span>
+        )}
         <ChevronDown
           size={12} strokeWidth={2} color="var(--fg3)"
           style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
