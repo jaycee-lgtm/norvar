@@ -1519,6 +1519,17 @@ body {
   display: inline-block;
   max-width: 100%;
 }
+.sample-questions-wrap--icon {
+  flex-shrink: 0;
+}
+.sample-questions-icon-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  background: transparent !important;
+  cursor: pointer;
+}
 .sample-questions-trigger {
   display: inline-flex;
   align-items: center;
@@ -1557,6 +1568,10 @@ body {
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   padding: 6px;
+}
+.sample-questions-menu--top {
+  top: auto;
+  bottom: calc(100% + 8px);
 }
 .sample-questions-item {
   display: block;

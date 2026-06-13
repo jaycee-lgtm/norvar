@@ -319,6 +319,15 @@ function Chat() {
     />
   );
 
+  const examplesControl = (
+    <SampleQuestionsDropdown
+      variant="icon"
+      menuPlacement="top"
+      onSelect={q => sendWithVoice(q)}
+      disabled={loading}
+    />
+  );
+
   const startNew = () => {
     setMessages([]);
     setHistory([]);
@@ -436,6 +445,7 @@ function Chat() {
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="composer-toolbar-start">
                         {attachControl}
+                        {examplesControl}
                       </div>
                       <ModeSelector current="chat" embedded menuPlacement="top" />
                       <div className="mobile-composer-actions">
@@ -463,6 +473,7 @@ function Chat() {
                       <div className="composer-toolbar">
                         <div className="composer-toolbar-start">
                           {attachControl}
+                          {examplesControl}
                         </div>
                         <div className="composer-toolbar-end">
                           <ModeSelector current="chat" embedded menuPlacement="top" />
@@ -474,13 +485,6 @@ function Chat() {
                           </button>
                         </div>
                       </div>
-                    </div>
-                    <div className="input-chips" style={{ marginTop: 8 }}>
-                      <SampleQuestionsDropdown
-                        align="left"
-                        onSelect={q => sendWithVoice(q)}
-                        disabled={loading}
-                      />
                     </div>
                   </>
                 )}
@@ -645,6 +649,7 @@ function Chat() {
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="composer-toolbar-start">
                         {attachControl}
+                        {examplesControl}
                       </div>
                       <ModeSelector current="chat" embedded menuPlacement="top" />
                       <div className="mobile-composer-actions">
@@ -682,6 +687,7 @@ function Chat() {
                     <div className="composer-toolbar">
                       <div className="composer-toolbar-start">
                         {attachControl}
+                        {examplesControl}
                       </div>
                       <div className="composer-toolbar-end">
                         <ModeSelector current="chat" embedded menuPlacement="top" />
@@ -709,13 +715,6 @@ function Chat() {
                   {voice.voiceError && (
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                   )}
-                  <div className="input-chips" style={{ marginTop: 8 }}>
-                    <SampleQuestionsDropdown
-                      align="left"
-                      onSelect={q => sendWithVoice(q)}
-                      disabled={loading}
-                    />
-                  </div>
                   </>
                   )}
                   {fileError && isMobileView && (
