@@ -752,6 +752,20 @@ body {
   border-radius: 7px;
 }
 
+.nora-follow-ups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.nora-follow-up-chip {
+  max-width: 100%;
+  text-align: left;
+  line-height: 1.35;
+  white-space: normal;
+}
+
 .gap-item-header {
   display: flex;
   align-items: flex-start;

@@ -3,7 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
-import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS } from "@/lib/grc-prompt";
+import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX } from "@/lib/grc-prompt";
+import { NORA_GREETINGS } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 
@@ -17,7 +18,10 @@ const supabase = createClient(
 // Follow-up prompt: used when the user is continuing a conversation about an
 // existing assessment. Standalone questions get the full GRC advisor prompt.
 const FOLLOW_UP_PROMPT = `
-You are ${CHAT_AGENT.name}, a GRC compliance assistant. The user received a compliance assessment and is asking follow-up questions.
+You are ${CHAT_AGENT.name}, Norvar's compliance chat assistant. The user received a compliance assessment from Cassius and is asking follow-up questions. Help them understand what the findings mean, what the regulations require, and what to do next.
+
+FOLLOW-UP GREETING (when this is the start of the follow-up thread):
+Surface the single most important finding as a warm handoff from Cassius — similar to: "${NORA_GREETINGS.postAssessment("[title]", "[top gap]", "[risk tier]")}". Do not summarise the whole assessment. Invite them to dig in.
 
 CRITICAL RULES:
 - Answer ONLY the specific question asked. Be direct and concise.
@@ -25,7 +29,7 @@ CRITICAL RULES:
 - Do NOT re-state who the controller is or other points already established in this conversation.
 - Build directly on what was already discussed. Treat this as a continuing conversation.
 - Reference specific regulation articles when relevant.
-- Plain prose only. No markdown headers. Short focused paragraphs.
+- Plain prose only. No markdown headers. Short focused paragraphs (two to four sentences).
 - If the question has already been answered, say so briefly and add anything new.
 ${GRC_GUARDRAILS}`;
 
@@ -82,13 +86,17 @@ export async function POST(req: NextRequest) {
       const isStandalone = resolvedMessages.length === 1 && !assessment_id;
       const basePrompt   = isStandalone ? GRC_SYSTEM_PROMPT : FOLLOW_UP_PROMPT;
 
-      const systemPrompt = docContext
+      let systemPrompt = docContext
         ? `${basePrompt}\n\nREFERENCED DOCUMENTS:\n${docContext}`
         : basePrompt;
 
+      if (docContext) {
+        systemPrompt += GRC_DOCUMENT_REDLINE_APPENDIX;
+      }
+
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
-        max_tokens: isStandalone ? 1500 : 1000,
+        max_tokens: docContext ? 4000 : isStandalone ? 1500 : 1000,
         system:     systemPrompt,
         messages:   resolvedMessages,
         stream:     true,

@@ -14,6 +14,7 @@ import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT } from "@/lib/agents";
+import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import {
   ArrowUp, Globe, Layers, Database, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -751,6 +752,10 @@ function Home() {
 
   const hasGuidedInputs = jurisdictions.length > 0 || domains.length > 0 || dataTypes.length > 0 || sector.length > 0;
   const hasAssessment   = messages.some(m => m.role === "assistant");
+  const latestAssessment = [...messages].reverse().find(
+    (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
+  )?.assessment;
+  const noraFollowUps = latestAssessment ? pickNoraFollowUps(latestAssessment.gaps ?? []) : [];
 
   function clearAll() {
     setJurisdictions([]);
@@ -811,6 +816,22 @@ function Home() {
     onVoiceSend: text => handleSendRef.current(text),
     disabled: loading || inferring,
   });
+
+  const noraFollowUpChips = hasAssessment && noraFollowUps.length > 0 ? (
+    <div className="nora-follow-ups">
+      {noraFollowUps.map(q => (
+        <button
+          key={q}
+          type="button"
+          className="chip nora-follow-up-chip"
+          disabled={loading}
+          onClick={() => { void sendWithVoice(q); }}
+        >
+          {q}
+        </button>
+      ))}
+    </div>
+  ) : null;
 
   const awaitingInference = messages.some(m => m.role === "thinking" && m.isFollowUp);
 
@@ -1496,6 +1517,7 @@ function Home() {
                     {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                     )}
+                    {noraFollowUpChips}
                     </div>
                   </div>
                 </div>

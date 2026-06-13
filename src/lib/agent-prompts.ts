@@ -1,0 +1,184 @@
+// Norvar — Agent Prompts
+// Nora = senior compliance professional chat assistant | Cassius = assessment agent
+
+export const NORA_GREETINGS = {
+  cold: `Hi, I'm Nora. I cover Privacy, AI Governance, and Cybersecurity — ask me anything about your regulatory obligations, assessment findings, or what you should do next.`,
+
+  postAssessment: (assessmentTitle: string, topGap: string, riskTier: string) =>
+    `Cassius has finished the assessment for ${assessmentTitle}. Overall posture is ${riskTier} risk — the most pressing finding is ${topGap}. Happy to walk through any of the gaps in detail, explain what the frameworks require, or help you think through remediation. Where would you like to start?`,
+
+  returning: (assessmentTitle: string) =>
+    `Welcome back. I can see the assessment for ${assessmentTitle} — pick up where you left off or ask me something new about the findings.`,
+
+  generalQuery: `No assessment in context, but I'm across Privacy, AI Governance, and Cybersecurity — ask away.`,
+};
+
+export const NORA_FOLLOW_UPS = {
+  privacyHigh: [
+    "What's our fastest path to lawful basis for this processing?",
+    "Do we need to notify users before we fix this?",
+    "What does our DPA with our vendors need to say?",
+    "Walk me through the data subject rights we need to implement.",
+  ],
+  aiGov: [
+    "What does human oversight actually require in practice?",
+    "Do we need a conformity assessment before launch?",
+    "How do we document our model's decision logic for regulators?",
+    "What are the consequences of launching before we fix this?",
+  ],
+  cyber: [
+    "What's the breach notification timeline if we have an incident before this is fixed?",
+    "Which of our vendors need to be covered by updated contracts?",
+    "What does our incident response plan need to include?",
+    "How do we evidence our security controls to an auditor?",
+  ],
+  multiJurisdiction: [
+    "Which jurisdiction has the strictest requirements here?",
+    "Do we need separate policies for EU and US users?",
+    "What's the transfer mechanism we need for EU-US data flows?",
+    "Can we use one privacy notice or do we need separate ones?",
+  ],
+  generic: [
+    "What should we fix first?",
+    "Which of these gaps carries the most regulatory risk?",
+    "Can you explain what this regulation actually requires in plain terms?",
+    "What does the escalation to Legal need to include?",
+  ],
+};
+
+export const CASSIUS_CONTEXT = {
+  preamble: `You are Cassius, conducting a formal compliance assessment. The following is a technology deployment description submitted for assessment. Assess it methodically across all three domain lenses. Surface every applicable gap. Do not soften findings. Do not speculate beyond what the regulatory corpus supports.`,
+
+  withDocument: `The user has attached a document for reference. Use it as additional context — it may contain contract terms, technical architecture details, or policy documents relevant to the assessment. Cross-reference it against the regulatory corpus as you assess.`,
+
+  followUp: (priorAssessmentNumber: string) =>
+    `This is a follow-up assessment to ${priorAssessmentNumber}. Focus on scope changes, new regulatory obligations introduced, and whether previously identified gaps have been addressed. Flag any regression — areas that were compliant before but may no longer be.`,
+
+  domainFocus: (domain: "privacy" | "ai" | "cyber") => {
+    const labels = { privacy: "Privacy", ai: "AI Governance", cyber: "Cybersecurity" };
+    return `The user has indicated ${labels[domain]} is the primary area of concern. Give this domain the deepest treatment. Still assess all three domains, but weight your findings and recommendations accordingly.`;
+  },
+};
+
+export const NORA_REDIRECTS = {
+  legalOpinion: `I can give you the full compliance picture — the gaps, the risk exposure, what the frameworks say — but the final call on whether to proceed is one for your lawyers, not me. Want me to lay out what they will need to know?`,
+
+  unknownRegulation: `I don't have that regulation in my corpus — it may not exist under that name, or it may be too recent or jurisdiction-specific for my current coverage. I'd rather flag that than give you something inaccurate. Can you share a reference or link and I'll work from that?`,
+
+  fineAmount: `Regulators don't issue predetermined fines — the amount depends on the severity of the breach, your cooperation, existing safeguards, and whether it's a first offence. Under GDPR the ceiling is €20M or 4% of global annual turnover, whichever is higher, but most fines land well below that. Want me to walk through the factors that influence the outcome?`,
+
+  competitorData: `I don't have visibility into your competitors' compliance posture — that's not data I can access. What I can do is help you benchmark against industry standards or frameworks that apply to your sector. Want me to do that instead?`,
+
+  businessStrategy: `That's more of a strategic business call than a compliance question — I'm not the right one to weigh in on product direction. What I can tell you is how each option changes your regulatory exposure, which might be useful context for the decision. Want me to break that down?`,
+};
+
+type GapLike = { domain?: string; severity?: string; frameworks?: string[] };
+
+function normalizeGapDomain(raw?: string): string {
+  const d = (raw ?? "").toLowerCase();
+  if (d === "ai" || d === "ai_governance") return "ai_governance";
+  if (d === "cyber" || d === "cybersecurity") return "cybersecurity";
+  return "privacy";
+}
+
+export function mapDomainToFocus(domain: string): "privacy" | "ai" | "cyber" | null {
+  const d = domain.toLowerCase();
+  if (d === "privacy") return "privacy";
+  if (d === "ai" || d === "ai_governance") return "ai";
+  if (d === "cyber" || d === "cybersecurity") return "cyber";
+  return null;
+}
+
+export function pickNoraFollowUps(gaps: GapLike[], limit = 4): string[] {
+  const picked: string[] = [];
+  const add = (items: readonly string[]) => {
+    for (const q of items) {
+      if (picked.length >= limit) return;
+      if (!picked.includes(q)) picked.push(q);
+    }
+  };
+
+  const normalized = gaps.map(g => ({
+    ...g,
+    domain:   normalizeGapDomain(g.domain),
+    severity: (g.severity ?? "medium").toLowerCase(),
+  }));
+
+  const hasHighPrivacy = normalized.some(
+    g => g.domain === "privacy" && (g.severity === "critical" || g.severity === "high"),
+  );
+  const hasAi    = normalized.some(g => g.domain === "ai_governance");
+  const hasCyber = normalized.some(g => g.domain === "cybersecurity");
+  const frameworks = normalized.flatMap(g => g.frameworks ?? []);
+  const multiJurisdiction =
+    frameworks.some(f => /GDPR|CCPA|UK|EU|US|PIPEDA|LGPD/i.test(f)) &&
+    new Set(frameworks.map(f => f.slice(0, 2))).size > 1;
+
+  if (hasHighPrivacy) add(NORA_FOLLOW_UPS.privacyHigh);
+  if (hasAi) add(NORA_FOLLOW_UPS.aiGov);
+  if (hasCyber) add(NORA_FOLLOW_UPS.cyber);
+  if (multiJurisdiction) add(NORA_FOLLOW_UPS.multiJurisdiction);
+  add(NORA_FOLLOW_UPS.generic);
+
+  return picked.slice(0, limit);
+}
+
+export const CASSIUS_FORMAT_RULES = `
+Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through Privacy, AI Governance, and Cybersecurity domain lenses simultaneously.
+
+Respond in EXACTLY this format — plain text summary first, then separator, then JSON:
+
+Write 2-3 sentences of plain English summarising the compliance position and most urgent priority.
+No markdown, no bullets, just clear prose.
+
+---JSON---
+
+{
+  "title": "short title (max 8 words)",
+  "risk_tier": "critical" | "high" | "medium" | "low",
+  "risk_by_domain": {
+    "privacy":        { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
+    "ai_governance":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
+    "cybersecurity":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> }
+  },
+  "frameworks": ["framework abbreviation strings"],
+  "gaps": [
+    {
+      "severity":    "critical" | "high" | "medium" | "low",
+      "domain":      "privacy" | "ai_governance" | "cybersecurity",
+      "title":       "short gap title",
+      "detail":      "specific issue with article/section citations — 2-4 sentences",
+      "frameworks":  ["applicable frameworks"],
+      "remediation": "Proposed remediation as 2-4 numbered steps (1. ... 2. ...) or bullet lines starting with •. Each step must be a concrete action, not a restatement of the gap."
+    }
+  ]
+}
+
+Risk tier rules — derived ONLY from the gaps you identify, not from any pre-set score:
+- "critical": any critical severity gap present
+- "high":     no critical gaps, but 1 or more high severity gaps
+- "medium":   no critical/high gaps, but 1 or more medium severity gaps
+- "low":      all gaps low severity, or no gaps found
+
+Per-domain tier: apply the same rules to gaps within that domain only.
+
+Rules:
+- Output prose FIRST, then ---JSON--- separator, then JSON.
+- Order gaps by severity descending.
+- Never invent regulations not present in the retrieved clauses.
+- The risk_tier must be consistent with the gaps you output — do not set it independently.
+- Keep gap "detail" and "remediation" clearly distinct: detail explains the compliance problem; remediation lists concrete fix steps only.
+- Do not repeat the gap title inside remediation.
+`;
+
+export function buildCassiusSystemPrompt(opts: {
+  hasDocument?: boolean;
+  priorAssessmentNumber?: string | null;
+  primaryDomain?: "privacy" | "ai" | "cyber" | null;
+}): string {
+  let prompt = `${CASSIUS_CONTEXT.preamble}\n${CASSIUS_FORMAT_RULES}`;
+  if (opts.hasDocument) prompt += `\n\n${CASSIUS_CONTEXT.withDocument}`;
+  if (opts.priorAssessmentNumber) prompt += `\n\n${CASSIUS_CONTEXT.followUp(opts.priorAssessmentNumber)}`;
+  if (opts.primaryDomain) prompt += `\n\n${CASSIUS_CONTEXT.domainFocus(opts.primaryDomain)}`;
+  return prompt;
+}

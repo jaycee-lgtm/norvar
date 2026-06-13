@@ -3,8 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { filterRegulatoryChunks, buildRegulatoryContextBlock, type RegulatoryChunk } from "@/lib/rag";
-import { ASSESS_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
+import { buildCassiusSystemPrompt, mapDomainToFocus } from "@/lib/agent-prompts";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -25,58 +25,6 @@ async function getEmbedding(text: string): Promise<number[]> {
   const json = await res.json();
   return json.data?.[0]?.embedding ?? [];
 }
-
-const SYSTEM_PROMPT = `
-You are ${ASSESS_AGENT.name}, a senior Governance, Risk and Compliance analyst specialising in technology regulation
-across Privacy, AI Governance, and Cybersecurity globally.
-
-Any technology subject (computer vision, ADMT, robotics, IoT, etc.) is assessed through these
-three domain lenses simultaneously.
-
-Respond in EXACTLY this format — plain text summary first, then separator, then JSON:
-
-Write 2-3 sentences of plain English summarising the compliance position and most urgent priority.
-No markdown, no bullets, just clear prose.
-
----JSON---
-
-{
-  "title": "short title (max 8 words)",
-  "risk_tier": "critical" | "high" | "medium" | "low",
-  "risk_by_domain": {
-    "privacy":        { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
-    "ai_governance":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
-    "cybersecurity":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> }
-  },
-  "frameworks": ["framework abbreviation strings"],
-  "gaps": [
-    {
-      "severity":    "critical" | "high" | "medium" | "low",
-      "domain":      "privacy" | "ai_governance" | "cybersecurity",
-      "title":       "short gap title",
-      "detail":      "specific issue with article/section citations — 2-4 sentences",
-      "frameworks":  ["applicable frameworks"],
-      "remediation": "Proposed remediation as 2-4 numbered steps (1. ... 2. ...) or bullet lines starting with •. Each step must be a concrete action, not a restatement of the gap."
-    }
-  ]
-}
-
-Risk tier rules — derived ONLY from the gaps you identify, not from any pre-set score:
-- "critical": any critical severity gap present
-- "high":     no critical gaps, but 1 or more high severity gaps
-- "medium":   no critical/high gaps, but 1 or more medium severity gaps
-- "low":      all gaps low severity, or no gaps found
-
-Per-domain tier: apply the same rules to gaps within that domain only.
-
-Rules:
-- Output prose FIRST, then ---JSON--- separator, then JSON.
-- Order gaps by severity descending.
-- Never invent regulations not present in the retrieved clauses.
-- The risk_tier must be consistent with the gaps you output — do not set it independently.
-- Keep gap "detail" and "remediation" clearly distinct: detail explains the compliance problem; remediation lists concrete fix steps only.
-- Do not repeat the gap title inside remediation.
-`;
 
 function normalizeGapDomain(raw: string): string {
   const d = raw.toLowerCase();
@@ -170,6 +118,7 @@ export async function POST(req: NextRequest) {
         tags          = [] as string[],
         document_ids  = [] as string[],
         folder_id     = null as string | null,
+        prior_assessment_number = null as string | null,
       } = body;
 
       if (description.trim().length < 10) {
@@ -208,10 +157,18 @@ export async function POST(req: NextRequest) {
         docContext ? `\nREFERENCED DOCUMENTS:\n${docContext.slice(0, 4000)}` : "",
       ].join("\n");
 
+      const hasDocument = document_ids.length > 0 || !!contract_text.trim();
+      const primaryDomain = domains.length === 1 ? mapDomainToFocus(domains[0]) : null;
+      const systemPrompt = buildCassiusSystemPrompt({
+        hasDocument,
+        priorAssessmentNumber: prior_assessment_number,
+        primaryDomain,
+      });
+
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
         max_tokens: 4000,
-        system:     SYSTEM_PROMPT,
+        system:     systemPrompt,
         messages:   [{ role: "user", content: userMsg }],
         stream:     true,
       });
