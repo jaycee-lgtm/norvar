@@ -433,15 +433,20 @@ function Chat() {
                 )}
                 {isMobileView ? (
                   <div className="mobile-composer">
-                    <textarea
-                      ref={inputRef}
-                      className="input-textarea mobile-composer-field"
-                      placeholder={`Chat with ${CHAT_AGENT.name}`}
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={handleKey}
-                      rows={1}
-                    />
+                    <div className="mobile-composer-input-row">
+                      <textarea
+                        ref={inputRef}
+                        className="input-textarea mobile-composer-field"
+                        placeholder={`Chat with ${CHAT_AGENT.name}`}
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={handleKey}
+                        rows={1}
+                      />
+                      <div className="mobile-composer-attach">
+                        {attachControl}
+                      </div>
+                    </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
                         <ModeSelector current="chat" compact menuPlacement="top" />
@@ -453,9 +458,6 @@ function Chat() {
                             ? <Loader2 size={16} className="spin" />
                             : <ArrowUp size={16} strokeWidth={2.5} />}
                         </button>
-                        <div className="mobile-composer-attach">
-                          {attachControl}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -635,13 +637,18 @@ function Chat() {
                   )}
                   {isMobileView ? (
                   <div className="mobile-composer thread-composer">
-                    <input
-                      className="chat-input-field mobile-composer-field"
-                      placeholder={`Chat with ${CHAT_AGENT.name}`}
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={handleKey}
-                    />
+                    <div className="mobile-composer-input-row">
+                      <input
+                        className="chat-input-field mobile-composer-field"
+                        placeholder={`Chat with ${CHAT_AGENT.name}`}
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={handleKey}
+                      />
+                      <div className="mobile-composer-attach">
+                        {attachControl}
+                      </div>
+                    </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="mobile-mode-pill">
                         <ModeSelector current="chat" compact menuPlacement="top" />
@@ -665,9 +672,6 @@ function Chat() {
                             ? <Loader2 size={14} className="spin" />
                             : <ArrowUp size={14} strokeWidth={2.5} />}
                         </button>
-                        <div className="mobile-composer-attach">
-                          {attachControl}
-                        </div>
                       </div>
                     </div>
                   </div>

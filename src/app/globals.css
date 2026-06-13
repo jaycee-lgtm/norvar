@@ -743,7 +743,28 @@ body {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  margin-left: 2px;
+}
+
+.mobile-composer-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.mobile-composer-input-row .mobile-composer-field {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.mobile-composer-input-row .mobile-composer-attach {
+  padding-bottom: 8px;
+}
+
+.mobile-composer-input-row .attach-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
 }
 
 .mobile-composer-actions .attach-icon-btn {
