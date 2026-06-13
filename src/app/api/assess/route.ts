@@ -370,11 +370,11 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
       console.error("Assess error:", err);
       if (assessmentId) {
-        const partial = buildProcessingResult(streamedGaps, {
+        const partialResult = buildProcessingResult(streamedGaps, {
           summary: summaryText,
           status:  streamedGaps.length ? "partial" : "failed",
         });
-        partial.id = assessmentId;
+        const partial = { ...partialResult, id: assessmentId };
         await supabase.from("assessments").update({
           result:    partial,
           risk_tier: partial.risk_tier,
