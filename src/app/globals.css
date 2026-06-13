@@ -1731,6 +1731,26 @@ body {
     display: flex;
   }
 
+  .assess-input-bar {
+    align-items: flex-start;
+    padding: 14px 14px 14px 16px;
+  }
+
+  .assess-input-bar .assess-input-textarea {
+    min-height: 96px;
+  }
+
+  .assess-input-bar .attach-icon-btn,
+  .assess-input-bar .voice-input-btn,
+  .assess-input-bar .send-btn {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .assess-input-chips {
+    margin-top: 8px;
+  }
+
   .doc-row {
     flex-direction: row !important;
     align-items: center !important;

@@ -1226,7 +1226,7 @@ function Home() {
   );
 
   const InputBar = (
-    <div className="input-wrap assess-composer mobile-composer">
+    <div className={`input-wrap assess-composer${isMobileView ? " mobile-composer" : ""}`}>
       {!isMobileView && (hasGuidedInputs || hasAttachedDocs) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: "0 2px" }}>
           {buildTags().map(tag => (
@@ -1292,15 +1292,16 @@ function Home() {
           />
         </div>
       ) : (
+      <>
       <div className="input-bar assess-input-bar">
         <textarea
           ref={textareaRef}
-          className="input-textarea mobile-composer-field"
-          placeholder={`Assess with ${ASSESS_AGENT.name}`}
+          className="input-textarea assess-input-textarea"
+          placeholder="Describe your product or deployment..."
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          rows={1}
+          rows={3}
         />
         {attachControl}
         <VoiceInputIcon
@@ -1319,17 +1320,9 @@ function Home() {
           {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
         </button>
       </div>
-      )}
-      <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       {voice.voiceError && (
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
-
-      <div className="mobile-composer-tools assess-composer-tools mobile-composer-tools--minimal">
-        <div className="mobile-mode-pill">
-          <ModeSelector current="assess" compact menuPlacement="top" />
-        </div>
-      {!isMobileView && (
       <div className="input-chips assess-input-chips">
         {openChip === "jurisdictions"
           ? <ChipDropdown icon={<Globe size={11} strokeWidth={1.75} />} label="Jurisdictions" options={JURISDICTION_OPTIONS} selected={jurisdictions} onToggle={toggleMulti(setJurisdictions)} onClose={() => setOpenChip(null)} />
@@ -1348,12 +1341,25 @@ function Home() {
           : <button type="button" className="chip" onClick={() => setOpenChip("sector")}><Briefcase size={11} strokeWidth={1.75} /> Sector{sector.length > 0 && <span style={{ fontSize:9, background:"var(--fg)", color:"var(--bg)", padding:"0 5px", borderRadius:10, fontWeight:600 }}>1</span>}</button>
         }
       </div>
-      )}
       {fileError && (
-        <p style={{ fontSize: 11, color: "var(--rh)", margin: "0 0 8px", fontFamily: "'Sora', sans-serif" }}>
+        <p style={{ fontSize: 11, color: "var(--rh)", margin: "8px 0 0", fontFamily: "'Sora', sans-serif" }}>
           {fileError}
         </p>
       )}
+      </>
+      )}
+      <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+
+      {isMobileView && (
+      <>
+      {voice.voiceError && (
+        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+      )}
+
+      <div className="mobile-composer-tools assess-composer-tools mobile-composer-tools--minimal">
+        <div className="mobile-mode-pill">
+          <ModeSelector current="assess" compact menuPlacement="top" />
+        </div>
         <div className="mobile-composer-actions assess-composer-actions">
           <VoiceInputIcon
             isListening={voice.isListening}
@@ -1372,6 +1378,13 @@ function Home() {
           </button>
         </div>
       </div>
+      {fileError && (
+        <p style={{ fontSize: 11, color: "var(--rh)", margin: "8px 0 0", fontFamily: "'Sora', sans-serif" }}>
+          {fileError}
+        </p>
+      )}
+      </>
+      )}
     </div>
   );
 
