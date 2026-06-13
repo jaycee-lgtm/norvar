@@ -317,6 +317,19 @@ function Chat() {
     />
   );
 
+  const attachControl = (
+    <DocumentPicker
+      selectedIds={selectedDocumentIds}
+      onChange={setSelectedDocumentIds}
+      folderId={folderId}
+      disabled={loading || fileExtracting}
+      variant="icon"
+      onUpload={() => fileRef.current?.click()}
+      uploading={fileExtracting}
+      uploadAttached={!!attachedDocName}
+    />
+  );
+
   const startNew = () => {
     setMessages([]);
     setHistory([]);
@@ -431,16 +444,7 @@ function Chat() {
                     />
                     <div className="mobile-composer-tools">
                       <div className="mobile-composer-attach">
-                        <DocumentPicker
-                          selectedIds={selectedDocumentIds}
-                          onChange={setSelectedDocumentIds}
-                          disabled={loading || fileExtracting}
-                          label="Attach doc"
-                        />
-                        <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
-                          <FileText size={11} strokeWidth={1.75} />
-                          {fileExtracting ? "Reading…" : attachedDocName ? "Replace" : "Upload"}
-                        </button>
+                        {attachControl}
                       </div>
                       <div className="mobile-composer-actions">
                         {voiceIcon}
@@ -464,6 +468,7 @@ function Chat() {
                         onKeyDown={handleKey}
                         rows={1}
                       />
+                      {attachControl}
                       {voiceIcon}
                       <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                         {loading
@@ -472,16 +477,6 @@ function Chat() {
                       </button>
                     </div>
                     <div className="input-chips" style={{ marginTop: 8 }}>
-                      <DocumentPicker
-                        selectedIds={selectedDocumentIds}
-                        onChange={setSelectedDocumentIds}
-                        disabled={loading || fileExtracting}
-                        label="Attach doc"
-                      />
-                      <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
-                        <FileText size={11} strokeWidth={1.75} />
-                        {fileExtracting ? "Reading doc…" : attachedDocName ? "Replace doc" : "Upload doc"}
-                      </button>
                       <SampleQuestionsDropdown
                         align="left"
                         onSelect={q => sendWithVoice(q)}
@@ -646,16 +641,7 @@ function Chat() {
                     />
                     <div className="mobile-composer-tools">
                       <div className="mobile-composer-attach">
-                        <DocumentPicker
-                          selectedIds={selectedDocumentIds}
-                          onChange={setSelectedDocumentIds}
-                          disabled={loading || fileExtracting}
-                          label="Attach doc"
-                        />
-                        <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
-                          <FileText size={11} strokeWidth={1.75} />
-                          {fileExtracting ? "Reading…" : "Upload"}
-                        </button>
+                        {attachControl}
                       </div>
                       <div className="mobile-composer-actions">
                         <VoiceInputIcon
@@ -682,6 +668,7 @@ function Chat() {
                   ) : (
                   <>
                   <div className="chat-input-bar">
+                    {attachControl}
                     <input
                       className="chat-input-field"
                       placeholder="Ask a follow-up question..."
@@ -712,16 +699,6 @@ function Chat() {
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                   )}
                   <div className="input-chips" style={{ marginTop: 8 }}>
-                    <DocumentPicker
-                      selectedIds={selectedDocumentIds}
-                      onChange={setSelectedDocumentIds}
-                      disabled={loading || fileExtracting}
-                      label="Attach doc"
-                    />
-                    <button type="button" className="chip" disabled={fileExtracting || loading} onClick={() => fileRef.current?.click()}>
-                      <FileText size={11} strokeWidth={1.75} />
-                      {fileExtracting ? "Reading doc…" : attachedDocName ? "Replace doc" : "Upload doc"}
-                    </button>
                     <SampleQuestionsDropdown
                       align="left"
                       onSelect={q => sendWithVoice(q)}

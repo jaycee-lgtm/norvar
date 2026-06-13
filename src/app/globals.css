@@ -374,6 +374,137 @@ body {
 .voice-input-btn:disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
 .voice-input-btn-sm { width: 30px; height: 30px; border-radius: 7px; }
 
+.doc-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.attach-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--fg3);
+  position: relative;
+  transition: color 0.15s, background 0.15s;
+}
+
+.attach-icon-btn:hover:not(:disabled) {
+  color: var(--fg2);
+  background: var(--card2);
+}
+
+.attach-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.attach-icon-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+}
+
+.doc-picker-menu,
+.doc-picker-popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  z-index: 120;
+  overflow: hidden;
+}
+
+.doc-picker-menu {
+  min-width: 180px;
+  padding: 4px;
+}
+
+.doc-picker-popover {
+  width: 320px;
+  max-height: 320px;
+}
+
+.doc-picker-popover--wide {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-picker-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.doc-picker-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 0.5px solid var(--bdr);
+  background: transparent;
+  color: var(--fg3);
+  font-size: 11px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.doc-picker-back:hover {
+  color: var(--fg2);
+  background: var(--card2);
+}
+
+.doc-picker-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg2);
+  font-size: 12px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  text-align: left;
+}
+
+.doc-picker-menu-item:hover:not(:disabled) {
+  background: var(--card2);
+  color: var(--fg);
+}
+
+.doc-picker-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .input-chips {
   display: flex;
   align-items: center;
@@ -610,11 +741,8 @@ body {
 
 .mobile-composer-attach {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   align-items: center;
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .gap-item-header {
@@ -1396,6 +1524,16 @@ body {
 .chat-send-btn:disabled { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
 
 .chat-input-bar .voice-input-btn-sm { margin-right: -2px; }
+
+.chat-input-bar .attach-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+
+.input-bar .attach-icon-btn {
+  margin-left: -2px;
+}
 
 /* ══════════════════════════════════════════════════════════════════
    HISTORY PAGE
