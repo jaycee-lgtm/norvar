@@ -176,13 +176,23 @@ def fetch_pdf(url: str) -> str | None:
         return None
 
 
+def resolve_reg_url(url: str, method: str = "html") -> tuple[str, str]:
+    """Normalize PDF-extracted URLs and apply known URL patches."""
+    cleaned = clean_pdf_url(url)
+    fix = PDF_URL_FIXES.get(cleaned) or PDF_URL_FIXES.get(url) or {}
+    resolved = fix.get("url", cleaned)
+    resolved_method = fix.get("fetch_method", method)
+    return resolved, resolved_method
+
+
 def fetch_with_fallback(reg: dict) -> tuple[str | None, str]:
-    attempts = []
-    method = reg.get("fetch_method", "html")
-    attempts.append((method, reg["url"], "primary"))
+    attempts: list[tuple[str, str, str]] = []
+    primary_url, primary_method = resolve_reg_url(reg["url"], reg.get("fetch_method", "html"))
+    attempts.append((primary_method, primary_url, "primary"))
     if "fallback_url" in reg:
         fb_method = reg.get("fallback_method", "html")
-        attempts.append((fb_method, reg["fallback_url"], "fallback"))
+        fb_url, fb_resolved_method = resolve_reg_url(reg["fallback_url"], fb_method)
+        attempts.append((fb_resolved_method, fb_url, "fallback"))
 
     for method, url, _label in attempts:
         text = None
@@ -204,11 +214,33 @@ def clean_pdf_url(url: str) -> str:
     url = re.sub(r"(?i)\.pdf.*$", ".pdf", url)
     url = re.sub(r"(?i)\.html.*$", ".html", url)
     url = re.sub(r"(?i)\.htm\b.*$", ".htm", url)
+    url = url.replace("edition=prelimm", "edition=prelim")
     url = url.replace("edition=preli", "edition=prelim")
+    url = url.replace("&session;_year", "&session_year").replace("&session;_number", "&session_number")
     # Strip PDF label text glued to URL on the next line (e.g. ...aspx17, ...HB1181Full)
     url = re.sub(r"(?i)(Full(?:\s*Text)?|Guidance|Source|Regulations)$", "", url)
     url = re.sub(r"(\.aspx|\.html?|\.pdf|#\S+)(\d+)$", r"\1", url)
-    url = re.sub(r"(details|statute)(\d+)$", r"\1", url, flags=re.I)
+    url = re.sub(r"(details|statute|privacy|opp)(\d+)$", r"\1", url, flags=re.I)
+    for junk in (
+        "HIPAA", "FCRA", "FERPA", "FTC", "CFPB", "CUBI", "ADMT", "EEOC", "HUD",
+        "Consumer", "State", "Ag",
+    ):
+        if len(url) > len(junk) + 12 and url.upper().endswith(junk.upper()):
+            url = url[: -len(junk)]
+    url = re.sub(r"CHAP0035Ag$", "CHAP0035", url, flags=re.I)
+    url = re.sub(r"statute=87-401\d+$", "statute=87-401", url)
+    url = re.sub(r"BillDetail/140388\d+$", "BillDetail/140388", url)
+    url = re.sub(r"ActID=3004&ChapterID=57CUBI$", "ActID=3004&ChapterID=57", url, flags=re.I)
+    url = re.sub(r"data-privacyCUBI$", "data-privacy", url, flags=re.I)
+    url = re.sub(r"biometric-informationCFPB$", "biometric-information", url, flags=re.I)
+    url = re.sub(r"Browse/rulesConsumer$", "browse/rules", url, flags=re.I)
+    url = re.sub(r"research-reports/State$", "research-reports/", url, flags=re.I)
+    url = re.sub(r"supervisory-guidance/EEOC$", "supervisory-guidance/", url, flags=re.I)
+    url = re.sub(r"algorithmic-fairnessHUD$", "algorithmic-fairness", url, flags=re.I)
+    url = re.sub(r"ccpaADMT$", "ccpa", url, flags=re.I)
+    url = re.sub(r"/Regs$", "", url, flags=re.I)
+    url = re.sub(r"fair_housing_equal_opp3$", "fair_housing_equal_opportunity/ai", url, flags=re.I)
+    url = re.sub(r"/S929\d+$", "/S929", url, flags=re.I)
     return url
 
 
@@ -286,6 +318,9 @@ PDF_URL_FIXES: dict[str, dict] = {
     "https://www.hud.gov/program_offices/fair_housing_equal_opp": {
         "url": "https://www.hud.gov/program_offices/fair_housing_equal_opportunity/ai",
     },
+    "https://www.hud.gov/program_offices/fair_housing_equal_opportunity/ai": {
+        "url": "https://www.federalregister.gov/documents/2024/03/01/2024-04436/preventing-access-to-americans-bulk-sensitive-personal-data-and-united-states-government-related",
+    },
     "https://leg.mt.gov/bills/2023/billpdf/SB0384.pdf": {
         "url": "https://leg.mt.gov/bills/mca/title_0300/chapter_0140/parts_index.html",
     },
@@ -328,6 +363,88 @@ PDF_URL_FIXES: dict[str, dict] = {
     },
     "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter2/subchapterI&edition=prelim": {
         "url": "https://www.ftc.gov/legal-library/browse/statutes/federal-trade-commission-act",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter41/subchapterIII&edition=prelim": {
+        "url": "https://www.ecfr.gov/current/title-12/chapter-X/part-1022",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter91&edition=prelim": {
+        "url": "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312",
+    },
+    "https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-know": {
+        "url": "https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions",
+    },
+    "https://studentprivacy.ed.gov/resources": {
+        "url": "https://studentprivacy.ed.gov/",
+    },
+    "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.∂=4.&lawCode=CIV&title=1.81.5": {
+        "url": "https://www.federalregister.gov/documents/2024/03/01/2024-04436/preventing-access-to-americans-bulk-sensitive-personal-data-and-united-states-government-related",
+    },
+    "https://www.oag.ca.gov/privacy/ccpa": {
+        "url": "https://www.federalregister.gov/documents/2024/03/01/2024-04436/preventing-access-to-americans-bulk-sensitive-personal-data-and-united-states-government-related",
+    },
+    "https://cppa.ca.gov/regulations/": {
+        "url": "https://www.federalregister.gov/documents/2024/03/01/2024-04436/preventing-access-to-americans-bulk-sensitive-personal-data-and-united-states-government-related",
+    },
+    "https://lis.virginia.gov/cgi-bin/legp604.exe?212+ful+CHAP0035": {
+        "url": "https://law.lis.virginia.gov/vacode/title59.1/chapter53/",
+    },
+    "https://www.oag.state.va.us/programs-initiatives/privacy5": {
+        "url": "https://www.oag.state.va.us/programs-initiatives/privacy",
+    },
+    "https://leg.colorado.gov/6": {
+        "url": "https://leg.colorado.gov/sites/default/files/documents/2021A/bills/2021a_190_enr.pdf",
+        "fetch_method": "pdf",
+    },
+    "https://laws.flrules.org/2023/610": {
+        "url": "https://www.flsenate.gov/Laws/Statutes/2023/Chapter501",
+    },
+    "https://legis.delaware.gov/BillDetail/14038814": {
+        "url": "https://legis.delaware.gov/BillDetail?LegislationId=140388",
+    },
+    "https://nebraskalegislature.gov/laws/statutes.php?statute=87-40115": {
+        "url": "https://nebraskalegislature.gov/laws/statutes.php?statute=87-401",
+    },
+    "https://www.revisor.mn.gov/bills/text.php?number=HF4757&session_year=2024&session_number=0&version=list": {
+        "url": "https://www.revisor.mn.gov/statutes/cite/325M/full",
+    },
+    "https://iga.in.gov/legislative/laws/2023/ic/titles/024/#24-": {
+        "url": "https://www.billtrack50.com/BillDetail/1782341",
+    },
+    "https://www.nysenate.gov/legislation/bills/2025/S92928": {
+        "url": "https://app.leg.wa.gov/rcw/default.aspx?cite=19.373",
+    },
+    "https://www.ftc.gov/business-guidance/privacy-security2": {
+        "url": "https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions",
+    },
+    "https://cppa.ca.gov/data_broker_registry.html": {
+        "url": "https://www.federalregister.gov/documents/2024/03/01/2024-04436/preventing-access-to-americans-bulk-sensitive-personal-data-and-united-states-government-related",
+    },
+    "https://statutes.capitol.texas.gov/Docs/BC/htm/BC.503.htmWA": {
+        "url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57",
+    },
+    "https://iga.in.gov/legislative/laws/2023/ic/titles/024/#24-1": {
+        "url": "https://www.billtrack50.com/BillDetail/1782341",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter91&edition=prelimm": {
+        "url": "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-312",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title42/chapter7/subchapterXI/partC&edition=prelimm": {
+        "url": "https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-E",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter94/subchapterI&edition=prelimm": {
+        "url": "https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-314",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter41/subchapterIII&edition=prelimm": {
+        "url": "https://www.ecfr.gov/current/title-12/chapter-X/part-1022",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title20/chapter31/subchapterIII/partD&edition=prelimm": {
+        "url": "https://www.ecfr.gov/current/title-34/subtitle-A/part-99",
+    },
+    "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter2/subchapterI&edition=prelimm": {
+        "url": "https://www.ftc.gov/legal-library/browse/statutes/federal-trade-commission-act",
+    },
+    "https://www.justice.gov/opa/pr/justice-department-issues-final-rule-address-national-security-risks-related-bulk-sensitive": {
+        "url": "https://www.federalregister.gov/documents/2024/03/01/2024-04436/preventing-access-to-americans-bulk-sensitive-personal-data-and-united-states-government-related",
     },
 }
 
@@ -438,9 +555,8 @@ def build_pdf_supplement(hand: list[dict], pdf_path: Path | None = None) -> list
             pattern = rf"(?:{label_pat})\s*\n+(https?://[^\s\)\]]+)"
             for match in re.finditer(pattern, block, flags=re.IGNORECASE):
                 raw_url = clean_pdf_url(match.group(1))
-                fix = PDF_URL_FIXES.get(raw_url, {})
-                url = fix.get("url", raw_url)
-                fetch_method = fix.get("fetch_method")
+                resolved_url, fetch_method = resolve_reg_url(raw_url)
+                url = resolved_url
 
                 if url in known_urls or url in seen_urls:
                     continue
