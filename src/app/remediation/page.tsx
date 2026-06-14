@@ -470,24 +470,19 @@ export default function RemediationPage() {
       i.status === "resolved"
       && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
     ).length,
-    high: domainFiltered.filter(i =>
-      normalizeGapSeverity(i.gap_severity) === "high"
-      && (!filterStatus || i.status === filterStatus),
-    ).length,
-  }), [domainFiltered, filterSev, filterStatus]);
+  }), [domainFiltered, filterSev]);
 
   const SUMMARY_FILTERS: Array<{
     key:   string;
     label: string;
-    type:  "status" | "severity";
+    type:  "status";
     value: string;
     color: string;
   }> = [
-    { key: "open",        label: "Open",          type: "status",   value: "open",        color: "var(--fg)" },
-    { key: "in_progress", label: "In progress",   type: "status",   value: "in_progress", color: "var(--fg)" },
-    { key: "escalated",   label: "Escalated",     type: "status",   value: "escalated",   color: "var(--rm)" },
-    { key: "resolved",    label: "Resolved",      type: "status",   value: "resolved",    color: "var(--rl)" },
-    { key: "high",        label: "High severity", type: "severity", value: "high",        color: "var(--rh)" },
+    { key: "open",        label: "Open",        type: "status", value: "open",        color: "var(--fg)" },
+    { key: "in_progress", label: "In progress", type: "status", value: "in_progress", color: "var(--fg)" },
+    { key: "escalated",   label: "Escalated",   type: "status", value: "escalated",   color: "var(--rm)" },
+    { key: "resolved",    label: "Resolved",    type: "status", value: "resolved",    color: "var(--rl)" },
   ];
 
   const toggleSummaryFilter = (type: "status" | "severity", value: string) => {
@@ -606,14 +601,6 @@ export default function RemediationPage() {
                   )}
                 </button>
               ))}
-              <button
-                type="button"
-                className={`remediation-status-pill remediation-status-pill--severity${filterSev === "high" ? " active" : ""}`}
-                onClick={() => toggleSummaryFilter("severity", "high")}
-              >
-                High severity
-                <span className="remediation-status-pill-count">{counts.high}</span>
-              </button>
             </div>
             <button
               type="button"
