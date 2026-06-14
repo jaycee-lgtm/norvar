@@ -461,6 +461,72 @@ input, textarea, select, button {
   filter: drop-shadow(0 0 12px rgba(139, 26, 26, 0.22));
 }
 
+/* Hero logo — three book spines stack in, then settle */
+.logo-stack--animated .logo-book {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.logo-stack--animated .logo-book-1 {
+  animation:
+    logoBookStackIn 0.52s cubic-bezier(0.22, 1, 0.36, 1) both,
+    logoBookSettle 4.8s ease-in-out 0.52s infinite;
+}
+
+.logo-stack--animated .logo-book-2 {
+  animation:
+    logoBookStackIn 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both,
+    logoBookSettle 4.8s ease-in-out 0.72s infinite;
+}
+
+.logo-stack--animated .logo-book-3 {
+  animation:
+    logoBookStackIn 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both,
+    logoBookSettle 4.8s ease-in-out 0.92s infinite;
+}
+
+.home-hero-enter .home-hero-serif--enter {
+  animation: homeHeroTextIn 0.62s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+}
+
+@keyframes logoBookStackIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scaleY(0.82);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scaleY(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes logoBookSettle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5px); }
+}
+
+@keyframes homeHeroTextIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-stack--animated .logo-book,
+  .home-hero-enter .home-hero-serif--enter {
+    animation: none;
+  }
+}
+
 .home-hero-heading-wrap {
   display: flex;
   align-items: center;
@@ -1544,6 +1610,18 @@ input, textarea, select, button {
 
 .remediation-item-meta-num {
   font-family: 'JetBrains Mono', monospace;
+}
+
+.remediation-item-meta-owner {
+  color: var(--fg2);
+  font-weight: 500;
+}
+
+.remediation-item-meta-owner--mobile {
+  font-size: 9px;
+  max-width: 120px;
+  text-align: right;
+  line-height: 1.3;
 }
 
 .remediation-item-side {

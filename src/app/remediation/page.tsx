@@ -76,6 +76,24 @@ function fmt_date(iso: string | null) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function queueOwnerLabel(
+  item: Pick<RemediationItem, "created_by" | "assigned_to">,
+  profiles: Record<string, UserProfile>,
+): string | null {
+  const assigneeNames = item.assigned_to
+    .map(id => profiles[id]?.name?.trim())
+    .filter(Boolean) as string[];
+
+  if (assigneeNames.length > 0) {
+    const shown = assigneeNames.slice(0, 2).join(", ");
+    const extra = assigneeNames.length > 2 ? ` +${assigneeNames.length - 2}` : "";
+    return `Assigned to ${shown}${extra}`;
+  }
+
+  const queuedBy = profiles[item.created_by]?.name?.trim();
+  return queuedBy ? `Queued by ${queuedBy}` : null;
+}
+
 function is_overdue(due: string | null) {
   if (!due) return false;
   return new Date(due) < new Date();
@@ -174,6 +192,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
 
   const isTerminal  = localStatus === "resolved" || localStatus === "wont_fix";
   const longDetail  = (item.gap_detail?.length ?? 0) > 220;
+  const ownerLabel  = queueOwnerLabel(item, profiles);
 
   return (
     <>
@@ -190,6 +209,9 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
             <div className="remediation-item-title">{item.gap_title}</div>
             {!isMobile && (
               <div className="remediation-item-meta">
+                {ownerLabel && (
+                  <span className="remediation-item-meta-owner">{ownerLabel}</span>
+                )}
                 {item.project_title && (
                   <span className="remediation-item-meta-project">{item.project_title}</span>
                 )}
@@ -205,6 +227,9 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
           </div>
 
           <div className="remediation-item-side">
+            {isMobile && ownerLabel && (
+              <span className="remediation-item-meta-owner remediation-item-meta-owner--mobile">{ownerLabel}</span>
+            )}
             <StatusBadge status={localStatus} />
             {item.due_date && (
               <span className={`remediation-item-due${overdue ? " overdue" : ""}`}>

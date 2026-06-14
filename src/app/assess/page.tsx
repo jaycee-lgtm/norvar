@@ -1786,17 +1786,17 @@ function Home() {
 
             {isHome && (
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
-                <div className={isMobileView ? "home-hero-block" : undefined}>
+                <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
                   {isMobileView ? (
                     <>
-                      <Logo size={44} />
-                      <h1 className="home-hero-serif mobile-home-serif">What are you building?</h1>
+                      <Logo size={44} animated />
+                      <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">What are you building?</h1>
                     </>
                   ) : (
-                    <div className="home-hero-row">
-                      <Logo variant="hero" className="home-hero-logo" size={52} />
+                    <div className="home-hero-row home-hero-enter">
+                      <Logo variant="hero" className="home-hero-logo" size={52} animated />
                       <div className="home-hero-heading-wrap">
-                        <h1 className="home-hero-serif">What are you building?</h1>
+                        <h1 className="home-hero-serif home-hero-serif--enter">What are you building?</h1>
                         <InfoTip text={`Chat with ${ASSESS_AGENT.name} about your project. When you're ready, he'll confirm and ask a few scoping questions before running your assessment.`} />
                       </div>
                     </div>

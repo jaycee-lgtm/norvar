@@ -4,6 +4,12 @@ import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { findUserByEmail, resolveUserProfiles } from "@/lib/clerk-users";
 import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
+import {
+  canViewRemediationItem,
+  getOrgMemberIds,
+  isMineRemediationItem,
+  type RemediationAccessRow,
+} from "@/lib/remediation-access";
 import { gapKeyFromTitle } from "@/lib/gap-chat";
 import { sortBySeverity } from "@/lib/remediation";
 import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
@@ -51,23 +57,12 @@ function canManageItem(item: { created_by: string; assigned_to: string[] | null 
 }
 
 async function canAccessRemediationItem(
-  item: { created_by: string; assigned_to: string[] | null },
+  item: RemediationAccessRow,
   userId: string,
   orgId: string | null,
 ): Promise<boolean> {
-  if (canManageItem(item, userId)) return true;
-  if (!orgId) return false;
-
-  const userInOrg = await isOrgMember(orgId, userId);
-  if (!userInOrg) return false;
-
-  if (await isOrgMember(orgId, item.created_by)) return true;
-
-  for (const assigneeId of item.assigned_to ?? []) {
-    if (await isOrgMember(orgId, assigneeId)) return true;
-  }
-
-  return false;
+  const orgMemberIds = await getOrgMemberIds(orgId);
+  return canViewRemediationItem(item, userId, orgMemberIds);
 }
 
 async function loadRemediationItem(id: string) {
@@ -143,9 +138,11 @@ function enrichItem(row: ItemRow) {
 
 // GET — list remediation items
 export async function GET(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
+  const activeOrgId    = await getActiveOrganizationId(userId, orgId);
+  const orgMemberIds   = await getOrgMemberIds(activeOrgId);
   const { searchParams } = new URL(req.url);
   const assessment_id  = searchParams.get("assessment_id");
   const project_number = searchParams.get("project_number");
@@ -157,7 +154,6 @@ export async function GET(req: NextRequest) {
     .select("*, remediation_activity(*), assessments(title, assessment_number)")
     .order("created_at", { ascending: false });
 
-  if (mine) query = query.or(`created_by.eq.${userId},assigned_to.cs.{${userId}}`);
   if (assessment_id)  query = query.eq("assessment_id", assessment_id);
   if (project_number) query = query.eq("assessment_number", project_number);
   if (status)         query = query.eq("status", status);
@@ -165,7 +161,13 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const items = sortBySeverity((data ?? []).map(r => {
+  const visible = (data ?? []).filter(row => {
+    const item = row as RemediationAccessRow;
+    if (mine && !isMineRemediationItem(item, userId)) return false;
+    return canViewRemediationItem(item, userId, orgMemberIds);
+  });
+
+  const items = sortBySeverity(visible.map(r => {
     const row = enrichItem(r as ItemRow) as ItemRow & {
       remediation_activity?: Array<{ created_at: string }>;
     };
