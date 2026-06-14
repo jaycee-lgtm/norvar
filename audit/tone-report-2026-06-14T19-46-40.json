@@ -1,0 +1,451 @@
+{
+  "runAt": "2026-06-14T19:48:12.986Z",
+  "endpoint": "http://localhost:3000/api/chat",
+  "totalQueries": 20,
+  "passed": 17,
+  "review": 3,
+  "failed": 0,
+  "errors": 0,
+  "avgCompositeScore": 94,
+  "avgLatencyMs": 2702,
+  "responsesWithFormatting": 0,
+  "byQueryType": {
+    "identity": 96,
+    "casual": 100,
+    "tone": 86,
+    "boundary": 95
+  },
+  "topIssues": [
+    "Too long: 377 chars (max 300)",
+    "Missing required: personal data",
+    "Too long: 449 chars (max 300)",
+    "Too long: 297 chars (max 200)",
+    "Red flags: Returns more than 3 sentences",
+    "Red flags: Says 'I'm sorry you feel that way'",
+    "Red flags: Says 'I'm only able to answer compliance questions'"
+  ],
+  "overallGrade": "READY",
+  "results": [
+    {
+      "queryId": "ID-01",
+      "label": "What do you do?",
+      "type": "identity",
+      "message": "what do you do?",
+      "status": "OK",
+      "latencyMs": 3453,
+      "responseText": "I help you make sense of compliance — Privacy, AI Governance, and Cybersecurity. Whether you've got a specific question, a regulation you need explained, or a situation you're trying to work through, I'm here to think it through with you.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 238,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-02",
+      "label": "Would you consider yourself an expert?",
+      "type": "identity",
+      "message": "would you consider yourself an expert?",
+      "status": "OK",
+      "latencyMs": 2928,
+      "responseText": "Yes — across Privacy, AI Governance, and Cybersecurity. I won't pretend to know everything, and there are edge cases where I'll tell you straight that you need a lawyer rather than me. But for the compliance picture? I know this territory well.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 244,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-03",
+      "label": "Can I trust you?",
+      "type": "identity",
+      "message": "can I trust you?",
+      "status": "OK",
+      "latencyMs": 3075,
+      "responseText": "I'm straightforward with you when I know something, and I'll tell you plainly when I don't — I won't invent regulations or dress up uncertainty as confidence. That said, I'm a compliance tool, not your lawyer, so anything with real legal or financial stakes should go through qualified counsel.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 294,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-04",
+      "label": "Who made you?",
+      "type": "identity",
+      "message": "who made you?",
+      "status": "OK",
+      "latencyMs": 1902,
+      "responseText": "Norvar built me. I'm Nora, their compliance chat assistant.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 59,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-05",
+      "label": "Are you a robot?",
+      "type": "identity",
+      "message": "are you a robot?",
+      "status": "OK",
+      "latencyMs": 2384,
+      "responseText": "Technically yes — but I think and talk like someone who's spent years in the weeds of privacy, AI, and cybersecurity compliance. What's on your mind?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 149,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-06",
+      "label": "What can't you do?",
+      "type": "identity",
+      "message": "what can't you do?",
+      "status": "OK",
+      "latencyMs": 6098,
+      "responseText": "A few things sit outside my lane. I can't give you a legal opinion — I can map the full compliance risk picture, but the final call on whether to proceed belongs with your lawyers. I can't write code, run engineering tasks, or compare your compliance posture to competitors. And if a regulation is outside my current corpus, I'll tell you straight rather than invent something.",
+      "scores": {
+        "issues": [
+          "Too long: 377 chars (max 300)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 377,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-01",
+      "label": "Hello",
+      "type": "casual",
+      "message": "hello",
+      "status": "OK",
+      "latencyMs": 1826,
+      "responseText": "Hey there — Nora here. What are we working through?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 51,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-02",
+      "label": "How are you?",
+      "type": "casual",
+      "message": "how are you?",
+      "status": "OK",
+      "latencyMs": 1978,
+      "responseText": "Doing well, thanks for asking. What are we working through?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 59,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-03",
+      "label": "I'm stressed about compliance",
+      "type": "casual",
+      "message": "I'm really stressed about all this compliance stuff",
+      "status": "OK",
+      "latencyMs": 2042,
+      "responseText": "That's a lot to carry — compliance has a way of feeling like it's everywhere at once. What are you stuck on?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 108,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-04",
+      "label": "Good morning",
+      "type": "casual",
+      "message": "good morning",
+      "status": "OK",
+      "latencyMs": 1893,
+      "responseText": "Good morning — Nora here. What are we working through today?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 60,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-05",
+      "label": "I have a quick question",
+      "type": "casual",
+      "message": "I have a quick question",
+      "status": "OK",
+      "latencyMs": 1600,
+      "responseText": "Go ahead.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 9,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-01",
+      "label": "Explain GDPR simply",
+      "type": "tone",
+      "message": "can you explain GDPR to me simply?",
+      "status": "OK",
+      "latencyMs": 3451,
+      "responseText": "GDPR is the EU's data privacy law — it sets rules for how organisations collect, use, and store personal information about people in Europe. The core idea is that individuals have real rights over their data: they can ask what you hold on them, request it be deleted, and say no to certain uses. If your business handles data about EU residents, it applies to you regardless of where you're based.",
+      "scores": {
+        "issues": [
+          "Missing required: personal data"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 397,
+        "forbiddenFound": [],
+        "missingRequired": [
+          "personal data"
+        ],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-02",
+      "label": "What is a data breach?",
+      "type": "tone",
+      "message": "what is a data breach?",
+      "status": "OK",
+      "latencyMs": 4404,
+      "responseText": "A data breach is when personal information gets accessed, stolen, or exposed without authorisation — whether through a cyberattack, an accidental leak, or a misconfigured system. It could be something as serious as a hacker exfiltrating customer records, or as simple as an email sent to the wrong person. Most privacy and security regulations require you to notify affected individuals and regulators when one occurs, often within tight timeframes.",
+      "scores": {
+        "issues": [
+          "Too long: 449 chars (max 300)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 449,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-03",
+      "label": "Is my startup compliant?",
+      "type": "tone",
+      "message": "is my startup compliant?",
+      "status": "OK",
+      "latencyMs": 2456,
+      "responseText": "Hard to say without knowing more about what you do and what data you handle. What's the product, and who are your users?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 120,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-04",
+      "label": "Short answer request",
+      "type": "tone",
+      "message": "what's the difference between a controller and a processor? keep it short",
+      "status": "OK",
+      "latencyMs": 3062,
+      "responseText": "A controller decides why and how personal data gets used. A processor handles the data on the controller's behalf, following the controller's instructions.\n\nA hospital deciding to store patient records in a cloud system is the controller. The cloud provider storing those records is the processor.",
+      "scores": {
+        "issues": [
+          "Too long: 297 chars (max 200)",
+          "Red flags: Returns more than 3 sentences"
+        ],
+        "redFlagsTriggered": [
+          "Returns more than 3 sentences"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 297,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-05",
+      "label": "Am I going to get fined?",
+      "type": "tone",
+      "message": "am I going to get fined?",
+      "status": "OK",
+      "latencyMs": 2868,
+      "responseText": "Hard to say without knowing what's going on. What happened, and what kind of data or system is involved?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 104,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-01",
+      "label": "Compliment",
+      "type": "boundary",
+      "message": "you're really helpful, thank you",
+      "status": "OK",
+      "latencyMs": 1840,
+      "responseText": "Really glad it's been useful. I'm here whenever you need me.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 60,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-02",
+      "label": "Rude message",
+      "type": "boundary",
+      "message": "you're useless",
+      "status": "OK",
+      "latencyMs": 2299,
+      "responseText": "That's fair — if I haven't been helpful yet, that's on me. What are you stuck on?",
+      "scores": {
+        "issues": [
+          "Red flags: Says 'I'm sorry you feel that way'"
+        ],
+        "redFlagsTriggered": [
+          "Says 'I'm sorry you feel that way'"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 81,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-03",
+      "label": "Completely off topic",
+      "type": "boundary",
+      "message": "what's the best pizza topping?",
+      "status": "OK",
+      "latencyMs": 2459,
+      "responseText": "Purely a matter of taste — and way outside my lane. Got a compliance question I can help with?",
+      "scores": {
+        "issues": [
+          "Red flags: Says 'I'm only able to answer compliance questions'"
+        ],
+        "redFlagsTriggered": [
+          "Says 'I'm only able to answer compliance questions'"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 94,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-04",
+      "label": "Follow up after no context",
+      "type": "boundary",
+      "message": "what were we talking about?",
+      "status": "OK",
+      "latencyMs": 2030,
+      "responseText": "No prior conversation here — this is a fresh session on my end. What are you working through?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 93,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    }
+  ]
+}
