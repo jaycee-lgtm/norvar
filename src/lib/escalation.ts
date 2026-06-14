@@ -56,3 +56,82 @@ export function appBaseUrl() {
 export function escalationViewUrl(token: string) {
   return `${appBaseUrl()}/escalation/${token}`;
 }
+
+export const ESCALATION_EMAIL_REPLY_ACTION = "escalation_email_reply";
+
+export type EscalationEmailReply = {
+  id:         string;
+  from_email: string;
+  from_name:  string | null;
+  subject:    string | null;
+  body:       string;
+  created_at: string;
+};
+
+export function escalationReplyDomain() {
+  const configured = process.env.ESCALATION_REPLY_DOMAIN?.trim();
+  if (configured) return configured;
+
+  const from = process.env.EMAIL_FROM ?? "Norvar <notifications@norvar.io>";
+  const match = from.match(/@([a-z0-9.-]+)/i);
+  return match?.[1] ?? "norvar.io";
+}
+
+export function escalationReplyToAddress(token: string) {
+  return `escalations+${token}@${escalationReplyDomain()}`;
+}
+
+export function extractEscalationTokenFromAddress(address: string): string | null {
+  const email = address.trim().toLowerCase();
+  const match = email.match(/escalations\+([0-9a-f-]{36})@/i);
+  return match?.[1] ?? null;
+}
+
+export function extractEscalationTokenFromAddresses(addresses: string[]): string | null {
+  for (const address of addresses) {
+    const token = extractEscalationTokenFromAddress(address);
+    if (token) return token;
+  }
+  return null;
+}
+
+export function parseEscalationEmailReplies(
+  activity: Array<{
+    id: string;
+    action: string;
+    detail: string | null;
+    created_at: string;
+    user_id: string;
+  }>,
+): EscalationEmailReply[] {
+  return activity
+    .filter(a => a.action === ESCALATION_EMAIL_REPLY_ACTION)
+    .map(a => {
+      try {
+        const parsed = JSON.parse(a.detail ?? "{}") as {
+          from_email?: string;
+          from_name?: string | null;
+          subject?: string | null;
+          body?: string;
+        };
+        return {
+          id:         a.id,
+          from_email: parsed.from_email ?? a.user_id,
+          from_name:  parsed.from_name ?? null,
+          subject:    parsed.subject ?? null,
+          body:       parsed.body ?? a.detail ?? "",
+          created_at: a.created_at,
+        };
+      } catch {
+        return {
+          id:         a.id,
+          from_email: a.user_id,
+          from_name:  null,
+          subject:    null,
+          body:       a.detail ?? "",
+          created_at: a.created_at,
+        };
+      }
+    })
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+}

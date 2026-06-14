@@ -1,4 +1,4 @@
-import { escalationViewUrl } from "@/lib/escalation";
+import { escalationReplyToAddress, escalationViewUrl } from "@/lib/escalation";
 
 type EscalationEmailPayload = {
   token:           string;
@@ -22,6 +22,34 @@ function escapeHtml(text: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function buildEscalationText(payload: EscalationEmailPayload) {
+  const link = escalationViewUrl(payload.token);
+  const question = payload.question || payload.note;
+  const assigneeLines = payload.assigneeNames.map((name, i) => {
+    const role = payload.assigneeRoles[i];
+    return role ? `${name} (${role})` : name;
+  }).join(", ");
+
+  const lines = [
+    `Hi${payload.recipientName ? ` ${payload.recipientName}` : ""},`,
+    "",
+    `${payload.escalatedByName} escalated a compliance gap to you on Norvar.`,
+    "",
+    `Gap: ${payload.gapTitle}`,
+    `Severity: ${payload.gapSeverity} · Domain: ${payload.gapDomain}`,
+    payload.projectTitle ? `Project: ${payload.projectTitle}` : "",
+    payload.gapDetail ? payload.gapDetail : "",
+    question ? `\nQuestion / context:\n${question}` : "",
+    assigneeLines ? `\nCurrently assigned: ${assigneeLines}` : "",
+    "",
+    `View gap, chats & assessment: ${link}`,
+    "",
+    "Reply directly to this email to send your response back to the team in Norvar.",
+  ];
+
+  return lines.filter(Boolean).join("\n");
 }
 
 function buildEscalationHtml(payload: EscalationEmailPayload) {
@@ -64,6 +92,9 @@ function buildEscalationHtml(payload: EscalationEmailPayload) {
   <p style="font-size: 12px; color: #737373;">
     This link gives you the full escalation view: gap details, remediation chat history, and the parent assessment.
   </p>
+  <p style="font-size: 13px; color: #525252; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e5e5;">
+    <strong>Reply to this email</strong> to send your response. Your reply will appear in Norvar for the team who escalated this gap.
+  </p>
 </body>
 </html>`;
 }
@@ -79,6 +110,8 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
 
   const subject = `Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
   const html    = buildEscalationHtml(payload);
+  const text    = buildEscalationText(payload);
+  const replyTo = escalationReplyToAddress(payload.token);
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -89,9 +122,11 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
       },
       body: JSON.stringify({
         from,
-        to:      [payload.recipientEmail],
+        to:       [payload.recipientEmail],
+        reply_to: replyTo,
         subject,
         html,
+        text,
       }),
     });
 

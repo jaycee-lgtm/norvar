@@ -10,6 +10,7 @@ import EscalateModal from "@/components/EscalateModal";
 import EscalationTracker from "@/components/EscalationTracker";
 import StatusBadge from "@/components/StatusBadge";
 import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
+import { ESCALATION_EMAIL_REPLY_ACTION, parseEscalationEmailReplies } from "@/lib/escalation";
 import { sortBySeverity, STATUS_LABELS, type RemediationStatus } from "@/lib/remediation";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import type { UserProfile } from "@/lib/clerk-users";
@@ -314,14 +315,20 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
               escalatedAt={item.escalated_at}
               escalationStatus={item.escalation_status}
               lastNotifiedAt={item.last_notified_at}
+              emailReplies={parseEscalationEmailReplies(item.remediation_activity ?? [])}
               onUpdate={onUpdate}
             />
 
-            {item.remediation_activity?.length > 0 && (
+            {item.remediation_activity?.length > 0 && (() => {
+              const activityRows = item.remediation_activity
+                .filter(a => a.action !== ESCALATION_EMAIL_REPLY_ACTION)
+                .slice(0, 5);
+              if (!activityRows.length) return null;
+              return (
               <section className="remediation-detail-section remediation-activity">
                 <div className="remediation-section-label">Activity</div>
                 <ul className="remediation-activity-list">
-                  {item.remediation_activity.slice(0, 5).map(a => (
+                  {activityRows.map(a => (
                     <li key={a.id} className="remediation-activity-row">
                       <Clock size={10} />
                       <span className="remediation-activity-detail">{a.detail ?? a.action}</span>
@@ -330,7 +337,8 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
                   ))}
                 </ul>
               </section>
-            )}
+              );
+            })()}
 
             {!isTerminal && (
               <div className="remediation-quick-actions">

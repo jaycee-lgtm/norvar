@@ -6,8 +6,10 @@ import {
   ESCALATION_STEPS,
   escalationStepIndex,
   formatDuration,
+  type EscalationEmailReply,
   type EscalationStatus,
 } from "@/lib/escalation";
+import EscalationEmailReplies from "@/components/EscalationEmailReplies";
 
 type EscalationTrackerProps = {
   itemId:                   string;
@@ -19,6 +21,7 @@ type EscalationTrackerProps = {
   escalatedAt?:             string | null;
   escalationStatus?:        EscalationStatus | null;
   lastNotifiedAt?:          string | null;
+  emailReplies?:            EscalationEmailReply[];
   onUpdate:                 () => void;
 };
 
@@ -39,6 +42,7 @@ export default function EscalationTracker({
   escalatedAt,
   escalationStatus,
   lastNotifiedAt,
+  emailReplies = [],
   onUpdate,
 }: EscalationTrackerProps) {
   const [renotifyBusy, setRenotifyBusy] = useState(false);
@@ -117,6 +121,8 @@ export default function EscalationTracker({
           {escalationNote && <p><strong>Context:</strong> {escalationNote}</p>}
         </div>
       )}
+
+      <EscalationEmailReplies replies={emailReplies} />
 
       <div className="remediation-escalation-steps">
         {ESCALATION_STEPS.map((step, i) => {

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, MessageSquare, Shield } from "lucide-react";
-import { ESCALATION_STEPS, escalationStepIndex, formatDuration } from "@/lib/escalation";
+import { ESCALATION_EMAIL_REPLY_ACTION, ESCALATION_STEPS, escalationStepIndex, formatDuration, parseEscalationEmailReplies } from "@/lib/escalation";
+import EscalationEmailReplies from "@/components/EscalationEmailReplies";
 import type { GapChatMessage } from "@/components/GapChat";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 
@@ -134,6 +135,7 @@ export default function EscalationViewPage({ token }: { token: string }) {
   }
 
   const { item, assessment, users, activity } = data;
+  const emailReplies = parseEscalationEmailReplies(activity);
   const stepIdx = escalationStepIndex(item.escalation_status as typeof ESCALATION_STEPS[number]["value"]);
   const result  = assessment?.result;
 
@@ -297,10 +299,12 @@ export default function EscalationViewPage({ token }: { token: string }) {
         )}
 
         {/* Activity */}
-        {activity.length > 0 && (
+        {activity.filter(a => a.action !== ESCALATION_EMAIL_REPLY_ACTION).length > 0 && (
           <div style={{ ...sectionStyle, marginBottom: 16 }}>
             <h2 style={sectionTitleStyle}>Activity log</h2>
-            {activity.map(a => (
+            {activity
+              .filter(a => a.action !== ESCALATION_EMAIL_REPLY_ACTION)
+              .map(a => (
               <div key={a.id} style={{ fontSize: 11, color: "var(--fg3)", marginBottom: 6 }}>
                 {a.detail ?? a.action}
                 <span style={{ marginLeft: 8, opacity: 0.7 }}>
@@ -311,9 +315,17 @@ export default function EscalationViewPage({ token }: { token: string }) {
           </div>
         )}
 
+        {/* Email responses */}
+        <div style={{ marginBottom: 16 }}>
+          <EscalationEmailReplies replies={emailReplies} />
+        </div>
+
         {/* Recipient actions */}
         <div style={{ ...sectionStyle }}>
           <h2 style={sectionTitleStyle}>Your response</h2>
+          <p style={{ fontSize: 12, color: "var(--fg3)", margin: "0 0 10px", lineHeight: 1.5 }}>
+            Reply to the escalation email, or add notes below.
+          </p>
           <textarea
             value={response}
             onChange={e => setResponse(e.target.value)}
