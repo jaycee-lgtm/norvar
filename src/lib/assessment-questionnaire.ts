@@ -114,7 +114,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     text: "Does the system collect or process biometric data?",
     sub:  "Biometric data includes facial geometry, fingerprints, iris scans, voiceprints, and hand geometry.",
     type: "single",
-    riskTag: "Critical",
+    riskTag: "High",
     options: [
       { value: "biometric_primary",   label: "Yes, biometrics are central to the system"     },
       { value: "biometric_secondary", label: "Yes, incidentally or for access control"       },
@@ -151,7 +151,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     text: "Does the system make automated decisions about individuals without human review?",
     sub:  "For example: loan approvals, content filtering, access decisions, eligibility scoring.",
     type: "single",
-    riskTag: "Critical — GDPR Art.22",
+    riskTag: "High — GDPR Art.22",
     options: [
       { value: "adm_fully",     label: "Yes, fully automated with no human review"         },
       { value: "adm_assisted",  label: "Automated recommendations, human makes final call" },
@@ -261,7 +261,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     id: "ai_decision_making", domains: ["ai_governance"],
     text: "Does the AI system make or substantially influence decisions about individuals?",
     type: "single",
-    riskTag: "Critical — EU AI Act Art.14, GDPR Art.22",
+    riskTag: "High — EU AI Act Art.14, GDPR Art.22",
     options: [
       { value: "adm_fully_auto",   label: "Fully automated, no human review"             },
       { value: "adm_human_loop",   label: "Human reviews before final decision"          },
@@ -273,7 +273,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     id: "ai_computer_vision", domains: ["ai_governance"],
     text: "Does the AI system use computer vision to identify, classify, or track individuals?",
     type: "single",
-    riskTag: "Critical — EU AI Act Art.5 prohibited practices",
+    riskTag: "High — EU AI Act Art.5 prohibited practices",
     options: [
       { value: "cv_realtime_public",  label: "Yes, real-time identification in public spaces"  },
       { value: "cv_workplace",        label: "Yes, workplace monitoring or tracking"            },
@@ -286,7 +286,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     id: "ai_biometrics", domains: ["ai_governance"],
     text: "Does the AI system process biometric data as part of its function?",
     type: "single",
-    riskTag: "Critical",
+    riskTag: "High",
     options: [
       { value: "aib_facial",      label: "Yes, facial recognition"                   },
       { value: "aib_other",       label: "Yes, other biometric identifiers"           },
@@ -410,7 +410,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     id: "cyber_biometrics", domains: ["cybersecurity"],
     text: "Does the system store or transmit biometric data?",
     type: "single",
-    riskTag: "Critical — heightened breach notification obligations",
+    riskTag: "High — heightened breach notification obligations",
     options: [
       { value: "cb_stores",      label: "Yes, biometric data is stored"               },
       { value: "cb_transmits",   label: "Yes, biometric data is transmitted"          },

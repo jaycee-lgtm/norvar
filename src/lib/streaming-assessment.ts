@@ -1,4 +1,4 @@
-import { GAP_SEV_RANK, normalizeGapSeverity, normalizeRiskTier, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
+import { GAP_SEV_RANK, normalizeGapSeverity, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 
 export type StreamGap = {
   severity:    string;

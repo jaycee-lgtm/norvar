@@ -9,6 +9,8 @@ function sanitizeTitle(raw: string, maxLen = 72): string {
     .trim()
     .replace(/^["'`]+|["'`]+$/g, "")
     .replace(/^title:\s*/i, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
     .replace(/\s+/g, " ")
     .replace(/[.?!]+$/g, "");
   if (!cleaned) return "";

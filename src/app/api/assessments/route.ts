@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { isInternalAssessmentPrompt, sanitizeAssessmentUserMessage } from "@/lib/assessment-questionnaire";
+import { resolveAssessmentDisplayTitle } from "@/lib/display-title";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,8 +10,10 @@ const supabase = createClient(
 );
 
 function displayAssessmentTitle(title: string, description?: string | null) {
-  if (!isInternalAssessmentPrompt(title)) return title;
-  return sanitizeAssessmentUserMessage(title, description ?? undefined);
+  const base = !isInternalAssessmentPrompt(title)
+    ? title
+    : sanitizeAssessmentUserMessage(title, description ?? undefined);
+  return resolveAssessmentDisplayTitle(base, description);
 }
 
 function sanitizeAssessmentRow<T extends { title?: string; description?: string | null; messages?: unknown }>(row: T): T {

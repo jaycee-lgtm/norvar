@@ -23,6 +23,11 @@ export const GAP_SEV_RANK: Record<GapSeverity, number> = {
   low:    1,
 };
 
+/** Sort higher severity first (high before medium before low). */
+export function compareGapSeverity(a: string, b: string): number {
+  return (GAP_SEV_RANK[normalizeGapSeverity(b)] ?? 0) - (GAP_SEV_RANK[normalizeGapSeverity(a)] ?? 0);
+}
+
 const RISK_DOMAIN_KEYS = ["privacy", "ai_governance", "cybersecurity"] as const;
 export type RiskDomainKey = typeof RISK_DOMAIN_KEYS[number];
 

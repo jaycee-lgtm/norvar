@@ -7,7 +7,7 @@ export const CHAT_QUERIES = [
 
   // ─── GROUNDED FOLLOW-UP (6 queries) ──────────────────────────────────────
   // Questions directly about findings from a prior assessment.
-  // Vera must answer accurately without inventing details.
+  // Nora must answer accurately without inventing details.
 
   {
     id: "VQ-01",
@@ -130,7 +130,7 @@ export const CHAT_QUERIES = [
   },
 
   // ─── CROSS-REGULATION QUESTIONS (4 queries) ───────────────────────────────
-  // Questions that span multiple frameworks. Vera must reconcile them accurately.
+  // Questions that span multiple frameworks. Nora must reconcile them accurately.
 
   {
     id: "CR-01",
@@ -211,7 +211,7 @@ export const CHAT_QUERIES = [
   },
 
   // ─── JURISDICTION-SPECIFIC FOLLOW-UPS (4 queries) ─────────────────────────
-  // Questions about specific jurisdictions Vera may be less familiar with.
+  // Questions about specific jurisdictions Nora may be less familiar with.
 
   {
     id: "JS-01",
@@ -294,7 +294,7 @@ export const CHAT_QUERIES = [
   },
 
   // ─── HALLUCINATION TRAPS (4 queries) ──────────────────────────────────────
-  // Questions where Vera should admit uncertainty or redirect rather than invent answers.
+  // Questions where Nora should admit uncertainty or redirect rather than invent answers.
 
   {
     id: "HT-01",
@@ -373,7 +373,7 @@ export const CHAT_QUERIES = [
   },
 
   // ─── OUT-OF-SCOPE DEFLECTION (2 queries) ──────────────────────────────────
-  // Vera should stay in her lane and redirect gracefully.
+  // Nora should stay in her lane and redirect gracefully.
 
   {
     id: "OS-01",
@@ -403,7 +403,7 @@ export const CHAT_QUERIES = [
     expected: {
       mustInclude: [],
       mustNotInclude: [],
-      behaviour: "Should explain that Vera has no access to competitor compliance data and redirect to benchmarking through industry standards instead.",
+      behaviour: "Should explain that Nora has no access to competitor compliance data and redirect to benchmarking through industry standards instead.",
       shouldAdmitUncertainty: true,
     },
     redFlags: [

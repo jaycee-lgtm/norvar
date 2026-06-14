@@ -41,7 +41,7 @@ import {
 } from "@/lib/nora-cassius-handoff";
 import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
-import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
+import { normalizeGapSeverity, normalizeRiskTier, compareGapSeverity } from "@/lib/risk-tiers";
 import {
   ArrowUp, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -301,9 +301,8 @@ function exportAssessment(a: Assessment) {
     "-".repeat(30),
   ];
 
-  const SEV_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
   [...(a.gaps ?? [])]
-    .sort((x, y) => (SEV_ORDER[normalizeGapSeverity(x.severity)] ?? 9) - (SEV_ORDER[normalizeGapSeverity(y.severity)] ?? 9))
+    .sort((x, y) => compareGapSeverity(x.severity, y.severity))
     .forEach((g, i) => {
     lines.push("", `${i + 1}. [${normalizeGapSeverity(g.severity).toUpperCase()}] ${g.title}`);
     lines.push(`   Frameworks: ${g.frameworks?.join(", ") || "N/A"}`);
@@ -379,9 +378,8 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
       visibleDomains.some(domain => (byDomain[domain]?.gap_count ?? 0) > 0)
     ),
   );
-  const SEV_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
   const ordered     = [...gaps].sort(
-    (x, y) => (SEV_ORDER[normalizeGapSeverity(x.severity)] ?? 9) - (SEV_ORDER[normalizeGapSeverity(y.severity)] ?? 9),
+    (x, y) => compareGapSeverity(x.severity, y.severity),
   );
 
   const [queued,    setQueued]    = useState<Set<number>>(new Set());
@@ -1371,7 +1369,7 @@ function Home() {
         const a = m.assessment;
         history.push({
           role: "assistant",
-          content: `[Compliance Assessment] ${a.title}. Risk: ${a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low"}. ${a.summary} Key gaps: ${(a.gaps || []).slice(0, 3).map(g => `${g.severity}: ${g.title}`).join("; ")}.`,
+          content: `[Compliance Assessment] ${a.title}. Risk: ${normalizeRiskTier(a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low")}. ${a.summary} Key gaps: ${(a.gaps || []).slice(0, 3).map(g => `${normalizeGapSeverity(g.severity)}: ${g.title}`).join("; ")}.`,
         });
       } else if (m.role === "chat" && m.text) {
         history.push({ role: "assistant", content: m.text });

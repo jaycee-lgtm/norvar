@@ -5,7 +5,7 @@
 
 export const TIER_QUERIES = [
 
-  // ─── EXPECTED: CRITICAL (4 queries) ──────────────────────────────────────
+  // ─── EXPECTED: HIGH (4 queries) ──────────────────────────────────────────────
   // Deployments with clear prohibited or high-severity gaps.
   // Must return high overall. No exceptions.
 
@@ -449,7 +449,7 @@ export const TIER_QUERIES = [
 
   {
     id: "RT-X01",
-    label: "Consistency — mixed severity gaps, should be high not high",
+    label: "Consistency — mixed severity gaps, should be high overall",
     type: "consistency",
     description: "We are a logistics company in Singapore processing employee location data via GPS tracking of delivery drivers. We collect real-time location every 30 seconds during working hours. We have no employee notice, no retention policy, and no data processing agreement with our GPS vendor. No breach has occurred.",
     expected: {
@@ -463,7 +463,7 @@ export const TIER_QUERIES = [
       mustFlagConcepts:   ["location data", "employee notice", "retention", "processor agreement"],
       minGaps: 2,
     },
-    notes: "Multiple high-severity privacy gaps but no prohibited practices and no breach. Should be high, not high.",
+    notes: "Multiple high-severity privacy gaps but no prohibited practices and no breach. Should be high overall.",
     redFlags: [
       "Returns high — no prohibited practice, no active breach",
       "Returns medium — multiple unconsented location tracking gaps warrant high",
@@ -489,7 +489,7 @@ export const TIER_QUERIES = [
     },
     notes: "One high gap (social scoring = prohibited AI under EU AI Act Art. 5) should drive the overall tier to high regardless of how well everything else is handled.",
     redFlags: [
-      "Returns high instead of critical — social scoring is a prohibited AI practice",
+      "Returns medium — social scoring is a prohibited AI practice and must drive high overall tier",
       "Does not flag EU AI Act Art. 5 prohibition on social scoring",
       "Returns medium because other areas are compliant — one high gap must set the overall tier",
     ],

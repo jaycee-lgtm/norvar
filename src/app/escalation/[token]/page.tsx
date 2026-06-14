@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, MessageSquare, Shield }
 import { ESCALATION_EMAIL_REPLY_ACTION, ESCALATION_STEPS, escalationStepIndex, formatDuration, parseEscalationEmailReplies } from "@/lib/escalation";
 import EscalationEmailReplies from "@/components/EscalationEmailReplies";
 import type { GapChatMessage } from "@/components/GapChat";
-import { normalizeGapSeverity } from "@/lib/risk-tiers";
+import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
 
 type AssessmentResult = {
   summary?: string;
@@ -269,7 +269,7 @@ export default function EscalationViewPage({ token }: { token: string }) {
             <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px" }}>{assessment.title}</p>
             {assessment.risk_tier && (
               <p style={{ fontSize: 11, color: "var(--fg3)", margin: "0 0 8px" }}>
-                Overall risk: {assessment.risk_tier}
+                Overall risk: {normalizeRiskTier(assessment.risk_tier)}
               </p>
             )}
             {result?.summary && (

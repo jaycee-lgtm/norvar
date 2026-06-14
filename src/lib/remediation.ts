@@ -1,16 +1,9 @@
-import { normalizeGapSeverity } from "@/lib/risk-tiers";
-
-export const SEV_RANK: Record<string, number> = {
-  high:   0,
-  medium: 1,
-  low:    2,
-};
+import { compareGapSeverity } from "@/lib/risk-tiers";
 
 export function sortBySeverity<T extends { gap_severity: string; created_at: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => {
-    const sa = SEV_RANK[normalizeGapSeverity(a.gap_severity)] ?? 99;
-    const sb = SEV_RANK[normalizeGapSeverity(b.gap_severity)] ?? 99;
-    if (sa !== sb) return sa - sb;
+    const bySev = compareGapSeverity(a.gap_severity, b.gap_severity);
+    if (bySev !== 0) return bySev;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 }

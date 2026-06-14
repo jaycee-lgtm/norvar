@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { fmtProjectDate } from "@/lib/projects";
+import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
 import {
   ArrowLeft, FileSearch, ShieldAlert, MessageSquare, Upload,
   Plus, Trash2, X, ExternalLink,
@@ -271,7 +272,7 @@ export default function ProjectDetailPage() {
                   key={a.id}
                   href={`/assess?id=${a.id}`}
                   title={a.title}
-                  meta={`${a.assessment_number ?? "—"} · ${a.risk_tier} risk · ${a.risk_score}/100`}
+                  meta={`${a.assessment_number ?? "—"} · ${normalizeRiskTier(a.risk_tier)} risk`}
                   onRemove={() => patchItem({ remove_item: { type: "assessment", id: a.id } })}
                 />
               ))}
@@ -287,7 +288,7 @@ export default function ProjectDetailPage() {
                   key={g.id}
                   href="/remediation"
                   title={g.gap_title}
-                  meta={`${g.gap_severity} · ${g.status.replace("_", " ")}${g.assessment_number ? ` · ${g.assessment_number}` : ""}`}
+                  meta={`${normalizeGapSeverity(g.gap_severity)} · ${g.status.replace("_", " ")}${g.assessment_number ? ` · ${g.assessment_number}` : ""}`}
                 />
               ))}
             </ProjectSection>

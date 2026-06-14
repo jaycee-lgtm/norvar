@@ -13,6 +13,7 @@ import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { generateChatTitle } from "@/lib/generate-thread-title";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 import { toClaudeMessages, userFacingClaudeError } from "@/lib/claude-messages";
+import { truncateDisplayTitle } from "@/lib/display-title";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
           }
           await send({ type: "done", text: fullText, conversation_id, message_id: assistantId });
         } else {
-          const placeholderTitle = lastUser.trim().slice(0, 60) || "New chat";
+          const placeholderTitle = truncateDisplayTitle(lastUser, 60) || "New chat";
           const { data: saved, error: insertError } = await supabase.from("conversations")
             .insert({ user_id: userId, title: placeholderTitle, messages: newMessages })
             .select("id")

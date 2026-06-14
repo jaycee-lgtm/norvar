@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
+import { resolveConversationTitle } from "@/lib/display-title";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,13 +32,19 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from("conversations")
-      .select("id, title, updated_at")
+      .select("id, title, updated_at, created_at, messages")
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(limit);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ conversations: data ?? [] });
+    const conversations = (data ?? []).map(row => ({
+      id:         row.id,
+      title:      resolveConversationTitle(row.title, row.messages),
+      updated_at: row.updated_at,
+      created_at: row.created_at,
+    }));
+    return NextResponse.json({ conversations });
   } catch (err: unknown) {
     console.error("Conversations error:", err);
     return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });

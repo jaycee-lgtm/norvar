@@ -11,7 +11,6 @@ type HistoryItem = {
   description:   string;
   title?:        string;
   risk_tier:     string;
-  risk_score:    number;
   created_at:    string;
   domains?:      string[];
 };
@@ -21,6 +20,13 @@ function tierColors(tier: string) {
   if (t === "high")   return { num: "var(--rh)", bg: "var(--rh-bg)", bdr: "var(--rh-bdr)" };
   if (t === "medium") return { num: "var(--rm)", bg: "var(--rm-bg)", bdr: "var(--rm-bdr)" };
   return { num: "var(--rl)", bg: "var(--rl-bg)", bdr: "var(--rl-bdr)" };
+}
+
+function tierLabel(tier: string) {
+  const t = normalizeRiskTier(tier);
+  if (t === "high") return "H";
+  if (t === "medium") return "M";
+  return "L";
 }
 
 export default function HistoryPage() {
@@ -103,71 +109,65 @@ export default function HistoryPage() {
               const c = tierColors(item.risk_tier);
               const title = item.title || item.description;
               return (
-                <div key={item.id} className="history-item" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <Link href={`/assess?id=${item.id}`} style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0, textDecoration: "none", color: "inherit" }}>
-                  <div className="history-score" style={{ background: c.bg, border: `0.5px solid ${c.bdr}` }}>
-                    <span className="history-score-num" style={{ color: c.num }}>{item.risk_score}</span>
-                    <span className="history-score-den">/100</span>
-                  </div>
+                <div key={item.id} className="history-item-row">
+                  <Link href={`/assess?id=${item.id}`} className="history-item">
+                    <div className="history-tier-badge" style={{ background: c.bg, border: `0.5px solid ${c.bdr}`, color: c.num }}>
+                      {tierLabel(item.risk_tier)}
+                    </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
-                        background: c.bg, color: c.num, border: `0.5px solid ${c.bdr}`,
-                        fontFamily: "'Sora', sans-serif",
-                      }}>
-                        <AlertTriangle size={10} strokeWidth={2.5} />
-                        {item.risk_tier} risk
-                      </span>
-                      {item.domains?.slice(0, 3).map(d => (
-                        <span key={d} style={{
-                          display: "inline-flex", alignItems: "center", gap: 3,
-                          fontSize: 10, color: "var(--fg3)", background: "var(--card2)",
-                          padding: "1px 7px", borderRadius: 4, border: "0.5px solid var(--bdr)",
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
+                          background: c.bg, color: c.num, border: `0.5px solid ${c.bdr}`,
                           fontFamily: "'Sora', sans-serif",
                         }}>
-                          <Tag size={9} strokeWidth={2} />
-                          {d}
+                          <AlertTriangle size={10} strokeWidth={2.5} />
+                          {normalizeRiskTier(item.risk_tier)} risk
                         </span>
-                      ))}
+                        {item.domains?.slice(0, 3).map(d => (
+                          <span key={d} style={{
+                            display: "inline-flex", alignItems: "center", gap: 3,
+                            fontSize: 10, color: "var(--fg3)", background: "var(--card2)",
+                            padding: "1px 7px", borderRadius: 4, border: "0.5px solid var(--bdr)",
+                            fontFamily: "'Sora', sans-serif",
+                          }}>
+                            <Tag size={9} strokeWidth={2} />
+                            {d}
+                          </span>
+                        ))}
+                      </div>
+
+                      <p style={{
+                        fontSize: 13, color: "var(--fg)", overflow: "hidden",
+                        textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
+                        marginBottom: 4,
+                      }}>
+                        {title}
+                      </p>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <Clock size={10} strokeWidth={2} color="var(--fg4)" />
+                        <span style={{ fontSize: 11, color: "var(--fg4)", fontFamily: "'Sora', sans-serif" }}>
+                          {new Date(item.created_at).toLocaleDateString("en-US", {
+                            month: "short", day: "numeric", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
                     </div>
 
-                    <p style={{
-                      fontSize: 13, color: "var(--fg)", overflow: "hidden",
-                      textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em",
-                      marginBottom: 4,
-                    }}>
-                      {title}
-                    </p>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <Clock size={10} strokeWidth={2} color="var(--fg4)" />
-                      <span style={{ fontSize: 11, color: "var(--fg4)", fontFamily: "'Sora', sans-serif" }}>
-                        {new Date(item.created_at).toLocaleDateString("en-US", {
-                          month: "short", day: "numeric", year: "numeric",
-                          hour: "2-digit", minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  <ChevronRight size={14} strokeWidth={1.75} color="var(--fg3)" />
+                    <ChevronRight size={14} strokeWidth={1.75} color="var(--fg3)" />
                   </Link>
 
                   <button
                     type="button"
+                    className="history-item-delete"
                     aria-label={`Delete ${title}`}
                     disabled={deletingId === item.id}
                     onClick={() => deleteItem(item.id, title)}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 32, height: 32, borderRadius: 6, flexShrink: 0,
-                      border: "0.5px solid var(--bdr2)", background: "transparent",
-                      color: "var(--fg3)", cursor: deletingId === item.id ? "not-allowed" : "pointer",
-                    }}
                   >
                     <Trash2 size={14} />
                   </button>

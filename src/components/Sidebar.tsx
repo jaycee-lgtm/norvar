@@ -407,9 +407,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                       >
                         <div className="recent-dot" style={{ background: c.dot }} />
                         <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
-                        <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
-                          {item.risk_score}
-                        </span>
                       </Link>
                       <button
                         type="button"

@@ -15,7 +15,7 @@ const get  = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i 
 const BASE_URL  = get("--url")    || "http://localhost:3000";
 const SECRET    = get("--secret") || process.env.AUDIT_SECRET || "";
 const DELAY_MS  = parseInt(get("--delay") || "2000");
-const ENDPOINT  = `${BASE_URL}/api/chat`;
+const ENDPOINT  = `${BASE_URL}/api/grc-chat`;
 const TIMESTAMP = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const REPORT_PATH  = `./tone-report-${TIMESTAMP}.json`;
 const SUMMARY_PATH = `./tone-summary-${TIMESTAMP}.md`;

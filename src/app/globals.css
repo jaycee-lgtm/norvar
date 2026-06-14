@@ -276,7 +276,8 @@ input, textarea, select, button {
   opacity: 0;
   transition: opacity 0.1s, color 0.1s, background 0.1s;
 }
-.recent-item-row:hover .recent-delete { opacity: 1; }
+.recent-item-row:hover .recent-delete,
+.recent-item-row:focus-within .recent-delete { opacity: 1; }
 .recent-delete:hover { color: var(--rh); background: var(--rh-bg); }
 .recent-delete:disabled { opacity: 0.4; cursor: not-allowed; }
 .recent-item.active { background: var(--lift); }
@@ -1284,6 +1285,7 @@ input, textarea, select, button {
 }
 .gap-sev.high     { background: var(--rh-bg); color: var(--rh); border: 0.5px solid var(--rh-bdr); }
 .gap-sev.medium   { background: var(--card2); color: var(--fg2); border: 0.5px solid var(--bdr); }
+.gap-sev.low      { background: var(--rl-bg); color: var(--rl); border: 0.5px solid var(--rl-bdr); }
 
 .gap-title  { font-size: 12px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; margin-bottom: 2px; }
 .gap-reg    { font-size: 9px; color: var(--fg3); font-family: 'JetBrains Mono', monospace; margin-bottom: 3px; }
@@ -1345,7 +1347,7 @@ input, textarea, select, button {
 }
 .gap-chat-thinking { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
 .gap-chat-error { font-size: 11px; color: var(--rh); }
-.gap-chat-input-row { display: flex; gap: 6; align-items: center; margin-top: 4px; }
+.gap-chat-input-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
 .gap-chat-input {
   flex: 1; padding: 7px 10px; border-radius: 6px;
   border: 0.5px solid var(--bdr2); background: var(--card);
@@ -2167,24 +2169,67 @@ input, textarea, select, button {
 
 .page-body { padding: 36px 32px; flex: 1; overflow-y: auto; max-width: 760px; width: 100%; }
 
+.history-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .history-item {
   display: flex; gap: 14px; align-items: center;
   background: var(--card); border: 0.5px solid var(--bdr);
-  border-radius: 8px; padding: 14px 16px; margin-bottom: 8px;
+  border-radius: 8px; padding: 14px 16px;
+  flex: 1; min-width: 0;
   cursor: pointer; transition: border-color 0.15s;
-  text-decoration: none;
+  text-decoration: none; color: inherit;
 }
-.history-item:hover { border-color: var(--bdr2); }
+.history-item-row:hover .history-item { border-color: var(--bdr2); }
 
-.history-score {
-  width: 48px; height: 48px; border-radius: 7px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+.history-tier-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-family: 'Sora', sans-serif;
 }
 
-.history-score-num { font-size: 17px; font-weight: 500; line-height: 1; letter-spacing: -0.03em; }
-.history-score-den { font-size: 8px; color: var(--fg3); margin-top: 1px; }
+.history-item-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  border: 0.5px solid var(--bdr2);
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s, color 0.1s, background 0.1s, border-color 0.1s;
+}
+
+.history-item-row:hover .history-item-delete,
+.history-item-row:focus-within .history-item-delete {
+  opacity: 1;
+}
+
+.history-item-delete:hover:not(:disabled) {
+  color: var(--rh);
+  border-color: var(--rh-bdr);
+  background: var(--rh-bg);
+}
+
+.history-item-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .chat-history-list {
   display: flex;
@@ -2261,7 +2306,13 @@ input, textarea, select, button {
   background: transparent;
   color: var(--fg3);
   cursor: pointer;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  opacity: 0;
+  transition: opacity 0.1s, color 0.1s, border-color 0.1s, background 0.1s;
+}
+
+.chat-history-row:hover .chat-history-delete,
+.chat-history-row:focus-within .chat-history-delete {
+  opacity: 1;
 }
 
 .chat-history-delete:hover:not(:disabled) {
@@ -3286,6 +3337,17 @@ input, textarea, select, button {
     padding: 12px 14px;
   }
 
+  .history-tier-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .history-item-delete {
+    width: 32px;
+    height: 32px;
+  }
+
   .chat-history-link {
     height: 40px;
     padding: 0 12px;
@@ -3300,11 +3362,6 @@ input, textarea, select, button {
     height: 32px;
   }
 
-  .history-score {
-    width: 42px;
-    height: 42px;
-  }
-
   .project-header {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -3316,8 +3373,6 @@ input, textarea, select, button {
     width: 100%;
     justify-content: center;
   }
-
-  .recent-delete { opacity: 1; }
 
   .sample-questions-menu {
     left: 0;
