@@ -334,35 +334,21 @@ export async function POST(req: NextRequest) {
 
 type PatchAction = "archive" | "delete" | "restore" | "unarchive" | "purge";
 
-export async function PATCH(req: NextRequest) {
-  const { userId, orgId } = await auth();
-  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
-
-  const { message_id, action } = await req.json() as {
-    message_id?: string;
-    action?:     PatchAction;
-  };
-
-  if (!message_id || !action) {
-    return Response.json({ error: "message_id and action required" }, { status: 400 });
-  }
-
-  const valid: PatchAction[] = ["archive", "delete", "restore", "unarchive", "purge"];
-  if (!valid.includes(action)) {
-    return Response.json({ error: "Invalid action" }, { status: 400 });
-  }
-
-  const activeOrgId = await getActiveOrganizationId(userId, orgId);
-
+async function applyMessagePatch(
+  messageId: string,
+  action: PatchAction,
+  userId: string,
+  activeOrgId: string | null,
+): Promise<{ purged?: boolean }> {
   const { data: activity, error } = await supabase
     .from("remediation_activity")
     .select("id, action, remediation_id, archived_at, deleted_at")
-    .eq("id", message_id)
+    .eq("id", messageId)
     .maybeSingle();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) throw new Error(error.message);
   if (!activity || !isInboxMessageAction(activity.action)) {
-    return Response.json({ error: "Message not found" }, { status: 404 });
+    throw new Error("Message not found");
   }
 
   const { data: item, error: itemError } = await supabase
@@ -371,21 +357,19 @@ export async function PATCH(req: NextRequest) {
     .eq("id", activity.remediation_id)
     .maybeSingle();
 
-  if (itemError || !item) return Response.json({ error: "Thread not found" }, { status: 404 });
+  if (itemError || !item) throw new Error("Thread not found");
   if (!(await canAccessItem(item, userId, activeOrgId))) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    throw new Error("Forbidden");
   }
 
   if (action === "purge") {
-    if (!activity.deleted_at) {
-      return Response.json({ error: "Only deleted messages can be purged" }, { status: 400 });
-    }
+    if (!activity.deleted_at) throw new Error("Only deleted messages can be purged");
     const { error: delError } = await supabase
       .from("remediation_activity")
       .delete()
-      .eq("id", message_id);
-    if (delError) return Response.json({ error: delError.message }, { status: 500 });
-    return Response.json({ ok: true, purged: true });
+      .eq("id", messageId);
+    if (delError) throw new Error(delError.message);
+    return { purged: true };
   }
 
   const now = new Date().toISOString();
@@ -411,14 +395,67 @@ export async function PATCH(req: NextRequest) {
       break;
   }
 
-  const { data: updated, error: updateError } = await supabase
+  const { error: updateError } = await supabase
     .from("remediation_activity")
     .update(updates)
-    .eq("id", message_id)
-    .select("id, archived_at, deleted_at")
-    .single();
+    .eq("id", messageId);
 
-  if (updateError) return Response.json({ error: updateError.message }, { status: 500 });
+  if (updateError) throw new Error(updateError.message);
+  return {};
+}
 
-  return Response.json({ ok: true, message: updated });
+export async function PATCH(req: NextRequest) {
+  const { userId, orgId } = await auth();
+  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+
+  const body = await req.json() as {
+    message_id?:  string;
+    message_ids?: string[];
+    action?:      PatchAction;
+  };
+
+  const action = body.action;
+  const ids    = body.message_ids?.length
+    ? body.message_ids
+    : body.message_id
+      ? [body.message_id]
+      : [];
+
+  if (!ids.length || !action) {
+    return Response.json({ error: "message_id or message_ids and action required" }, { status: 400 });
+  }
+
+  const valid: PatchAction[] = ["archive", "delete", "restore", "unarchive", "purge"];
+  if (!valid.includes(action)) {
+    return Response.json({ error: "Invalid action" }, { status: 400 });
+  }
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
+  const errors: Array<{ id: string; error: string }> = [];
+  let updated = 0;
+
+  for (const id of ids) {
+    try {
+      await applyMessagePatch(id, action, userId, activeOrgId);
+      updated += 1;
+    } catch (err) {
+      errors.push({
+        id,
+        error: err instanceof Error ? err.message : "Update failed",
+      });
+    }
+  }
+
+  if (updated === 0) {
+    return Response.json(
+      { error: errors[0]?.error ?? "Could not update messages", errors },
+      { status: errors.some(e => e.error === "Forbidden") ? 403 : 400 },
+    );
+  }
+
+  return Response.json({
+    ok:      errors.length === 0,
+    updated,
+    errors:  errors.length ? errors : undefined,
+  });
 }

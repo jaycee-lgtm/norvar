@@ -2109,7 +2109,28 @@ input, textarea, select, button {
   font-size: 13px;
   font-weight: 500;
   color: var(--fg);
+  flex: 1;
   font-family: 'Sora', sans-serif;
+}
+
+.inbox-select-toggle {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 0.5px solid var(--bdr2);
+  background: transparent;
+  color: var(--fg3);
+  font-size: 10px;
+  font-weight: 500;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+}
+
+.inbox-select-toggle:hover,
+.inbox-select-toggle.active {
+  background: var(--lift);
+  color: var(--fg);
+  border-color: var(--bdr3);
 }
 
 .inbox-folder-nav {
@@ -2124,7 +2145,6 @@ input, textarea, select, button {
 .inbox-folder-tab {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   width: 100%;
   padding: 7px 10px;
@@ -2137,6 +2157,19 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
   cursor: pointer;
   text-align: left;
+}
+
+.inbox-folder-tab > .inbox-folder-tab-icon + span {
+  flex: 1;
+}
+
+.inbox-folder-tab-icon {
+  flex-shrink: 0;
+  color: var(--fg4);
+}
+
+.inbox-folder-tab.active .inbox-folder-tab-icon {
+  color: var(--fg2);
 }
 
 .inbox-folder-tab:hover {
@@ -2249,6 +2282,11 @@ input, textarea, select, button {
   flex: 1;
 }
 
+.inbox-list-section-icon {
+  flex-shrink: 0;
+  color: var(--fg3);
+}
+
 .inbox-list-section-count {
   font-size: 10px;
   font-weight: 500;
@@ -2268,6 +2306,115 @@ input, textarea, select, button {
   flex: none;
   overflow: visible;
   padding: 0 6px 6px;
+}
+
+.inbox-thread-item {
+  list-style: none;
+}
+
+.inbox-thread-item.selected .inbox-thread-row {
+  background: rgba(139, 26, 26, 0.08);
+}
+
+.inbox-thread-row-inner {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.inbox-row-check {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 0 0 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.inbox-row-check input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--rh);
+  cursor: pointer;
+}
+
+.inbox-thread-row-inner .inbox-thread-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.inbox-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-top: 0.5px solid var(--bdr);
+  background: var(--card2);
+  flex-shrink: 0;
+}
+
+.inbox-bulk-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg2);
+  font-size: 10px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+}
+
+.inbox-bulk-select-all:hover {
+  color: var(--fg);
+}
+
+.inbox-bulk-count {
+  flex: 1;
+  font-size: 10px;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+}
+
+.inbox-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inbox-bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card);
+  color: var(--fg2);
+  font-size: 10px;
+  font-weight: 500;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+}
+
+.inbox-bulk-btn:hover {
+  background: var(--lift);
+  color: var(--fg);
+}
+
+.inbox-bulk-btn.danger {
+  border-color: var(--rh-bdr);
+  color: var(--rh);
+}
+
+.inbox-bulk-btn.danger:hover {
+  background: var(--rh-bg);
+}
+
+.inbox-bulk-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .inbox-thread-row {

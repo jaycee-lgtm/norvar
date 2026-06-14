@@ -7,11 +7,11 @@ import {
 
 export type InboxFolder = "received" | "sent" | "archived" | "trash";
 
-export const INBOX_FOLDERS: Array<{ id: InboxFolder; label: string }> = [
-  { id: "received", label: "Received" },
-  { id: "sent",     label: "Sent" },
-  { id: "archived", label: "Archived" },
-  { id: "trash",    label: "Recycle bin" },
+export const INBOX_FOLDERS: Array<{ id: InboxFolder; label: string; icon: "inbox" | "send" | "archive" | "trash" }> = [
+  { id: "received", label: "Received",   icon: "inbox" },
+  { id: "sent",     label: "Sent",       icon: "send" },
+  { id: "archived", label: "Archived",   icon: "archive" },
+  { id: "trash",    label: "Recycle bin", icon: "trash" },
 ];
 
 export const INBOX_RETENTION_DAYS = 90;

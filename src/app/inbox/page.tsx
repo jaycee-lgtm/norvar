@@ -10,11 +10,20 @@ import type { InboxFolder, InboxFolderCounts, InboxListItem } from "@/lib/inbox"
 import { INBOX_FOLDERS } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
-  Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail,
+  Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail, MailOpen,
   Archive, Trash2, RotateCcw, Inbox as InboxIcon, ChevronDown,
+  CheckSquare, Square,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type FolderCounts = InboxFolderCounts;
+
+const FOLDER_ICONS: Record<(typeof INBOX_FOLDERS)[number]["icon"], LucideIcon> = {
+  inbox:   Inbox,
+  send:    Send,
+  archive: Archive,
+  trash:   Trash2,
+};
 
 type ThreadDetail = {
   remediation_id:      string;
@@ -52,67 +61,101 @@ function InboxThreadRow({
   item,
   folder,
   active,
+  selected,
+  selectMode,
   onSelect,
+  onToggleSelect,
 }: {
-  item:     InboxListItem;
-  folder:   InboxFolder;
-  active:   boolean;
-  onSelect: () => void;
+  item:           InboxListItem;
+  folder:         InboxFolder;
+  active:         boolean;
+  selected:       boolean;
+  selectMode:     boolean;
+  onSelect:       () => void;
+  onToggleSelect: () => void;
 }) {
   const sev = normalizeGapSeverity(item.gap_severity);
 
+  const handleRowClick = () => {
+    if (selectMode) onToggleSelect();
+    else onSelect();
+  };
+
   return (
-    <li key={item.message_id}>
-      <button
-        type="button"
-        className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
-        onClick={onSelect}
-      >
-        <div className="inbox-thread-row-top">
-          {!item.is_read && item.direction === "inbound" && (
-            <span className="inbox-unread-dot" aria-hidden />
-          )}
-          <span className="inbox-thread-recipient">
-            {item.direction === "inbound"
-              ? (item.from_name ?? item.from_email)
-              : (item.recipient_name ?? item.recipient_email)}
-          </span>
-          <span className="inbox-thread-date">{fmtDate(item.created_at)}</span>
-        </div>
-        <div className="inbox-thread-gap" style={{ color: SEV_COLORS[sev] }}>
-          {item.gap_title}
-        </div>
-        <div className="inbox-thread-meta">
-          {item.body_preview}
-          {item.project_title && <> · {item.project_title}</>}
-        </div>
-        {folder === "trash" && item.days_until_purge !== null && (
-          <div className="inbox-purge-hint">
-            Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
-          </div>
+    <li className={`inbox-thread-item${selected ? " selected" : ""}`}>
+      <div className="inbox-thread-row-inner">
+        {selectMode && (
+          <label
+            className="inbox-row-check"
+            onClick={e => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              aria-label={`Select message from ${item.from_name ?? item.from_email}`}
+            />
+          </label>
         )}
-      </button>
+        <button
+          type="button"
+          className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
+          onClick={handleRowClick}
+        >
+          <div className="inbox-thread-row-top">
+            {!selectMode && !item.is_read && item.direction === "inbound" && (
+              <span className="inbox-unread-dot" aria-hidden />
+            )}
+            <span className="inbox-thread-recipient">
+              {item.direction === "inbound"
+                ? (item.from_name ?? item.from_email)
+                : (item.recipient_name ?? item.recipient_email)}
+            </span>
+            <span className="inbox-thread-date">{fmtDate(item.created_at)}</span>
+          </div>
+          <div className="inbox-thread-gap" style={{ color: SEV_COLORS[sev] }}>
+            {item.gap_title}
+          </div>
+          <div className="inbox-thread-meta">
+            {item.body_preview}
+            {item.project_title && <> · {item.project_title}</>}
+          </div>
+          {folder === "trash" && item.days_until_purge !== null && (
+            <div className="inbox-purge-hint">
+              Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
+            </div>
+          )}
+        </button>
+      </div>
     </li>
   );
 }
 
 function InboxListSection({
   title,
+  icon: SectionIcon,
   items,
   folder,
   threadId,
   open,
   onToggle,
   onSelectThread,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
   emptyLabel,
 }: {
   title:          string;
+  icon:           LucideIcon;
   items:          InboxListItem[];
   folder:         InboxFolder;
   threadId:       string | null;
   open:           boolean;
   onToggle:       () => void;
   onSelectThread: (id: string) => void;
+  selectMode:     boolean;
+  selectedIds:    Set<string>;
+  onToggleSelect: (messageId: string) => void;
   emptyLabel?:    string;
 }) {
   return (
@@ -128,6 +171,7 @@ function InboxListSection({
           strokeWidth={2}
           className={`inbox-list-section-chevron${open ? " open" : ""}`}
         />
+        <SectionIcon size={13} strokeWidth={1.75} className="inbox-list-section-icon" />
         <span className="inbox-list-section-label">{title}</span>
         <span className="inbox-list-section-count">{items.length}</span>
       </button>
@@ -140,7 +184,10 @@ function InboxListSection({
                 item={item}
                 folder={folder}
                 active={item.remediation_id === threadId}
+                selected={selectedIds.has(item.message_id)}
+                selectMode={selectMode}
                 onSelect={() => onSelectThread(item.remediation_id)}
+                onToggleSelect={() => onToggleSelect(item.message_id)}
               />
             ))}
           </ul>
@@ -172,10 +219,18 @@ function InboxContent() {
   const [error, setError]             = useState("");
   const [unreadOpen, setUnreadOpen]   = useState(true);
   const [readOpen, setReadOpen]       = useState(false);
+  const [selectMode, setSelectMode]   = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy]       = useState(false);
 
   const unreadItems = items.filter(i => !i.is_read);
   const readItems   = items.filter(i => i.is_read);
   const groupByRead = folder === "received";
+
+  useEffect(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, [folder]);
 
   useEffect(() => {
     if (!groupByRead) return;
@@ -236,7 +291,74 @@ function InboxContent() {
   };
 
   const selectThread = (id: string) => {
+    if (selectMode) return;
     router.push(`/inbox?folder=${folder}&thread=${id}`);
+  };
+
+  const toggleMessageSelect = (messageId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  };
+
+  const visibleMessageIds = items.map(i => i.message_id);
+  const allSelected = visibleMessageIds.length > 0
+    && visibleMessageIds.every(id => selectedIds.has(id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(visibleMessageIds));
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const bulkActionForFolder = (): "delete" | "purge" | "restore" => {
+    if (folder === "trash") return "purge";
+    return "delete";
+  };
+
+  const patchMessages = async (messageIds: string[], action: string) => {
+    if (messageIds.length === 0) return;
+    setBulkBusy(true);
+    setError("");
+    try {
+      const res  = await fetch("/api/escalation-inbox", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ message_ids: messageIds, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update messages");
+      exitSelectMode();
+      await loadList();
+      if (threadId) await loadThread(threadId, folder);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not update messages");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    const ids = [...selectedIds];
+    const action = bulkActionForFolder();
+    if (action === "purge") {
+      if (!window.confirm(`Permanently delete ${ids.length} message${ids.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    } else {
+      if (!window.confirm(`Move ${ids.length} message${ids.length === 1 ? "" : "s"} to the recycle bin?`)) return;
+    }
+    await patchMessages(ids, action);
+  };
+
+  const bulkRestore = async () => {
+    const ids = [...selectedIds];
+    await patchMessages(ids, "restore");
   };
 
   const patchMessage = async (messageId: string, action: string) => {
@@ -307,16 +429,31 @@ function InboxContent() {
             <div className="inbox-list-head">
               <Inbox size={14} color="var(--fg3)" />
               <h1 className="inbox-list-title">Escalation inbox</h1>
+              {!loadingList && items.length > 0 && (
+                <button
+                  type="button"
+                  className={`inbox-select-toggle${selectMode ? " active" : ""}`}
+                  onClick={() => {
+                    if (selectMode) exitSelectMode();
+                    else setSelectMode(true);
+                  }}
+                >
+                  {selectMode ? "Done" : "Select"}
+                </button>
+              )}
             </div>
 
             <nav className="inbox-folder-nav" aria-label="Inbox folders">
-              {INBOX_FOLDERS.map(f => (
+              {INBOX_FOLDERS.map(f => {
+                const FolderIcon = FOLDER_ICONS[f.icon];
+                return (
                 <button
                   key={f.id}
                   type="button"
                   className={`inbox-folder-tab${folder === f.id ? " active" : ""}`}
                   onClick={() => setFolder(f.id)}
                 >
+                  <FolderIcon size={12} strokeWidth={1.75} className="inbox-folder-tab-icon" />
                   <span>{f.label}</span>
                   {f.id === "received" && counts.unread_received > 0 ? (
                     <span className="inbox-folder-count inbox-folder-count--unread">
@@ -326,7 +463,8 @@ function InboxContent() {
                     <span className="inbox-folder-count">{counts[f.id]}</span>
                   ) : null}
                 </button>
-              ))}
+                );
+              })}
             </nav>
 
             {folder === "trash" && (
@@ -351,22 +489,30 @@ function InboxContent() {
               <div className="inbox-list-sections">
                 <InboxListSection
                   title="Unread"
+                  icon={Mail}
                   items={unreadItems}
                   folder={folder}
                   threadId={threadId}
                   open={unreadOpen}
                   onToggle={() => setUnreadOpen(v => !v)}
                   onSelectThread={selectThread}
+                  selectMode={selectMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleMessageSelect}
                   emptyLabel="No unread messages"
                 />
                 <InboxListSection
                   title="Read"
+                  icon={MailOpen}
                   items={readItems}
                   folder={folder}
                   threadId={threadId}
                   open={readOpen}
                   onToggle={() => setReadOpen(v => !v)}
                   onSelectThread={selectThread}
+                  selectMode={selectMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleMessageSelect}
                   emptyLabel="No read messages yet"
                 />
               </div>
@@ -380,10 +526,52 @@ function InboxContent() {
                   item={item}
                   folder={folder}
                   active={item.remediation_id === threadId}
+                  selected={selectedIds.has(item.message_id)}
+                  selectMode={selectMode}
                   onSelect={() => selectThread(item.remediation_id)}
+                  onToggleSelect={() => toggleMessageSelect(item.message_id)}
                 />
               ))}
             </ul>
+            )}
+
+            {selectMode && selectedIds.size > 0 && (
+              <div className="inbox-bulk-bar">
+                <button
+                  type="button"
+                  className="inbox-bulk-select-all"
+                  onClick={toggleSelectAll}
+                  disabled={bulkBusy}
+                >
+                  {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                  {allSelected ? "Deselect all" : "Select all"}
+                </button>
+                <span className="inbox-bulk-count">
+                  {selectedIds.size} selected
+                </span>
+                <div className="inbox-bulk-actions">
+                  {folder === "trash" && (
+                    <button
+                      type="button"
+                      className="inbox-bulk-btn"
+                      disabled={bulkBusy}
+                      onClick={() => void bulkRestore()}
+                    >
+                      <RotateCcw size={12} />
+                      Restore
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="inbox-bulk-btn danger"
+                    disabled={bulkBusy}
+                    onClick={() => void bulkDelete()}
+                  >
+                    {bulkBusy ? <Loader2 size={12} className="spin" /> : <Trash2 size={12} />}
+                    {folder === "trash" ? "Delete forever" : "Delete"}
+                  </button>
+                </div>
+              </div>
             )}
           </aside>
         )}
