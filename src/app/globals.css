@@ -1355,6 +1355,29 @@ input, textarea, select, button {
   background: var(--card); border: 0.5px solid var(--bdr); color: var(--fg2);
 }
 .gap-chat-thinking { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.gap-chat-add-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card2);
+  color: var(--fg2);
+  font-size: 10px;
+  font-weight: 500;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+}
+.gap-chat-add-steps:hover:not(:disabled) {
+  border-color: var(--bdr3);
+  color: var(--fg);
+}
+.gap-chat-add-steps:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
 .gap-chat-error { font-size: 11px; color: var(--rh); }
 .gap-chat-input-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
 .gap-chat-input {
@@ -1632,6 +1655,60 @@ input, textarea, select, button {
   padding: 8px 10px;
 }
 
+.remediation-checklist-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.remediation-checklist-row .remediation-checklist-toggle {
+  flex: 1;
+  min-width: 0;
+}
+
+.remediation-checklist-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.remediation-checklist-item:hover .remediation-checklist-delete,
+.remediation-checklist-item:focus-within .remediation-checklist-delete {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.remediation-checklist-delete:hover {
+  background: var(--rh-bg, rgba(220, 38, 38, 0.08));
+  color: var(--rh);
+}
+
+.remediation-checklist-delete:disabled {
+  cursor: wait;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.remediation-checklist-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--fg3);
+  line-height: 1.5;
+}
+
 .remediation-checklist-item.done {
   border-color: var(--rl-bdr);
   background: var(--rl-bg);
@@ -1742,9 +1819,61 @@ input, textarea, select, button {
   line-height: 1.25;
 }
 
-.remediation-assignee-chip-role {
-  font-size: 10px;
+.remediation-assignees-details-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--fg3);
+  font-size: 10px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+}
+
+.remediation-assignees-details-toggle:hover {
+  color: var(--fg2);
+}
+
+.remediation-assignees-chevron {
+  transition: transform 0.15s ease;
+}
+
+.remediation-assignees-chevron.open {
+  transform: rotate(180deg);
+}
+
+.remediation-assignees-details {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card2);
+}
+
+.remediation-assignees-detail-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.remediation-assignees-detail-row + .remediation-assignees-detail-row {
+  margin-top: 4px;
+}
+
+.remediation-assignees-detail-name {
+  color: var(--fg2);
+  font-weight: 500;
+}
+
+.remediation-assignees-detail-role {
+  color: var(--fg3);
+  flex-shrink: 0;
 }
 
 .remediation-assignee-chip-remove {
@@ -1760,7 +1889,7 @@ input, textarea, select, button {
 }
 
 .remediation-assignees-note {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 10px;
   color: var(--fg4);
   line-height: 1.45;

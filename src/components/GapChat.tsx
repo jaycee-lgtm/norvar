@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { ArrowUp, Loader2, MessageSquare } from "lucide-react";
+import { ArrowUp, ListPlus, Loader2, MessageSquare } from "lucide-react";
 import { readSSEStream } from "@/lib/sse";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
+import {
+  hasRemediationAdviceIntro,
+  parseChatResponseToSteps,
+} from "@/lib/remediation-steps";
 import FormattedMessage from "@/components/FormattedMessage";
 import MessageFeedback from "@/components/MessageFeedback";
 import AiDisclaimer from "@/components/AiDisclaimer";
@@ -31,7 +35,18 @@ type GapChatProps = {
   gapKey?:            string;
   initialMessages?: GapChatMessage[];
   onMessagesChange?: (messages: GapChatMessage[]) => void;
+  onStepsAdded?:     () => void;
 };
+
+function isRemediationAdviceRequest(text: string): boolean {
+  return /what should (i|we) do|how (do|should) (i|we) (fix|close|remediate|address)|what (are the )?steps/i.test(text);
+}
+
+function canAddStepsFromMessage(userMsg: string | undefined, assistantContent: string): boolean {
+  const steps = parseChatResponseToSteps(assistantContent);
+  if (!steps.length) return false;
+  return hasRemediationAdviceIntro(assistantContent) || Boolean(userMsg && isRemediationAdviceRequest(userMsg));
+}
 
 export default function GapChat({
   gap,
@@ -40,15 +55,44 @@ export default function GapChat({
   gapKey,
   initialMessages = [],
   onMessagesChange,
+  onStepsAdded,
 }: GapChatProps) {
   const [open, setOpen]         = useState(initialMessages.length > 0);
   const [messages, setMessages] = useState<GapChatMessage[]>(initialMessages);
   const [input, setInput]       = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+  const [addBusyIdx, setAddBusyIdx] = useState<number | null>(null);
+  const [addError, setAddError]     = useState("");
   const typewriterRef           = useRef<TypewriterDrain | null>(null);
 
   const canSend = input.trim().length > 0 && !loading;
+
+  const addStepsFromMessage = async (assistantContent: string, messageIndex: number) => {
+    if (!remediationId || addBusyIdx !== null) return;
+    const steps = parseChatResponseToSteps(assistantContent);
+    if (!steps.length) return;
+
+    setAddBusyIdx(messageIndex);
+    setAddError("");
+    try {
+      const res = await fetch("/api/remediation", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          id:                  remediationId,
+          add_checklist_steps: steps,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not add steps");
+      onStepsAdded?.();
+    } catch (e: unknown) {
+      setAddError(e instanceof Error ? e.message : "Could not add steps");
+    } finally {
+      setAddBusyIdx(null);
+    }
+  };
 
   const send = async () => {
     if (!canSend) return;
@@ -56,6 +100,7 @@ export default function GapChat({
     const prior  = messages;
     setInput("");
     setError("");
+    setAddError("");
     setOpen(true);
     setLoading(true);
 
@@ -163,7 +208,18 @@ export default function GapChat({
           <div className="gap-chat-msgs">
           {(() => {
             const firstAssistantIndex = messages.findIndex(m => m.role === "assistant");
-            return messages.map((msg, i) => (
+            return messages.map((msg, i) => {
+              const priorUser = messages[i - 1]?.role === "user" ? messages[i - 1].content : undefined;
+              const showAddSteps = Boolean(
+                remediationId
+                && msg.role === "assistant"
+                && msg.content
+                && !(loading && i === messages.length - 1)
+                && canAddStepsFromMessage(priorUser, msg.content),
+              );
+              const stepCount = showAddSteps ? parseChatResponseToSteps(msg.content).length : 0;
+
+              return (
             <div
               key={msg.id ?? i}
               className={msg.role === "user" ? "gap-chat-msg gap-chat-msg-user" : "gap-chat-msg gap-chat-msg-ai"}
@@ -178,6 +234,21 @@ export default function GapChat({
                       <span className="loading-dot" />
                     </span>
                   )}
+                  {showAddSteps && stepCount > 0 && (
+                    <button
+                      type="button"
+                      className="gap-chat-add-steps"
+                      disabled={addBusyIdx !== null}
+                      onClick={() => void addStepsFromMessage(msg.content, i)}
+                    >
+                      {addBusyIdx === i ? (
+                        <Loader2 size={10} className="spin" />
+                      ) : (
+                        <ListPlus size={10} />
+                      )}
+                      Add {stepCount} step{stepCount === 1 ? "" : "s"} to checklist
+                    </button>
+                  )}
                   {!(loading && i === messages.length - 1 && !msg.content) && i === firstAssistantIndex && (
                     <AiDisclaimer agentName="Norvar" className="ai-disclaimer ai-disclaimer--gap-chat" />
                   )}
@@ -190,7 +261,7 @@ export default function GapChat({
                       containerId={remediationId ?? assessmentId ?? null}
                       gapKey={gapKey}
                       messageContent={msg.content}
-                      userMessage={messages[i - 1]?.role === "user" ? messages[i - 1].content : undefined}
+                      userMessage={priorUser}
                       agent="norvar"
                       onFeedbackChange={rating => {
                         setMessages(prev => {
@@ -208,11 +279,13 @@ export default function GapChat({
                 msg.content
               )}
             </div>
-            ));
+              );
+            });
           })()}
           </div>
 
           {error && <p className="gap-chat-error">{error}</p>}
+          {addError && <p className="gap-chat-error">{addError}</p>}
 
           <div className="gap-chat-input-row">
             <input

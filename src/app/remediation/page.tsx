@@ -272,7 +272,6 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
 
             <RemediationStepChecklist
               itemId={item.id}
-              remediationSteps={item.remediation_steps}
               initialChecklist={item.step_checklist ?? []}
               profiles={profiles}
               onUpdate={onUpdate}
@@ -293,6 +292,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
                 gapKey={item.gap_key ?? undefined}
                 initialMessages={item.messages ?? []}
                 onMessagesChange={msgs => onMessagesChange(item.id, msgs)}
+                onStepsAdded={onUpdate}
               />
             </section>
 

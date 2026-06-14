@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
-import { User, UserPlus, X, ArrowRightLeft, Search, Loader2 } from "lucide-react";
+import { User, UserPlus, X, ArrowRightLeft, Search, Loader2, ChevronDown } from "lucide-react";
 import type { UserProfile } from "@/lib/clerk-users";
 import type { AssigneeMeta } from "@/lib/escalation";
 
@@ -36,6 +36,7 @@ export default function AssigneeManager({
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [busy, setBusy]           = useState(false);
   const [error, setError]         = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (mode === "idle") return;
@@ -151,34 +152,59 @@ export default function AssigneeManager({
       </div>
 
       <div className="remediation-assignee-chips">
-        {assignedTo.map(uid => {
-          const role = assigneeMeta?.[uid]?.role?.trim();
-          return (
-            <span key={uid} className="remediation-assignee-chip">
-              <User size={10} />
-              <span className="remediation-assignee-chip-text">
-                <span>{label(uid)}</span>
-                {role && <span className="remediation-assignee-chip-role">{role}</span>}
-              </span>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => remove(uid)}
-                title="Remove assignee"
-                className="remediation-assignee-chip-remove"
-              >
-                <X size={10} />
-              </button>
+        {assignedTo.map(uid => (
+          <span key={uid} className="remediation-assignee-chip">
+            <User size={10} />
+            <span className="remediation-assignee-chip-text">
+              <span>{label(uid)}</span>
             </span>
-          );
-        })}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => remove(uid)}
+              title="Remove assignee"
+              className="remediation-assignee-chip-remove"
+            >
+              <X size={10} />
+            </button>
+          </span>
+        ))}
       </div>
 
-      <p className="remediation-assignees-note">
-        Roles are set once in{" "}
-        <Link href="/settings">Settings</Link>
-        {" "}and apply to all gaps.
-      </p>
+      {assignedTo.length > 0 && (
+        <button
+          type="button"
+          className="remediation-assignees-details-toggle"
+          aria-expanded={detailsOpen}
+          onClick={() => setDetailsOpen(v => !v)}
+        >
+          <ChevronDown
+            size={12}
+            className={`remediation-assignees-chevron${detailsOpen ? " open" : ""}`}
+          />
+          {detailsOpen ? "Hide details" : "Show details"}
+        </button>
+      )}
+
+      {detailsOpen && (
+        <div className="remediation-assignees-details">
+          {assignedTo.map(uid => {
+            const role = assigneeMeta?.[uid]?.role?.trim();
+            if (!role) return null;
+            return (
+              <div key={uid} className="remediation-assignees-detail-row">
+                <span className="remediation-assignees-detail-name">{label(uid)}</span>
+                <span className="remediation-assignees-detail-role">{role}</span>
+              </div>
+            );
+          })}
+          <p className="remediation-assignees-note">
+            Roles are set once in{" "}
+            <Link href="/settings">Settings</Link>
+            {" "}and apply to all gaps.
+          </p>
+        </div>
+      )}
 
       {mode !== "idle" && (
         <div className="assignee-picker">

@@ -10,16 +10,10 @@ import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
 import { sendEscalationEmail } from "@/lib/email";
 import { rolesForAssignees } from "@/lib/org-assignee-roles-server";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
-import { splitRemediationSteps, type RemediationStepItem } from "@/lib/remediation-steps";
+import { splitRemediationSteps, buildStepItemsFromTexts, type RemediationStepItem } from "@/lib/remediation-steps";
 
 function buildStepChecklist(text: string): RemediationStepItem[] {
-  return splitRemediationSteps(text).map((stepText, order) => ({
-    id:           randomUUID(),
-    text:         stepText,
-    order,
-    completed_at: null,
-    completed_by: null,
-  }));
+  return buildStepItemsFromTexts(splitRemediationSteps(text), 0, () => randomUUID());
 }
 
 const supabase = createClient(
@@ -285,6 +279,7 @@ export async function PATCH(req: NextRequest) {
     escalation_status, assignee_role, assignee_id, renotify,
     resolution_note, due_date,
     init_step_checklist, step_id, step_completed,
+    add_checklist_steps, delete_step_id,
   } = await req.json();
 
   const activeOrgId = await getActiveOrganizationId(userId, orgId);
@@ -456,7 +451,7 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if ((init_step_checklist || step_id) && !(await canManage())) {
+  if ((init_step_checklist || step_id || add_checklist_steps || delete_step_id) && !(await canManage())) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -480,6 +475,40 @@ export async function PATCH(req: NextRequest) {
     activityAction = "steps_queued";
     activityDetail = `Added ${checklist.length} remediation step${checklist.length === 1 ? "" : "s"} to checklist`;
     if (current.status === "open") updates.status = "in_progress";
+  } else if (add_checklist_steps) {
+    const texts = (Array.isArray(add_checklist_steps) ? add_checklist_steps : [])
+      .map((t: unknown) => String(t).trim())
+      .filter(Boolean);
+    if (!texts.length) {
+      return Response.json({ error: "No steps to add" }, { status: 400 });
+    }
+    const existing = Array.isArray(current.step_checklist) ? [...current.step_checklist] : [];
+    const existingTexts = new Set(existing.map(s => s.text.toLowerCase()));
+    const newItems = buildStepItemsFromTexts(
+      texts.filter(t => !existingTexts.has(t.toLowerCase())),
+      existing.length,
+      () => randomUUID(),
+    );
+    if (!newItems.length) {
+      return Response.json({ error: "These steps are already on the checklist" }, { status: 400 });
+    }
+    updates.step_checklist = [...existing, ...newItems];
+    activityAction = "steps_queued";
+    activityDetail = `Added ${newItems.length} step${newItems.length === 1 ? "" : "s"} from remediation advice`;
+    if (current.status === "open") updates.status = "in_progress";
+  } else if (delete_step_id) {
+    const checklist = Array.isArray(current.step_checklist)
+      ? current.step_checklist.filter(s => s.id !== delete_step_id)
+      : [];
+    if (checklist.length === (current.step_checklist?.length ?? 0)) {
+      return Response.json({ error: "Step not found" }, { status: 404 });
+    }
+    const removed = (current.step_checklist as RemediationStepItem[]).find(s => s.id === delete_step_id);
+    updates.step_checklist = checklist.map((s, i) => ({ ...s, order: i }));
+    activityAction = "step_removed";
+    activityDetail = removed
+      ? `Removed step: ${removed.text.slice(0, 120)}${removed.text.length > 120 ? "…" : ""}`
+      : "Removed remediation step";
   } else if (step_id) {
     const checklist = Array.isArray(current.step_checklist) ? [...current.step_checklist] : [];
     const idx = checklist.findIndex(s => s.id === step_id);

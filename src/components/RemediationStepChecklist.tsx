@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Circle, ListPlus, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, Trash2 } from "lucide-react";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   checklistProgress,
@@ -20,7 +20,6 @@ function fmtWhen(iso: string) {
 
 type Props = {
   itemId:            string;
-  remediationSteps:  string | null;
   initialChecklist:  RemediationStepItem[];
   profiles:          Record<string, UserProfile>;
   onUpdate:          () => void;
@@ -28,14 +27,12 @@ type Props = {
 
 export default function RemediationStepChecklist({
   itemId,
-  remediationSteps,
   initialChecklist,
   profiles,
   onUpdate,
 }: Props) {
   const [checklist, setChecklist] = useState(initialChecklist);
   const [busyId, setBusyId]       = useState<string | null>(null);
-  const [initBusy, setInitBusy]   = useState(false);
   const [error, setError]         = useState("");
 
   useEffect(() => {
@@ -44,29 +41,6 @@ export default function RemediationStepChecklist({
 
   const { done, total } = checklistProgress(checklist);
   const hasChecklist    = total > 0;
-
-  const initChecklist = async () => {
-    if (!remediationSteps?.trim() || initBusy) return;
-    setInitBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/remediation", {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ id: itemId, init_step_checklist: true }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not add steps");
-      if (Array.isArray(data.item?.step_checklist)) {
-        setChecklist(data.item.step_checklist);
-      }
-      onUpdate();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not add steps");
-    } finally {
-      setInitBusy(false);
-    }
-  };
 
   const toggleStep = async (step: RemediationStepItem) => {
     if (busyId) return;
@@ -96,7 +70,31 @@ export default function RemediationStepChecklist({
     }
   };
 
-  if (!remediationSteps?.trim() && !hasChecklist) return null;
+  const deleteStep = async (step: RemediationStepItem) => {
+    if (busyId) return;
+    setBusyId(step.id);
+    setError("");
+    try {
+      const res = await fetch("/api/remediation", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          id:             itemId,
+          delete_step_id: step.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not remove step");
+      if (Array.isArray(data.item?.step_checklist)) {
+        setChecklist(data.item.step_checklist);
+      }
+      onUpdate();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not remove step");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <section className="remediation-detail-section">
@@ -109,19 +107,10 @@ export default function RemediationStepChecklist({
         )}
       </div>
 
-      {!hasChecklist && remediationSteps?.trim() && (
-        <>
-          <p className="remediation-body-text remediation-steps-text">{remediationSteps}</p>
-          <button
-            type="button"
-            className="remediation-action-btn remediation-checklist-init"
-            disabled={initBusy}
-            onClick={e => { e.stopPropagation(); void initChecklist(); }}
-          >
-            {initBusy ? <Loader2 size={10} className="spin" /> : <ListPlus size={10} />}
-            Add all to checklist
-          </button>
-        </>
+      {!hasChecklist && (
+        <p className="remediation-body-text remediation-checklist-empty">
+          Ask Nora what you should do, then add steps from the advice below.
+        </p>
       )}
 
       {hasChecklist && (
@@ -133,22 +122,38 @@ export default function RemediationStepChecklist({
 
             return (
               <li key={step.id} className={`remediation-checklist-item${isDone ? " done" : ""}`}>
-                <button
-                  type="button"
-                  className="remediation-checklist-toggle"
-                  disabled={Boolean(busyId)}
-                  aria-pressed={isDone}
-                  onClick={e => { e.stopPropagation(); void toggleStep(step); }}
-                >
-                  {busy ? (
-                    <Loader2 size={14} className="spin remediation-checklist-icon" />
-                  ) : isDone ? (
-                    <CheckCircle2 size={14} className="remediation-checklist-icon done" />
-                  ) : (
-                    <Circle size={14} className="remediation-checklist-icon" />
-                  )}
-                  <span className="remediation-checklist-text">{step.text}</span>
-                </button>
+                <div className="remediation-checklist-row">
+                  <button
+                    type="button"
+                    className="remediation-checklist-toggle"
+                    disabled={Boolean(busyId)}
+                    aria-pressed={isDone}
+                    onClick={e => { e.stopPropagation(); void toggleStep(step); }}
+                  >
+                    {busy ? (
+                      <Loader2 size={14} className="spin remediation-checklist-icon" />
+                    ) : isDone ? (
+                      <CheckCircle2 size={14} className="remediation-checklist-icon done" />
+                    ) : (
+                      <Circle size={14} className="remediation-checklist-icon" />
+                    )}
+                    <span className="remediation-checklist-text">{step.text}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="remediation-checklist-delete"
+                    disabled={Boolean(busyId)}
+                    title="Remove step"
+                    aria-label="Remove step"
+                    onClick={e => { e.stopPropagation(); void deleteStep(step); }}
+                  >
+                    {busy ? (
+                      <Loader2 size={12} className="spin" />
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                  </button>
+                </div>
                 {isDone && step.completed_at && (
                   <div className="remediation-checklist-meta">
                     Completed {fmtWhen(step.completed_at)}
