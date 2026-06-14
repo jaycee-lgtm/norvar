@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, MessageSquare, Shield } from "lucide-react";
 import { ESCALATION_STEPS, escalationStepIndex, formatDuration } from "@/lib/escalation";
 import type { GapChatMessage } from "@/components/GapChat";
+import { normalizeGapSeverity } from "@/lib/risk-tiers";
 
 type AssessmentResult = {
   summary?: string;
@@ -61,15 +62,16 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 function SevBadge({ sev }: { sev: string }) {
+  const normalized = normalizeGapSeverity(sev);
   const colors: Record<string, string> = {
-    critical: "var(--rh)", high: "var(--rm)", medium: "var(--rl)", low: "var(--fg3)",
+    high: "var(--rh)", medium: "var(--rm)", low: "var(--fg3)",
   };
   return (
     <span style={{
       fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
-      color: colors[sev] ?? "var(--fg3)", textTransform: "uppercase",
+      color: colors[normalized] ?? "var(--fg3)", textTransform: "uppercase",
     }}>
-      {sev}
+      {normalized}
     </span>
   );
 }

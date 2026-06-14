@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import { normalizeRiskTier } from "@/lib/risk-tiers";
 import { AlertTriangle, Tag, Clock, Plus, FileSearch, ChevronRight, Trash2 } from "lucide-react";
 
 type HistoryItem = {
@@ -16,7 +17,7 @@ type HistoryItem = {
 };
 
 function tierColors(tier: string) {
-  const t = tier?.toLowerCase();
+  const t = normalizeRiskTier(tier);
   if (t === "high")   return { num: "var(--rh)", bg: "var(--rh-bg)", bdr: "var(--rh-bdr)" };
   if (t === "medium") return { num: "var(--rm)", bg: "var(--rm-bg)", bdr: "var(--rm-bdr)" };
   return { num: "var(--rl)", bg: "var(--rl-bg)", bdr: "var(--rl-bdr)" };

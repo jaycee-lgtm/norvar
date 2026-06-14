@@ -726,16 +726,53 @@ export function buildInitialAnswersFromInference(inferred: {
   return answers;
 }
 
+export function isInternalAssessmentPrompt(content: string): boolean {
+  return content.includes("AUTHORITATIVE USER SCOPING")
+    || content.includes("COMPLIANCE ASSESSMENT REQUEST (structured summary");
+}
+
+export function extractInitialDescriptionFromPrompt(content: string): string | null {
+  const quoted = content.match(/Initial description \(user-provided, supplementary only\):\s*\n"([^"]+)"/);
+  if (quoted?.[1]?.trim()) return quoted[1].trim();
+  return null;
+}
+
+export function sanitizeAssessmentUserMessage(content: string, fallback?: string): string {
+  if (!isInternalAssessmentPrompt(content)) return content;
+  const extracted = extractInitialDescriptionFromPrompt(content);
+  if (extracted) return extracted;
+  if (fallback?.trim() && !isInternalAssessmentPrompt(fallback)) return fallback.trim();
+  return "Assessment scope confirmed";
+}
+
+export function buildUserFacingAssessmentMessage(
+  answers: AssessmentAnswers,
+  initialDescription?: string,
+): string {
+  if (initialDescription?.trim()) return initialDescription.trim();
+  const { description } = compilePrompt(answers);
+  return description;
+}
+
+export function buildAssessmentRequest(
+  answers: AssessmentAnswers,
+  initialDescription?: string,
+): { prompt: string; userMessage: string; meta: QuestionnaireMeta } {
+  const { description, meta } = compilePrompt(answers);
+  const groundTruth = buildScopingGroundTruthBlock(answers, initialDescription);
+  return {
+    prompt: `${groundTruth}\n\n${description}`,
+    userMessage: buildUserFacingAssessmentMessage(answers, initialDescription),
+    meta,
+  };
+}
+
 export function compileAssessmentPrompt(
   answers: AssessmentAnswers,
   initialDescription?: string,
 ): { description: string; meta: QuestionnaireMeta } {
-  const { description, meta } = compilePrompt(answers);
-  const groundTruth = buildScopingGroundTruthBlock(answers, initialDescription);
-  return {
-    description: `${groundTruth}\n\n${description}`,
-    meta,
-  };
+  const { prompt, meta } = buildAssessmentRequest(answers, initialDescription);
+  return { description: prompt, meta };
 }
 
 export function formatGuidedQuestionText(question: AssessmentQuestion): string {

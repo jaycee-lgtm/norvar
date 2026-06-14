@@ -1,3 +1,5 @@
+import { GAP_SEV_RANK, normalizeGapSeverity, normalizeRiskTier, type GapSeverity } from "@/lib/risk-tiers";
+
 export type StreamGap = {
   severity:    string;
   domain:      string;
@@ -32,7 +34,7 @@ function findMatchingBrace(s: string, start: number): number {
 export function normalizeStreamGap(raw: Record<string, unknown>): StreamGap {
   const domain = String(raw.domain || "privacy").toLowerCase();
   return {
-    severity:    String(raw.severity || "medium").toLowerCase(),
+    severity:    normalizeGapSeverity(String(raw.severity || "medium")),
     domain:      domain === "ai" || domain === "ai_governance"
       ? "ai_governance"
       : domain === "cyber" || domain === "cybersecurity"
@@ -46,28 +48,26 @@ export function normalizeStreamGap(raw: Record<string, unknown>): StreamGap {
 }
 
 export function deriveRiskFromGaps(gaps: Array<{ severity: string; domain: string }>) {
-  const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
   const domains = ["privacy", "ai_governance", "cybersecurity"];
 
   const maxSeverity = gaps.reduce((max, g) => {
-    const rank = severityRank[g.severity?.toLowerCase()] ?? 0;
+    const rank = GAP_SEV_RANK[normalizeGapSeverity(g.severity)] ?? 0;
     return rank > max ? rank : max;
   }, 0);
 
-  const overallTier =
-    maxSeverity >= 4 ? "critical" :
+  const overallTier: GapSeverity =
     maxSeverity >= 3 ? "high" :
     maxSeverity >= 2 ? "medium" : "low";
 
-  const byDomain: Record<string, { tier: string; gap_count: number }> = {};
+  const byDomain: Record<string, { tier: GapSeverity; gap_count: number }> = {};
   for (const domain of domains) {
     const domainGaps = gaps.filter(g => g.domain === domain);
     const domainMax  = domainGaps.reduce((max, g) => {
-      const rank = severityRank[g.severity?.toLowerCase()] ?? 0;
+      const rank = GAP_SEV_RANK[normalizeGapSeverity(g.severity)] ?? 0;
       return rank > max ? rank : max;
     }, 0);
     byDomain[domain] = {
-      tier: domainMax >= 4 ? "critical" : domainMax >= 3 ? "high" : domainMax >= 2 ? "medium" : "low",
+      tier: domainMax >= 3 ? "high" : domainMax >= 2 ? "medium" : "low",
       gap_count: domainGaps.length,
     };
   }

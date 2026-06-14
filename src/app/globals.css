@@ -1146,8 +1146,7 @@ input, textarea, select, button {
   margin-top: 2px;
   display: inline-flex; align-items: center; gap: 3px;
 }
-.gap-sev.critical { background: var(--rh-bg); color: var(--rh); border: 0.5px solid var(--rh-bdr); }
-.gap-sev.high     { background: var(--rm-bg); color: var(--rm); border: 0.5px solid var(--rm-bdr); }
+.gap-sev.high     { background: var(--rh-bg); color: var(--rh); border: 0.5px solid var(--rh-bdr); }
 .gap-sev.medium   { background: var(--card2); color: var(--fg2); border: 0.5px solid var(--bdr); }
 
 .gap-title  { font-size: 12px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; margin-bottom: 2px; }

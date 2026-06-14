@@ -12,13 +12,17 @@ function charsPerTick(queueLength: number): number {
   return 2;
 }
 
-export function createTypewriterDrain(onAppend: (char: string) => void): TypewriterDrain {
+export function createTypewriterDrain(
+  onAppend: (char: string) => void,
+  onIdle?: () => void,
+): TypewriterDrain {
   const queue: string[] = [];
   let active = false;
 
   function tick() {
     if (queue.length === 0) {
       active = false;
+      onIdle?.();
       return;
     }
     const batch = charsPerTick(queue.length);

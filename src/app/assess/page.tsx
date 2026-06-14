@@ -14,12 +14,13 @@ import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPick
 import {
   type AssessmentAnswers,
   type AssessmentQuestion,
-  compileAssessmentPrompt,
+  buildAssessmentRequest,
   formatGuidedQuestionText,
   getNextAssessmentQuestion,
   guidedQuestionOptions,
   mapQuestionnaireDomain,
   ASSESSMENT_QUESTIONS,
+  sanitizeAssessmentUserMessage,
 } from "@/lib/assessment-questionnaire";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
@@ -29,6 +30,7 @@ import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import { getCatalogEntryByAbbr } from "@/lib/regulatory-catalog";
+import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
 import {
   ArrowUp, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -86,7 +88,7 @@ const SECTOR_OPTIONS = [
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Gap = {
-  severity:     "critical" | "high" | "medium" | "low";
+  severity:     "high" | "medium" | "low";
   title:        string;
   detail?:      string;
   description?: string;
@@ -134,7 +136,11 @@ function restoreMessages(
   if (Array.isArray(row.messages) && row.messages.length > 0) {
     return row.messages.flatMap((m): Message[] => {
       if (m.role === "user") {
-        return [{ role: "user", content: m.content, tags: m.tags }];
+        return [{
+          role: "user",
+          content: sanitizeAssessmentUserMessage(m.content, row.description),
+          tags: m.tags,
+        }];
       }
       if (m.role === "chat") {
         return [{ role: "chat", text: m.text }];
@@ -161,8 +167,9 @@ function restoreMessages(
   }
 
   const result = (row.result ?? {}) as Assessment;
+  const displayDescription = sanitizeAssessmentUserMessage(row.description || row.title || "");
   return [
-    { role: "user", content: row.description || row.title || "" },
+    { role: "user", content: displayDescription },
     {
       role: "assistant",
       assessment: {
@@ -195,8 +202,9 @@ type SSEEvent =
 // ── Severity icon ──────────────────────────────────────────────────────────────
 
 function SevIcon({ sev }: { sev: string }) {
-  if (sev === "critical") return <AlertTriangle size={9} strokeWidth={2.5} />;
-  if (sev === "high")     return <AlertCircle   size={9} strokeWidth={2.5} />;
+  const normalized = normalizeGapSeverity(sev);
+  if (normalized === "high")   return <AlertTriangle size={9} strokeWidth={2.5} />;
+  if (normalized === "medium") return <AlertCircle   size={9} strokeWidth={2.5} />;
   return <Info size={9} strokeWidth={2.5} />;
 }
 
@@ -208,7 +216,7 @@ function exportAssessment(a: Assessment) {
     "=".repeat(50),
     "",
     `Title: ${a.title}`,
-    `Risk: ${a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low"}`,
+    `Risk: ${normalizeRiskTier(a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low")}`,
     "",
     "SUMMARY",
     "-".repeat(30),
@@ -222,12 +230,11 @@ function exportAssessment(a: Assessment) {
     "-".repeat(30),
   ];
 
-  [
-    ...(a.gaps ?? []).filter(g => g.severity === "critical"),
-    ...(a.gaps ?? []).filter(g => g.severity === "high"),
-    ...(a.gaps ?? []).filter(g => g.severity === "medium"),
-  ].forEach((g, i) => {
-    lines.push("", `${i + 1}. [${g.severity.toUpperCase()}] ${g.title}`);
+  const SEV_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  [...(a.gaps ?? [])]
+    .sort((x, y) => (SEV_ORDER[normalizeGapSeverity(x.severity)] ?? 9) - (SEV_ORDER[normalizeGapSeverity(y.severity)] ?? 9))
+    .forEach((g, i) => {
+    lines.push("", `${i + 1}. [${normalizeGapSeverity(g.severity).toUpperCase()}] ${g.title}`);
     lines.push(`   Frameworks: ${g.frameworks?.join(", ") || "N/A"}`);
     if (g.detail || g.description) lines.push(`   Issue: ${g.detail || g.description}`);
     if (g.remediation) lines.push(`   Fix: ${g.remediation}`);
@@ -247,12 +254,11 @@ function exportAssessment(a: Assessment) {
 // ── Assessment card ────────────────────────────────────────────────────────────
 
 function TierBadge({ tier }: { tier: string }) {
-  const t = tier?.toLowerCase() ?? "low";
+  const t = normalizeRiskTier(tier);
   const styles: Record<string, { bg: string; color: string }> = {
-    critical: { bg: "var(--color-background-danger,  #FCEBEB)", color: "var(--color-text-danger,  #A32D2D)" },
-    high:     { bg: "var(--color-background-warning, #FAEEDA)", color: "var(--color-text-warning, #854F0B)" },
-    medium:   { bg: "var(--color-background-info,    #E6F1FB)", color: "var(--color-text-info,    #185FA5)" },
-    low:      { bg: "var(--color-background-success, #EAF3DE)", color: "var(--color-text-success, #3B6D11)" },
+    high:   { bg: "var(--color-background-warning, #FAEEDA)", color: "var(--color-text-warning, #854F0B)" },
+    medium: { bg: "var(--color-background-info,    #E6F1FB)", color: "var(--color-text-info,    #185FA5)" },
+    low:    { bg: "var(--color-background-success, #EAF3DE)", color: "var(--color-text-success, #3B6D11)" },
   };
   const s = styles[t] ?? styles.low;
   return (
@@ -282,16 +288,14 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
   const router = useRouter();
   const [tab, setTab] = useState<"gaps" | "frameworks">("gaps");
 
-  const overallTier = a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low";
+  const overallTier = normalizeRiskTier(a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low");
   const byDomain    = a.risk_by_domain ?? null;
   const gaps        = a.gaps ?? [];
   const isProcessing = a.status === "processing";
-  const ordered     = [
-    ...gaps.filter(g => g.severity === "critical"),
-    ...gaps.filter(g => g.severity === "high"),
-    ...gaps.filter(g => g.severity === "medium"),
-    ...gaps.filter(g => g.severity === "low"),
-  ];
+  const SEV_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  const ordered     = [...gaps].sort(
+    (x, y) => (SEV_ORDER[normalizeGapSeverity(x.severity)] ?? 9) - (SEV_ORDER[normalizeGapSeverity(y.severity)] ?? 9),
+  );
 
   const [queued,    setQueued]    = useState<Set<number>>(new Set());
   const [queueing,  setQueueing]  = useState<number | null>(null);
@@ -424,13 +428,14 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
           )}
           {ordered.map((gap, i) => {
             const steps = gap.remediation ? splitRemediationSteps(gap.remediation) : [];
+            const sev = normalizeGapSeverity(gap.severity);
             return (
             <div key={i} className="gap-item gap-item-card">
               <div className="gap-item-header">
                 <span className="gap-item-number">{i + 1}</span>
-                <span className={`gap-sev ${gap.severity}`}>
-                  <SevIcon sev={gap.severity} />
-                  {gap.severity.charAt(0).toUpperCase() + gap.severity.slice(1)}
+                <span className={`gap-sev ${sev}`}>
+                  <SevIcon sev={sev} />
+                  {sev.charAt(0).toUpperCase() + sev.slice(1)}
                 </span>
                 <p className="gap-title">{gap.title}</p>
                 <button
@@ -598,6 +603,7 @@ function Home() {
   const [guidedAnswers, setGuidedAnswers] = useState<AssessmentAnswers>({});
   const [guidedMultiSelections, setGuidedMultiSelections] = useState<string[]>([]);
   const [activeGuidedQuestionId, setActiveGuidedQuestionId] = useState<string | null>(null);
+  const [guidedTyping, setGuidedTyping] = useState(false);
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -687,7 +693,7 @@ function Home() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, guidedTyping]);
 
   const hasAssessment   = messages.some(m => m.role === "assistant");
   const latestAssessment = [...messages].reverse().find(
@@ -717,6 +723,7 @@ function Home() {
     setGuidedAnswers({});
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
+    setGuidedTyping(false);
     router.push("/assess");
   }
 
@@ -794,12 +801,16 @@ function Home() {
     setActiveGuidedQuestionId(question.id);
     if (question.type === "multi") setGuidedMultiSelections([]);
 
-    const text = [intro, formatGuidedQuestionText(question)].filter(Boolean).join("\n\n");
+    const fullText = [intro, formatGuidedQuestionText(question)].filter(Boolean).join("\n\n");
+
+    typewriterRef.current?.reset();
+    setGuidedTyping(true);
+
     setMessages(prev => {
       const filtered = prev.filter(m => !(m.role === "thinking" && (m.isFollowUp || m.guidedText || m.guidedQuestionId)));
       return [...filtered, {
         role:             "thinking",
-        text,
+        text:             "",
         isFollowUp:       question.type !== "text",
         followUpOptions:  guidedQuestionOptions(question),
         guidedQuestionId: question.id,
@@ -808,6 +819,22 @@ function Home() {
         riskTag:          question.riskTag,
       }];
     });
+
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m =>
+          m.role === "thinking" && m.guidedQuestionId === question.id,
+        );
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<Message, { role: "thinking" }>;
+          next[idx] = { ...msg, text: msg.text + ch };
+        }
+        return next;
+      });
+    }, () => setGuidedTyping(false));
+
+    typewriterRef.current.enqueue(fullText);
   };
 
   const completeGuidedAssessment = async (answers: AssessmentAnswers) => {
@@ -816,7 +843,9 @@ function Home() {
 
     setGuidedActive(false);
     setActiveGuidedQuestionId(null);
-    const { description, meta } = compileAssessmentPrompt(answers, pendingDesc);
+    setGuidedTyping(false);
+    typewriterRef.current?.reset();
+    const { prompt, userMessage, meta } = buildAssessmentRequest(answers, pendingDesc);
 
     const guidedDomains       = (meta.domains ?? []).map(mapQuestionnaireDomain);
     const guidedJurisdictions = meta.jurisdictions ?? [];
@@ -833,14 +862,14 @@ function Home() {
 
     try {
       await runAssessment(
-        description,
+        prompt,
         tags,
         guidedDomains,
         guidedJurisdictions,
         guidedDataTypes,
         guidedSector,
         folderId,
-        { guidedScoping: true },
+        { guidedScoping: true, userMessage },
       );
     } finally {
       assessingRef.current = false;
@@ -940,10 +969,11 @@ function Home() {
     resolvedDataTypes: string[],
     resolvedSector: string,
     folderId?: string | null,
-    opts?: { guidedScoping?: boolean },
+    opts?: { guidedScoping?: boolean; userMessage?: string },
   ): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
+    setGuidedTyping(false);
 
     typewriterRef.current?.reset();
     typewriterRef.current = createTypewriterDrain(ch => {
@@ -968,6 +998,7 @@ function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description:   text,
+          user_message:  opts?.userMessage ?? text,
           domains:       resolvedDomains,
           jurisdictions: resolvedJurisdictions,
           data_types:    resolvedDataTypes,
@@ -1421,6 +1452,9 @@ function Home() {
 
                     if (msg.role === "thinking") {
                       const isFollowUp = msg.isFollowUp && msg.followUpOptions;
+                      const isGuidedQuestion = !!msg.guidedQuestionId;
+                      const isTypingGuided = isGuidedQuestion && guidedTyping && i === messages.length - 1;
+                      const showFollowUpOptions = isFollowUp && msg.followUpOptions && !isTypingGuided;
                       return (
                         <div key={i} className="msg-ai fade-up">
                           <div className="msg-ai-card">
@@ -1441,7 +1475,7 @@ function Home() {
                             {msg.text ? (
                               <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
                                 {msg.text}
-                                {!isFollowUp && loading && streamCursor}
+                                {((!isFollowUp && loading) || isTypingGuided) && streamCursor}
                               </p>
                             ) : (
                               <div style={{ display: "flex", gap: 5, padding: "8px 0" }}>
@@ -1450,9 +1484,9 @@ function Home() {
                                 <span className="loading-dot" />
                               </div>
                             )}
-                            {isFollowUp && msg.followUpOptions && (
+                            {showFollowUpOptions && (
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                                {msg.followUpOptions.map(opt => {
+                                {(msg.followUpOptions ?? []).map(opt => {
                                   const question = msg.guidedQuestionId
                                     ? ASSESSMENT_QUESTIONS.find(q => q.id === msg.guidedQuestionId)
                                     : null;

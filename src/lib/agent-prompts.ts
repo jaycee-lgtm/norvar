@@ -1,6 +1,8 @@
 // Norvar — Agent Prompts
 // Nora = senior compliance professional chat assistant | Cassius = assessment agent
 
+import { normalizeGapSeverity } from "@/lib/risk-tiers";
+
 export const NORA_GREETINGS = {
   cold: `Hi, I'm Nora. I cover Privacy, AI Governance, and Cybersecurity — ask me anything about your regulatory obligations, assessment findings, or what you should do next.`,
 
@@ -119,11 +121,11 @@ export function pickNoraFollowUps(gaps: GapLike[], limit = 4): string[] {
   const normalized = gaps.map(g => ({
     ...g,
     domain:   normalizeGapDomain(g.domain),
-    severity: (g.severity ?? "medium").toLowerCase(),
+    severity: normalizeGapSeverity(g.severity),
   }));
 
   const hasHighPrivacy = normalized.some(
-    g => g.domain === "privacy" && (g.severity === "critical" || g.severity === "high"),
+    g => g.domain === "privacy" && g.severity === "high",
   );
   const hasAi    = normalized.some(g => g.domain === "ai_governance");
   const hasCyber = normalized.some(g => g.domain === "cybersecurity");
@@ -153,16 +155,16 @@ No markdown, no bullets, just clear prose.
 
 {
   "title": "short title (max 8 words)",
-  "risk_tier": "critical" | "high" | "medium" | "low",
+  "risk_tier": "high" | "medium" | "low",
   "risk_by_domain": {
-    "privacy":        { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
-    "ai_governance":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> },
-    "cybersecurity":  { "tier": "critical"|"high"|"medium"|"low", "gap_count": <int> }
+    "privacy":        { "tier": "high"|"medium"|"low", "gap_count": <int> },
+    "ai_governance":  { "tier": "high"|"medium"|"low", "gap_count": <int> },
+    "cybersecurity":  { "tier": "high"|"medium"|"low", "gap_count": <int> }
   },
   "frameworks": ["framework abbreviation strings"],
   "gaps": [
     {
-      "severity":    "critical" | "high" | "medium" | "low",
+      "severity":    "high" | "medium" | "low",
       "domain":      "privacy" | "ai_governance" | "cybersecurity",
       "title":       "short gap title",
       "detail":      "specific issue with article/section citations — 2-4 sentences",
@@ -172,13 +174,19 @@ No markdown, no bullets, just clear prose.
   ]
 }
 
-Risk tier rules — derived ONLY from the gaps you identify, not from any pre-set score:
-- "critical": any critical severity gap present
-- "high":     no critical gaps, but 1 or more high severity gaps
-- "medium":   no critical/high gaps, but 1 or more medium severity gaps
-- "low":      all gaps low severity, or no gaps found
+Gap severity — use regulatory definitions, not subjective urgency. There is no "critical" tier or severity:
+- "high": the deployment or gap falls within a regulation's high-risk or heightened-obligation category — cite the specific basis. Examples: EU AI Act Annex III high-risk AI system; EU AI Act Art. 5 prohibited practice; GDPR special category / Art. 9 processing without a valid basis; unreported breach past statutory notification windows (GDPR Art. 33, HIPAA); COPPA violations for children's data; BIPA biometric collection without written consent; unlawful international transfer of health data without SCCs/adequacy; NYC LL 144 AEDT without bias audit.
+- "medium": real compliance gap with clear regulatory basis but not a statutory high-risk classification — e.g. incomplete privacy notice, missing cookie consent, untested incident response plan, missing AI transparency disclosure for a limited-risk chatbot.
+- "low": minor process/documentation improvement or best-practice gap with limited enforcement exposure.
+
+Risk tier rules — derived ONLY from gap severities:
+- "high":   1 or more high severity gaps
+- "medium": no high gaps, but 1 or more medium severity gaps
+- "low":    all gaps low severity, or no gaps found
 
 Per-domain tier: apply the same rules to gaps within that domain only.
+
+Do NOT inflate severity. Reserve "high" for findings grounded in a regulation's high-risk processing category or equivalent heightened obligation — not for every serious-sounding issue.
 
 Rules:
 - Output prose FIRST, then ---JSON--- separator, then JSON.

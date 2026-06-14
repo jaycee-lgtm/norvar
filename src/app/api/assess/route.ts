@@ -14,6 +14,7 @@ import {
   type StreamGap,
 } from "@/lib/streaming-assessment";
 import { generateAssessmentTitle } from "@/lib/generate-thread-title";
+import { sanitizeAssessmentUserMessage } from "@/lib/assessment-questionnaire";
 import { isAuditRequest } from "@/lib/audit";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -60,6 +61,7 @@ type PersistInput = {
   assessmentId: string;
   userId:         string;
   description:    string;
+  userMessage:    string;
   messageTags:    string[];
   domains:        string[];
   jurisdictions:  string[];
@@ -74,14 +76,15 @@ async function persistAssessment(row: PersistInput) {
     ...row.result,
     id: row.assessmentId,
   };
-  const title = row.title ?? (row.result.title as string) ?? row.description.slice(0, 80);
+  const title = row.title ?? (row.result.title as string) ?? row.userMessage.slice(0, 80);
 
   await supabase.from("assessments").update({
     title,
+    description: row.userMessage.slice(0, 500),
     result:    { ...row.result, title },
     risk_tier: row.riskTier,
     messages:  [
-      { role: "user", content: row.description, tags: row.messageTags },
+      { role: "user", content: row.userMessage, tags: row.messageTags },
       { role: "assistant", assessment: assistantAssessment },
     ],
   })
@@ -100,6 +103,7 @@ export async function POST(req: NextRequest) {
     let streamedGaps: StreamGap[]   = [];
     let summaryText                   = "";
     let descriptionText               = "";
+    let userMessage                   = "";
     let auditMode                     = false;
 
     try {
@@ -120,6 +124,7 @@ export async function POST(req: NextRequest) {
       const body = await req.json();
       const {
         description   = "",
+        user_message  = "",
         domains       = [] as string[],
         jurisdictions = [] as string[],
         data_types    = [] as string[],
@@ -133,6 +138,9 @@ export async function POST(req: NextRequest) {
       } = body;
 
       descriptionText = description;
+      userMessage = (typeof user_message === "string" && user_message.trim())
+        ? user_message.trim()
+        : sanitizeAssessmentUserMessage(description);
 
       if (description.trim().length < 10) {
         await send({ type: "error", text: "Description too short" });
@@ -145,7 +153,7 @@ export async function POST(req: NextRequest) {
         : [...domains, ...jurisdictions, ...data_types, sector].filter(Boolean);
 
       const initialResult = buildProcessingResult([], {
-        title:   description.slice(0, 80) || "Compliance assessment",
+        title:   userMessage.slice(0, 80) || "Compliance assessment",
         status:  "processing",
         summary: "",
       });
@@ -158,11 +166,11 @@ export async function POST(req: NextRequest) {
       if (!auditMode) {
         const { data: createdRow, error: createError } = await supabase.from("assessments").insert({
           user_id:       userId,
-          title:         description.slice(0, 80) || "Compliance assessment",
-          description:   description.slice(0, 500),
+          title:         userMessage.slice(0, 80) || "Compliance assessment",
+          description:   userMessage.slice(0, 500),
           result:        initialResult,
           messages:      [
-            { role: "user", content: description, tags: messageTags },
+            { role: "user", content: userMessage, tags: messageTags },
             { role: "assistant", assessment: { ...initialResult, status: "processing" } },
           ],
           risk_tier:     "low",
@@ -261,7 +269,7 @@ export async function POST(req: NextRequest) {
 
         streamedGaps = [...streamedGaps, ...newGaps];
         const result = buildProcessingResult(streamedGaps, {
-          title:   description.slice(0, 80) || "Compliance assessment",
+          title:   userMessage.slice(0, 80) || "Compliance assessment",
           summary: summaryText,
           status:  "processing",
         });
@@ -271,6 +279,7 @@ export async function POST(req: NextRequest) {
             assessmentId,
             userId: userId!,
             description,
+            userMessage,
             messageTags,
             domains,
             jurisdictions,
@@ -342,6 +351,7 @@ export async function POST(req: NextRequest) {
               assessmentId,
               userId: userId!,
               description,
+              userMessage,
               messageTags,
               domains,
               jurisdictions,
@@ -382,7 +392,7 @@ export async function POST(req: NextRequest) {
       const summaryForTitle = String(assessment.summary || summaryText || "");
       const aiTitle = await generateAssessmentTitle(summaryForTitle, {
         gapTitles: gapsForTitle.map(g => String(g.title || "")).filter(Boolean),
-        description: descriptionText,
+        description: userMessage,
       });
       assessment.title = aiTitle;
 
@@ -396,6 +406,7 @@ export async function POST(req: NextRequest) {
           assessmentId: assessmentId!,
           userId: userId!,
           description,
+          userMessage,
           messageTags,
           domains,
           jurisdictions,
@@ -418,7 +429,7 @@ export async function POST(req: NextRequest) {
         if (summaryText || streamedGaps.length) {
           partialTitle = await generateAssessmentTitle(summaryText, {
             gapTitles: streamedGaps.map(g => g.title),
-            description: descriptionText,
+            description: userMessage,
           });
           partialResult.title = partialTitle;
         }

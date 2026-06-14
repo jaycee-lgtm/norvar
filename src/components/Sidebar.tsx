@@ -8,6 +8,7 @@ import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { normalizeRiskTier } from "@/lib/risk-tiers";
 
 type RecentAssessment = {
   id:         string;
@@ -35,8 +36,7 @@ const TIER = {
 };
 
 function tierKey(t: string): keyof typeof TIER {
-  const v = t?.toLowerCase();
-  return v === "high" ? "high" : v === "medium" ? "medium" : "low";
+  return normalizeRiskTier(t);
 }
 
 function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: () => void }) {

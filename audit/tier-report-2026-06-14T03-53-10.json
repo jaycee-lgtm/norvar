@@ -1,0 +1,2023 @@
+{
+  "runAt": "2026-06-14T04:11:24.138Z",
+  "endpoint": "http://localhost:3000/api/assess",
+  "totalQueries": 20,
+  "passed": 16,
+  "review": 1,
+  "failed": 3,
+  "errors": 0,
+  "avgCompositeScore": 88,
+  "avgLatencyMs": 51810,
+  "tierAccuracy": {
+    "correct": 16,
+    "tooHigh": 4,
+    "tooLow": 0,
+    "total": 20
+  },
+  "byExpectedTier": {
+    "high": {
+      "total": 11,
+      "correct": 11
+    },
+    "medium": {
+      "total": 5,
+      "correct": 2
+    },
+    "low": {
+      "total": 4,
+      "correct": 3
+    }
+  },
+  "inconsistentAssessments": 0,
+  "overallGrade": "READY",
+  "results": [
+    {
+      "queryId": "RT-C01",
+      "label": "Critical — real-time facial recognition in EU public spaces",
+      "type": "high",
+      "description": "We deploy a facial recognition system across train stations and shopping centres in Germany and France to identify persons of interest from a watchlist. The system operates in real time on live CCTV f",
+      "status": "OK",
+      "latencyMs": 84355,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 5
+        },
+        "ai_governance": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 3
+        }
+      },
+      "gapCount": 12,
+      "gaps": [
+        {
+          "title": "Prohibited Real-Time Biometric Identification in Public Spaces",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Special-Category Biometric Data Processing Without Valid Article 9 Basis",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Data Protection Impact Assessment Not Confirmed",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "High-Risk AI System Obligations Not Met — EU AI Act Annex III",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Absence of Transparent Notice to Data Subjects",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Fundamental Rights Impact Assessment Not Conducted",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Cross-Border Processing — Lead Supervisory Authority and One-Stop-Shop Not Established",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Post-Market Monitoring and Incident Reporting Plan Absent",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "NIS2 Security Obligations for Critical Infrastructure Operator Not Addressed",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Biometric Data Security Controls Not Specified",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Data Breach Notification Procedures Not Established",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Records of Processing Activities Not Referenced",
+          "severity": "medium",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 50,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing concepts: Art. 5, special category"
+        ],
+        "compositeScore": 95,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "Art. 5",
+          "special category"
+        ],
+        "gapCount": 12
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-C02",
+      "label": "Critical — unencrypted health data breach, no notification",
+      "type": "high",
+      "description": "Our healthcare SaaS platform stores patient records, diagnostic data, and prescription history for 200,000 patients across the EU and US. We discovered a breach 6 weeks ago affecting all patient recor",
+      "status": "OK",
+      "latencyMs": 68371,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 6
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "high",
+          "gap_count": 2
+        }
+      },
+      "gapCount": 8,
+      "gaps": [
+        {
+          "title": "HIPAA Individual Breach Notification Overdue",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "HIPAA HHS Secretary Notification Overdue — Large Breach",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "HIPAA Media Notification Overdue — Large Breach",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "EU SCC Breach Notification Obligations Not Fulfilled",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Patient Health Data Stored Without Encryption",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No Evidence of Post-Breach Risk Assessment or Mitigation",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "PIPEDA / CPPA Breach Notification — Canadian Patient Data",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "EU ePrivacy Directive — Subscriber Breach Notification Omission",
+          "severity": "medium",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low",
+              "medium"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 60,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing concepts: 72 hours, special category"
+        ],
+        "compositeScore": 96,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "72 hours",
+          "special category"
+        ],
+        "gapCount": 8
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-C03",
+      "label": "Critical — children's data sold to advertisers, no consent",
+      "type": "high",
+      "description": "Our mobile gaming app is used by children aged 6-13 in the US and EU. We sell behavioural profiles, location data, and in-app purchase history to advertising networks. We have no parental consent mech",
+      "status": "OK",
+      "latencyMs": 68375,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 6
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 7,
+      "gaps": [
+        {
+          "title": "No Verifiable Parental Consent Prior to Data Collection",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Sale of Children's Behavioural Profiles to Ad Networks Without Parental Consent",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Collection and Sale of Children's Location Data Without Parental Consent",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Age Verification and No Child-Protective Privacy Notice",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Profiling-Based Advertising Targeted at Minors — EU DSA Violation",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Processing of Known Child's Personal Data as Sensitive Data Without Consent — MN MCDPA",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Demonstrated Data Security Procedures for Children's Personal Information",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "low",
+            "match": false
+          },
+          "cybersecurity": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 67,
+        "conceptCoverage": 80,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "ai_governance domain tier wrong: got low, expected one of [high, medium]",
+          "Missing frameworks: EU AI Act",
+          "Missing concepts: behavioural profiling"
+        ],
+        "compositeScore": 86,
+        "grade": "PASS",
+        "missingFrameworks": [
+          "EU AI Act"
+        ],
+        "missingConcepts": [
+          "behavioural profiling"
+        ],
+        "gapCount": 7
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-C04",
+      "label": "Critical — autonomous weapons targeting system",
+      "type": "high",
+      "description": "We are building an AI system that autonomously selects and engages targets in military operations without human confirmation of each individual strike. The system uses computer vision to identify targ",
+      "status": "OK",
+      "latencyMs": 77318,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 2
+        },
+        "ai_governance": {
+          "tier": "high",
+          "gap_count": 5
+        },
+        "cybersecurity": {
+          "tier": "high",
+          "gap_count": 3
+        }
+      },
+      "gapCount": 10,
+      "gaps": [
+        {
+          "title": "Absence of Meaningful Human Control Over Lethal Force",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Violation of IHL Principles of Distinction and Proportionality",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "No AI Risk Assessment or Pre-Deployment Conformity Process",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Adversarial Manipulation of Computer Vision Targeting Pipeline",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No Defined Fail-Safe or Override Mechanism",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Mass Biometric and Behavioral Data Collection Without Legal Basis",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Accountability or Audit Trail for Autonomous Lethal Decisions",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Supply Chain and Model Integrity Not Addressed",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No Data Retention or Deletion Policy for Operational Imagery",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Computer Vision Model Bias and Training Data Not Characterized",
+          "severity": "medium",
+          "domain": "ai_governance"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 60,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing concepts: human oversight, safety-critical"
+        ],
+        "compositeScore": 96,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "human oversight",
+          "safety-critical"
+        ],
+        "gapCount": 10
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-H01",
+      "label": "High — AI hiring tool, EU, no transparency or bias audit",
+      "type": "high",
+      "description": "We use an AI model to screen and rank job applicants across our EU operations. The model was trained on 5 years of historical hiring data. We have no bias audit, no candidate notification, no human re",
+      "status": "OK",
+      "latencyMs": 72788,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 3
+        },
+        "ai_governance": {
+          "tier": "high",
+          "gap_count": 5
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 9,
+      "gaps": [
+        {
+          "title": "High-Risk AI System Deployed Without Conformity Assessment",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "No Bias Audit or Bias Testing on Historically Trained Model",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "No Human Review Process for AI-Driven Hiring Decisions",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Automated Decision-Making Without GDPR Article 22 Compliance",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Candidate Notification Regarding AI Processing",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Technical Documentation of Model Decision Logic",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Absence of Data Protection Impact Assessment (DPIA)",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Post-Market Monitoring or Incident Logging",
+          "severity": "medium",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "No Documented Security Controls for AI System and Candidate Data",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low",
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 9
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-H02",
+      "label": "High — fintech processing financial data, no DPAs with vendors",
+      "type": "high",
+      "description": "We operate a lending platform in the UK processing financial data for 50,000 customers. We use 8 third-party data processors including a US-based cloud provider and a credit bureau. None of our vendor",
+      "status": "OK",
+      "latencyMs": 54254,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "high",
+          "gap_count": 2
+        }
+      },
+      "gapCount": 6,
+      "gaps": [
+        {
+          "title": "No Data Processing Agreements with Any Processor",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Unlawful Transfer of UK Customer Data to US Cloud Provider",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Breach Response Plan — Statutory Notification Obligations at Risk",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No ICT Third-Party Risk Management Framework — DORA Non-Compliance",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No Records of Processing Activities",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Data Protection Impact Assessment Not Evidenced for High-Risk Financial Processing",
+          "severity": "medium",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "high",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 50,
+        "conceptCoverage": 80,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing frameworks: ISO 27001",
+          "Missing concepts: third party"
+        ],
+        "compositeScore": 91,
+        "grade": "PASS",
+        "missingFrameworks": [
+          "ISO 27001"
+        ],
+        "missingConcepts": [
+          "third party"
+        ],
+        "gapCount": 6
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-H03",
+      "label": "High — cross-border health data transfer, no mechanism",
+      "type": "high",
+      "description": "We are a health analytics company transferring EU patient data to our processing servers in the United States. We have no Standard Contractual Clauses, no adequacy decision reliance, and no Transfer I",
+      "status": "OK",
+      "latencyMs": 47625,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 5,
+      "gaps": [
+        {
+          "title": "No Lawful Transfer Mechanism for EU-US Data Transfer",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Special Category Health Data Transferred Without Article 9 Basis",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Transfer Impact Assessment Conducted",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Data Processing Contract with US Processor",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Documented Security Measures for Cross-Border Health Data Transmission",
+          "severity": "low",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "low",
+            "match": false
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "cybersecurity domain tier wrong: got low, expected one of [medium]"
+        ],
+        "compositeScore": 93,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 5
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-H04",
+      "label": "High — IoT device collecting location data, no security baseline",
+      "type": "high",
+      "description": "We manufacture smart home devices sold across the EU that continuously collect household occupancy patterns, location data, and voice commands. Our devices ship with default admin passwords that canno",
+      "status": "OK",
+      "latencyMs": 73088,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "high",
+          "gap_count": 5
+        }
+      },
+      "gapCount": 9,
+      "gaps": [
+        {
+          "title": "Non-changeable default admin passwords violate CRA secure-by-default requirement",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No patch management process violates CRA vulnerability remediation obligations",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No vulnerability disclosure programme violates CRA coordinated disclosure mandate",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No incident notification capability for actively exploited vulnerabilities",
+          "severity": "high",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No identified lawful basis for continuous collection of voice, location, and occupancy data",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Data Protection Impact Assessment for high-risk systematic household surveillance",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Absent or inadequate privacy notice for household data subjects",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Missing CRA Annex II product documentation and user security information",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No data retention policy or minimisation controls for continuous household data streams",
+          "severity": "medium",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low",
+              "medium"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 9
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-H05",
+      "label": "High — biometric employee monitoring, no consent, US and UK",
+      "type": "high",
+      "description": "We use fingerprint scanners and facial recognition cameras to monitor employee attendance and track movement within our offices in Illinois and London. Employees were not notified and have not consent",
+      "status": "OK",
+      "latencyMs": 68787,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "high",
+          "gap_count": 2
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 2
+        }
+      },
+      "gapCount": 8,
+      "gaps": [
+        {
+          "title": "BIPA: No Written Consent or Policy for Biometric Collection (Illinois)",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "UK GDPR / DPA 2018: Unlawful Special Category Biometric Processing (London)",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "GDPR / UK GDPR: No Lawful Basis Under Article 6 for Routine Processing",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "GDPR / UK GDPR / BIPA: Indefinite Retention with No Destruction Policy",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "EU AI Act: Facial Recognition as High-Risk Biometric Categorisation System",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "EU AI Act Art. 5: Potential Prohibited Real-Time Remote Biometric Identification",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "No Documented Security Measures for Biometric Data at Rest and in Transit",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "No Breach Detection or Notification Procedure for Biometric Data",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 8
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-M01",
+      "label": "Medium — privacy notice gaps, US B2C app",
+      "type": "medium",
+      "description": "We run a consumer fitness app in the United States with 80,000 users. Our privacy notice does not include a list of third-party data recipients, does not explain our data retention periods, and does n",
+      "status": "OK",
+      "latencyMs": 47142,
+      "actualTier": "medium",
+      "expectedTier": "medium",
+      "actualDomains": {
+        "privacy": {
+          "tier": "medium",
+          "gap_count": 5
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 0
+        }
+      },
+      "gapCount": 5,
+      "gaps": [
+        {
+          "title": "Privacy notice missing third-party recipient categories",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Privacy notice omits data retention periods",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Privacy notice lacks controller contact information",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "No formal data deletion process for consumer requests",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Privacy notice non-compliant with health-data disclosure rules for fitness context",
+          "severity": "medium",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 50,
+        "conceptCoverage": 75,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing frameworks: CCPA",
+          "Missing concepts: third party disclosure"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "missingFrameworks": [
+          "CCPA"
+        ],
+        "missingConcepts": [
+          "third party disclosure"
+        ],
+        "gapCount": 5
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-M02",
+      "label": "Medium — SaaS vendor contracts missing security clauses",
+      "type": "medium",
+      "description": "We are a B2B SaaS company providing project management tools. Our customer contracts do not include security obligations, breach notification timelines, or right-to-audit clauses. We have SOC 2 Type I",
+      "status": "OK",
+      "latencyMs": 37846,
+      "actualTier": "medium",
+      "expectedTier": "medium",
+      "actualDomains": {
+        "privacy": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 3
+        }
+      },
+      "gapCount": 3,
+      "gaps": [
+        {
+          "title": "Customer contracts lack security obligations, breach notification, and audit rights",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Incident response plan untested for 18 months",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "SOC 2 Type I only — no Type II continuous-controls assurance",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "low",
+              "medium"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 50,
+        "conceptCoverage": 80,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing frameworks: ISO 27001",
+          "Missing concepts: right to audit"
+        ],
+        "compositeScore": 91,
+        "grade": "PASS",
+        "missingFrameworks": [
+          "ISO 27001"
+        ],
+        "missingConcepts": [
+          "right to audit"
+        ],
+        "gapCount": 3
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-M03",
+      "label": "Medium — AI chatbot with no disclosure, EU",
+      "type": "medium",
+      "description": "We have deployed a customer service chatbot on our e-commerce website in France. The chatbot is AI-powered but users are not informed they are interacting with an AI. It collects name, email, and purc",
+      "status": "OK",
+      "latencyMs": 50459,
+      "actualTier": "high",
+      "expectedTier": "medium",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 3
+        },
+        "ai_governance": {
+          "tier": "high",
+          "gap_count": 2
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 6,
+      "gaps": [
+        {
+          "title": "Failure to Disclose AI Nature of Chatbot to Users",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Absence of Cookie Consent Banner",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Inadequate or Absent Privacy Notice for Chatbot Data Collection",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Missing AI Transparency Documentation and Deployer Obligations",
+          "severity": "medium",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Unclear Lawful Basis and Retention Policy for Chatbot-Collected Personal Data",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Documented Security Measures for Chatbot Personal Data Transmission",
+          "severity": "low",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": false,
+        "tierDirection": "too_high",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "high",
+            "match": false
+          },
+          "ai_governance": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "high",
+            "match": false
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 60,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Tier too high: got high, expected medium",
+          "privacy domain tier wrong: got high, expected one of [medium]",
+          "ai_governance domain tier wrong: got high, expected one of [medium]",
+          "Missing concepts: AI disclosure, limited risk AI"
+        ],
+        "compositeScore": 58,
+        "grade": "FAIL",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "AI disclosure",
+          "limited risk AI"
+        ],
+        "gapCount": 6
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-M04",
+      "label": "Medium — employee monitoring software, notice gap only",
+      "type": "medium",
+      "description": "We use productivity monitoring software that tracks application usage and time spent on tasks for remote employees in Canada. Employees were informed monitoring occurs but were not given specific deta",
+      "status": "OK",
+      "latencyMs": 55111,
+      "actualTier": "high",
+      "expectedTier": "medium",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "medium",
+          "gap_count": 2
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 7,
+      "gaps": [
+        {
+          "title": "Deficient Privacy Notice — No Specificity on Data Collected, Retention, or Access",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Absence of Documented Access Controls for Employee Monitoring Data",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Published Retention Schedule for Monitoring Data",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Individual Access or Disposal Request Process Communicated to Employees",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Undisclosed Automated Decision-Making Use in Performance Monitoring",
+          "severity": "medium",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "No Bias or Accuracy Testing for Automated Monitoring Outputs",
+          "severity": "medium",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Undocumented Incident Response Plan for Monitoring Data Breach",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": false,
+        "tierDirection": "too_high",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "high",
+            "match": false
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "medium",
+            "match": false
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "medium",
+            "match": false
+          }
+        },
+        "frameworkCoverage": 50,
+        "conceptCoverage": 60,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Tier too high: got high, expected medium",
+          "privacy domain tier wrong: got high, expected one of [medium]",
+          "ai_governance domain tier wrong: got medium, expected one of [low]",
+          "cybersecurity domain tier wrong: got medium, expected one of [low]",
+          "Missing frameworks: Quebec Law 25",
+          "Missing concepts: transparency, purpose limitation"
+        ],
+        "compositeScore": 44,
+        "grade": "FAIL",
+        "missingFrameworks": [
+          "Quebec Law 25"
+        ],
+        "missingConcepts": [
+          "transparency",
+          "purpose limitation"
+        ],
+        "gapCount": 7
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-M05",
+      "label": "Medium — marketing analytics, tracking without full consent",
+      "type": "medium",
+      "description": "We run digital marketing campaigns and use third-party analytics tools, pixel tracking, and retargeting cookies on our website. We have a cookie banner but it defaults to all cookies accepted with no ",
+      "status": "OK",
+      "latencyMs": 39580,
+      "actualTier": "high",
+      "expectedTier": "medium",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 0
+        }
+      },
+      "gapCount": 4,
+      "gaps": [
+        {
+          "title": "Pre-ticked / Default-Accept Cookie Consent Invalid",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Absence of Granular Per-Purpose Opt-Out",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Inadequate Transparency on Profiling and Third-Party Data Sharing",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "Missing or Deficient Records of Processing Activities for Cookie-Based Profiling",
+          "severity": "medium",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": false,
+        "tierDirection": "too_high",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "high",
+            "match": false
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 80,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Tier too high: got high, expected medium",
+          "privacy domain tier wrong: got high, expected one of [medium]",
+          "Missing concepts: legitimate interest"
+        ],
+        "compositeScore": 66,
+        "grade": "REVIEW",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "legitimate interest"
+        ],
+        "gapCount": 4
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-L01",
+      "label": "Low — internal HR tool, anonymised data only",
+      "type": "low",
+      "description": "We use an internal dashboard that displays anonymised, aggregated headcount and attrition statistics for our HR team. No individual employee records are accessible. Data is derived from our payroll sy",
+      "status": "OK",
+      "latencyMs": 8199,
+      "actualTier": "low",
+      "expectedTier": "low",
+      "actualDomains": {
+        "privacy": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 0
+        }
+      },
+      "gapCount": 0,
+      "gaps": [],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 0
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-L02",
+      "label": "Low — B2B API with no personal data",
+      "type": "low",
+      "description": "We provide a weather data API to enterprise customers. The API returns historical and forecast weather data for geographic coordinates. We do not collect, process, or store any personal data. Authenti",
+      "status": "OK",
+      "latencyMs": 22462,
+      "actualTier": "low",
+      "expectedTier": "low",
+      "actualDomains": {
+        "privacy": {
+          "tier": "low",
+          "gap_count": 1
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 2,
+      "gaps": [
+        {
+          "title": "API Log Data Personal Data Hygiene",
+          "severity": "low",
+          "domain": "privacy"
+        },
+        {
+          "title": "API Key Authentication — No Additional Controls Documented",
+          "severity": "low",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": false,
+        "consistencyOk": true,
+        "issues": [
+          "Gap count 2 outside expected range [0–1]"
+        ],
+        "compositeScore": 95,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 2
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-L03",
+      "label": "Low — internal document management, EU, staff only",
+      "type": "low",
+      "description": "We use an internal document management system for storing company policies, procedures, and operational documents. The system is used exclusively by our 40 employees in the Netherlands. Documents do n",
+      "status": "OK",
+      "latencyMs": 39559,
+      "actualTier": "medium",
+      "expectedTier": "low",
+      "actualDomains": {
+        "privacy": {
+          "tier": "low",
+          "gap_count": 1
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 4
+        }
+      },
+      "gapCount": 5,
+      "gaps": [
+        {
+          "title": "No documented risk analysis or information security policy",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Incident handling procedures not evidenced",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Business continuity and backup/disaster recovery not documented",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Cryptography and encryption policy absent",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        },
+        {
+          "title": "Employee data processing under GDPR not addressed",
+          "severity": "low",
+          "domain": "privacy"
+        }
+      ],
+      "scores": {
+        "tierMatch": false,
+        "tierDirection": "too_high",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "medium",
+            "match": false
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": false,
+        "consistencyOk": true,
+        "issues": [
+          "Tier too high: got medium, expected low",
+          "cybersecurity domain tier wrong: got medium, expected one of [low]",
+          "Gap count 5 outside expected range [0–2]"
+        ],
+        "compositeScore": 63,
+        "grade": "FAIL",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 5
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-L04",
+      "label": "Low — open source library, no data collection",
+      "type": "low",
+      "description": "We publish an open source JavaScript utility library for date formatting. The library has no network calls, collects no data, stores nothing, and has no user authentication. It is used by developers a",
+      "status": "OK",
+      "latencyMs": 5410,
+      "actualTier": "low",
+      "expectedTier": "low",
+      "actualDomains": {
+        "privacy": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 0
+        }
+      },
+      "gapCount": 0,
+      "gaps": [],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 100,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [],
+        "gapCount": 0
+      },
+      "notes": null
+    },
+    {
+      "queryId": "RT-X01",
+      "label": "Consistency — mixed severity gaps, should be high not high",
+      "type": "consistency",
+      "description": "We are a logistics company in Singapore processing employee location data via GPS tracking of delivery drivers. We collect real-time location every 30 seconds during working hours. We have no employee",
+      "status": "OK",
+      "latencyMs": 49935,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "ai_governance": {
+          "tier": "low",
+          "gap_count": 0
+        },
+        "cybersecurity": {
+          "tier": "medium",
+          "gap_count": 1
+        }
+      },
+      "gapCount": 5,
+      "gaps": [
+        {
+          "title": "No Employee Notification of GPS Data Collection",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Data Processing Agreement with GPS Vendor",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Retention Policy for Employee Location Data",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Data Minimisation Not Substantiated for 30-Second Interval",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Documented Security Measures for Location Data in Transit or at Rest",
+          "severity": "medium",
+          "domain": "cybersecurity"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "low",
+              "medium"
+            ],
+            "actual": "low",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "medium"
+            ],
+            "actual": "medium",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 75,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing concepts: processor agreement"
+        ],
+        "compositeScore": 98,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "processor agreement"
+        ],
+        "gapCount": 5
+      },
+      "notes": "Multiple high-severity privacy gaps but no prohibited practices and no breach. Should be high, not high."
+    },
+    {
+      "queryId": "RT-X02",
+      "label": "Consistency — one high gap drives overall tier",
+      "type": "consistency",
+      "description": "We run a news website in the EU. Our privacy notice is excellent, we have valid cookie consent, and we use a GDPR-compliant analytics tool. However, we recently integrated a social scoring plugin from",
+      "status": "OK",
+      "latencyMs": 65534,
+      "actualTier": "high",
+      "expectedTier": "high",
+      "actualDomains": {
+        "privacy": {
+          "tier": "high",
+          "gap_count": 3
+        },
+        "ai_governance": {
+          "tier": "high",
+          "gap_count": 4
+        },
+        "cybersecurity": {
+          "tier": "low",
+          "gap_count": 0
+        }
+      },
+      "gapCount": 7,
+      "gaps": [
+        {
+          "title": "Potential Prohibited Social Scoring Practice",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Automated Decision-Making Without Article 22 GDPR Safeguards",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Absence of DPIA for High-Risk Behavioural Profiling",
+          "severity": "high",
+          "domain": "privacy"
+        },
+        {
+          "title": "Possible High-Risk AI System Without Article 9–15 Obligations",
+          "severity": "high",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "DSA Article 27 Recommender System Transparency Not Met",
+          "severity": "medium",
+          "domain": "ai_governance"
+        },
+        {
+          "title": "Third-Party Vendor Data Processing Agreement Adequacy Unconfirmed",
+          "severity": "medium",
+          "domain": "privacy"
+        },
+        {
+          "title": "No Bias or Discrimination Risk Assessment for Scoring Algorithm",
+          "severity": "medium",
+          "domain": "ai_governance"
+        }
+      ],
+      "scores": {
+        "tierMatch": true,
+        "tierDirection": "correct",
+        "domainAccuracy": {
+          "privacy": {
+            "expected": [
+              "high",
+              "medium"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "ai_governance": {
+            "expected": [
+              "high"
+            ],
+            "actual": "high",
+            "match": true
+          },
+          "cybersecurity": {
+            "expected": [
+              "low"
+            ],
+            "actual": "low",
+            "match": true
+          }
+        },
+        "frameworkCoverage": 100,
+        "conceptCoverage": 60,
+        "gapCountOk": true,
+        "consistencyOk": true,
+        "issues": [
+          "Missing concepts: Art. 5, manipulation"
+        ],
+        "compositeScore": 96,
+        "grade": "PASS",
+        "missingFrameworks": [],
+        "missingConcepts": [
+          "Art. 5",
+          "manipulation"
+        ],
+        "gapCount": 7
+      },
+      "notes": "One high gap (social scoring = prohibited AI under EU AI Act Art. 5) should drive the overall tier to high regardless of how well everything else is handled."
+    }
+  ]
+}

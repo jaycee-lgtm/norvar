@@ -11,6 +11,7 @@ import EscalationTracker from "@/components/EscalationTracker";
 import StatusBadge from "@/components/StatusBadge";
 import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
 import { sortBySeverity, STATUS_LABELS, type RemediationStatus } from "@/lib/remediation";
+import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
@@ -38,7 +39,7 @@ interface RemediationItem {
   project_title:        string | null;
   gap_key:              string | null;
   gap_title:            string;
-  gap_severity:         "critical" | "high" | "medium" | "low";
+  gap_severity:         "high" | "medium" | "low";
   gap_domain:           string;
   gap_detail:           string | null;
   gap_frameworks:       string[];
@@ -75,10 +76,9 @@ function is_overdue(due: string | null) {
 }
 
 const SEV_STYLES: Record<string, { bg: string; color: string; bdr: string }> = {
-  critical: { bg: "var(--rh-bg)", color: "var(--rh)", bdr: "var(--rh-bdr)" },
-  high:     { bg: "var(--rm-bg)", color: "var(--rm)", bdr: "var(--rm-bdr)" },
-  medium:   { bg: "rgba(59,109,17,.09)", color: "var(--rl)", bdr: "rgba(59,109,17,.2)" },
-  low:      { bg: "var(--card2)", color: "var(--fg3)", bdr: "var(--bdr2)" },
+  high:   { bg: "var(--rh-bg)", color: "var(--rh)", bdr: "var(--rh-bdr)" },
+  medium: { bg: "var(--rm-bg)", color: "var(--rm)", bdr: "var(--rm-bdr)" },
+  low:    { bg: "var(--card2)", color: "var(--fg3)", bdr: "var(--bdr2)" },
 };
 
 const STATUS_FILTERS = [
@@ -91,11 +91,10 @@ const STATUS_FILTERS = [
 ];
 
 const SEV_FILTERS = [
-  { value: "",         label: "All severities" },
-  { value: "critical", label: "Critical" },
-  { value: "high",     label: "High" },
-  { value: "medium",   label: "Medium" },
-  { value: "low",      label: "Low" },
+  { value: "",       label: "All severities" },
+  { value: "high",   label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low",    label: "Low" },
 ];
 
 const DOMAIN_LABELS: Record<string, string> = {
@@ -110,14 +109,15 @@ const DOMAIN_FILTERS = [
 ];
 
 function SevBadge({ sev }: { sev: string }) {
-  const s = SEV_STYLES[sev] ?? SEV_STYLES.low;
+  const normalized = normalizeGapSeverity(sev);
+  const s = SEV_STYLES[normalized] ?? SEV_STYLES.low;
   return (
     <span style={{
       fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
       background: s.bg, color: s.color, border: `0.5px solid ${s.bdr}`,
       textTransform: "uppercase", letterSpacing: "0.5px",
     }}>
-      {sev}
+      {normalized}
     </span>
   );
 }
@@ -407,7 +407,7 @@ export default function RemediationPage() {
   const filtered = sortBySeverity(
     items.filter(i =>
       (!filterStatus || i.status === filterStatus) &&
-      (!filterSev || i.gap_severity === filterSev) &&
+      (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev) &&
       (!filterDomain || i.gap_domain === filterDomain),
     ),
   );
@@ -427,7 +427,7 @@ export default function RemediationPage() {
     escalated:   items.filter(i => i.status === "escalated").length,
     resolved:    items.filter(i => i.status === "resolved").length,
     wont_fix:    items.filter(i => i.status === "wont_fix").length,
-    critical:    items.filter(i => i.gap_severity === "critical").length,
+    high: items.filter(i => normalizeGapSeverity(i.gap_severity) === "high").length,
   };
 
   const statusFilters = (
@@ -570,7 +570,7 @@ export default function RemediationPage() {
             { label: "In progress", value: counts.in_progress, color: "var(--fg)" },
             { label: "Escalated",   value: counts.escalated,   color: "var(--rm)" },
             { label: "Resolved",    value: counts.resolved,    color: "var(--rl)" },
-            { label: "Critical",    value: counts.critical,    color: "var(--rh)" },
+            { label: "High severity", value: counts.high, color: "var(--rh)" },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ fontSize: 11, color: "var(--fg3)" }}>
               <span style={{ fontWeight: 600, color, marginRight: 4 }}>{value}</span>{label}

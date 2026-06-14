@@ -9,6 +9,7 @@ import { sortBySeverity } from "@/lib/remediation";
 import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
 import { sendEscalationEmail } from "@/lib/email";
 import { rolesForAssignees } from "@/lib/org-assignee-roles-server";
+import { normalizeGapSeverity } from "@/lib/risk-tiers";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -215,7 +216,7 @@ export async function POST(req: NextRequest) {
       project_title:     resolvedTitle,
       gap_key:           gapKey,
       gap_title:         gap.title,
-      gap_severity:      gap.severity,
+      gap_severity:      normalizeGapSeverity(String(gap.severity ?? "")),
       gap_domain:        gap.domain,
       gap_detail:        gap.detail,
       gap_frameworks:    gap.frameworks ?? [],

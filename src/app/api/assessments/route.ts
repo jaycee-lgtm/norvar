@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
+import { isInternalAssessmentPrompt, sanitizeAssessmentUserMessage } from "@/lib/assessment-questionnaire";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+function displayAssessmentTitle(title: string, description?: string | null) {
+  if (!isInternalAssessmentPrompt(title)) return title;
+  return sanitizeAssessmentUserMessage(title, description ?? undefined);
+}
+
+function sanitizeAssessmentRow<T extends { title?: string; description?: string | null; messages?: unknown }>(row: T): T {
+  const description = row.description ?? undefined;
+  const title = displayAssessmentTitle(row.title ?? "", description);
+  const messages = Array.isArray(row.messages)
+    ? row.messages.map(m => {
+        if (!m || typeof m !== "object" || !("role" in m) || (m as { role: string }).role !== "user") return m;
+        const user = m as { role: "user"; content: string; tags?: string[] };
+        return { ...user, content: sanitizeAssessmentUserMessage(user.content, description) };
+      })
+    : row.messages;
+  return { ...row, title, description: sanitizeAssessmentUserMessage(description ?? "", title), messages };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +45,7 @@ export async function GET(req: NextRequest) {
         .single();
 
       if (error) return NextResponse.json({ error: error.message }, { status: 404 });
-      return NextResponse.json({ assessment: data });
+      return NextResponse.json({ assessment: data ? sanitizeAssessmentRow(data) : data });
     }
 
     // List — summary rows for sidebar + history page
@@ -38,7 +57,7 @@ export async function GET(req: NextRequest) {
       .limit(limit);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ assessments: data ?? [] });
+    return NextResponse.json({ assessments: (data ?? []).map(sanitizeAssessmentRow) });
 
   } catch (err: unknown) {
     console.error("Assessments error:", err);
