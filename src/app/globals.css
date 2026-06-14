@@ -347,6 +347,28 @@ input, textarea, select, button {
 }
 .sidebar-settings-btn:hover { background: var(--lift); color: var(--fg2); }
 .sidebar-settings-btn.active { background: var(--lift); color: var(--fg); }
+
+.sidebar-brand-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border-radius: 6px;
+  transition: opacity 0.15s;
+}
+.sidebar-brand-btn:hover { opacity: 0.82; }
+.sidebar-brand-btn:focus-visible {
+  outline: 2px solid var(--bdr3);
+  outline-offset: 2px;
+}
+
 .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--on-red); flex-shrink: 0; }
 .avatar-name { font-size: 11px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; }
 .avatar-sub  { font-size: 9px; color: var(--fg3); }

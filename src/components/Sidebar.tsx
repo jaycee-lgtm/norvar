@@ -162,6 +162,15 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     router.replace("/chat");
   };
 
+  const goToChatHome = () => {
+    onNavigate?.();
+    if (path === "/chat" && !activeId) {
+      router.refresh();
+      return;
+    }
+    router.replace("/chat");
+  };
+
   const mainNav = [
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
@@ -175,20 +184,31 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       }}
     >
       <div className="sidebar-drawer-header">
-        <div className="sidebar-drawer-brand-row">
+        <button
+          type="button"
+          className="sidebar-brand-btn sidebar-drawer-brand-row"
+          onClick={goToChatHome}
+          aria-label="Norvar home — open chat"
+        >
           <Logo size={24} />
           <span className="sidebar-drawer-brand-text">Norvar</span>
-        </div>
+        </button>
       </div>
 
       {!isMobileView && (
       <div className="sidebar-top">
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px 10px" }}>
+        <button
+          type="button"
+          className="sidebar-brand-btn"
+          onClick={goToChatHome}
+          aria-label="Norvar home — open chat"
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px 10px", width: "100%", textAlign: "left" }}
+        >
           <Logo size={24} />
           <span style={{ fontSize: 14, fontWeight: 500, color: "var(--fg)", letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>
             Norvar
           </span>
-        </div>
+        </button>
         <Link href={isAssess ? "/assess" : "/chat"} className="new-assess-btn" onClick={openFreshChat}>
           <span className="new-assess-label">{isAssess ? "New assessment" : "New chat"}</span>
           <SquarePen size={14} color="var(--fg3)" />
