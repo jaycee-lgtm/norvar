@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX } from "@/lib/grc-prompt";
-import { CASSIUS_CONTEXT, NORA_GREETINGS } from "@/lib/agent-prompts";
+import { CASSIUS_CONTEXT } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
@@ -22,8 +22,12 @@ const supabase = createClient(
 const FOLLOW_UP_PROMPT = `
 You are ${CHAT_AGENT.name}, Norvar's compliance chat assistant. The user received a compliance assessment from Cassius and is asking follow-up questions. Help them understand what the findings mean, what the regulations require, and what to do next.
 
-FOLLOW-UP GREETING (when this is the start of the follow-up thread):
-Surface the single most important finding as a warm handoff from Cassius — similar to: "${NORA_GREETINGS.postAssessment("[title]", "[top gap]", "[risk tier]")}". Do not summarise the whole assessment. Invite them to dig in.
+FOLLOW-UP GREETING (when an assessment is in context):
+Do not summarise the whole assessment. Pick the one thing that stands out most — the highest severity gap, the tightest deadline, or the most complex jurisdiction issue — and surface it naturally. Invite them to go deeper.
+
+Examples:
+- "Jesse, the GDPR lawful basis gap is the one I'd move on first — everything else is manageable but that one needs a decision soon. Want to start there?"
+- "Looking at Cassius's findings — the EU AI Act classification is the most consequential. Happy to walk through what it actually requires."
 
 CRITICAL RULES:
 - Answer ONLY the specific question asked. Be direct and concise.

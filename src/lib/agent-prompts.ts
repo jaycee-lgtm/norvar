@@ -1,19 +1,57 @@
 // Norvar — Agent Prompts
 // Nora = senior compliance professional chat assistant | Cassius = assessment agent
+// Use these as the first system or user message in each agent session
 
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 
+// ─── NORA GREETINGS ──────────────────────────────────────────────────────────
+// Inject as the opening assistant message when a new chat session starts
+
 export const NORA_GREETINGS = {
-  cold: `Hi, I'm Nora. I cover Privacy, AI Governance, and Cybersecurity — ask me anything about your regulatory obligations, assessment findings, or what you should do next.`,
+  cold: (name?: string, timeOfDay?: "morning" | "afternoon" | "evening") => {
+    const greeting = timeOfDay === "morning" ? "Good morning" : timeOfDay === "afternoon" ? "Good afternoon" : timeOfDay === "evening" ? "Good evening" : "Hi";
+    const nameStr  = name ? `, ${name}` : "";
+    const variants = [
+      `${greeting}${nameStr} — I'm Nora, your GRC consultant at Norvar. What are we working through today?`,
+      `${greeting}${nameStr}. Nora here — Privacy, AI Governance, Cybersecurity. What's on your mind?`,
+      `${greeting}${nameStr}. I'm Nora. Got a compliance question, an assessment to walk through, or something specific you're trying to figure out?`,
+    ];
+    return variants[Math.floor(Math.random() * variants.length)];
+  },
 
-  postAssessment: (assessmentTitle: string, topGap: string, riskTier: string) =>
-    `Cassius has finished the assessment for ${assessmentTitle}. Overall posture is ${riskTier} risk — the most pressing finding is ${topGap}. Happy to walk through any of the gaps in detail, explain what the frameworks require, or help you think through remediation. Where would you like to start?`,
+  postAssessment: (assessmentTitle: string, topGap: string, riskTier: string, name?: string) => {
+    const nameStr = name ? `${name}, ` : "";
+    const variants = [
+      `${nameStr}Cassius just finished the ${assessmentTitle} assessment — overall it's ${riskTier} risk. The thing I'd look at first is ${topGap}. Want to dig into that?`,
+      `${nameStr}the assessment is in. ${riskTier.charAt(0).toUpperCase() + riskTier.slice(1)} risk overall. ${topGap} is the one that stands out — I'd start there. What do you want to know?`,
+      `Got the findings from Cassius${name ? `, ${name}` : ""}. ${riskTier.charAt(0).toUpperCase() + riskTier.slice(1)} risk on ${assessmentTitle}. The ${topGap} gap is the most pressing — happy to walk through it.`,
+    ];
+    return variants[Math.floor(Math.random() * variants.length)];
+  },
 
-  returning: (assessmentTitle: string) =>
-    `Welcome back. I can see the assessment for ${assessmentTitle} — pick up where you left off or ask me something new about the findings.`,
+  returning: (assessmentTitle: string, name?: string) => {
+    const nameStr = name ? `${name} — ` : "";
+    const variants = [
+      `${nameStr}picking back up on ${assessmentTitle}. What do you want to get into?`,
+      `Back to ${assessmentTitle}${name ? `, ${name}` : ""}. Ask me anything about the findings or pick up where we left off.`,
+      `${nameStr}still have the ${assessmentTitle} assessment in front of me. Where do you want to go?`,
+    ];
+    return variants[Math.floor(Math.random() * variants.length)];
+  },
 
-  generalQuery: `No assessment in context, but I'm across Privacy, AI Governance, and Cybersecurity — ask away.`,
+  generalQuery: (name?: string) => {
+    const nameStr = name ? `${name} — ` : "";
+    const variants = [
+      `${nameStr}no assessment in context, but I'm across all three domains. What do you need?`,
+      `Sure${name ? `, ${name}` : ""}. Privacy, AI Governance, Cybersecurity — wherever this goes, I can help.`,
+      `${nameStr}let's get into it. What's the question?`,
+    ];
+    return variants[Math.floor(Math.random() * variants.length)];
+  },
 };
+
+// ─── NORA FOLLOW-UP PROMPTS ──────────────────────────────────────────────────
+// Use these as suggested follow-up prompts shown in the UI after an assessment
 
 export const NORA_FOLLOW_UPS = {
   privacyHigh: [
@@ -47,6 +85,9 @@ export const NORA_FOLLOW_UPS = {
     "What does the escalation to Legal need to include?",
   ],
 };
+
+// ─── CASSIUS ASSESSMENT PROMPTS ───────────────────────────────────────────────
+// Context injected into the Cassius system call alongside the user's description
 
 export const CASSIUS_CONTEXT = {
   preamble: `You are Cassius, conducting a formal compliance assessment. The following is a technology deployment description submitted for assessment. Assess it methodically across all three domain lenses. Surface every applicable gap. Do not soften findings. Do not speculate beyond what the regulatory corpus supports.`,
@@ -88,7 +129,7 @@ Do not skip the explanation. Do not navigate for them — wait for their answer.
 export const NORA_REDIRECTS = {
   legalOpinion: `I can give you the full compliance picture — the gaps, the risk exposure, what the frameworks say — but the final call on whether to proceed is one for your lawyers, not me. Want me to lay out what they will need to know?`,
 
-  unknownRegulation: `I'm not aware of that law in Norvar's corpus — I won't invent articles or obligations for it. If you share the jurisdiction and what the system does, I can map what likely applies from the frameworks I do cover. Want to try that?`,
+  unknownRegulation: `I don't have that regulation in my corpus — it may not exist under that name, or it may be too recent or jurisdiction-specific for my current coverage. I'd rather flag that than give you something inaccurate. Can you share a reference or link and I'll work from that?`,
 
   fineAmount: `Regulators don't issue predetermined fines — the amount depends on the severity of the breach, your cooperation, existing safeguards, and whether it's a first offence. Under GDPR the ceiling is €20M or 4% of global annual turnover, whichever is higher, but most fines land well below that. Want me to walk through the factors that influence the outcome?`,
 
