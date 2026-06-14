@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { ArrowUp, Loader2, MessageSquare } from "lucide-react";
 import { readSSEStream } from "@/lib/sse";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
+import FormattedMessage from "@/components/FormattedMessage";
 
 export type GapChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -158,13 +159,19 @@ export default function GapChat({
               key={i}
               className={msg.role === "user" ? "gap-chat-msg gap-chat-msg-user" : "gap-chat-msg gap-chat-msg-ai"}
             >
-              {msg.content}
-              {loading && i === messages.length - 1 && msg.role === "assistant" && !msg.content && (
-                <span className="gap-chat-thinking">
-                  <span className="loading-dot" />
-                  <span className="loading-dot" />
-                  <span className="loading-dot" />
-                </span>
+              {msg.role === "assistant" ? (
+                <>
+                  <FormattedMessage content={msg.content} />
+                  {loading && i === messages.length - 1 && !msg.content && (
+                    <span className="gap-chat-thinking">
+                      <span className="loading-dot" />
+                      <span className="loading-dot" />
+                      <span className="loading-dot" />
+                    </span>
+                  )}
+                </>
+              ) : (
+                msg.content
               )}
             </div>
           ))}

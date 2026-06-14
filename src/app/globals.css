@@ -925,6 +925,12 @@ input, textarea, select, button {
   letter-spacing: -0.01em;
 }
 
+.formatted-message-p strong,
+.formatted-message-list strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
 .formatted-message-list {
   margin: 0;
   padding-left: 18px;

@@ -582,10 +582,10 @@ function Chat() {
                           )}
                         </div>
                         {isStreaming ? (
-                          <p className="formatted-message-p" style={{ whiteSpace: "pre-wrap" }}>
-                            {msg.content}
+                          <>
+                            <FormattedMessage content={msg.content} />
                             {streamCursor}
-                          </p>
+                          </>
                         ) : greetingTyping && i === messages.length - 1 ? (
                           <p className="formatted-message-p" style={{ whiteSpace: "pre-wrap" }}>
                             {msg.content}

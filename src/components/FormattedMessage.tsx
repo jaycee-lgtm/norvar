@@ -31,6 +31,19 @@ function formatLine(line: string) {
   return inlineBold(line);
 }
 
+function parseListLines(lines: string[]): { ordered: boolean; items: string[] } | null {
+  if (lines.length === 0) return null;
+  const numbered = lines.every(l => /^\d+\.\s/.test(l));
+  if (numbered) {
+    return { ordered: true, items: lines.map(l => l.replace(/^\d+\.\s+/, "")) };
+  }
+  const bullets = lines.every(l => /^[•\-\*]\s/.test(l));
+  if (bullets) {
+    return { ordered: false, items: lines.map(l => l.replace(/^[•\-\*]\s+/, "")) };
+  }
+  return null;
+}
+
 function parseBlocks(content: string): Block[] {
   const chunks = content.split(/\n{2,}/).map(c => c.trim()).filter(Boolean);
   const blocks: Block[] = [];
@@ -39,12 +52,21 @@ function parseBlocks(content: string): Block[] {
     const lines = chunk.split("\n").map(l => l.trim()).filter(Boolean);
     if (lines.length === 0) continue;
 
-    if (lines.length === 1) {
-      const line = lines[0];
-      if (/^#{1,3}\s+/.test(line)) {
-        blocks.push({ type: "heading", text: line.replace(/^#{1,3}\s+/, "") });
+    if (/^#{1,3}\s+/.test(lines[0])) {
+      blocks.push({ type: "heading", text: lines[0].replace(/^#{1,3}\s+/, "") });
+      const rest = lines.slice(1);
+      if (rest.length === 0) continue;
+      const list = parseListLines(rest);
+      if (list) {
+        blocks.push({ type: "list", ordered: list.ordered, items: list.items });
         continue;
       }
+      blocks.push({ type: "paragraph", text: rest.join("\n") });
+      continue;
+    }
+
+    if (lines.length === 1) {
+      const line = lines[0];
       if (/^[A-Z0-9][A-Z0-9 &/\-–—]{2,}$/.test(line) && line.length < 48) {
         blocks.push({ type: "heading", text: line });
         continue;
@@ -53,24 +75,16 @@ function parseBlocks(content: string): Block[] {
       continue;
     }
 
-    const numbered = lines.every(l => /^\d+\.\s/.test(l));
-    const bullets  = lines.every(l => /^[•\-\*]\s/.test(l));
-
-    if (numbered) {
-      blocks.push({
-        type:    "list",
-        ordered: true,
-        items:   lines.map(l => l.replace(/^\d+\.\s+/, "")),
-      });
+    const wholeList = parseListLines(lines);
+    if (wholeList) {
+      blocks.push({ type: "list", ordered: wholeList.ordered, items: wholeList.items });
       continue;
     }
 
-    if (bullets) {
-      blocks.push({
-        type:    "list",
-        ordered: false,
-        items:   lines.map(l => l.replace(/^[•\-\*]\s+/, "")),
-      });
+    const tailList = parseListLines(lines.slice(1));
+    if (tailList) {
+      blocks.push({ type: "paragraph", text: lines[0] });
+      blocks.push({ type: "list", ordered: tailList.ordered, items: tailList.items });
       continue;
     }
 

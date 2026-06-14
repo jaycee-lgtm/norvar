@@ -8,6 +8,7 @@ import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
 import InfoTip from "@/components/InfoTip";
+import FormattedMessage from "@/components/FormattedMessage";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import { splitRemediationSteps } from "@/lib/remediation-steps";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
@@ -1699,10 +1700,8 @@ function Home() {
                               <ShieldAlert size={11} color="var(--fg3)" />
                               {ASSESS_AGENT.name}
                             </div>
-                            <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.75, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
-                              {msg.text || ""}
-                              {(loading || greetingTyping) && i === messages.length - 1 && streamCursor}
-                            </p>
+                            <FormattedMessage content={msg.text || ""} />
+                            {(loading || greetingTyping) && i === messages.length - 1 && streamCursor}
                           </div>
                         </div>
                       );

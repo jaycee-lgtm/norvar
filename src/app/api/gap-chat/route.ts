@@ -9,6 +9,7 @@ import {
   retrieveRegulatoryContext,
 } from "@/lib/regulatory-rag";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
+import { GRC_FORMATTING_RULES } from "@/lib/grc-prompt";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -45,7 +46,7 @@ Help them understand how to remediate this gap with practical, actionable guidan
 Rules:
 - Answer only what was asked. Be direct and concise.
 - Reference specific regulation articles when relevant.
-- Plain prose only — no markdown headers. Short focused paragraphs.
+${GRC_FORMATTING_RULES}
 - Build on prior messages in this thread — do not repeat the gap summary unless asked.
 - Focus on implementation steps, ownership, timelines, and evidence — not re-running the assessment.`;
 
