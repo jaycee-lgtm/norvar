@@ -5,11 +5,21 @@ import { resolveUserProfiles } from "@/lib/clerk-users";
 import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
 import {
   ESCALATION_INBOX_SENT_ACTION,
-  parseEscalationInboxThread,
   type EscalationInboxMessage,
   type EscalationStatus,
 } from "@/lib/escalation";
 import { sendEscalationInboxReply } from "@/lib/email";
+import {
+  type InboxFolder,
+  type InboxActivityRow,
+  buildInboxListItem,
+  filterMessagesForFolder,
+  folderCounts,
+  parseInboxMessages,
+  trashRetentionCutoffIso,
+  INBOX_MESSAGE_ACTIONS,
+  isInboxMessageAction,
+} from "@/lib/inbox";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,14 +42,13 @@ type ItemRow = {
   escalated_at: string | null;
   created_by: string;
   assigned_to: string[] | null;
-  remediation_activity?: Array<{
-    id: string;
-    action: string;
-    detail: string | null;
-    created_at: string;
-    user_id?: string;
-  }>;
+  remediation_activity?: InboxActivityRow[];
 };
+
+function parseFolder(value: string | null): InboxFolder {
+  if (value === "sent" || value === "archived" || value === "trash") return value;
+  return "received";
+}
 
 function canManageItem(item: { created_by: string; assigned_to: string[] | null }, userId: string) {
   return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
@@ -63,45 +72,49 @@ async function canAccessItem(
   return false;
 }
 
-function buildThreadSummary(item: ItemRow) {
-  const messages = parseEscalationInboxThread(item.remediation_activity ?? []);
-  const lastMessage = messages[messages.length - 1] ?? null;
-  const inboundCount = messages.filter(m => m.direction === "inbound").length;
-
-  return {
-    remediation_id:    item.id,
-    gap_title:         item.gap_title,
-    gap_severity:      item.gap_severity,
-    gap_domain:        item.gap_domain,
-    project_title:     item.project_title,
-    assessment_number: item.assessment_number,
-    recipient_name:    item.escalation_recipient_name,
-    recipient_email:   item.escalation_email,
-    escalation_status: item.escalation_status,
-    escalated_at:      item.escalated_at,
-    last_message_at:   lastMessage?.created_at ?? item.escalated_at,
-    message_count:     messages.length,
-    inbound_count:     inboundCount,
-    has_unread:        inboundCount > 0 && item.escalation_status !== "closed",
-  };
+async function purgeExpiredDeleted() {
+  const cutoff = trashRetentionCutoffIso();
+  await supabase
+    .from("remediation_activity")
+    .delete()
+    .in("action", [...INBOX_MESSAGE_ACTIONS])
+    .lt("deleted_at", cutoff);
 }
 
-function serializeThread(item: ItemRow, messages: EscalationInboxMessage[]) {
+function activeThreadMessages(messages: EscalationInboxMessage[]) {
+  return messages.filter(m => !m.deleted_at && !m.archived_at);
+}
+
+function serializeThread(
+  item: ItemRow,
+  messages: EscalationInboxMessage[],
+  folder: InboxFolder,
+) {
+  const filtered = folder === "received" || folder === "sent"
+    ? activeThreadMessages(messages)
+    : filterMessagesForFolder(messages, folder);
+  const allCounts = folderCounts(messages);
+
   return {
-    ...buildThreadSummary(item),
+    remediation_id:      item.id,
+    gap_title:           item.gap_title,
+    gap_severity:        item.gap_severity,
+    gap_domain:          item.gap_domain,
+    project_title:       item.project_title,
+    assessment_number:   item.assessment_number,
+    recipient_name:      item.escalation_recipient_name,
+    recipient_email:     item.escalation_email,
+    escalation_status:   item.escalation_status,
+    escalated_at:        item.escalated_at,
     escalation_question: item.escalation_question,
     escalation_note:     item.escalation_note,
-    messages,
+    folder,
+    counts:              allCounts,
+    messages:            filtered,
   };
 }
 
-export async function GET(req: NextRequest) {
-  const { userId, orgId } = await auth();
-  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
-
-  const activeOrgId = await getActiveOrganizationId(userId, orgId);
-  const threadId    = new URL(req.url).searchParams.get("thread");
-
+async function loadAccessibleItems(userId: string, activeOrgId: string | null) {
   const { data, error } = await supabase
     .from("remediation_items")
     .select(`
@@ -113,33 +126,51 @@ export async function GET(req: NextRequest) {
     .not("escalation_email", "is", null)
     .order("escalated_at", { ascending: false });
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) throw new Error(error.message);
 
   const accessible: ItemRow[] = [];
   for (const row of data ?? []) {
     const item = row as ItemRow;
     if (await canAccessItem(item, userId, activeOrgId)) accessible.push(item);
   }
+  return accessible;
+}
+
+export async function GET(req: NextRequest) {
+  const { userId, orgId } = await auth();
+  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
+  const params      = new URL(req.url).searchParams;
+  const threadId    = params.get("thread");
+  const folder      = parseFolder(params.get("folder"));
+
+  await purgeExpiredDeleted();
+
+  const accessible = await loadAccessibleItems(userId, activeOrgId);
+
+  const allMessages = accessible.flatMap(item =>
+    parseInboxMessages(item.remediation_activity ?? []),
+  );
+  const counts = folderCounts(allMessages);
 
   if (threadId) {
     const item = accessible.find(i => i.id === threadId);
     if (!item) return Response.json({ error: "Thread not found" }, { status: 404 });
 
-    const messages = parseEscalationInboxThread(item.remediation_activity ?? []);
-    return Response.json({ thread: serializeThread(item, messages) });
+    const messages = parseInboxMessages(item.remediation_activity ?? []);
+    return Response.json({ thread: serializeThread(item, messages, folder), counts });
   }
 
-  const threads = accessible
-    .map(buildThreadSummary)
-    .sort((a, b) => {
-      const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-      const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-      return bTime - aTime;
-    });
+  const items = accessible.flatMap(item => {
+    const messages = filterMessagesForFolder(
+      parseInboxMessages(item.remediation_activity ?? []),
+      folder,
+    );
+    return messages.map(msg => buildInboxListItem(msg, item));
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  const unreadCount = threads.filter(t => t.has_unread).length;
-
-  return Response.json({ threads, unread_count: unreadCount });
+  return Response.json({ folder, items, counts });
 }
 
 export async function POST(req: NextRequest) {
@@ -191,9 +222,9 @@ export async function POST(req: NextRequest) {
     token:             row.escalation_token,
     assessmentNumber:  row.assessment_number,
     recipientEmail:    row.escalation_email,
-    recipientName:  row.escalation_recipient_name,
-    gapTitle:       row.gap_title,
-    projectTitle:   row.project_title,
+    recipientName:     row.escalation_recipient_name,
+    gapTitle:          row.gap_title,
+    projectTitle:      row.project_title,
     body,
     senderName,
   });
@@ -214,7 +245,7 @@ export async function POST(req: NextRequest) {
       action:         ESCALATION_INBOX_SENT_ACTION,
       detail,
     })
-    .select("id, action, detail, created_at, user_id")
+    .select("id, action, detail, created_at, user_id, archived_at, deleted_at")
     .single();
 
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
@@ -227,19 +258,112 @@ export async function POST(req: NextRequest) {
   }
 
   const outbound: EscalationInboxMessage = {
-    id:         activity.id,
-    direction:  "outbound",
-    from_email: senderEmail,
-    from_name:  senderName,
-    to_email:   row.escalation_email,
-    subject:    null,
+    id:          activity.id,
+    direction:   "outbound",
+    from_email:  senderEmail,
+    from_name:   senderName,
+    to_email:    row.escalation_email,
+    subject:     null,
     body,
-    created_at: activity.created_at,
+    created_at:  activity.created_at,
+    archived_at: null,
+    deleted_at:  null,
   };
 
   return Response.json({
-    message:    outbound,
-    email_sent: emailResult.ok,
+    message:     outbound,
+    email_sent:  emailResult.ok,
     email_error: emailResult.error,
   });
+}
+
+type PatchAction = "archive" | "delete" | "restore" | "unarchive" | "purge";
+
+export async function PATCH(req: NextRequest) {
+  const { userId, orgId } = await auth();
+  if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
+
+  const { message_id, action } = await req.json() as {
+    message_id?: string;
+    action?:     PatchAction;
+  };
+
+  if (!message_id || !action) {
+    return Response.json({ error: "message_id and action required" }, { status: 400 });
+  }
+
+  const valid: PatchAction[] = ["archive", "delete", "restore", "unarchive", "purge"];
+  if (!valid.includes(action)) {
+    return Response.json({ error: "Invalid action" }, { status: 400 });
+  }
+
+  const activeOrgId = await getActiveOrganizationId(userId, orgId);
+
+  const { data: activity, error } = await supabase
+    .from("remediation_activity")
+    .select("id, action, remediation_id, archived_at, deleted_at")
+    .eq("id", message_id)
+    .maybeSingle();
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (!activity || !isInboxMessageAction(activity.action)) {
+    return Response.json({ error: "Message not found" }, { status: 404 });
+  }
+
+  const { data: item, error: itemError } = await supabase
+    .from("remediation_items")
+    .select("id, created_by, assigned_to")
+    .eq("id", activity.remediation_id)
+    .maybeSingle();
+
+  if (itemError || !item) return Response.json({ error: "Thread not found" }, { status: 404 });
+  if (!(await canAccessItem(item, userId, activeOrgId)) || !canManageItem(item, userId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (action === "purge") {
+    if (!activity.deleted_at) {
+      return Response.json({ error: "Only deleted messages can be purged" }, { status: 400 });
+    }
+    const { error: delError } = await supabase
+      .from("remediation_activity")
+      .delete()
+      .eq("id", message_id);
+    if (delError) return Response.json({ error: delError.message }, { status: 500 });
+    return Response.json({ ok: true, purged: true });
+  }
+
+  const now = new Date().toISOString();
+  const updates: { archived_at: string | null; deleted_at: string | null } = {
+    archived_at: activity.archived_at ?? null,
+    deleted_at:  activity.deleted_at ?? null,
+  };
+
+  switch (action) {
+    case "archive":
+      updates.archived_at = now;
+      updates.deleted_at  = null;
+      break;
+    case "delete":
+      updates.deleted_at  = now;
+      updates.archived_at = null;
+      break;
+    case "restore":
+      updates.deleted_at  = null;
+      break;
+    case "unarchive":
+      updates.archived_at = null;
+      break;
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from("remediation_activity")
+    .update(updates)
+    .eq("id", message_id)
+    .select("id, archived_at, deleted_at")
+    .single();
+
+  if (updateError) return Response.json({ error: updateError.message }, { status: 500 });
+
+  return Response.json({ ok: true, message: updated });
 }

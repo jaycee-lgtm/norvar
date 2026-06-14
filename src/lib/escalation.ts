@@ -70,14 +70,16 @@ export type EscalationEmailReply = {
 };
 
 export type EscalationInboxMessage = {
-  id:         string;
-  direction:  "inbound" | "outbound";
-  from_email: string;
-  from_name:  string | null;
-  to_email?:  string | null;
-  subject:    string | null;
-  body:       string;
-  created_at: string;
+  id:          string;
+  direction:   "inbound" | "outbound";
+  from_email:  string;
+  from_name:   string | null;
+  to_email?:   string | null;
+  subject:     string | null;
+  body:        string;
+  created_at:  string;
+  archived_at?: string | null;
+  deleted_at?:  string | null;
 };
 
 export function escalationReplyDomain() {
@@ -233,6 +235,8 @@ export function parseEscalationInboxThread(
     detail: string | null;
     created_at: string;
     user_id?: string;
+    archived_at?: string | null;
+    deleted_at?: string | null;
   }>,
 ): EscalationInboxMessage[] {
   return activity
@@ -242,14 +246,16 @@ export function parseEscalationInboxThread(
       const parsed = parseInboxDetail(a.detail, fallbackFrom);
       const inbound = a.action === ESCALATION_EMAIL_REPLY_ACTION;
       return {
-        id:         a.id,
-        direction:  inbound ? "inbound" as const : "outbound" as const,
-        from_email: parsed.from_email,
-        from_name:  parsed.from_name,
-        to_email:   parsed.to_email,
-        subject:    parsed.subject,
-        body:       parsed.body,
-        created_at: a.created_at,
+        id:          a.id,
+        direction:   inbound ? "inbound" as const : "outbound" as const,
+        from_email:  parsed.from_email,
+        from_name:   parsed.from_name,
+        to_email:    parsed.to_email,
+        subject:     parsed.subject,
+        body:        parsed.body,
+        created_at:  a.created_at,
+        archived_at: a.archived_at ?? null,
+        deleted_at:  a.deleted_at ?? null,
       };
     })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());

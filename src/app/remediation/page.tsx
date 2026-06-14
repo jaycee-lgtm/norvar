@@ -12,6 +12,7 @@ import RemediationStepChecklist from "@/components/RemediationStepChecklist";
 import StatusBadge from "@/components/StatusBadge";
 import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
 import { ESCALATION_EMAIL_REPLY_ACTION, parseEscalationEmailReplies } from "@/lib/escalation";
+import { parseInboxMessages } from "@/lib/inbox";
 import { sortBySeverity, STATUS_LABELS, type RemediationStatus } from "@/lib/remediation";
 import type { RemediationStepItem } from "@/lib/remediation-steps";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
@@ -318,7 +319,9 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
               escalatedAt={item.escalated_at}
               escalationStatus={item.escalation_status}
               lastNotifiedAt={item.last_notified_at}
-              replyCount={parseEscalationEmailReplies(item.remediation_activity ?? []).length}
+              replyCount={parseInboxMessages(item.remediation_activity ?? [])
+                .filter(m => m.direction === "inbound" && !m.deleted_at && !m.archived_at)
+                .length}
               onUpdate={onUpdate}
             />
 

@@ -176,10 +176,15 @@ create table if not exists remediation_activity (
   user_id           text not null,
   action            text not null,  -- 'opened', 'assigned', 'status_changed', 'escalated', 'resolved', 'note_added'
   detail            text,
+  archived_at       timestamptz,
+  deleted_at        timestamptz,
   created_at        timestamptz default now()
 );
 
 create index if not exists remediation_activity_item_idx on remediation_activity (remediation_id, created_at desc);
+create index if not exists remediation_activity_inbox_deleted_idx
+  on remediation_activity (deleted_at)
+  where deleted_at is not null;
 grant all on public.remediation_activity to service_role;
 grant select, insert on public.remediation_activity to authenticated;
 

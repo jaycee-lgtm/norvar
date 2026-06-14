@@ -2033,6 +2033,64 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
 }
 
+.inbox-folder-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 10px;
+  border-bottom: 0.5px solid var(--bdr);
+  flex-shrink: 0;
+}
+
+.inbox-folder-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg3);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  text-align: left;
+}
+
+.inbox-folder-tab:hover {
+  background: var(--lift);
+  color: var(--fg2);
+}
+
+.inbox-folder-tab.active {
+  background: var(--lift);
+  color: var(--fg);
+}
+
+.inbox-folder-count {
+  font-size: 10px;
+  color: var(--fg3);
+  font-variant-numeric: tabular-nums;
+}
+
+.inbox-trash-note {
+  margin: 0;
+  padding: 8px 14px 0;
+  font-size: 10px;
+  color: var(--fg4);
+  line-height: 1.45;
+  font-family: 'Sora', sans-serif;
+}
+
+.inbox-purge-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--fg4);
+}
+
 .inbox-thread-list {
   list-style: none;
   margin: 0;
@@ -2244,6 +2302,56 @@ input, textarea, select, button {
 .inbox-message.inbound {
   align-self: flex-start;
   background: var(--card);
+}
+
+.inbox-message-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.inbox-message-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.inbox-message:hover .inbox-message-actions,
+.inbox-message:focus-within .inbox-message-actions {
+  opacity: 1;
+}
+
+.inbox-msg-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+}
+
+.inbox-msg-action:hover {
+  background: var(--lift);
+  color: var(--fg2);
+}
+
+.inbox-msg-action.danger:hover {
+  background: var(--rh-bg, rgba(220, 38, 38, 0.08));
+  color: var(--rh);
+}
+
+.inbox-msg-action:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 .inbox-message.outbound {
