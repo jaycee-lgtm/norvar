@@ -27,6 +27,7 @@ import { ASSESS_AGENT } from "@/lib/agents";
 import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
+import { getCatalogEntryByAbbr } from "@/lib/regulatory-catalog";
 import {
   ArrowUp, FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -481,17 +482,38 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
       )}
 
       {tab === "frameworks" && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {(a.frameworks ?? []).length === 0 && (
             <p style={{ fontSize: 12, color: "var(--fg3)" }}>No frameworks listed.</p>
           )}
-          {(a.frameworks ?? []).map(f => (
-            <span key={f} style={{
-              fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
-              padding: "3px 10px", borderRadius: 5, border: "0.5px solid var(--bdr)",
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>{f}</span>
-          ))}
+          {(a.frameworks ?? []).map(f => {
+            const entry = getCatalogEntryByAbbr(f);
+            const content = (
+              <span style={{
+                fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+                padding: "4px 10px", borderRadius: 5, border: "0.5px solid var(--bdr)",
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                {f}
+              </span>
+            );
+            return entry?.sourceUrl ? (
+              <a
+                key={f}
+                href={entry.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none", width: "fit-content" }}
+              >
+                {content}
+                <span style={{ fontSize: 10, color: "var(--accent)", fontFamily: "'Sora', sans-serif" }}>
+                  Source
+                </span>
+              </a>
+            ) : (
+              <div key={f}>{content}</div>
+            );
+          })}
         </div>
       )}
 

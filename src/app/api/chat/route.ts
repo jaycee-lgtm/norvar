@@ -8,6 +8,7 @@ import { CASSIUS_CONTEXT, NORA_GREETINGS } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
+import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -114,7 +115,13 @@ export async function POST(req: NextRequest) {
 
       const lastUser = [...resolvedMessages].reverse().find(m => m.role === "user")?.content ?? "";
       try {
-        const { contextBlock } = await retrieveRegulatoryContext(supabase, lastUser);
+        const { selectedFrameworkAbbrs, scopePrompt } = userId
+          ? await getUserFrameworkScope(userId)
+          : { selectedFrameworkAbbrs: null, scopePrompt: "" };
+        if (scopePrompt) systemPrompt += `\n\n${scopePrompt}`;
+        const { contextBlock } = await retrieveRegulatoryContext(supabase, lastUser, {
+          selectedFrameworkAbbrs,
+        });
         systemPrompt = appendRegulatoryContextToSystem(systemPrompt, contextBlock);
       } catch {
         // RAG is best-effort

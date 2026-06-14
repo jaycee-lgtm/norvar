@@ -10,6 +10,8 @@ export type UserAiSettings = {
   elevenlabsVoiceId: string;
   speechSpeed: number;
   speechModel: string;
+  /** Framework abbreviations to include in RAG and model output; empty = all frameworks. */
+  selectedFrameworkAbbrs: string[];
 };
 
 export const AI_SETTINGS_EVENT = "norvar-ai-settings-updated";
@@ -35,6 +37,7 @@ export const DEFAULT_USER_AI_SETTINGS: UserAiSettings = {
   elevenlabsVoiceId: ELEVENLABS_VOICE_ID,
   speechSpeed: 1,
   speechModel: ELEVENLABS_SPEECH_MODEL,
+  selectedFrameworkAbbrs: [],
 };
 
 export function mergeUserAiSettings(raw: unknown): UserAiSettings {
@@ -42,6 +45,10 @@ export function mergeUserAiSettings(raw: unknown): UserAiSettings {
   const speed = typeof input.speechSpeed === "number"
     ? Math.min(1.2, Math.max(0.7, input.speechSpeed))
     : DEFAULT_USER_AI_SETTINGS.speechSpeed;
+
+  const selectedFrameworkAbbrs = Array.isArray(input.selectedFrameworkAbbrs)
+    ? input.selectedFrameworkAbbrs.filter((v): v is string => typeof v === "string" && v.length > 0)
+    : DEFAULT_USER_AI_SETTINGS.selectedFrameworkAbbrs;
 
   return {
     voiceSpeakResponses: !!input.voiceSpeakResponses,
@@ -54,6 +61,7 @@ export function mergeUserAiSettings(raw: unknown): UserAiSettings {
     speechModel: typeof input.speechModel === "string" && input.speechModel.length > 0
       ? input.speechModel
       : DEFAULT_USER_AI_SETTINGS.speechModel,
+    selectedFrameworkAbbrs,
   };
 }
 

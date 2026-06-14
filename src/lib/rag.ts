@@ -3,6 +3,7 @@ export type RegulatoryChunk = {
   reg_name:   string;
   chunk_text: string;
   similarity?: number;
+  source_url?: string;
 };
 
 /** Reject PDF/binary garbage and low-quality extractions from the corpus. */

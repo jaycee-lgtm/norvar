@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { retrieveRegulatoryContext } from "@/lib/regulatory-rag";
 import { buildCassiusSystemPrompt, mapDomainToFocus } from "@/lib/agent-prompts";
+import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import {
   AssessmentGapStreamParser,
   buildProcessingResult,
@@ -176,10 +177,12 @@ export async function POST(req: NextRequest) {
       });
 
       await send({ type: "status", text: "Searching regulatory corpus..." });
+      const { selectedFrameworkAbbrs, scopePrompt } = await getUserFrameworkScope(userId);
       const { contextBlock: clauseText } = await retrieveRegulatoryContext(supabase, description, {
         matchThreshold: 0.40,
         matchCount:     12,
         minSimilarity:  0.40,
+        selectedFrameworkAbbrs,
       });
 
       await send({ type: "status", text: "Analysing your deployment..." });
@@ -197,6 +200,7 @@ export async function POST(req: NextRequest) {
         guided_scoping
           ? `NOTE: The deployment description above includes an AUTHORITATIVE USER SCOPING block. Every gap must follow from those confirmed answers — do not assume facts outside that block.`
           : "",
+        scopePrompt ? `\n${scopePrompt}` : "",
         ``,
         `REGULATORY CLAUSES:`,
         clauseText || "No clauses retrieved.",

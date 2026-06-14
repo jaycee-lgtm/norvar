@@ -9,6 +9,7 @@ import {
   retrieveRegulatoryContext,
 } from "@/lib/regulatory-rag";
 import { buildDocumentContextBlock } from "@/lib/documents";
+import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -82,7 +83,13 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { contextBlock } = await retrieveRegulatoryContext(supabase, lastUser);
+        const { selectedFrameworkAbbrs, scopePrompt } = userId
+          ? await getUserFrameworkScope(userId)
+          : { selectedFrameworkAbbrs: null, scopePrompt: "" };
+        if (scopePrompt) system += `\n\n${scopePrompt}`;
+        const { contextBlock } = await retrieveRegulatoryContext(supabase, lastUser, {
+          selectedFrameworkAbbrs,
+        });
         system = appendRegulatoryContextToSystem(system, contextBlock);
       } catch {
         // RAG is best-effort

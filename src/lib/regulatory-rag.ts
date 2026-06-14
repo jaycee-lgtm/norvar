@@ -5,6 +5,7 @@ import {
   shouldRetrieveContext,
   type RegulatoryChunk,
 } from "@/lib/rag";
+import { matchesSelectedFramework } from "@/lib/regulatory-catalog";
 
 /** Match voyage-3-large document embeddings stored in Supabase (vector(1024)). */
 export async function getQueryEmbedding(text: string): Promise<number[]> {
@@ -26,9 +27,11 @@ export async function getQueryEmbedding(text: string): Promise<number[]> {
 }
 
 export type RetrieveRegulatoryOptions = {
-  matchThreshold?: number;
-  matchCount?:     number;
-  minSimilarity?:  number;
+  matchThreshold?:      number;
+  matchCount?:          number;
+  minSimilarity?:       number;
+  /** When set, only chunks from these framework abbreviations are returned. */
+  selectedFrameworkAbbrs?: string[] | null;
 };
 
 /** Shared RAG retrieval for Nora, Cassius, and gap chat — same `regulatory_chunks` table. */
@@ -41,6 +44,7 @@ export async function retrieveRegulatoryContext(
     matchThreshold = 0.42,
     matchCount     = 6,
     minSimilarity  = matchThreshold,
+    selectedFrameworkAbbrs,
   } = options;
 
   if (!shouldRetrieveContext(query)) {
@@ -55,10 +59,15 @@ export async function retrieveRegulatoryContext(
   const { data: chunks } = await supabase.rpc("match_regulatory_chunks", {
     query_embedding: embedding,
     match_threshold: matchThreshold,
-    match_count:     matchCount,
+    match_count:     selectedFrameworkAbbrs?.length ? Math.max(matchCount * 3, 18) : matchCount,
   });
 
-  const filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[], minSimilarity);
+  let filtered = filterRegulatoryChunks((chunks ?? []) as RegulatoryChunk[], minSimilarity);
+
+  if (selectedFrameworkAbbrs?.length) {
+    filtered = filtered.filter(c => matchesSelectedFramework(c.reg_abbr, selectedFrameworkAbbrs));
+    filtered = filtered.slice(0, matchCount);
+  }
   return {
     chunks:       filtered,
     contextBlock: buildRegulatoryContextBlock(filtered),

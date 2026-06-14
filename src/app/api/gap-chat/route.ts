@@ -8,6 +8,7 @@ import {
   appendRegulatoryContextToSystem,
   retrieveRegulatoryContext,
 } from "@/lib/regulatory-rag";
+import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -93,7 +94,11 @@ export async function POST(req: NextRequest) {
       let system = `${SYSTEM_BASE}\n\nGAP CONTEXT:\n${buildGapContext(gap as GapPayload)}`;
 
       try {
-        const { contextBlock } = await retrieveRegulatoryContext(supabase, new_user_message);
+        const { selectedFrameworkAbbrs, scopePrompt } = await getUserFrameworkScope(userId);
+        if (scopePrompt) system += `\n\n${scopePrompt}`;
+        const { contextBlock } = await retrieveRegulatoryContext(supabase, new_user_message, {
+          selectedFrameworkAbbrs,
+        });
         system = appendRegulatoryContextToSystem(
           system,
           contextBlock,
