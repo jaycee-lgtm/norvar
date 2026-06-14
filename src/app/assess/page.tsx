@@ -354,6 +354,15 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
     : (Object.keys(byDomain ?? {}) as RiskDomainKey[]);
   const gaps        = a.gaps ?? [];
   const isProcessing = a.status === "processing";
+  const showDomainTiers = Boolean(
+    byDomain &&
+    visibleDomains.length > 0 &&
+    !(isProcessing && gaps.length === 0) &&
+    (
+      visibleDomains.length > 1 ||
+      visibleDomains.some(domain => (byDomain[domain]?.gap_count ?? 0) > 0)
+    ),
+  );
   const SEV_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
   const ordered     = [...gaps].sort(
     (x, y) => (SEV_ORDER[normalizeGapSeverity(x.severity)] ?? 9) - (SEV_ORDER[normalizeGapSeverity(y.severity)] ?? 9),
@@ -417,11 +426,12 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
         </div>
       )}
 
-      {byDomain && visibleDomains.length > 0 && (
+      {showDomainTiers && (
         <div style={{ display: "flex", gap: 8, marginTop: 8, marginBottom: 4, flexWrap: "wrap" }}>
           {visibleDomains.map(domain => {
-            const info = byDomain[domain];
+            const info = byDomain![domain];
             if (!info) return null;
+            const showTierBadge = visibleDomains.length > 1 || info.tier !== overallTier;
             return (
             <div key={domain} style={{
               display: "flex", alignItems: "center", gap: 5,
@@ -430,7 +440,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
               background: "var(--card2)", fontSize: 11,
             }}>
               <span style={{ color: "var(--fg3)" }}>{DOMAIN_LABELS[domain] ?? domain}</span>
-              <TierBadge tier={info.tier} />
+              {showTierBadge && <TierBadge tier={info.tier} />}
               {info.gap_count > 0 && (
                 <span style={{ fontSize: 10, color: "var(--fg3)" }}>
                   {info.gap_count} gap{info.gap_count !== 1 ? "s" : ""}
@@ -490,7 +500,18 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
       {tab === "gaps" && (
         <div>
           {ordered.length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No gaps identified.</p>
+            isProcessing ? (
+              <div style={{ padding: "12px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="loading-dot" />
+                <span className="loading-dot" />
+                <span className="loading-dot" />
+                <span style={{ fontSize: 12, color: "var(--fg3)" }}>
+                  Identifying compliance gaps...
+                </span>
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No gaps identified.</p>
+            )
           )}
           {ordered.map((gap, i) => {
             const steps = gap.remediation ? splitRemediationSteps(gap.remediation) : [];
@@ -556,7 +577,18 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
       {tab === "frameworks" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {(a.frameworks ?? []).length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--fg3)" }}>No frameworks listed.</p>
+            isProcessing ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <span className="loading-dot" />
+                <span className="loading-dot" />
+                <span className="loading-dot" />
+                <span style={{ fontSize: 12, color: "var(--fg3)" }}>
+                  Identifying applicable frameworks...
+                </span>
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--fg3)" }}>No frameworks listed.</p>
+            )
           )}
           {(a.frameworks ?? []).map(f => {
             const entry = getCatalogEntryByAbbr(f);
