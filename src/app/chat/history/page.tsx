@@ -87,64 +87,30 @@ export default function ChatHistoryPage() {
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="chat-history-list">
             {items.map(item => {
               const title = item.title || "Untitled conversation";
+              const dateLabel = new Date(item.updated_at || item.created_at).toLocaleDateString("en-US", {
+                month: "short", day: "numeric", year: "numeric",
+                hour: "2-digit", minute: "2-digit",
+              });
               return (
-                <div
-                  key={item.id}
-                  className="history-item"
-                  style={{ display: "flex", alignItems: "center", gap: 14 }}
-                >
-                  <Link
-                    href={`/chat?id=${item.id}`}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0,
-                      background: "var(--card)", border: "0.5px solid var(--bdr)",
-                      borderRadius: 8, padding: "14px 16px", textDecoration: "none",
-                      transition: "border-color 0.15s", color: "inherit",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--bdr2)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--bdr)"; }}
-                  >
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 7, background: "var(--card2)",
-                      border: "0.5px solid var(--bdr)", display: "flex", alignItems: "center",
-                      justifyContent: "center", flexShrink: 0,
-                    }}>
-                      <MessageSquare size={15} strokeWidth={1.75} color="var(--fg3)" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: 13, color: "var(--fg)", fontFamily: "'Sora', sans-serif",
-                        letterSpacing: "-.01em", marginBottom: 4,
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        {title}
-                      </p>
-                      <p style={{ fontSize: 11, color: "var(--fg4)", fontFamily: "'Sora', sans-serif" }}>
-                        {new Date(item.updated_at || item.created_at).toLocaleDateString("en-US", {
-                          month: "short", day: "numeric", year: "numeric",
-                          hour: "2-digit", minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                    <ChevronRight size={14} strokeWidth={1.75} color="var(--fg3)" />
+                <div key={item.id} className="chat-history-row">
+                  <Link href={`/chat?id=${item.id}`} className="chat-history-link">
+                    <MessageSquare size={13} strokeWidth={1.75} className="chat-history-icon" />
+                    <span className="chat-history-title">{title}</span>
+                    <span className="chat-history-date">{dateLabel}</span>
+                    <ChevronRight size={13} strokeWidth={1.75} className="chat-history-chevron" />
                   </Link>
 
                   <button
                     type="button"
+                    className="chat-history-delete"
                     aria-label={`Delete ${title}`}
                     disabled={deletingId === item.id}
                     onClick={() => deleteItem(item.id, title)}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 32, height: 32, borderRadius: 6, flexShrink: 0,
-                      border: "0.5px solid var(--bdr2)", background: "transparent",
-                      color: "var(--fg3)", cursor: deletingId === item.id ? "not-allowed" : "pointer",
-                    }}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               );
