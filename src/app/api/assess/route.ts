@@ -13,7 +13,7 @@ import {
   normalizeStreamGap,
   type StreamGap,
 } from "@/lib/streaming-assessment";
-import { generateAssessmentTitle } from "@/lib/generate-thread-title";
+import { isAuditRequest } from "@/lib/audit";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -99,13 +99,21 @@ export async function POST(req: NextRequest) {
     let streamedGaps: StreamGap[]   = [];
     let summaryText                   = "";
     let descriptionText               = "";
+    let auditMode                     = false;
 
     try {
-      const { userId } = await auth();
-      if (!userId) {
-        await send({ type: "error", text: "Unauthorised" });
-        await writer.close();
-        return;
+      auditMode = isAuditRequest(req);
+      let userId: string | null = null;
+      if (!auditMode) {
+        const authResult = await auth();
+        userId = authResult.userId;
+        if (!userId) {
+          await send({ type: "error", text: "Unauthorised" });
+          await writer.close();
+          return;
+        }
+      } else {
+        userId = "audit-runner";
       }
 
       const body = await req.json();
@@ -141,32 +149,40 @@ export async function POST(req: NextRequest) {
         summary: "",
       });
 
-      const { data: created, error: createError } = await supabase.from("assessments").insert({
-        user_id:       userId,
-        title:         description.slice(0, 80) || "Compliance assessment",
-        description:   description.slice(0, 500),
-        result:        initialResult,
-        messages:      [
-          { role: "user", content: description, tags: messageTags },
-          { role: "assistant", assessment: { ...initialResult, status: "processing" } },
-        ],
-        risk_tier:     "low",
-        domains,
-        jurisdictions,
-        folder_id:     folder_id || null,
-        assigned_to:   [userId],
-      }).select("id, assessment_number").single();
+      let created: { id: string; assessment_number: string | number } = {
+        id: "audit",
+        assessment_number: "AUDIT",
+      };
 
-      if (createError || !created?.id) {
-        console.error("Assess create error:", createError);
-        await send({ type: "error", text: "Could not start assessment. Please try again." });
-        await writer.close();
-        return;
+      if (!auditMode) {
+        const { data: createdRow, error: createError } = await supabase.from("assessments").insert({
+          user_id:       userId,
+          title:         description.slice(0, 80) || "Compliance assessment",
+          description:   description.slice(0, 500),
+          result:        initialResult,
+          messages:      [
+            { role: "user", content: description, tags: messageTags },
+            { role: "assistant", assessment: { ...initialResult, status: "processing" } },
+          ],
+          risk_tier:     "low",
+          domains,
+          jurisdictions,
+          folder_id:     folder_id || null,
+          assigned_to:   [userId],
+        }).select("id, assessment_number").single();
+
+        if (createError || !createdRow?.id) {
+          console.error("Assess create error:", createError);
+          await send({ type: "error", text: "Could not start assessment. Please try again." });
+          await writer.close();
+          return;
+        }
+        created = createdRow;
       }
 
       assessmentId = created.id;
 
-      if (folder_id) {
+      if (!auditMode && folder_id) {
         await supabase.from("folder_items").upsert({
           folder_id,
           item_type: "assessment",
@@ -182,7 +198,9 @@ export async function POST(req: NextRequest) {
       });
 
       await send({ type: "status", text: "Searching regulatory corpus..." });
-      const { selectedFrameworkAbbrs, scopePrompt } = await getUserFrameworkScope(userId);
+      const { selectedFrameworkAbbrs, scopePrompt } = auditMode
+        ? { selectedFrameworkAbbrs: null as string[] | null, scopePrompt: "" }
+        : await getUserFrameworkScope(userId!);
       const { contextBlock: clauseText } = await retrieveRegulatoryContext(supabase, description, {
         matchThreshold: 0.40,
         matchCount:     12,
@@ -247,17 +265,19 @@ export async function POST(req: NextRequest) {
           status:  "processing",
         });
 
-        await persistAssessment({
-          assessmentId,
-          userId,
-          description,
-          messageTags,
-          domains,
-          jurisdictions,
-          folderId: folder_id,
-          result,
-          riskTier: result.risk_tier as string,
-        });
+        if (!auditMode) {
+          await persistAssessment({
+            assessmentId,
+            userId: userId!,
+            description,
+            messageTags,
+            domains,
+            jurisdictions,
+            folderId: folder_id,
+            result,
+            riskTier: result.risk_tier as string,
+          });
+        }
 
         for (let i = 0; i < newGaps.length; i++) {
           const index = streamedGaps.length - newGaps.length + i;
@@ -316,10 +336,10 @@ export async function POST(req: NextRequest) {
         parseFailed = true;
         if (streamedGaps.length === 0) {
           await send({ type: "error", text: "Failed to parse assessment. Please try again." });
-          if (assessmentId) {
+          if (assessmentId && !auditMode) {
             await persistAssessment({
               assessmentId,
-              userId,
+              userId: userId!,
               description,
               messageTags,
               domains,
@@ -370,20 +390,22 @@ export async function POST(req: NextRequest) {
 
       await send({ type: "done", assessment });
 
-      await persistAssessment({
-        assessmentId: assessmentId!,
-        userId,
-        description,
-        messageTags,
-        domains,
-        jurisdictions,
-        folderId: folder_id,
-        result:     assessment,
-        riskTier:   String(assessment.risk_tier || "low"),
-        title:      aiTitle,
-      });
+      if (!auditMode) {
+        await persistAssessment({
+          assessmentId: assessmentId!,
+          userId: userId!,
+          description,
+          messageTags,
+          domains,
+          jurisdictions,
+          folderId: folder_id,
+          result:     assessment,
+          riskTier:   String(assessment.risk_tier || "low"),
+          title:      aiTitle,
+        });
 
-      await send({ type: "saved", assessment });
+        await send({ type: "saved", assessment });
+      }
     } catch (err: unknown) {
       console.error("Assess error:", err);
       if (assessmentId) {
@@ -400,11 +422,13 @@ export async function POST(req: NextRequest) {
           partialResult.title = partialTitle;
         }
         const partial = { ...partialResult, id: assessmentId };
-        await supabase.from("assessments").update({
-          result:    partial,
-          risk_tier: partial.risk_tier,
-          ...(partialTitle ? { title: partialTitle } : {}),
-        }).eq("id", assessmentId);
+        if (!auditMode) {
+          await supabase.from("assessments").update({
+            result:    partial,
+            risk_tier: partial.risk_tier,
+            ...(partialTitle ? { title: partialTitle } : {}),
+          }).eq("id", assessmentId);
+        }
 
         if (streamedGaps.length) {
           await send({ type: "done", assessment: partial });

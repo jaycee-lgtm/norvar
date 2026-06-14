@@ -58,9 +58,9 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [deletingId,    setDeletingId]    = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
-  const [chatNavOpen, setChatNavOpen]     = useState(isChat && !isAssess);
+  const [chatNavOpen, setChatNavOpen]     = useState(path === "/chat/history");
   const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(isAssess);
-  const [recentChatsOpen, setRecentChatsOpen] = useState(isChat && !isAssess);
+  const [recentChatsOpen, setRecentChatsOpen] = useState(false);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -108,10 +108,9 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
   useEffect(() => {
     if (isAssess) setAssessNavOpen(true);
-    if (isChat && !isAssess) setChatNavOpen(true);
     if (isAssess) setRecentAssessmentsOpen(true);
-    if (isChat && !isAssess) setRecentChatsOpen(true);
-  }, [path, isAssess, isChat]);
+    if (path === "/chat/history") setChatNavOpen(true);
+  }, [path, isAssess]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
