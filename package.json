@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src audit",
+    "lint": "eslint src audit"
   },
   "dependencies": {
     "@ai-sdk/elevenlabs": "^2.0.34",
