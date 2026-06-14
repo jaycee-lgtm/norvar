@@ -101,17 +101,17 @@ function buildEscalationHtml(payload: EscalationEmailPayload) {
 
 export async function sendEscalationEmail(payload: EscalationEmailPayload): Promise<{ ok: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from   = process.env.EMAIL_FROM ?? "Norvar <notifications@norvar.io>";
 
   if (!apiKey) {
     console.warn("[email] RESEND_API_KEY not set — escalation saved but email not sent");
     return { ok: false, error: "Email not configured" };
   }
 
-  const subject = `Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+  const subject = `[ref:${payload.token}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
   const html    = buildEscalationHtml(payload);
   const text    = buildEscalationText(payload);
   const replyTo = escalationReplyToAddress(payload.token);
+  const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {

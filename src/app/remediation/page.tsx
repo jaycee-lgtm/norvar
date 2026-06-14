@@ -47,12 +47,13 @@ interface RemediationItem {
   gap_detail:           string | null;
   gap_frameworks:       string[];
   remediation_steps:    string | null;
-  step_checklist?:      RemediationStepItem[];
+  step_checklist?:      import("@/lib/remediation-steps").RemediationStepItem[];
   assigned_to:          string[];
   created_by:           string;
   status:               "open" | "in_progress" | "escalated" | "resolved" | "wont_fix";
   escalated_to:         string | null;
   escalation_email:     string | null;
+  escalation_token:     string | null;
   escalation_recipient_name?: string | null;
   escalation_role:      string | null;
   escalation_question:  string | null;

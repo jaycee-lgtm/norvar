@@ -43,8 +43,10 @@ export async function POST(req: NextRequest) {
   const result = await processInboundEscalationEmail(supabase, event);
   if (!result.ok) {
     console.warn("[webhooks/resend]", result.error);
-    // Acknowledge so Resend does not retry non-escalation mail indefinitely.
-    return Response.json({ ok: false, error: result.error });
+    return Response.json(
+      { ok: false, error: result.error },
+      { status: result.retriable ? 500 : 200 },
+    );
   }
 
   return Response.json({ ok: true });

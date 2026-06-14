@@ -2,7 +2,9 @@ import crypto from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ESCALATION_EMAIL_REPLY_ACTION,
+  collectRecipientAddresses,
   extractEscalationTokenFromAddresses,
+  extractEscalationTokenFromSubject,
   type EscalationStatus,
 } from "@/lib/escalation";
 
@@ -10,6 +12,8 @@ type ReceivedEmail = {
   id:      string;
   from:    string;
   to:      string[];
+  cc?:     string[];
+  bcc?:    string[];
   subject: string | null;
   text:    string | null;
   html:    string | null;
@@ -22,6 +26,8 @@ export type InboundWebhookEvent = {
     email_id?: string;
     from?:    string;
     to?:      string[];
+    cc?:      string[];
+    bcc?:     string[];
     subject?: string;
   };
 };
@@ -40,7 +46,15 @@ export function stripEmailQuote(text: string): string {
     result.push(line);
   }
 
-  return result.join("\n").trim();
+  const stripped = result.join("\n").trim();
+  if (stripped) return stripped;
+
+  const withoutQuotes = text
+    .split("\n")
+    .filter(line => !line.trim().startsWith(">"))
+    .join("\n")
+    .trim();
+  return withoutQuotes;
 }
 
 function htmlToText(html: string): string {
@@ -54,6 +68,26 @@ function htmlToText(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .trim();
+}
+
+function decodeDataUriHtml(html: string): string {
+  if (!html.startsWith("data:")) return html;
+  const match = html.match(/^data:[^;]*;base64,(.+)$/i);
+  if (!match) return html;
+  try {
+    return Buffer.from(match[1], "base64").toString("utf8");
+  } catch {
+    return html;
+  }
+}
+
+function extractEmailBody(email: ReceivedEmail): string {
+  if (email.text?.trim()) return email.text.trim();
+  if (email.html) {
+    const decoded = decodeDataUriHtml(email.html);
+    return htmlToText(decoded);
+  }
+  return "";
 }
 
 function parseSender(from: string): { email: string; name: string | null } {
@@ -108,8 +142,35 @@ export async function fetchReceivedEmail(emailId: string): Promise<ReceivedEmail
     headers: { Authorization: `Bearer ${apiKey}` },
   });
 
-  if (!res.ok) return null;
-  return res.json() as Promise<ReceivedEmail>;
+  if (!res.ok) {
+    console.error("[escalation-inbound] fetch received email failed:", res.status, await res.text().catch(() => ""));
+    return null;
+  }
+
+  const json = await res.json() as ReceivedEmail & { data?: ReceivedEmail };
+  return json.data ?? json;
+}
+
+function resolveEscalationToken(
+  event: InboundWebhookEvent,
+  email: ReceivedEmail,
+): string | null {
+  const addresses = collectRecipientAddresses(
+    event.data?.to,
+    event.data?.cc,
+    event.data?.bcc,
+    email.to,
+    email.cc,
+    email.bcc,
+  );
+
+  const fromAddress = extractEscalationTokenFromAddresses([email.from ?? ""]);
+  if (fromAddress) return fromAddress;
+
+  const fromRecipients = extractEscalationTokenFromAddresses(addresses);
+  if (fromRecipients) return fromRecipients;
+
+  return extractEscalationTokenFromSubject(email.subject ?? event.data?.subject);
 }
 
 export async function recordEscalationEmailReply(
@@ -127,9 +188,10 @@ export async function recordEscalationEmailReply(
     .from("remediation_items")
     .select("id, escalation_status, escalation_email")
     .eq("escalation_token", input.token)
-    .single();
+    .maybeSingle();
 
-  if (error || !item) return { ok: false, error: "Escalation not found" };
+  if (error) return { ok: false, error: error.message };
+  if (!item) return { ok: false, error: "Escalation not found" };
 
   const { data: existing } = await supabase
     .from("remediation_activity")
@@ -142,7 +204,7 @@ export async function recordEscalationEmailReply(
   if (existing?.length) return { ok: true, duplicate: true };
 
   const rawBody = input.bodyText?.trim()
-    || (input.bodyHtml ? htmlToText(input.bodyHtml) : "")
+    || (input.bodyHtml ? htmlToText(decodeDataUriHtml(input.bodyHtml)) : "")
     || "";
   const body = stripEmailQuote(rawBody);
   if (!body) return { ok: false, error: "Empty reply body" };
@@ -165,12 +227,14 @@ export async function recordEscalationEmailReply(
     await supabase.from("remediation_items").update(updates).eq("id", item.id);
   }
 
-  await supabase.from("remediation_activity").insert({
+  const { error: insertError } = await supabase.from("remediation_activity").insert({
     remediation_id: item.id,
     user_id:        sender.email,
     action:         ESCALATION_EMAIL_REPLY_ACTION,
     detail,
   });
+
+  if (insertError) return { ok: false, error: insertError.message };
 
   return { ok: true };
 }
@@ -178,32 +242,30 @@ export async function recordEscalationEmailReply(
 export async function processInboundEscalationEmail(
   supabase: SupabaseClient,
   event: InboundWebhookEvent,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; retriable?: boolean }> {
   if (event.type !== "email.received") return { ok: true };
 
   const emailId = event.data?.email_id;
-  if (!emailId) return { ok: false, error: "Missing email_id" };
+  if (!emailId) return { ok: false, error: "Missing email_id", retriable: false };
 
   const email = await fetchReceivedEmail(emailId);
-  if (!email) return { ok: false, error: "Could not fetch received email" };
+  if (!email) return { ok: false, error: "Could not fetch received email", retriable: true };
 
-  const token = extractEscalationTokenFromAddresses([
-    ...(event.data?.to ?? []),
-    ...(email.to ?? []),
-  ]);
-  if (!token) return { ok: false, error: "No escalation token in recipient address" };
+  const token = resolveEscalationToken(event, email);
+  if (!token) return { ok: false, error: "No escalation token in recipient address", retriable: false };
 
+  const bodyText = extractEmailBody(email);
   const result = await recordEscalationEmailReply(supabase, {
     token,
     inboundEmailId: emailId,
     from:           email.from ?? event.data?.from ?? "unknown",
     subject:        email.subject ?? event.data?.subject ?? null,
-    bodyText:       email.text,
+    bodyText,
     bodyHtml:       email.html,
   });
 
   if (!result.ok && !result.duplicate) {
-    return { ok: false, error: result.error ?? "Failed to record reply" };
+    return { ok: false, error: result.error ?? "Failed to record reply", retriable: false };
   }
 
   return { ok: true };

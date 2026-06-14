@@ -169,7 +169,17 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const items = sortBySeverity((data ?? []).map(r => enrichItem(r as ItemRow)));
+  const items = sortBySeverity((data ?? []).map(r => {
+    const row = enrichItem(r as ItemRow) as ItemRow & {
+      remediation_activity?: Array<{ created_at: string }>;
+    };
+    if (Array.isArray(row.remediation_activity)) {
+      row.remediation_activity = [...row.remediation_activity].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    }
+    return row;
+  }));
   const userIds = items.flatMap(i => [...(i.assigned_to ?? []), i.created_by]);
   const users   = await resolveUserProfiles(userIds);
 

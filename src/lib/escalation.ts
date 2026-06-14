@@ -95,6 +95,26 @@ export function extractEscalationTokenFromAddresses(addresses: string[]): string
   return null;
 }
 
+export function extractEscalationTokenFromSubject(subject: string | null | undefined): string | null {
+  if (!subject) return null;
+  const refMatch = subject.match(/\[ref:([0-9a-f-]{36})\]/i);
+  if (refMatch?.[1]) return refMatch[1];
+  const uuidMatch = subject.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  return uuidMatch?.[1] ?? null;
+}
+
+export function collectRecipientAddresses(
+  ...groups: Array<string[] | string | null | undefined>
+): string[] {
+  const out: string[] = [];
+  for (const group of groups) {
+    if (!group) continue;
+    if (Array.isArray(group)) out.push(...group);
+    else out.push(group);
+  }
+  return out;
+}
+
 export function parseEscalationEmailReplies(
   activity: Array<{
     id: string;
