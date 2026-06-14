@@ -76,6 +76,36 @@ async function canAccessRemediationItem(
   return false;
 }
 
+async function filterAccessibleRemediationItems<T extends { created_by: string; assigned_to: string[] | null }>(
+  items: T[],
+  userId: string,
+  orgId: string | null,
+): Promise<T[]> {
+  const direct = items.filter(item => canManageItem(item, userId));
+  if (!orgId) return direct;
+
+  const membershipCache = new Map<string, Promise<boolean>>();
+  const isMember = (id: string) => {
+    if (!membershipCache.has(id)) {
+      membershipCache.set(id, isOrgMember(orgId, id));
+    }
+    return membershipCache.get(id)!;
+  };
+
+  if (!(await isMember(userId))) return direct;
+
+  const filtered = await Promise.all(items.map(async item => {
+    if (canManageItem(item, userId)) return item;
+    if (await isMember(item.created_by)) return item;
+    for (const assigneeId of item.assigned_to ?? []) {
+      if (await isMember(assigneeId)) return item;
+    }
+    return null;
+  }));
+
+  return filtered.filter((item): item is T => item !== null);
+}
+
 async function loadRemediationItem(id: string) {
   const { data, error } = await supabase
     .from("remediation_items")
@@ -147,7 +177,7 @@ function enrichItem(row: ItemRow) {
 
 // GET — list remediation items
 export async function GET(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
@@ -155,6 +185,7 @@ export async function GET(req: NextRequest) {
   const project_number = searchParams.get("project_number");
   const status         = searchParams.get("status");
   const mine           = searchParams.get("mine") === "true";
+  const activeOrgId    = await getActiveOrganizationId(userId, orgId);
 
   let query = supabase
     .from("remediation_items")
@@ -169,7 +200,12 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const items = sortBySeverity((data ?? []).map(r => enrichItem(r as ItemRow)));
+  const accessibleRows = await filterAccessibleRemediationItems(
+    (data ?? []) as ItemRow[],
+    userId,
+    mine ? null : activeOrgId,
+  );
+  const items = sortBySeverity(accessibleRows.map(r => enrichItem(r)));
   const userIds = items.flatMap(i => [...(i.assigned_to ?? []), i.created_by]);
   const users   = await resolveUserProfiles(userIds);
 
