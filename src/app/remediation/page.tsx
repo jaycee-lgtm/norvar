@@ -441,6 +441,43 @@ export default function RemediationPage() {
     high: items.filter(i => normalizeGapSeverity(i.gap_severity) === "high").length,
   };
 
+  const SUMMARY_FILTERS: Array<{
+    key:   string;
+    label: string;
+    type:  "status" | "severity";
+    value: string;
+    color: string;
+  }> = [
+    { key: "open",        label: "Open",          type: "status",   value: "open",        color: "var(--fg)" },
+    { key: "in_progress", label: "In progress",   type: "status",   value: "in_progress", color: "var(--fg)" },
+    { key: "escalated",   label: "Escalated",     type: "status",   value: "escalated",   color: "var(--rm)" },
+    { key: "resolved",    label: "Resolved",      type: "status",   value: "resolved",    color: "var(--rl)" },
+    { key: "high",        label: "High severity", type: "severity", value: "high",        color: "var(--rh)" },
+  ];
+
+  const toggleSummaryFilter = (type: "status" | "severity", value: string) => {
+    if (type === "status") {
+      setFilterStatus(prev => {
+        const next = prev === value ? "" : value;
+        if (next) setFilterSev("");
+        return next;
+      });
+      return;
+    }
+    setFilterSev(prev => (prev === value ? "" : value));
+  };
+
+  const applyStatusFilter = (value: string) => {
+    setFilterStatus(prev => {
+      const next = prev === value ? "" : value;
+      if (next) setFilterSev("");
+      return next;
+    });
+  };
+
+  const isSummaryFilterActive = (type: "status" | "severity", value: string) =>
+    type === "status" ? filterStatus === value : filterSev === value;
+
   const statusFilters = (
     <>
       <div className="sidebar-section">Filter by status</div>
@@ -448,7 +485,7 @@ export default function RemediationPage() {
         <button
           key={value || "all"}
           type="button"
-          onClick={() => setFilterStatus(value)}
+          onClick={() => applyStatusFilter(value)}
           className={`sidebar-nav-item${filterStatus === value ? " active" : ""}`}
           style={{ width: "100%", textAlign: "left" }}
         >
@@ -527,7 +564,7 @@ export default function RemediationPage() {
                   key={value || "all"}
                   type="button"
                   className={`remediation-status-pill${filterStatus === value ? " active" : ""}`}
-                  onClick={() => setFilterStatus(value)}
+                  onClick={() => applyStatusFilter(value)}
                 >
                   {label}
                   {value && counts[value as keyof typeof counts] !== undefined && (
@@ -535,6 +572,14 @@ export default function RemediationPage() {
                   )}
                 </button>
               ))}
+              <button
+                type="button"
+                className={`remediation-status-pill remediation-status-pill--severity${filterSev === "high" ? " active" : ""}`}
+                onClick={() => toggleSummaryFilter("severity", "high")}
+              >
+                High severity
+                <span className="remediation-status-pill-count">{counts.high}</span>
+              </button>
             </div>
             <button
               type="button"
@@ -573,20 +618,36 @@ export default function RemediationPage() {
 
         <div className="page-stats-bar remediation-desktop-stats" style={{
           padding: "10px 24px", borderBottom: "0.5px solid var(--bdr)",
-          display: "flex", gap: 24, background: "var(--card2)", flexWrap: "wrap",
-          flexShrink: 0,
+          display: "flex", gap: 16, background: "var(--card2)", flexWrap: "wrap",
+          flexShrink: 0, alignItems: "center",
         }}>
-          {[
-            { label: "Open",        value: counts.open,        color: "var(--fg)" },
-            { label: "In progress", value: counts.in_progress, color: "var(--fg)" },
-            { label: "Escalated",   value: counts.escalated,   color: "var(--rm)" },
-            { label: "Resolved",    value: counts.resolved,    color: "var(--rl)" },
-            { label: "High severity", value: counts.high, color: "var(--rh)" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ fontSize: 11, color: "var(--fg3)" }}>
-              <span style={{ fontWeight: 600, color, marginRight: 4 }}>{value}</span>{label}
-            </div>
-          ))}
+          {SUMMARY_FILTERS.map(({ key, label, type, value, color }) => {
+            const active = isSummaryFilterActive(type, value);
+            const count = counts[key as keyof typeof counts];
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`remediation-stat-chip${active ? " active" : ""}`}
+                aria-pressed={active}
+                onClick={() => toggleSummaryFilter(type, value)}
+              >
+                <span className="remediation-stat-chip-value" style={{ color }}>
+                  {count}
+                </span>
+                {label}
+              </button>
+            );
+          })}
+          {(filterStatus || filterSev) && (
+            <button
+              type="button"
+              className="remediation-stat-clear"
+              onClick={() => { setFilterStatus(""); setFilterSev(""); }}
+            >
+              Clear filters
+            </button>
+          )}
         </div>
         </>
         )}
@@ -602,7 +663,11 @@ export default function RemediationPage() {
             <div style={{ textAlign: "center", padding: "60px 0" }}>
               <CheckCircle size={28} color="var(--fg4)" style={{ margin: "0 auto 12px" }} />
               <p style={{ fontSize: 13, color: "var(--fg3)" }}>
-                {filterStatus === "resolved" ? "No resolved items yet" : "No items in the queue"}
+                {filterStatus || filterSev || filterDomain
+                  ? "No items match these filters"
+                  : filterStatus === "resolved"
+                    ? "No resolved items yet"
+                    : "No items in the queue"}
               </p>
               <p style={{ fontSize: 11, color: "var(--fg3)", marginTop: 4 }}>
                 Add gaps from an assessment to start tracking remediation

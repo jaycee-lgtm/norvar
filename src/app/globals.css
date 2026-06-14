@@ -764,7 +764,6 @@ input, textarea, select, button {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1390,6 +1389,55 @@ input, textarea, select, button {
   border: 0.5px solid var(--bdr2);
   background: var(--card2);
   color: var(--fg);
+}
+
+/* ── Remediation queue filters ── */
+.remediation-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  background: transparent;
+  font-size: 11px;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.remediation-stat-chip:hover {
+  background: var(--lift);
+}
+
+.remediation-stat-chip.active {
+  background: var(--lift);
+  border-color: var(--bdr2);
+  color: var(--fg2);
+}
+
+.remediation-stat-chip-value {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.remediation-stat-clear {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  font-size: 10px;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.remediation-stat-clear:hover {
+  color: var(--fg2);
 }
 
 /* ── Remediation cards (shared) ── */

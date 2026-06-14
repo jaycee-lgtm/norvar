@@ -172,6 +172,7 @@ function Chat() {
   }, []);
 
   useEffect(() => {
+    if (!loading) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
