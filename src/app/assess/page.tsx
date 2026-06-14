@@ -29,7 +29,8 @@ import { ASSESS_AGENT } from "@/lib/agents";
 import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
-import { getCatalogEntryByAbbr } from "@/lib/regulatory-catalog";
+import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
+import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
 import {
   ArrowUp, FileText,
@@ -105,6 +106,7 @@ type Assessment = {
   risk_score?:     { composite: number; tier: string };
   risk_tier?:      string;
   risk_by_domain?: Record<string, { tier: string; gap_count: number }>;
+  scoped_domains?: RiskDomainKey[];
   assessment_number?: string;
   status?:         "processing" | "partial" | "complete" | "failed";
   gaps:            Gap[];
@@ -129,10 +131,15 @@ function restoreMessages(
     description: string;
     risk_tier: string;
     risk_score: number;
+    domains?: string[];
     result?: Assessment;
     messages?: StoredMessage[];
   },
 ): Message[] {
+  const scopedDomains = normalizeScopedRiskDomains(
+    row.domains ?? row.result?.scoped_domains ?? [],
+  );
+
   if (Array.isArray(row.messages) && row.messages.length > 0) {
     return row.messages.flatMap((m): Message[] => {
       if (m.role === "user") {
@@ -148,6 +155,7 @@ function restoreMessages(
       if (m.role === "assistant" && m.assessment) {
         const a = m.assessment;
         const resultStatus = (row.result as Assessment | undefined)?.status;
+        const filteredRiskByDomain = filterRiskByScopedDomains(a.risk_by_domain, scopedDomains);
         return [{
           role: "assistant",
           assessment: {
@@ -155,6 +163,8 @@ function restoreMessages(
             id: row.id,
             title: a.title ?? row.title,
             status: a.status ?? resultStatus,
+            risk_by_domain: filteredRiskByDomain,
+            scoped_domains: scopedDomains.length ? scopedDomains : a.scoped_domains,
             risk_score: a.risk_score ?? {
               composite: row.risk_score,
               tier: row.risk_tier,
@@ -178,6 +188,8 @@ function restoreMessages(
         title: result.title ?? row.title,
         gaps: result.gaps ?? [],
         status: result.status,
+        risk_by_domain: filterRiskByScopedDomains(result.risk_by_domain, scopedDomains),
+        scoped_domains: scopedDomains.length ? scopedDomains : result.scoped_domains,
         risk_score: result.risk_score ?? {
           composite: row.risk_score,
           tier: row.risk_tier,
@@ -185,6 +197,49 @@ function restoreMessages(
       },
     },
   ];
+}
+
+function filterRiskByScopedDomains(
+  byDomain: Assessment["risk_by_domain"],
+  scopedDomains: RiskDomainKey[],
+) {
+  if (!byDomain || !scopedDomains.length) return byDomain;
+  const filtered: NonNullable<Assessment["risk_by_domain"]> = {};
+  for (const domain of scopedDomains) {
+    if (byDomain[domain]) filtered[domain] = byDomain[domain];
+  }
+  return filtered;
+}
+
+function GapFrameworkLinks({ frameworks }: { frameworks: string[] }) {
+  if (!frameworks.length) return null;
+
+  return (
+    <p className="gap-reg gap-reg-links">
+      {frameworks.map((raw, i) => {
+        const ref = raw.trim();
+        const entry = resolveCatalogEntryForFrameworkRef(ref);
+        return (
+          <span key={`${ref}-${i}`}>
+            {i > 0 && <span className="gap-reg-sep"> · </span>}
+            {entry?.sourceUrl ? (
+              <a
+                href={entry.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gap-reg-link"
+                title={entry.name}
+              >
+                {ref}
+              </a>
+            ) : (
+              <span>{ref}</span>
+            )}
+          </span>
+        );
+      })}
+    </p>
+  );
 }
 
 type SSEEvent =
@@ -278,18 +333,25 @@ const DOMAIN_LABELS: Record<string, string> = {
   cybersecurity: "Cybersecurity",
 };
 
-function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: {
+function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, scopedDomains: scopedDomainsProp }: {
   a:                 Assessment;
   onNew:             () => void;
   assessmentId?:     string | null;
   gapChats?:         Record<string, GapChatMessage[]>;
   onGapChatsUpdate?: (key: string, messages: GapChatMessage[]) => void;
+  scopedDomains?:    string[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"gaps" | "frameworks">("gaps");
 
   const overallTier = normalizeRiskTier(a.risk_tier ?? a.risk_score?.tier ?? a.risk ?? "low");
   const byDomain    = a.risk_by_domain ?? null;
+  const scopedDomains = a.scoped_domains?.length
+    ? a.scoped_domains
+    : normalizeScopedRiskDomains(scopedDomainsProp ?? []);
+  const visibleDomains: RiskDomainKey[] = scopedDomains.length
+    ? scopedDomains
+    : (Object.keys(byDomain ?? {}) as RiskDomainKey[]);
   const gaps        = a.gaps ?? [];
   const isProcessing = a.status === "processing";
   const SEV_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -355,9 +417,12 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
         </div>
       )}
 
-      {byDomain && (
+      {byDomain && visibleDomains.length > 0 && (
         <div style={{ display: "flex", gap: 8, marginTop: 8, marginBottom: 4, flexWrap: "wrap" }}>
-          {Object.entries(byDomain).map(([domain, info]) => (
+          {visibleDomains.map(domain => {
+            const info = byDomain[domain];
+            if (!info) return null;
+            return (
             <div key={domain} style={{
               display: "flex", alignItems: "center", gap: 5,
               padding: "4px 10px", borderRadius: 6,
@@ -372,7 +437,8 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
                 </span>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -449,7 +515,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate }: 
               </div>
               <div className="gap-item-body">
                 {gap.frameworks && gap.frameworks.length > 0 && (
-                  <p className="gap-reg">{gap.frameworks.join(" · ")}</p>
+                  <GapFrameworkLinks frameworks={gap.frameworks} />
                 )}
                 {(gap.detail || gap.description) && (
                   <section className="gap-section gap-section--issue">
@@ -633,6 +699,7 @@ function Home() {
         if (!d.assessment) throw new Error("Assessment not found");
         setAssessmentId(id);
         setGapChats(d.assessment.gap_chats ?? {});
+        if (Array.isArray(d.assessment.domains)) setDomains(d.assessment.domains);
         setMessages(restoreMessages(d.assessment));
         const status = (d.assessment.result as Assessment | undefined)?.status;
         if (status === "processing") setLoading(true);
@@ -1015,13 +1082,26 @@ function Home() {
         throw new Error(data.error || "Assessment failed");
       }
       let showCard        = false;
+      const scopedForRun  = normalizeScopedRiskDomains(resolvedDomains);
+
+      const decorateAssessment = (assessment: Assessment): Assessment => {
+        const scoped = assessment.scoped_domains?.length
+          ? assessment.scoped_domains
+          : scopedForRun;
+        return {
+          ...assessment,
+          scoped_domains: scoped.length ? scoped : assessment.scoped_domains,
+          risk_by_domain: filterRiskByScopedDomains(assessment.risk_by_domain, scoped),
+        };
+      };
 
       const applyAssessment = (assessment: Assessment) => {
+        const decorated = decorateAssessment(assessment);
         setMessages(prev => {
           const next = prev.filter(m => !(m.role === "thinking" && !m.isFollowUp && !m.guidedQuestionId));
           const idx  = next.findLastIndex(m => m.role === "assistant");
-          if (idx >= 0) next[idx] = { role: "assistant", assessment };
-          else next.push({ role: "assistant", assessment });
+          if (idx >= 0) next[idx] = { role: "assistant", assessment: decorated };
+          else next.push({ role: "assistant", assessment: decorated });
           return next;
         });
       };
@@ -1524,6 +1604,7 @@ function Home() {
                         <div key={i} className="msg-ai">
                           <AssessmentCard
                             a={msg.assessment}
+                            scopedDomains={domains}
                             onNew={startNew}
                             assessmentId={assessmentId}
                             gapChats={gapChats}

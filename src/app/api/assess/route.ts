@@ -269,9 +269,10 @@ export async function POST(req: NextRequest) {
 
         streamedGaps = [...streamedGaps, ...newGaps];
         const result = buildProcessingResult(streamedGaps, {
-          title:   userMessage.slice(0, 80) || "Compliance assessment",
-          summary: summaryText,
-          status:  "processing",
+          title:         userMessage.slice(0, 80) || "Compliance assessment",
+          summary:       summaryText,
+          status:        "processing",
+          scopedDomains: guided_scoping ? domains : undefined,
         });
 
         if (!auditMode) {
@@ -379,9 +380,11 @@ export async function POST(req: NextRequest) {
           : streamedGaps;
 
         assessment.gaps = gaps;
-        const risk = deriveRiskFromGaps(gaps as Array<{ severity: string; domain: string }>);
-        assessment.risk_tier      = risk.overall;
-        assessment.risk_by_domain = risk.byDomain;
+        const scoped = guided_scoping ? domains : undefined;
+        const risk = deriveRiskFromGaps(gaps as Array<{ severity: string; domain: string }>, scoped);
+        assessment.risk_tier       = risk.overall;
+        assessment.risk_by_domain  = risk.byDomain;
+        assessment.scoped_domains  = risk.scoped_domains;
         delete assessment.risk_score;
         assessment.summary = summaryText || (assessment.summary as string) || "";
         assessment.status  = "complete";

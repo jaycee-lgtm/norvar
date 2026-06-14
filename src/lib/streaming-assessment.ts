@@ -1,4 +1,4 @@
-import { GAP_SEV_RANK, normalizeGapSeverity, normalizeRiskTier, type GapSeverity } from "@/lib/risk-tiers";
+import { GAP_SEV_RANK, normalizeGapSeverity, normalizeRiskTier, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 
 export type StreamGap = {
   severity:    string;
@@ -47,21 +47,33 @@ export function normalizeStreamGap(raw: Record<string, unknown>): StreamGap {
   };
 }
 
-export function deriveRiskFromGaps(gaps: Array<{ severity: string; domain: string }>) {
-  const domains = ["privacy", "ai_governance", "cybersecurity"];
+export function deriveRiskFromGaps(
+  gaps: Array<{ severity: string; domain: string }>,
+  scopedDomains?: string[],
+) {
+  const domains: RiskDomainKey[] = scopedDomains?.length
+    ? normalizeScopedRiskDomains(scopedDomains)
+    : ["privacy", "ai_governance", "cybersecurity"];
 
   const maxSeverity = gaps.reduce((max, g) => {
     const rank = GAP_SEV_RANK[normalizeGapSeverity(g.severity)] ?? 0;
     return rank > max ? rank : max;
   }, 0);
 
-  const overallTier: GapSeverity =
+  const overallTier =
     maxSeverity >= 3 ? "high" :
     maxSeverity >= 2 ? "medium" : "low";
 
-  const byDomain: Record<string, { tier: GapSeverity; gap_count: number }> = {};
+  const byDomain: Record<string, { tier: typeof overallTier; gap_count: number }> = {};
   for (const domain of domains) {
-    const domainGaps = gaps.filter(g => g.domain === domain);
+    const domainGaps = gaps.filter(g => {
+      const key = g.domain === "ai" || g.domain === "ai_governance"
+        ? "ai_governance"
+        : g.domain === "cyber" || g.domain === "cybersecurity"
+          ? "cybersecurity"
+          : "privacy";
+      return key === domain;
+    });
     const domainMax  = domainGaps.reduce((max, g) => {
       const rank = GAP_SEV_RANK[normalizeGapSeverity(g.severity)] ?? 0;
       return rank > max ? rank : max;
@@ -72,7 +84,7 @@ export function deriveRiskFromGaps(gaps: Array<{ severity: string; domain: strin
     };
   }
 
-  return { overall: overallTier, byDomain };
+  return { overall: overallTier, byDomain, scoped_domains: domains };
 }
 
 export class AssessmentGapStreamParser {
@@ -129,13 +141,14 @@ export class AssessmentGapStreamParser {
 export function buildProcessingResult(
   gaps: StreamGap[],
   opts?: {
-    title?:      string;
-    summary?:    string;
-    frameworks?: string[];
-    status?:     "processing" | "partial" | "complete" | "failed";
+    title?:          string;
+    summary?:        string;
+    frameworks?:     string[];
+    status?:         "processing" | "partial" | "complete" | "failed";
+    scopedDomains?:  string[];
   },
 ) {
-  const risk = deriveRiskFromGaps(gaps);
+  const risk = deriveRiskFromGaps(gaps, opts?.scopedDomains);
   return {
     status:          opts?.status ?? "processing",
     title:           opts?.title ?? "Compliance assessment",
@@ -144,5 +157,6 @@ export function buildProcessingResult(
     gaps,
     risk_tier:       risk.overall,
     risk_by_domain:  risk.byDomain,
+    scoped_domains:  risk.scoped_domains,
   };
 }

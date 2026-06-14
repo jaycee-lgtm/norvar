@@ -75,6 +75,22 @@ export function getCatalogEntryByAbbr(abbr: string): RegulatoryCatalogEntry | un
   );
 }
 
+/** Best-effort catalog match for free-text framework references in gap output. */
+export function resolveCatalogEntryForFrameworkRef(ref: string): RegulatoryCatalogEntry | undefined {
+  const trimmed = ref.trim();
+  if (!trimmed) return undefined;
+
+  const direct = getCatalogEntryByAbbr(trimmed);
+  if (direct) return direct;
+
+  const needle = trimmed.toLowerCase();
+  const matches = REGULATORY_CATALOG
+    .filter(f => needle.includes(f.abbr.toLowerCase()) || f.abbr.toLowerCase().includes(needle))
+    .sort((a, b) => b.abbr.length - a.abbr.length);
+
+  return matches[0];
+}
+
 export function getCatalogEntryById(id: string): RegulatoryCatalogEntry | undefined {
   return REGULATORY_CATALOG.find(f => f.id === id);
 }

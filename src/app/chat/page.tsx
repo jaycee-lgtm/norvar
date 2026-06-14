@@ -14,6 +14,7 @@ import FormattedMessage from "@/components/FormattedMessage";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
+import { shouldRedirectToCassius } from "@/lib/cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
@@ -176,6 +177,17 @@ function Chat() {
     const content = (textOverride ?? input).trim();
     if (!content || content.length <= 2) return null;
     if (!fromVoice && loading) return null;
+
+    const lastAssistant = [...history].reverse().find(
+      (m): m is ChatMessage & { role: "assistant" } => m.role === "assistant",
+    );
+    if (shouldRedirectToCassius(content, lastAssistant?.content)) {
+      if (!textOverride) setInput("");
+      setError("");
+      router.push("/assess");
+      return null;
+    }
+
     if (!textOverride) setInput("");
     setError("");
 

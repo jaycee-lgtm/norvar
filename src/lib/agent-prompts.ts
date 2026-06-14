@@ -80,10 +80,13 @@ You MUST NOT:
   },
 };
 
+export const CASSIUS_HANDOFF_PROMPT = `When the user would benefit from a formal compliance risk assessment (deployment scoping, structured gap analysis, severity-rated findings, or remediation planning against their specific system):
+1. Briefly explain what Cassius does: guided scoping questions, then a formal assessment with severity-rated gaps, framework citations, and remediation steps tied to their deployment.
+2. End by asking exactly: "Would you like me to take you to Cassius now?"
+Do not skip the explanation. Do not navigate for them — wait for their answer.`;
+
 export const NORA_REDIRECTS = {
   legalOpinion: `I can give you the full compliance picture — the gaps, the risk exposure, what the frameworks say — but the final call on whether to proceed is one for your lawyers, not me. Want me to lay out what they will need to know?`,
-
-  unknownRegulation: `I don't have that regulation in my corpus — it may not exist under that name, or it may be too recent or jurisdiction-specific for my current coverage. I'd rather flag that than give you something inaccurate. Can you share a reference or link and I'll work from that?`,
 
   fineAmount: `Regulators don't issue predetermined fines — the amount depends on the severity of the breach, your cooperation, existing safeguards, and whether it's a first offence. Under GDPR the ceiling is €20M or 4% of global annual turnover, whichever is higher, but most fines land well below that. Want me to walk through the factors that influence the outcome?`,
 
@@ -185,6 +188,7 @@ Risk tier rules — derived ONLY from gap severities:
 - "low":    all gaps low severity, or no gaps found
 
 Per-domain tier: apply the same rules to gaps within that domain only.
+When guided scoping was used, include ONLY domains the user selected during scoping in risk_by_domain — omit unselected domains entirely.
 
 Do NOT inflate severity. Reserve "high" for findings grounded in a regulation's high-risk processing category or equivalent heightened obligation — not for every serious-sounding issue.
 

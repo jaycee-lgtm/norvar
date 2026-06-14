@@ -22,3 +22,19 @@ export const GAP_SEV_RANK: Record<GapSeverity, number> = {
   medium: 2,
   low:    1,
 };
+
+const RISK_DOMAIN_KEYS = ["privacy", "ai_governance", "cybersecurity"] as const;
+export type RiskDomainKey = typeof RISK_DOMAIN_KEYS[number];
+
+/** Normalize questionnaire / API domain ids to risk_by_domain keys. */
+export function normalizeRiskDomainKey(domain: string): RiskDomainKey {
+  const d = domain.toLowerCase();
+  if (d === "ai" || d === "ai_governance") return "ai_governance";
+  if (d === "cyber" || d === "cybersecurity") return "cybersecurity";
+  return "privacy";
+}
+
+export function normalizeScopedRiskDomains(domains: string[] | undefined | null): RiskDomainKey[] {
+  if (!domains?.length) return [];
+  return [...new Set(domains.map(normalizeRiskDomainKey))];
+}
