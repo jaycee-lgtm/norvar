@@ -31,6 +31,16 @@ import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 import { pickNoraFollowUps, CASSIUS_GREETINGS } from "@/lib/agent-prompts";
+import {
+  ASSESSMENT_CONFIRM_NOT_YET,
+  ASSESSMENT_CONFIRM_OPTIONS,
+  ASSESSMENT_CONFIRM_YES,
+  buildAssessmentConfirmationText,
+  buildAssessmentScopingIntroText,
+  isAffirmativeAssessmentConfirm,
+  isNegativeAssessmentConfirm,
+  looksLikeAssessmentDescription,
+} from "@/lib/cassius-prescope";
 import { firstNameFromUser, getTimeOfDay } from "@/lib/agent-greeting-utils";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
@@ -127,7 +137,7 @@ type Message =
   | { role: "user"; content: string; tags?: string[] }
   | { role: "nora"; content: string }
   | { role: "assistant"; assessment: Assessment }
-  | { role: "thinking"; text: string; status?: string; isFollowUp?: boolean; followUpOptions?: string[]; guidedQuestionId?: string; guidedMulti?: boolean; guidedText?: boolean; riskTag?: string }
+  | { role: "thinking"; text: string; status?: string; isFollowUp?: boolean; followUpOptions?: string[]; guidedQuestionId?: string; guidedMulti?: boolean; guidedText?: boolean; riskTag?: string; assessmentConfirm?: boolean }
   | { role: "chat"; text: string; id?: string; feedback?: MessageFeedbackRating | null };
 
 type StoredMessage =
@@ -718,6 +728,7 @@ function Home() {
   const [guidedMultiSelections, setGuidedMultiSelections] = useState<string[]>([]);
   const [activeGuidedQuestionId, setActiveGuidedQuestionId] = useState<string | null>(null);
   const [guidedTyping, setGuidedTyping] = useState(false);
+  const [preScopePhase, setPreScopePhase] = useState<"chat" | "confirm" | null>(null);
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -752,6 +763,8 @@ function Home() {
       }
       greetedRef.current = false;
       setGreetingTyping(false);
+      setPreScopePhase(null);
+      setPendingDesc("");
       return;
     }
 
@@ -870,6 +883,7 @@ function Home() {
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
     setGuidedTyping(false);
+    setPreScopePhase(null);
     greetedRef.current = false;
     setGreetingTyping(false);
     typewriterRef.current?.reset();
@@ -921,7 +935,9 @@ function Home() {
     ? input.trim().length > 2 && !loading
     : guidedActive
     ? activeGuidedQuestion?.type === "text" && input.trim().length > 0 && !loading
-    : input.trim().length > 8 && !loading;
+    : preScopePhase === "confirm"
+    ? input.trim().length > 0 && !loading
+    : input.trim().length > 0 && !loading && !greetingTyping;
 
   const isMobileView = useIsMobile();
 
@@ -949,8 +965,132 @@ function Home() {
         }
         return next;
       });
-    }, () => setGreetingTyping(false));
+    }, () => {
+      setGreetingTyping(false);
+      setPreScopePhase("chat");
+    });
     typewriterRef.current.enqueue(text);
+  };
+
+  const presentAssessmentConfirmation = () => {
+    const fullText = buildAssessmentConfirmationText();
+    typewriterRef.current?.reset();
+    setGuidedTyping(true);
+
+    setMessages(prev => {
+      const filtered = prev.filter(m => !(m.role === "thinking" && (m.isFollowUp || m.assessmentConfirm)));
+      return [...filtered, {
+        role:              "thinking",
+        text:              "",
+        isFollowUp:        true,
+        assessmentConfirm: true,
+        followUpOptions:   [...ASSESSMENT_CONFIRM_OPTIONS],
+      }];
+    });
+
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "thinking" && m.assessmentConfirm);
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<Message, { role: "thinking" }>;
+          next[idx] = { ...msg, text: msg.text + ch };
+        }
+        return next;
+      });
+    }, () => setGuidedTyping(false));
+
+    typewriterRef.current.enqueue(fullText);
+  };
+
+  const handlePreScopeChat = async (text: string): Promise<string | null> => {
+    setMessages(prev => [...prev, { role: "user", content: text }]);
+    setLoading(true);
+    setMessages(prev => [...prev, { role: "chat", text: "" }]);
+
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "chat");
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<Message, { role: "chat" }>;
+          next[idx] = { ...msg, text: msg.text + ch };
+        }
+        return next;
+      });
+    });
+
+    const history: { role: "user" | "assistant"; content: string }[] = [];
+    for (const m of messages) {
+      if (m.role === "user") history.push({ role: "user", content: m.content });
+      else if (m.role === "chat" && m.text) history.push({ role: "assistant", content: m.text });
+      else if (m.role === "nora") history.push({ role: "assistant", content: m.content });
+    }
+    history.push({ role: "user", content: text });
+
+    let chatText = "";
+    try {
+      const res = await fetch("/api/chat", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ messages: history, mode: "cassius_prescope" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Chat failed");
+      }
+      await readSSEStream(res, event => {
+        if (event.type === "token") {
+          chatText += event.text ?? "";
+          typewriterRef.current?.enqueue(event.text ?? "");
+        } else if (event.type === "error") {
+          throw new Error(event.text);
+        }
+      });
+      return chatText || null;
+    } catch (e: unknown) {
+      typewriterRef.current?.reset();
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setMessages(prev => prev.filter(m => m.role !== "chat" || m.text));
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssessmentConfirm = async (label: string, userAlreadyAdded = false): Promise<string | null> => {
+    setMessages(prev => {
+      const filtered = prev.filter(m => !(m.role === "thinking" && m.assessmentConfirm));
+      return userAlreadyAdded
+        ? filtered
+        : [...filtered, { role: "user", content: label }];
+    });
+
+    if (label === ASSESSMENT_CONFIRM_YES) {
+      setPreScopePhase(null);
+      const desc = pendingDesc.trim();
+      if (!desc) return null;
+      return startGuidedAssessment(desc, { skipUserBubble: true });
+    }
+
+    setPreScopePhase("chat");
+    setPendingDesc("");
+    const reply = "No problem — tell me more about what you're working on. When you're ready for a formal assessment, just describe it and we'll take it from there.";
+    setMessages(prev => [...prev, { role: "chat", text: reply }]);
+    return reply;
+  };
+
+  const handleAssessmentConfirmText = async (text: string): Promise<string | null> => {
+    setMessages(prev => [...prev, { role: "user", content: text }]);
+    if (isAffirmativeAssessmentConfirm(text)) {
+      return handleAssessmentConfirm(ASSESSMENT_CONFIRM_YES, true);
+    }
+    if (isNegativeAssessmentConfirm(text)) {
+      return handleAssessmentConfirm(ASSESSMENT_CONFIRM_NOT_YET, true);
+    }
+    setError("Please choose Yes or Not yet above, or reply with yes/no.");
+    return null;
   };
 
   const voice = useVoice({
@@ -1116,13 +1256,19 @@ function Home() {
     return null;
   };
 
-  const startGuidedAssessment = async (text: string): Promise<string | null> => {
-    setMessages(prev => [...prev, { role: "user", content: text }]);
+  const startGuidedAssessment = async (
+    text: string,
+    opts?: { skipUserBubble?: boolean; intro?: string },
+  ): Promise<string | null> => {
+    if (!opts?.skipUserBubble) {
+      setMessages(prev => [...prev, { role: "user", content: text }]);
+    }
     setPendingDesc(text);
     setGuidedActive(true);
     setGuidedAnswers({});
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
+    setPreScopePhase(null);
     setError("");
 
     const answers: AssessmentAnswers = {};
@@ -1132,7 +1278,7 @@ function Home() {
       return null;
     }
 
-    const intro = `Thanks — I'll ask a few scoping questions one at a time. Your selections will define the assessment scope — I won't assume anything you don't confirm.`;
+    const intro = opts?.intro ?? buildAssessmentScopingIntroText();
 
     presentGuidedQuestion(nextQ, intro);
     return `${intro}\n\n${formatGuidedQuestionText(nextQ)}`;
@@ -1340,7 +1486,16 @@ function Home() {
   };
 
   const handleAssessment = async (text: string): Promise<string | null> => {
-    return startGuidedAssessment(text);
+    if (looksLikeAssessmentDescription(text)) {
+      setMessages(prev => [...prev, { role: "user", content: text }]);
+      setPendingDesc(text);
+      setPreScopePhase("confirm");
+      presentAssessmentConfirmation();
+      return buildAssessmentConfirmationText();
+    }
+
+    setPreScopePhase("chat");
+    return handlePreScopeChat(text);
   };
 
   const handleFollowUp = async (text: string): Promise<string | null> => {
@@ -1433,17 +1588,21 @@ function Home() {
 
   const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
     const text = (textOverride ?? input).trim();
-    const minLen = fromVoice ? 3 : (hasAssessment ? 3 : guidedActive ? 1 : 9);
+    const minLen = fromVoice ? 1 : 1;
     if (text.length < minLen) return null;
     if (!fromVoice && loading) return null;
     if (!textOverride) setInput("");
     setError("");
 
     if (hasAssessment) {
+      if (text.length < 3) return null;
       return handleFollowUp(text);
     }
     if (guidedActive) {
       return handleGuidedTextAnswer(text);
+    }
+    if (preScopePhase === "confirm") {
+      return handleAssessmentConfirmText(text);
     }
     return handleAssessment(text);
   };
@@ -1473,7 +1632,9 @@ function Home() {
     ? "Type your answer..."
     : guidedActive
     ? "Select an option above..."
-    : "Describe another deployment...";
+    : preScopePhase === "confirm"
+    ? "Reply yes or no, or use the buttons above..."
+    : "Tell Cassius what you're working on...";
 
   const attachControl = (
     <DocumentPicker
@@ -1636,7 +1797,7 @@ function Home() {
                       <Logo variant="hero" className="home-hero-logo" size={52} />
                       <div className="home-hero-heading-wrap">
                         <h1 className="home-hero-serif">What are you building?</h1>
-                        <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
+                        <InfoTip text={`Chat with ${ASSESS_AGENT.name} about your project. When you're ready, he'll confirm and ask a few scoping questions before running your assessment.`} />
                       </div>
                     </div>
                   )}
@@ -1733,7 +1894,10 @@ function Home() {
                                   <button
                                     key={opt}
                                     type="button"
-                                    onClick={() => handleGuidedOption(opt)}
+                                    onClick={() => {
+                                      if (msg.assessmentConfirm) void handleAssessmentConfirm(opt);
+                                      else handleGuidedOption(opt);
+                                    }}
                                     style={{
                                       fontSize: 11, padding: "5px 12px", borderRadius: 16,
                                       border: selected || isContinue ? "0.5px solid var(--red)" : "0.5px solid var(--bdr2)",

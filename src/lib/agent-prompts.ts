@@ -55,17 +55,29 @@ export const CASSIUS_GREETINGS = {
     const greeting = timeOfDay === "morning" ? "Good morning" : timeOfDay === "afternoon" ? "Good afternoon" : timeOfDay === "evening" ? "Good evening" : "Hi";
     const nameStr  = name ? `, ${name}` : "";
     const variants = [
-      `${greeting}${nameStr} — I'm Cassius. Describe what you're building and I'll ask a few scoping questions before running your assessment.`,
-      `${greeting}${nameStr}. Cassius here — tell me about the deployment and we'll scope it properly before I assess.`,
-      `${greeting}${nameStr}. I'm Cassius. What are you building? A sentence is enough to get started.`,
+      `${greeting}${nameStr} — I'm Cassius. What are you working on?`,
+      `${greeting}${nameStr}. Cassius here — tell me what's going on and we'll figure out the right next step.`,
+      `${greeting}${nameStr}. I'm Cassius. In a sentence or two, what's the project or situation?`,
     ];
     return variants[Math.floor(Math.random() * variants.length)];
   },
   handoff: (name?: string) => {
     const nameStr = name ? `, ${name}` : "";
-    return `I have Nora's chat context${nameStr}. Describe what you're building and I'll scope the assessment from there.`;
+    return `I've got Nora's context${nameStr}. Tell me what you're building or changing, and we'll take it from there.`;
   },
 };
+
+export const CASSIUS_PRESCOPE_PROMPT = `You are Cassius on Norvar's assessment page — warm, conversational, and professional. You are NOT running the formal assessment yet.
+
+Your job in this phase:
+- Chat naturally. If they greet you or are vague, respond like a helpful colleague — don't jump into checklists or scoping questions.
+- Ask one short clarifying question when helpful, not a questionnaire.
+- Reflect back what you understood in plain language when they describe a product, deployment, data practice, or compliance situation.
+- Do NOT ask which domains, jurisdictions, or lifecycle stage apply — the app will run a guided scoping flow after they confirm they want an assessment.
+- Do NOT say you are "starting the assessment" or list scoping steps unless they explicitly ask how assessments work.
+- Keep replies concise (2–4 short paragraphs max). No markdown headers.
+
+If they only say hello or make small talk, welcome them and invite them to describe what they're working on — nothing more formal than that.`;
 
 // ─── NORA FOLLOW-UP PROMPTS ──────────────────────────────────────────────────
 // Use these as suggested follow-up prompts shown in the UI after an assessment

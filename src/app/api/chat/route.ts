@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX, GRC_FORMATTING_RULES, GRC_PLAIN_LANGUAGE_RULES } from "@/lib/grc-prompt";
-import { CASSIUS_CONTEXT } from "@/lib/agent-prompts";
+import { CASSIUS_CONTEXT, CASSIUS_PRESCOPE_PROMPT } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { messages, assessment_id, new_user_message, message, document_ids } = await req.json();
+      const { messages, assessment_id, new_user_message, message, document_ids, mode } = await req.json();
 
       // Fetch and inject any referenced documents into context
       let docContext = "";
@@ -92,8 +92,13 @@ export async function POST(req: NextRequest) {
 
       // Standalone question (no prior conversation or assessment context):
       // respond as the full GRC advisor instead of the assessment follow-up persona.
-      const isStandalone = resolvedMessages.length === 1 && !assessment_id;
-      const basePrompt   = isStandalone ? GRC_SYSTEM_PROMPT : FOLLOW_UP_PROMPT;
+      const isCassiusPrescope = mode === "cassius_prescope";
+      const isStandalone = !isCassiusPrescope && resolvedMessages.length === 1 && !assessment_id;
+      const basePrompt   = isCassiusPrescope
+        ? CASSIUS_PRESCOPE_PROMPT
+        : isStandalone
+          ? GRC_SYSTEM_PROMPT
+          : FOLLOW_UP_PROMPT;
 
       let systemPrompt = docContext
         ? `${basePrompt}\n\nREFERENCED DOCUMENTS:\n${docContext}`
