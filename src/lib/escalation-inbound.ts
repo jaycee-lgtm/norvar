@@ -16,7 +16,7 @@ type ReceivedEmail = {
   headers?: Record<string, string | string[]>;
 };
 
-type InboundWebhookEvent = {
+export type InboundWebhookEvent = {
   type: string;
   data?: {
     email_id?: string;

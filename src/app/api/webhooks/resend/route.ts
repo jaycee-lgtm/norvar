@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   processInboundEscalationEmail,
   verifyResendWebhook,
+  type InboundWebhookEvent,
 } from "@/lib/escalation-inbound";
 
 const supabase = createClient(
@@ -26,12 +27,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  let event: { type?: string; data?: Record<string, unknown> };
+  let parsed: unknown;
   try {
-    event = JSON.parse(payload);
+    parsed = JSON.parse(payload);
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
+
+  if (!parsed || typeof parsed !== "object" || typeof (parsed as InboundWebhookEvent).type !== "string") {
+    return Response.json({ error: "Invalid webhook event" }, { status: 400 });
+  }
+
+  const event = parsed as InboundWebhookEvent;
 
   const result = await processInboundEscalationEmail(supabase, event);
   if (!result.ok) {

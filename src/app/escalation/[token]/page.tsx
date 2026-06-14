@@ -53,7 +53,7 @@ type EscalationData = {
     created_at: string;
   } | null;
   users: Record<string, { id: string; name: string; email: string }>;
-  activity: Array<{ id: string; action: string; detail: string | null; created_at: string }>;
+  activity: Array<{ id: string; action: string; detail: string | null; created_at: string; user_id?: string }>;
 };
 
 const DOMAIN_LABELS: Record<string, string> = {

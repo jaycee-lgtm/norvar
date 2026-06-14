@@ -101,12 +101,13 @@ export function parseEscalationEmailReplies(
     action: string;
     detail: string | null;
     created_at: string;
-    user_id: string;
+    user_id?: string;
   }>,
 ): EscalationEmailReply[] {
   return activity
     .filter(a => a.action === ESCALATION_EMAIL_REPLY_ACTION)
     .map(a => {
+      const fallbackFrom = a.user_id ?? "unknown";
       try {
         const parsed = JSON.parse(a.detail ?? "{}") as {
           from_email?: string;
@@ -116,7 +117,7 @@ export function parseEscalationEmailReplies(
         };
         return {
           id:         a.id,
-          from_email: parsed.from_email ?? a.user_id,
+          from_email: parsed.from_email ?? fallbackFrom,
           from_name:  parsed.from_name ?? null,
           subject:    parsed.subject ?? null,
           body:       parsed.body ?? a.detail ?? "",
@@ -125,7 +126,7 @@ export function parseEscalationEmailReplies(
       } catch {
         return {
           id:         a.id,
-          from_email: a.user_id,
+          from_email: fallbackFrom,
           from_name:  null,
           subject:    null,
           body:       a.detail ?? "",
