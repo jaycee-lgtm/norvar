@@ -745,6 +745,20 @@ input, textarea, select, button {
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.thread-inner {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 24px 8px;
+  flex-shrink: 0;
 }
 
 .chat-scroll {
@@ -3152,7 +3166,7 @@ input, textarea, select, button {
   }
 
   .thread-inner {
-    padding: 16px 14px !important;
+    padding: 16px 14px 8px !important;
   }
 
   .msg-user {
