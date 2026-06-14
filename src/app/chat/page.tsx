@@ -6,6 +6,7 @@ import { Show, SignInButton } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
+import InfoTip from "@/components/InfoTip";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
@@ -15,7 +16,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
-import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, Info, FileText } from "lucide-react";
+import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -30,39 +31,6 @@ type SSEEvent =
   | { type: "error"; text: string };
 
 // ── Chat page ──────────────────────────────────────────────────────────────────
-
-function InfoTip({ text }: { text: string }) {
-  return (
-    <div
-      style={{ position: "relative", display: "inline-flex" }}
-      onMouseEnter={e => {
-        const t = e.currentTarget.querySelector(".tip") as HTMLElement;
-        if (t) t.style.opacity = "1";
-      }}
-      onMouseLeave={e => {
-        const t = e.currentTarget.querySelector(".tip") as HTMLElement;
-        if (t) t.style.opacity = "0";
-      }}
-    >
-      <Info size={14} strokeWidth={1.75} color="var(--fg3)" style={{ cursor: "default" }} />
-      <div
-        className="tip"
-        style={{
-          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
-          transform: "translateX(-50%)", background: "var(--card)",
-          border: "0.5px solid var(--bdr2)", borderRadius: 7,
-          padding: "10px 14px", width: 260, fontSize: 12,
-          color: "var(--fg2)", lineHeight: 1.65, fontFamily: "'Sora', sans-serif",
-          letterSpacing: "-.01em", opacity: 0, transition: "opacity 0.15s",
-          pointerEvents: "none", zIndex: 50,
-          boxShadow: "var(--shadow-md)",
-        }}
-      >
-        {text}
-      </div>
-    </div>
-  );
-}
 
 export default function ChatPage() {
   return (
