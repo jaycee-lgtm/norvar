@@ -2790,6 +2790,10 @@ input, textarea, select, button {
     width: 100%;
   }
 
+  .mobile-home-layout .mobile-composer-tools .mode-selector--embedded {
+    display: none;
+  }
+
   .mobile-composer-actions {
     display: flex;
     align-items: center;

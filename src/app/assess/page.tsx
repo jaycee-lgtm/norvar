@@ -1527,15 +1527,20 @@ function Home() {
             {isHome && (
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
                 <div className={isMobileView ? "home-hero-block" : undefined}>
-                  <div className="home-hero-row">
-                    <Logo variant="hero" className="home-hero-logo" size={isMobileView ? 46 : 52} />
-                    <div className="home-hero-heading-wrap">
-                      <h1 className="home-hero-title">What are you building?</h1>
-                      {!isMobileView && (
+                  {isMobileView ? (
+                    <>
+                      <Logo size={44} />
+                      <h1 className="mobile-home-serif">What are you building?</h1>
+                    </>
+                  ) : (
+                    <div className="home-hero-row">
+                      <Logo variant="hero" className="home-hero-logo" size={52} />
+                      <div className="home-hero-heading-wrap">
+                        <h1 className="home-hero-title">What are you building?</h1>
                         <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 {InputBar}
                 {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}

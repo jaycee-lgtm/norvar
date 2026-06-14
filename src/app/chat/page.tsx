@@ -385,15 +385,20 @@ function Chat() {
           {isHome && (
             <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
               <div className={isMobileView ? "home-hero-block" : undefined}>
-                <div className="home-hero-row">
-                  <Logo variant="hero" className="home-hero-logo" size={isMobileView ? 46 : 52} />
-                  <div className="home-hero-heading-wrap">
-                    <h1 className="home-hero-title">How can I help?</h1>
-                    {!isMobileView && (
+                {isMobileView ? (
+                  <>
+                    <Logo size={44} />
+                    <h1 className="mobile-home-serif">How can I help?</h1>
+                  </>
+                ) : (
+                  <div className="home-hero-row">
+                    <Logo variant="hero" className="home-hero-logo" size={52} />
+                    <div className="home-hero-heading-wrap">
+                      <h1 className="home-hero-title">How can I help?</h1>
                       <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
@@ -440,7 +445,6 @@ function Chat() {
                     <div className="mobile-composer-tools mobile-composer-tools--minimal">
                       <div className="composer-toolbar-start">
                         {attachControl}
-                        {examplesControl}
                       </div>
                       <ModeSelector current="chat" embedded menuPlacement="top" />
                       <div className="mobile-composer-actions">
