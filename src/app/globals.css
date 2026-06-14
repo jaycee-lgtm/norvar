@@ -448,6 +448,16 @@ input, textarea, select, button {
   margin: 0;
 }
 
+.home-hero-serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 400;
+  color: var(--fg);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+}
+
 .home-hero-row .home-heading {
   margin-bottom: 0;
 }
@@ -3052,14 +3062,9 @@ input, textarea, select, button {
   }
 
   .mobile-home-serif {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: clamp(26px, 7vw, 34px);
-    font-weight: 400;
-    color: var(--fg);
-    letter-spacing: -0.02em;
-    line-height: 1.15;
     margin-top: 18px;
     max-width: 280px;
+    font-size: clamp(26px, 7vw, 34px);
   }
 
   .home-mode-desktop {

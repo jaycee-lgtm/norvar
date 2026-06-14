@@ -1629,13 +1629,13 @@ function Home() {
                   {isMobileView ? (
                     <>
                       <Logo size={44} />
-                      <h1 className="mobile-home-serif">What are you building?</h1>
+                      <h1 className="home-hero-serif mobile-home-serif">What are you building?</h1>
                     </>
                   ) : (
                     <div className="home-hero-row">
                       <Logo variant="hero" className="home-hero-logo" size={52} />
                       <div className="home-hero-heading-wrap">
-                        <h1 className="home-hero-title">What are you building?</h1>
+                        <h1 className="home-hero-serif">What are you building?</h1>
                         <InfoTip text={`Describe your deployment in a sentence and ${ASSESS_AGENT.name} will ask a few scoping questions, then run your assessment.`} />
                       </div>
                     </div>
