@@ -2153,6 +2153,23 @@ input, textarea, select, button {
   font-size: 10px;
   color: var(--fg3);
   font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--card2);
+}
+
+.inbox-folder-count--unread {
+  background: var(--rh-bg);
+  color: var(--rh);
+  font-weight: 600;
+}
+
+.inbox-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rh);
+  flex-shrink: 0;
 }
 
 .inbox-trash-note {
@@ -2205,11 +2222,20 @@ input, textarea, select, button {
   color: var(--fg);
 }
 
+.inbox-thread-row.unread {
+  background: rgba(139, 26, 26, 0.04);
+}
+
+.inbox-thread-row.unread .inbox-thread-gap,
+.inbox-thread-row.unread .inbox-thread-meta {
+  color: var(--fg2);
+}
+
 .inbox-thread-row-top {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  align-items: baseline;
+  align-items: flex-start;
   margin-bottom: 3px;
 }
 
@@ -2404,6 +2430,10 @@ input, textarea, select, button {
   opacity: 1;
 }
 
+.inbox-page--mobile .inbox-message-actions {
+  opacity: 1;
+}
+
 .inbox-msg-action {
   display: flex;
   align-items: center;
@@ -2438,11 +2468,15 @@ input, textarea, select, button {
   background: var(--card2);
 }
 
+.inbox-message.inbound.unread {
+  border-left: 2px solid var(--rh);
+}
+
 .inbox-message-meta {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 4px;
 }
 

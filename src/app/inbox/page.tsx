@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
-import type { InboxFolder, InboxListItem } from "@/lib/inbox";
+import type { InboxFolder, InboxFolderCounts, InboxListItem } from "@/lib/inbox";
 import { INBOX_FOLDERS } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
@@ -14,7 +14,7 @@ import {
   Archive, Trash2, RotateCcw, Inbox as InboxIcon,
 } from "lucide-react";
 
-type FolderCounts = Record<InboxFolder, number>;
+type FolderCounts = InboxFolderCounts;
 
 type ThreadDetail = {
   remediation_id:      string;
@@ -56,7 +56,9 @@ function InboxContent() {
   const folder       = parseFolder(searchParams.get("folder"));
 
   const [items, setItems]             = useState<InboxListItem[]>([]);
-  const [counts, setCounts]           = useState<FolderCounts>({ received: 0, sent: 0, archived: 0, trash: 0 });
+  const [counts, setCounts]           = useState<FolderCounts>({
+    received: 0, sent: 0, archived: 0, trash: 0, unread_received: 0,
+  });
   const [thread, setThread]           = useState<ThreadDetail | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingThread, setLoadingThread] = useState(false);
@@ -65,8 +67,8 @@ function InboxContent() {
   const [sending, setSending]         = useState(false);
   const [error, setError]             = useState("");
 
-  const loadList = useCallback(async () => {
-    setLoadingList(true);
+  const loadList = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoadingList(true);
     try {
       const res  = await fetch(`/api/escalation-inbox?folder=${folder}`);
       const data = await res.json();
@@ -76,7 +78,7 @@ function InboxContent() {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not load inbox");
     } finally {
-      setLoadingList(false);
+      if (!opts?.silent) setLoadingList(false);
     }
   }, [folder]);
 
@@ -89,13 +91,14 @@ function InboxContent() {
       if (!res.ok) throw new Error(data.error || "Could not load thread");
       setThread(data.thread ?? null);
       if (data.counts) setCounts(data.counts);
+      await loadList({ silent: true });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not load thread");
       setThread(null);
     } finally {
       setLoadingThread(false);
     }
-  }, []);
+  }, [loadList]);
 
   useEffect(() => { void loadList(); }, [loadList]);
 
@@ -116,6 +119,9 @@ function InboxContent() {
   };
 
   const patchMessage = async (messageId: string, action: string) => {
+    if (action === "delete" && !window.confirm("Move this message to the recycle bin?")) return;
+    if (action === "purge" && !window.confirm("Permanently delete this message? This cannot be undone.")) return;
+
     setActionBusy(messageId);
     setError("");
     try {
@@ -191,9 +197,13 @@ function InboxContent() {
                   onClick={() => setFolder(f.id)}
                 >
                   <span>{f.label}</span>
-                  {counts[f.id] > 0 && (
+                  {f.id === "received" && counts.unread_received > 0 ? (
+                    <span className="inbox-folder-count inbox-folder-count--unread">
+                      {counts.unread_received}
+                    </span>
+                  ) : counts[f.id] > 0 ? (
                     <span className="inbox-folder-count">{counts[f.id]}</span>
-                  )}
+                  ) : null}
                 </button>
               ))}
             </nav>
@@ -225,10 +235,13 @@ function InboxContent() {
                   <li key={item.message_id}>
                     <button
                       type="button"
-                      className={`inbox-thread-row${active ? " active" : ""}`}
+                      className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
                       onClick={() => selectThread(item.remediation_id)}
                     >
                       <div className="inbox-thread-row-top">
+                        {!item.is_read && item.direction === "inbound" && (
+                          <span className="inbox-unread-dot" aria-hidden />
+                        )}
                         <span className="inbox-thread-recipient">
                           {item.direction === "inbound"
                             ? (item.from_name ?? item.from_email)
@@ -317,10 +330,13 @@ function InboxContent() {
                   {thread.messages.map(msg => (
                     <div
                       key={msg.id}
-                      className={`inbox-message${msg.direction === "outbound" ? " outbound" : " inbound"}`}
+                      className={`inbox-message${msg.direction === "outbound" ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
                     >
                       <div className="inbox-message-head">
                         <div className="inbox-message-meta">
+                          {msg.is_read === false && msg.direction === "inbound" && (
+                            <span className="inbox-unread-dot" aria-hidden />
+                          )}
                           <span className="inbox-message-from">
                             {msg.direction === "outbound"
                               ? (msg.from_name ?? "You")

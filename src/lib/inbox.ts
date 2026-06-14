@@ -48,7 +48,30 @@ export type InboxListItem = {
   archived_at:       string | null;
   deleted_at:        string | null;
   days_until_purge:  number | null;
+  is_read:           boolean;
 };
+
+export type InboxFolderCounts = Record<InboxFolder, number> & {
+  unread_received: number;
+};
+
+export function isInboxMessageUnread(
+  msg: Pick<EscalationInboxMessage, "id" | "direction">,
+  readIds: Set<string>,
+): boolean {
+  if (msg.direction !== "inbound") return false;
+  return !readIds.has(msg.id);
+}
+
+export function attachInboxReadState(
+  messages: EscalationInboxMessage[],
+  readIds: Set<string>,
+): EscalationInboxMessage[] {
+  return messages.map(msg => ({
+    ...msg,
+    is_read: msg.direction === "outbound" || readIds.has(msg.id),
+  }));
+}
 
 export function trashRetentionCutoff(): Date {
   const d = new Date();
@@ -121,6 +144,7 @@ export function buildInboxListItem(
     escalation_recipient_name: string | null;
     escalation_email: string | null;
   },
+  readIds: Set<string> = new Set(),
 ): InboxListItem {
   return {
     message_id:        msg.id,
@@ -139,15 +163,22 @@ export function buildInboxListItem(
     archived_at:       msg.archived_at ?? null,
     deleted_at:        msg.deleted_at ?? null,
     days_until_purge:  msg.deleted_at ? daysUntilPurge(msg.deleted_at) : null,
+    is_read:           !isInboxMessageUnread(msg, readIds),
   };
 }
 
-export function folderCounts(messages: EscalationInboxMessage[]) {
+export function folderCounts(
+  messages: EscalationInboxMessage[],
+  readIds: Set<string> = new Set(),
+): InboxFolderCounts {
   const cutoff = trashRetentionCutoffIso();
   return {
     received: messages.filter(m => messageMatchesFolder(m, "received", cutoff)).length,
     sent:     messages.filter(m => messageMatchesFolder(m, "sent", cutoff)).length,
     archived: messages.filter(messageMatchesArchivedFolder).length,
     trash:    messages.filter(m => messageMatchesFolder(m, "trash", cutoff)).length,
+    unread_received: messages.filter(
+      m => messageMatchesFolder(m, "received", cutoff) && isInboxMessageUnread(m, readIds),
+    ).length,
   };
 }

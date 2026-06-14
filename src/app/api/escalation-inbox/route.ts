@@ -12,9 +12,11 @@ import { sendEscalationInboxReply } from "@/lib/email";
 import {
   type InboxFolder,
   type InboxActivityRow,
+  attachInboxReadState,
   buildInboxListItem,
   filterMessagesForFolder,
   folderCounts,
+  isInboxMessageUnread,
   parseInboxMessages,
   trashRetentionCutoffIso,
   INBOX_MESSAGE_ACTIONS,
@@ -81,6 +83,39 @@ async function purgeExpiredDeleted() {
     .lt("deleted_at", cutoff);
 }
 
+async function loadReadMessageIds(userId: string, messageIds: string[]): Promise<Set<string>> {
+  if (messageIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from("inbox_message_reads")
+    .select("message_id")
+    .eq("user_id", userId)
+    .in("message_id", messageIds);
+
+  if (error) {
+    if (error.message.includes("inbox_message_reads")) return new Set();
+    throw new Error(error.message);
+  }
+
+  return new Set((data ?? []).map(row => row.message_id as string));
+}
+
+async function markMessagesRead(userId: string, messageIds: string[]): Promise<void> {
+  const unreadIds = messageIds.filter(Boolean);
+  if (unreadIds.length === 0) return;
+
+  const now  = new Date().toISOString();
+  const rows = unreadIds.map(message_id => ({ user_id: userId, message_id, read_at: now }));
+
+  const { error } = await supabase
+    .from("inbox_message_reads")
+    .upsert(rows, { onConflict: "user_id,message_id", ignoreDuplicates: true });
+
+  if (error && !error.message.includes("inbox_message_reads")) {
+    throw new Error(error.message);
+  }
+}
+
 function activeThreadMessages(messages: EscalationInboxMessage[]) {
   return messages.filter(m => !m.deleted_at && !m.archived_at);
 }
@@ -89,11 +124,13 @@ function serializeThread(
   item: ItemRow,
   messages: EscalationInboxMessage[],
   folder: InboxFolder,
+  readIds: Set<string>,
 ) {
+  const withRead = attachInboxReadState(messages, readIds);
   const filtered = folder === "received" || folder === "sent"
-    ? activeThreadMessages(messages)
-    : filterMessagesForFolder(messages, folder);
-  const allCounts = folderCounts(messages);
+    ? activeThreadMessages(withRead)
+    : filterMessagesForFolder(withRead, folder);
+  const allCounts = folderCounts(withRead, readIds);
 
   return {
     remediation_id:      item.id,
@@ -152,14 +189,31 @@ export async function GET(req: NextRequest) {
   const allMessages = accessible.flatMap(item =>
     parseInboxMessages(item.remediation_activity ?? []),
   );
-  const counts = folderCounts(allMessages);
+  const readIds = await loadReadMessageIds(userId, allMessages.map(m => m.id));
+  const counts  = folderCounts(allMessages, readIds);
 
   if (threadId) {
     const item = accessible.find(i => i.id === threadId);
     if (!item) return Response.json({ error: "Thread not found" }, { status: 404 });
 
-    const messages = parseInboxMessages(item.remediation_activity ?? []);
-    return Response.json({ thread: serializeThread(item, messages, folder), counts });
+    const messages = attachInboxReadState(
+      parseInboxMessages(item.remediation_activity ?? []),
+      readIds,
+    );
+
+    const toMark = messages
+      .filter(m => isInboxMessageUnread(m, readIds))
+      .map(m => m.id);
+    if (toMark.length) {
+      await markMessagesRead(userId, toMark);
+      for (const id of toMark) readIds.add(id);
+    }
+
+    const markedMessages = attachInboxReadState(messages, readIds);
+    return Response.json({
+      thread: serializeThread(item, markedMessages, folder, readIds),
+      counts: folderCounts(markedMessages, readIds),
+    });
   }
 
   const items = accessible.flatMap(item => {
@@ -167,7 +221,7 @@ export async function GET(req: NextRequest) {
       parseInboxMessages(item.remediation_activity ?? []),
       folder,
     );
-    return messages.map(msg => buildInboxListItem(msg, item));
+    return messages.map(msg => buildInboxListItem(msg, item, readIds));
   }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return Response.json({ folder, items, counts });
@@ -268,6 +322,7 @@ export async function POST(req: NextRequest) {
     created_at:  activity.created_at,
     archived_at: null,
     deleted_at:  null,
+    is_read:     true,
   };
 
   return Response.json({
@@ -317,7 +372,7 @@ export async function PATCH(req: NextRequest) {
     .maybeSingle();
 
   if (itemError || !item) return Response.json({ error: "Thread not found" }, { status: 404 });
-  if (!(await canAccessItem(item, userId, activeOrgId)) || !canManageItem(item, userId)) {
+  if (!(await canAccessItem(item, userId, activeOrgId))) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

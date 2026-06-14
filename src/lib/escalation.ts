@@ -80,6 +80,7 @@ export type EscalationInboxMessage = {
   created_at:  string;
   archived_at?: string | null;
   deleted_at?:  string | null;
+  is_read?:    boolean;
 };
 
 export function escalationReplyDomain() {
