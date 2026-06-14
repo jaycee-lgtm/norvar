@@ -4,7 +4,7 @@
 /* ══════════════════════════════════════════════════════════════════
    NORVAR DESIGN TOKENS
    Dark  — C: Pure black, cool silver hierarchy
-   Light — A: Warm off-white, specific ink hierarchy
+   Light — Soft neutral white, dark gray text hierarchy
 ══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -37,28 +37,28 @@
 }
 
 .light, [data-theme="light"] {
-  --bg:    #f5f0eb;
+  --bg:    #f7f7f5;
   --card:  #ffffff;
-  --card2: #ece7e0;
-  --lift:  #e5dfd8;
-  --bdr:   rgba(28,20,14,.08);
-  --bdr2:  rgba(28,20,14,.14);
-  --bdr3:  rgba(28,20,14,.24);
-  --fg:    #1a1210;
-  --fg2:   #6b5e55;
-  --fg3:   #8a796d;
-  --fg4:   #b8aba0;
+  --card2: #f0f0ee;
+  --lift:  #e8e8e6;
+  --bdr:   rgba(0, 0, 0, 0.06);
+  --bdr2:  rgba(0, 0, 0, 0.10);
+  --bdr3:  rgba(0, 0, 0, 0.18);
+  --fg:    #171717;
+  --fg2:   #525252;
+  --fg3:   #737373;
+  --fg4:   #a3a3a3;
   --red:   #8b1a1a;
   --red2:  #a52020;
   --accent: var(--red);
-  --on-red: #faf7f4;
-  --overlay: rgba(26, 18, 14, 0.28);
-  --shadow-sm: 0 1px 3px rgba(26, 18, 14, 0.06), 0 4px 16px rgba(26, 18, 14, 0.04);
-  --shadow-md: 0 8px 28px rgba(26, 18, 14, 0.10);
-  --shadow-lg: 0 16px 40px rgba(26, 18, 14, 0.12);
-  --logo-slash: #1a1210;
-  --logo-slash-dim: rgba(26, 18, 16, 0.55);
-  --logo-slash-faint: rgba(26, 18, 16, 0.3);
+  --on-red: #ffffff;
+  --overlay: rgba(0, 0, 0, 0.32);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.10);
+  --logo-slash: #171717;
+  --logo-slash-dim: rgba(23, 23, 23, 0.55);
+  --logo-slash-faint: rgba(23, 23, 23, 0.3);
   --rh:    #b83232; --rh-bg: rgba(184,50,50,.07); --rh-bdr: rgba(184,50,50,.17);
   --rm:    #9a5a18; --rm-bg: rgba(154,90,24,.07);  --rm-bdr: rgba(154,90,24,.17);
   --rl:    #15803d; --rl-bg: rgba(21,128,61,.07);  --rl-bdr: rgba(21,128,61,.17);
@@ -129,6 +129,12 @@ input, textarea, select, button {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.light .sidebar,
+[data-theme="light"] .sidebar {
+  background: var(--card);
+  border-right-color: var(--bdr);
 }
 
 .main-area {

@@ -15,7 +15,7 @@ export const THEME_OPTIONS: {
   {
     value:       "light",
     label:       "Light",
-    description: "Warm off-white background with ink-toned text.",
+    description: "Soft white background with neutral dark text.",
   },
   {
     value:       "system",
