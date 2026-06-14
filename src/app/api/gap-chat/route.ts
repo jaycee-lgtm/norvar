@@ -9,7 +9,7 @@ import {
   retrieveRegulatoryContext,
 } from "@/lib/regulatory-rag";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
-import { GRC_FORMATTING_RULES } from "@/lib/grc-prompt";
+import { GRC_FORMATTING_RULES, GRC_PLAIN_LANGUAGE_RULES } from "@/lib/grc-prompt";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -46,6 +46,8 @@ Help them understand how to remediate this gap with practical, actionable guidan
 
 Rules:
 - Answer only what was asked. Be direct and concise.
+- Explain remediation in plain language — assume the user is not a compliance lawyer.
+${GRC_PLAIN_LANGUAGE_RULES}
 - Reference specific regulation articles when relevant.
 ${GRC_FORMATTING_RULES}
 - Build on prior messages in this thread — do not repeat the gap summary unless asked.

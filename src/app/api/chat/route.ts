@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
-import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX, GRC_FORMATTING_RULES } from "@/lib/grc-prompt";
+import { GRC_SYSTEM_PROMPT, GRC_GUARDRAILS, GRC_DOCUMENT_REDLINE_APPENDIX, GRC_FORMATTING_RULES, GRC_PLAIN_LANGUAGE_RULES } from "@/lib/grc-prompt";
 import { CASSIUS_CONTEXT } from "@/lib/agent-prompts";
 import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
@@ -35,7 +35,8 @@ CRITICAL RULES:
 - Do NOT repeat or re-summarise the assessment or previous answers already given.
 - Do NOT re-state who the controller is or other points already established in this conversation.
 - Build directly on what was already discussed. Treat this as a continuing conversation.
-- Reference specific regulation articles when relevant.
+- Explain findings and requirements in plain language first; add legal citations only when the user needs audit-level detail or asks for the source.
+${GRC_PLAIN_LANGUAGE_RULES}
 ${GRC_FORMATTING_RULES}
 - If the question has already been answered, say so briefly and add anything new.
 ${GRC_GUARDRAILS}`;

@@ -230,7 +230,7 @@ No markdown, no bullets, just clear prose.
       "severity":    "high" | "medium" | "low",
       "domain":      "privacy" | "ai_governance" | "cybersecurity",
       "title":       "short gap title",
-      "detail":      "specific issue with article/section citations — 2-4 sentences",
+      "detail":      "specific issue explained in plain language first, then article/section if needed — 2-4 sentences",
       "frameworks":  ["applicable frameworks"],
       "remediation": "Proposed remediation as 2-4 numbered steps (1. ... 2. ...) or bullet lines starting with •. Each step must be a concrete action, not a restatement of the gap."
     }
