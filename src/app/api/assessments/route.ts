@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     if (id) {
       const { data, error } = await supabase
         .from("assessments")
-        .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions, result, messages, gap_chats, prior_nora_chat")
+        .select("id, title, description, assessment_number, risk_tier, risk_score, created_at, domains, jurisdictions, result, messages, gap_chats, prior_nora_chat")
         .eq("id", id)
         .eq("user_id", userId)
         .single();
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     // List — summary rows for sidebar + history page
     const { data, error } = await supabase
       .from("assessments")
-      .select("id, title, description, risk_tier, risk_score, created_at, domains, jurisdictions, folder_id")
+      .select("id, title, description, assessment_number, risk_tier, risk_score, created_at, domains, jurisdictions, folder_id")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(limit);

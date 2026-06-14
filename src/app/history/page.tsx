@@ -7,12 +7,13 @@ import { normalizeRiskTier } from "@/lib/risk-tiers";
 import { AlertTriangle, Tag, Clock, Plus, FileSearch, ChevronRight, Trash2 } from "lucide-react";
 
 type HistoryItem = {
-  id:            string;
-  description:   string;
-  title?:        string;
-  risk_tier:     string;
-  created_at:    string;
-  domains?:      string[];
+  id:                string;
+  description:       string;
+  title?:            string;
+  assessment_number?: string | null;
+  risk_tier:         string;
+  created_at:        string;
+  domains?:          string[];
 };
 
 function tierColors(tier: string) {
@@ -42,6 +43,12 @@ export default function HistoryPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const tierCounts = {
+    high:   items.filter(i => normalizeRiskTier(i.risk_tier) === "high").length,
+    medium: items.filter(i => normalizeRiskTier(i.risk_tier) === "medium").length,
+    low:    items.filter(i => normalizeRiskTier(i.risk_tier) === "low").length,
+  };
 
   const deleteItem = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -73,12 +80,32 @@ export default function HistoryPage() {
               <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.04em", fontFamily: "'Sora', sans-serif" }}>
                 Your assessments
               </h1>
+              {!loading && items.length > 0 && (
+                <p style={{ fontSize: 12, color: "var(--fg3)", marginTop: 6, fontFamily: "'Sora', sans-serif" }}>
+                  {items.length} assessment{items.length === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
             <Link href="/assess" className="btn-primary" style={{ fontSize: 12, padding: "8px 14px", gap: 6 }}>
               <Plus size={13} strokeWidth={2} />
               New assessment
             </Link>
           </div>
+
+          {!loading && items.length > 0 && (
+            <div className="history-stats-bar">
+              {[
+                { label: "High risk",   value: tierCounts.high,   color: "var(--rh)" },
+                { label: "Medium risk", value: tierCounts.medium, color: "var(--rm)" },
+                { label: "Low risk",    value: tierCounts.low,    color: "var(--rl)" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="history-stat">
+                  <span className="history-stat-value" style={{ color }}>{value}</span>
+                  {label}
+                </div>
+              ))}
+            </div>
+          )}
 
           {loading && (
             <div style={{ display: "flex", gap: 5, justifyContent: "center", padding: "60px 0" }}>
@@ -117,6 +144,7 @@ export default function HistoryPage() {
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                        <span className="history-item-number">{item.assessment_number ?? "—"}</span>
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: 4,
                           fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
