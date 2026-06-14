@@ -1,6 +1,7 @@
 "use client";
 
 import { OrganizationProfile, OrganizationSwitcher } from "@clerk/nextjs";
+import SettingsSection from "@/components/SettingsSection";
 
 const orgAppearance = {
   elements: {
@@ -32,15 +33,11 @@ const orgAppearance = {
 
 export default function OrgSettingsPanel() {
   return (
-    <section style={{ marginBottom: 32 }}>
-      <p className="stag" style={{ marginBottom: 8 }}>Organization</p>
-      <h2 style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.03em", marginBottom: 8, fontFamily: "'Sora', sans-serif" }}>
-        Workspace
-      </h2>
-      <p style={{ fontSize: 12, color: "var(--fg3)", lineHeight: 1.6, marginBottom: 16, fontFamily: "'Sora', sans-serif" }}>
-        Switch workspace, invite members, and manage organization settings.
-      </p>
-
+    <SettingsSection
+      label="Organization"
+      title="Workspace"
+      description="Switch workspace, invite members, and manage organization settings."
+    >
       <div className="settings-org-switcher">
         <OrganizationSwitcher
           hidePersonal={false}
@@ -53,6 +50,6 @@ export default function OrgSettingsPanel() {
       <div className="settings-clerk settings-org" style={{ marginTop: 16 }}>
         <OrganizationProfile appearance={orgAppearance} />
       </div>
-    </section>
+    </SettingsSection>
   );
 }

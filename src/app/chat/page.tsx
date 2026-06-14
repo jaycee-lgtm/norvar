@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Show, SignInButton } from "@clerk/nextjs";
+import { Show, SignInButton, useUser } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
@@ -17,6 +17,8 @@ import { CHAT_AGENT } from "@/lib/agents";
 import { shouldRedirectToCassius } from "@/lib/cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
+import { NORA_GREETINGS } from "@/lib/agent-prompts";
+import { firstNameFromUser, getTimeOfDay } from "@/lib/agent-greeting-utils";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -44,6 +46,7 @@ export default function ChatPage() {
 function Chat() {
   const searchParams = useSearchParams();
   const router       = useRouter();
+  const { user }     = useUser();
   const folderId     = searchParams.get("folder");
 
   const [messages,       setMessages]       = useState<DisplayMessage[]>([]);
@@ -67,6 +70,10 @@ function Chat() {
   const loadedIdRef      = useRef<string | null>(null);
   const handleSendRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef    = useRef<TypewriterDrain | null>(null);
+  const greetedRef       = useRef(false);
+  const openingGreetingRef = useRef<string | null>(null);
+
+  const [greetingTyping, setGreetingTyping] = useState(false);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -81,6 +88,9 @@ function Chat() {
         setAttachedDocText("");
         setAttachedDocName("");
         setFileError("");
+        greetedRef.current = false;
+        openingGreetingRef.current = null;
+        setGreetingTyping(false);
       }
       loadedIdRef.current = null;
       return;
@@ -124,7 +134,7 @@ function Chat() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, greetingTyping]);
 
   useEffect(() => {
     const el = inputRef.current;
@@ -168,6 +178,33 @@ function Chat() {
 
   const isMobileView = useIsMobile();
 
+  const triggerAutoGreet = () => {
+    if (greetedRef.current || messages.length > 0 || loadingSaved || loading) return;
+    greetedRef.current = true;
+
+    const text = NORA_GREETINGS.cold(
+      firstNameFromUser(user),
+      getTimeOfDay(),
+    );
+    openingGreetingRef.current = text;
+    setGreetingTyping(true);
+    setMessages([{ role: "assistant", content: "" }]);
+
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "assistant");
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<DisplayMessage, { role: "assistant" }>;
+          next[idx] = { role: "assistant", content: msg.content + ch };
+        }
+        return next;
+      });
+    }, () => setGreetingTyping(false));
+    typewriterRef.current.enqueue(text);
+  };
+
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
     disabled: loading,
@@ -192,7 +229,12 @@ function Chat() {
     setError("");
 
     const userMsg: ChatMessage = { role: "user", content };
-    const newHistory = [...history, userMsg];
+    const newHistory = history.length === 0 && openingGreetingRef.current
+      ? [
+          { role: "assistant" as const, content: openingGreetingRef.current },
+          userMsg,
+        ]
+      : [...history, userMsg];
 
     setMessages(prev => [...prev, { role: "user", content }, { role: "streaming", content: "" }]);
     setHistory(newHistory);
@@ -332,6 +374,10 @@ function Chat() {
     setSelectedDocumentIds([]);
     clearAttachedDoc();
     loadedIdRef.current = null;
+    greetedRef.current = false;
+    openingGreetingRef.current = null;
+    setGreetingTyping(false);
+    typewriterRef.current?.reset();
     router.replace("/chat", { scroll: false });
   };
 
@@ -358,6 +404,10 @@ function Chat() {
   };
 
   const isHome = messages.length === 0 && !loadingSaved;
+
+  const handleComposerFocus = () => {
+    if (isHome) triggerAutoGreet();
+  };
 
   const streamCursor = (
     <span style={{
@@ -439,6 +489,7 @@ function Chat() {
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
+                        onFocus={handleComposerFocus}
                         rows={1}
                       />
                     </div>
@@ -467,6 +518,7 @@ function Chat() {
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
+                        onFocus={handleComposerFocus}
                         rows={1}
                       />
                       <div className="composer-toolbar">
@@ -530,6 +582,11 @@ function Chat() {
                           )}
                         </div>
                         {isStreaming ? (
+                          <p className="formatted-message-p" style={{ whiteSpace: "pre-wrap" }}>
+                            {msg.content}
+                            {streamCursor}
+                          </p>
+                        ) : greetingTyping && i === messages.length - 1 ? (
                           <p className="formatted-message-p" style={{ whiteSpace: "pre-wrap" }}>
                             {msg.content}
                             {streamCursor}

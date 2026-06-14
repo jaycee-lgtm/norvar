@@ -1796,6 +1796,99 @@ input, textarea, select, button {
   justify-content: flex-start;
 }
 
+.settings-section {
+  margin-bottom: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-section-toggle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.settings-section-toggle:hover {
+  background: var(--lift);
+}
+
+.settings-section-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-section-label {
+  margin: 0;
+}
+
+.settings-section-title {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-family: 'Sora', sans-serif;
+  color: var(--fg);
+}
+
+.settings-section-summary {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.settings-section-chevron {
+  flex-shrink: 0;
+  margin-top: 6px;
+  color: var(--fg3);
+  transition: transform 0.18s ease;
+}
+
+.settings-section--open .settings-section-chevron {
+  transform: rotate(180deg);
+}
+
+.settings-section-body {
+  padding: 0 20px 20px;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.settings-section-description {
+  margin: 0 0 16px;
+  padding-top: 16px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+}
+
+.settings-section-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 8px;
+}
+
+.settings-page {
+  padding-bottom: 32px;
+}
+
 .result-actions {
   display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
 }

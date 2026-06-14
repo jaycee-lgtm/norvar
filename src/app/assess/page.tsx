@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Show } from "@clerk/nextjs";
+import { Show, useUser } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
 import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
@@ -26,7 +26,8 @@ import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT } from "@/lib/agents";
-import { pickNoraFollowUps } from "@/lib/agent-prompts";
+import { pickNoraFollowUps, CASSIUS_GREETINGS } from "@/lib/agent-prompts";
+import { firstNameFromUser, getTimeOfDay } from "@/lib/agent-greeting-utils";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
@@ -676,6 +677,7 @@ export default function HomePage() {
 function Home() {
   const searchParams = useSearchParams();
   const router       = useRouter();
+  const { user }     = useUser();
   const folderId     = searchParams.get("folder");
 
   const [messages,      setMessages]      = useState<Message[]>([]);
@@ -710,6 +712,8 @@ function Home() {
   const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef  = useRef<TypewriterDrain | null>(null);
   const assessingRef   = useRef(false);
+  const greetedRef     = useRef(false);
+  const [greetingTyping, setGreetingTyping] = useState(false);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -718,6 +722,8 @@ function Home() {
       setError("");
       setAssessmentId(null);
       setGapChats({});
+      greetedRef.current = false;
+      setGreetingTyping(false);
       return;
     }
 
@@ -792,7 +798,7 @@ function Home() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading, guidedTyping]);
+  }, [messages, loading, guidedTyping, greetingTyping]);
 
   const hasAssessment   = messages.some(m => m.role === "assistant");
   const latestAssessment = [...messages].reverse().find(
@@ -823,6 +829,9 @@ function Home() {
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
     setGuidedTyping(false);
+    greetedRef.current = false;
+    setGreetingTyping(false);
+    typewriterRef.current?.reset();
     router.push("/assess");
   }
 
@@ -874,6 +883,32 @@ function Home() {
     : input.trim().length > 8 && !loading;
 
   const isMobileView = useIsMobile();
+
+  const triggerAutoGreet = () => {
+    if (greetedRef.current || messages.length > 0 || loadingSaved || loading || guidedActive) return;
+    greetedRef.current = true;
+
+    const text = CASSIUS_GREETINGS.cold(
+      firstNameFromUser(user),
+      getTimeOfDay(),
+    );
+    setGreetingTyping(true);
+    setMessages([{ role: "chat", text: "" }]);
+
+    typewriterRef.current?.reset();
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "chat");
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<Message, { role: "chat" }>;
+          next[idx] = { ...msg, text: msg.text + ch };
+        }
+        return next;
+      });
+    }, () => setGreetingTyping(false));
+    typewriterRef.current.enqueue(text);
+  };
 
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
@@ -1039,7 +1074,7 @@ function Home() {
   };
 
   const startGuidedAssessment = async (text: string): Promise<string | null> => {
-    setMessages([{ role: "user", content: text }]);
+    setMessages(prev => [...prev, { role: "user", content: text }]);
     setPendingDesc(text);
     setGuidedActive(true);
     setGuidedAnswers({});
@@ -1367,6 +1402,10 @@ function Home() {
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
 
+  const handleComposerFocus = () => {
+    if (isHome) triggerAutoGreet();
+  };
+
   const hasAttachedDocs = !!contractName || selectedDocumentIds.length > 0;
 
   const guidedComposerPlaceholder = hasAssessment
@@ -1428,6 +1467,7 @@ function Home() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
+              onFocus={handleComposerFocus}
               rows={1}
             />
           </div>
@@ -1661,7 +1701,7 @@ function Home() {
                             </div>
                             <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.75, letterSpacing: "-0.01em", whiteSpace: "pre-wrap" }}>
                               {msg.text || ""}
-                              {loading && i === messages.length - 1 && streamCursor}
+                              {(loading || greetingTyping) && i === messages.length - 1 && streamCursor}
                             </p>
                           </div>
                         </div>
@@ -1716,6 +1756,7 @@ function Home() {
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKey}
+                            onFocus={handleComposerFocus}
                           />
                         </div>
                         <div className="mobile-composer-tools mobile-composer-tools--minimal">
@@ -1751,6 +1792,7 @@ function Home() {
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
+              onFocus={handleComposerFocus}
                       />
                       <div className="composer-toolbar">
                         <div className="composer-toolbar-start">

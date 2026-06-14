@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import SettingsSection from "@/components/SettingsSection";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   fetchOrgAssigneeRoles,
@@ -66,23 +67,21 @@ export default function GapOwnerRolesPanel() {
 
   if (loading) {
     return (
-      <section className="card" style={{ marginBottom: 28, display: "flex", justifyContent: "center", padding: 32 }}>
-        <Loader2 size={18} className="spin" color="var(--fg3)" />
-      </section>
+      <SettingsSection
+        label="Remediation"
+        title="Gap owner roles"
+        description="Set each team member's role or function once. It applies automatically to every gap they own."
+        loading
+      />
     );
   }
 
   return (
-    <section className="card" style={{ marginBottom: 28 }}>
-      <p className="stag" style={{ marginBottom: 8 }}>Remediation</p>
-      <h2 style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.03em", marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>
-        Gap owner roles
-      </h2>
-      <p style={{ fontSize: 12, color: "var(--fg3)", lineHeight: 1.65, marginBottom: 18, fontFamily: "'Sora', sans-serif" }}>
-        Set each team member&apos;s role or function once. It applies automatically to every gap they own.
-        Update roles here only — not on individual gaps.
-      </p>
-
+    <SettingsSection
+      label="Remediation"
+      title="Gap owner roles"
+      description="Set each team member's role or function once. It applies automatically to every gap they own. Update roles here only — not on individual gaps."
+    >
       {!hasOrg && (
         <p style={{ fontSize: 12, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
           Join or select an organization to manage gap owner roles.
@@ -179,6 +178,6 @@ export default function GapOwnerRolesPanel() {
           .
         </p>
       )}
-    </section>
+    </SettingsSection>
   );
 }

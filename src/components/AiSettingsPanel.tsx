@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import SettingsSection from "@/components/SettingsSection";
 import {
   DEFAULT_USER_AI_SETTINGS,
   fetchUserAiSettings,
@@ -112,22 +113,21 @@ export default function AiSettingsPanel() {
 
   if (loading) {
     return (
-      <div className="card" style={{ marginBottom: 28, display: "flex", justifyContent: "center", padding: 32 }}>
-        <Loader2 size={18} className="spin" color="var(--fg3)" />
-      </div>
+      <SettingsSection
+        label="AI"
+        title="Voice & assistant preferences"
+        description="These settings apply to your account across GRC chat and assessment follow-ups."
+        loading
+      />
     );
   }
 
   return (
-    <section className="card" style={{ marginBottom: 28 }}>
-      <p className="stag" style={{ marginBottom: 8 }}>AI</p>
-      <h2 style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.03em", marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>
-        Voice &amp; assistant preferences
-      </h2>
-      <p style={{ fontSize: 12, color: "var(--fg3)", lineHeight: 1.65, marginBottom: 18, fontFamily: "'Sora', sans-serif" }}>
-        These settings apply to your account across GRC chat and assessment follow-ups.
-      </p>
-
+    <SettingsSection
+      label="AI"
+      title="Voice & assistant preferences"
+      description="These settings apply to your account across GRC chat and assessment follow-ups."
+    >
       {!voiceConfigured && (
         <p style={{ fontSize: 12, color: "var(--rh)", marginBottom: 16, fontFamily: "'Sora', sans-serif" }}>
           Connect ElevenLabs on Vercel to enable AI voice playback and transcription.
@@ -250,6 +250,6 @@ export default function AiSettingsPanel() {
           </span>
         )}
       </div>
-    </section>
+    </SettingsSection>
   );
 }

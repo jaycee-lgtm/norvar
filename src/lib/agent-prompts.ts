@@ -50,6 +50,19 @@ export const NORA_GREETINGS = {
   },
 };
 
+export const CASSIUS_GREETINGS = {
+  cold: (name?: string, timeOfDay?: "morning" | "afternoon" | "evening") => {
+    const greeting = timeOfDay === "morning" ? "Good morning" : timeOfDay === "afternoon" ? "Good afternoon" : timeOfDay === "evening" ? "Good evening" : "Hi";
+    const nameStr  = name ? `, ${name}` : "";
+    const variants = [
+      `${greeting}${nameStr} — I'm Cassius. Describe what you're building and I'll ask a few scoping questions before running your assessment.`,
+      `${greeting}${nameStr}. Cassius here — tell me about the deployment and we'll scope it properly before I assess.`,
+      `${greeting}${nameStr}. I'm Cassius. What are you building? A sentence is enough to get started.`,
+    ];
+    return variants[Math.floor(Math.random() * variants.length)];
+  },
+};
+
 // ─── NORA FOLLOW-UP PROMPTS ──────────────────────────────────────────────────
 // Use these as suggested follow-up prompts shown in the UI after an assessment
 

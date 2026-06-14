@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import SettingsSection from "@/components/SettingsSection";
 import {
   DEFAULT_USER_AI_SETTINGS,
   fetchUserAiSettings,
@@ -52,30 +53,13 @@ export default function AppearanceSettingsPanel() {
     return () => window.clearTimeout(t);
   }, [savedAt]);
 
-  if (loading) {
-    return (
-      <div className="card" style={{ marginBottom: 28, display: "flex", justifyContent: "center", padding: 32 }}>
-        <Loader2 size={18} className="spin" color="var(--fg3)" />
-      </div>
-    );
-  }
-
   return (
-    <section className="card" style={{ marginBottom: 28 }}>
-      <p className="stag" style={{ marginBottom: 8 }}>Appearance</p>
-      <h2 style={{
-        fontSize: 16, fontWeight: 500, letterSpacing: "-0.03em",
-        marginBottom: 6, fontFamily: "'Sora', sans-serif",
-      }}>
-        Theme
-      </h2>
-      <p style={{
-        fontSize: 12, color: "var(--fg3)", lineHeight: 1.65,
-        marginBottom: 16, fontFamily: "'Sora', sans-serif",
-      }}>
-        Choose how Norvar looks on this device. System follows your OS light or dark mode.
-      </p>
-
+    <SettingsSection
+      label="Appearance"
+      title="Theme"
+      description="Choose how Norvar looks on this device. System follows your OS light or dark mode."
+      loading={loading}
+    >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {THEME_OPTIONS.map(option => {
           const active = settings.themePreference === option.value;
@@ -141,6 +125,6 @@ export default function AppearanceSettingsPanel() {
           </span>
         )}
       </div>
-    </section>
+    </SettingsSection>
   );
 }
