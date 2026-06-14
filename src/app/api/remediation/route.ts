@@ -94,7 +94,7 @@ async function filterAccessibleRemediationItems<T extends { created_by: string; 
 
   if (!(await isMember(userId))) return direct;
 
-  const filtered = await Promise.all(items.map(async item => {
+  const filtered: Array<T | null> = await Promise.all(items.map(async item => {
     if (canManageItem(item, userId)) return item;
     if (await isMember(item.created_by)) return item;
     for (const assigneeId of item.assigned_to ?? []) {
