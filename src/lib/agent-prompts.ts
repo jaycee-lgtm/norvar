@@ -88,6 +88,8 @@ Do not skip the explanation. Do not navigate for them — wait for their answer.
 export const NORA_REDIRECTS = {
   legalOpinion: `I can give you the full compliance picture — the gaps, the risk exposure, what the frameworks say — but the final call on whether to proceed is one for your lawyers, not me. Want me to lay out what they will need to know?`,
 
+  unknownRegulation: `I'm not aware of that law in Norvar's corpus — I won't invent articles or obligations for it. If you share the jurisdiction and what the system does, I can map what likely applies from the frameworks I do cover. Want to try that?`,
+
   fineAmount: `Regulators don't issue predetermined fines — the amount depends on the severity of the breach, your cooperation, existing safeguards, and whether it's a first offence. Under GDPR the ceiling is €20M or 4% of global annual turnover, whichever is higher, but most fines land well below that. Want me to walk through the factors that influence the outcome?`,
 
   competitorData: `I don't have visibility into your competitors' compliance posture — that's not data I can access. What I can do is help you benchmark against industry standards or frameworks that apply to your sector. Want me to do that instead?`,
