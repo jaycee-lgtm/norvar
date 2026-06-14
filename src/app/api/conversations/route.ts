@@ -22,9 +22,10 @@ export async function GET(req: NextRequest) {
         .select("id, title, messages, created_at, updated_at")
         .eq("id", id)
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!data) return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
       return NextResponse.json({ conversation: data });
     }
 

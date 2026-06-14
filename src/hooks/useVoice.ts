@@ -201,10 +201,12 @@ export function useVoice(options: UseVoiceOptions = {}) {
 
       try {
         const response = await onVoiceSendRef.current(text);
-        if (response?.trim()) {
+        if (response === null) {
+          setVoiceError("Could not send your message. Try again.");
+          micSessionRef.current = false;
+        } else if (response.trim()) {
           speakAfterResponse(response, true);
         } else {
-          setVoiceError("Could not send your message. Try again.");
           micSessionRef.current = false;
         }
       } catch (e: unknown) {

@@ -133,11 +133,11 @@ export async function POST(req: NextRequest) {
           }
           await send({ type: "done", text: fullText, conversation_id, message_id: assistantId });
         } else {
-          const title = await generateChatTitle(lastUser, fullText);
+          const placeholderTitle = lastUser.trim().slice(0, 60) || "New chat";
           const { data: saved, error: insertError } = await supabase.from("conversations")
-            .insert({ user_id: userId, title, messages: newMessages })
+            .insert({ user_id: userId, title: placeholderTitle, messages: newMessages })
             .select("id")
-            .single();
+            .maybeSingle();
           if (insertError || !saved?.id) {
             console.error("Failed to create conversation:", insertError);
             await send({
@@ -156,6 +156,13 @@ export async function POST(req: NextRequest) {
             });
           }
           await send({ type: "done", text: fullText, conversation_id: saved.id, message_id: assistantId });
+          void generateChatTitle(lastUser, fullText).then(async title => {
+            if (!title || title === placeholderTitle) return;
+            await supabase.from("conversations")
+              .update({ title })
+              .eq("id", saved.id)
+              .eq("user_id", userId);
+          }).catch(err => console.error("Background title update failed:", err));
         }
       } else {
         await send({ type: "done", text: fullText, conversation_id: conversation_id ?? null });

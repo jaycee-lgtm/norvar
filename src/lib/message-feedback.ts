@@ -112,7 +112,7 @@ export async function persistMessageFeedback(
       .select("messages")
       .eq("id", container_id)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (!row) return { ok: false, error: "Conversation not found" };
 
@@ -133,7 +133,7 @@ export async function persistMessageFeedback(
       .select("messages")
       .eq("id", container_id)
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (!row) return { ok: false, error: "Assessment not found" };
 

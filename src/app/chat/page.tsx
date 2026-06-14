@@ -86,6 +86,18 @@ function Chat() {
   const openingGreetingRef = useRef<string | null>(null);
   const sendQueueRef     = useRef<string[]>([]);
   const sendInFlightRef  = useRef(false);
+  const sendWaitersRef   = useRef<Array<() => void>>([]);
+
+  const waitForSendIdle = (): Promise<void> => {
+    if (!sendInFlightRef.current) return Promise.resolve();
+    return new Promise(resolve => {
+      sendWaitersRef.current.push(resolve);
+    });
+  };
+
+  const notifySendIdle = () => {
+    for (const resolve of sendWaitersRef.current.splice(0)) resolve();
+  };
 
   const [greetingTyping, setGreetingTyping] = useState(false);
   const [queuedCount, setQueuedCount]       = useState(0);
@@ -250,13 +262,17 @@ function Chat() {
 
   const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
     const content = (textOverride ?? input).trim();
-    if (!content || content.length <= 2) return null;
+    if (!content || (!fromVoice && content.length <= 2)) return null;
 
     if (sendInFlightRef.current) {
-      sendQueueRef.current.push(content);
-      setQueuedCount(sendQueueRef.current.length);
-      if (!textOverride) setInput("");
-      return null;
+      if (fromVoice) {
+        await waitForSendIdle();
+      } else {
+        sendQueueRef.current.push(content);
+        setQueuedCount(sendQueueRef.current.length);
+        if (!textOverride) setInput("");
+        return null;
+      }
     }
 
     const lastAssistant = [...history].reverse().find(
@@ -273,7 +289,7 @@ function Chat() {
       setMessages(prev => [...prev, { role: "user", content }]);
       setHistory(prev => [...prev, { role: "user", content }]);
       router.push("/assess");
-      return null;
+      return "";
     }
 
     if (!textOverride) setInput("");
@@ -387,6 +403,7 @@ function Chat() {
     } finally {
       setLoading(false);
       sendInFlightRef.current = false;
+      notifySendIdle();
       if (sendQueueRef.current.length > 0) {
         const next = sendQueueRef.current.shift()!;
         setQueuedCount(sendQueueRef.current.length);

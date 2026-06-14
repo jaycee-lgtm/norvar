@@ -10,11 +10,13 @@ export type SSEEvent = {
 function dispatchSSEPart(part: string, onEvent: (event: SSEEvent) => void) {
   const line = part.trim();
   if (!line.startsWith("data: ")) return;
+  let event: SSEEvent;
   try {
-    onEvent(JSON.parse(line.slice(6)) as SSEEvent);
+    event = JSON.parse(line.slice(6)) as SSEEvent;
   } catch {
-    // ignore malformed chunks
+    return;
   }
+  onEvent(event);
 }
 
 export async function readSSEStream(response: Response, onEvent: (event: SSEEvent) => void) {
