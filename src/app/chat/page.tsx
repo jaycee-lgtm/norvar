@@ -102,6 +102,17 @@ function Chat() {
   useEffect(() => {
     const id = searchParams.get("id");
     if (!id) {
+      if (loadedIdRef.current !== null) {
+        setMessages([]);
+        setHistory([]);
+        setConversationId(null);
+        setError("");
+        setInput("");
+        setSelectedDocumentIds([]);
+        setAttachedDocText("");
+        setAttachedDocName("");
+        setFileError("");
+      }
       loadedIdRef.current = null;
       return;
     }

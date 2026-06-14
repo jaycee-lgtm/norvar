@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
@@ -156,6 +156,12 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
     : "N";
 
+  const openFreshChat = (e: MouseEvent) => {
+    if (isAssess || !isChat || !activeId) return;
+    e.preventDefault();
+    router.replace("/chat");
+  };
+
   const mainNav = [
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
@@ -183,7 +189,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             Norvar
           </span>
         </div>
-        <Link href={isAssess ? "/assess" : "/chat"} className="new-assess-btn">
+        <Link href={isAssess ? "/assess" : "/chat"} className="new-assess-btn" onClick={openFreshChat}>
           <span className="new-assess-label">{isAssess ? "New assessment" : "New chat"}</span>
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
@@ -467,7 +473,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         )}
       </div>
 
-      <Link href={isAssess ? "/assess" : "/chat"} className="sidebar-mobile-fab">
+      <Link href={isAssess ? "/assess" : "/chat"} className="sidebar-mobile-fab" onClick={openFreshChat}>
         <SquarePen size={14} strokeWidth={1.75} />
         {isAssess ? "New assessment" : "New chat"}
       </Link>
