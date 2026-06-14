@@ -136,7 +136,7 @@ export default function ModeSelector({
           borderRadius: 9,
           overflow:     "hidden",
           zIndex:       300,
-          boxShadow:    "0 8px 28px rgba(0,0,0,0.3)",
+          boxShadow:    "var(--shadow-md)",
         }}>
           <div style={{
             padding:        "8px 12px 6px",

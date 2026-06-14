@@ -10,6 +10,7 @@ import {
 } from "@/lib/regulatory-rag";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
+import { generateChatTitle } from "@/lib/generate-thread-title";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
           }
           await send({ type: "done", text: fullText, conversation_id });
         } else {
-          const title = lastUser.length > 60 ? `${lastUser.slice(0, 57)}...` : lastUser;
+          const title = await generateChatTitle(lastUser, fullText);
           const { data: saved, error: insertError } = await supabase.from("conversations")
             .insert({ user_id: userId, title, messages: newMessages })
             .select("id")

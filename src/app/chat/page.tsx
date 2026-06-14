@@ -55,7 +55,7 @@ function InfoTip({ text }: { text: string }) {
           color: "var(--fg2)", lineHeight: 1.65, fontFamily: "'Sora', sans-serif",
           letterSpacing: "-.01em", opacity: 0, transition: "opacity 0.15s",
           pointerEvents: "none", zIndex: 50,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         {text}
@@ -222,6 +222,7 @@ function Chat() {
 
     let streamText = "";
     let finalResponse: string | null = null;
+    const wasNewConversation = !conversationId;
 
     try {
       const res = await fetch("/api/grc-chat", {
@@ -259,6 +260,9 @@ function Chat() {
             setConversationId(event.conversation_id);
             loadedIdRef.current = event.conversation_id;
             router.replace(`/chat?id=${event.conversation_id}`, { scroll: false });
+            if (wasNewConversation) {
+              window.dispatchEvent(new Event("norvar:conversations-updated"));
+            }
           }
         } else if (event.type === "error") {
           throw new Error(event.text);

@@ -59,7 +59,7 @@ function CreateProjectModal({ onClose, onCreated }: {
 
   return (
     <div className="app-modal-backdrop" style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+      position: "fixed", inset: 0, background: "var(--overlay)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
     }}>
       <div className="app-modal-panel" style={{

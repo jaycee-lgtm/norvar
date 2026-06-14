@@ -59,8 +59,8 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
   const [chatNavOpen, setChatNavOpen]     = useState(isChat && !isAssess);
-  const [mobileChatsOpen, setMobileChatsOpen] = useState(false);
-  const [mobileAssessmentsOpen, setMobileAssessmentsOpen] = useState(false);
+  const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(isAssess);
+  const [recentChatsOpen, setRecentChatsOpen] = useState(isChat && !isAssess);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -69,12 +69,16 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       .catch(() => {});
   };
 
+  const loadConversations = () => {
+    fetch("/api/conversations?limit=5")
+      .then(r => r.json())
+      .then(d => setConversations(d.conversations || []))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (isMobileView || isChat) {
-      fetch("/api/conversations?limit=5")
-        .then(r => r.json())
-        .then(d => setConversations(d.conversations || []))
-        .catch(() => {});
+      loadConversations();
     }
     if (isMobileView || isAssess) {
       loadAssessments();
@@ -97,8 +101,16 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   }, []);
 
   useEffect(() => {
+    const handler = () => loadConversations();
+    window.addEventListener("norvar:conversations-updated", handler);
+    return () => window.removeEventListener("norvar:conversations-updated", handler);
+  }, []);
+
+  useEffect(() => {
     if (isAssess) setAssessNavOpen(true);
     if (isChat && !isAssess) setChatNavOpen(true);
+    if (isAssess) setRecentAssessmentsOpen(true);
+    if (isChat && !isAssess) setRecentChatsOpen(true);
   }, [path, isAssess, isChat]);
 
   const deleteAssessment = async (id: string, title: string) => {
@@ -341,183 +353,111 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         )}
 
         {assessments.length > 0 && (isMobileView ? sidebarMode === "assess" : (isAssess || path === "/history")) && (
-          isMobileView ? (
-            <>
-              <div className="sidebar-divider" />
-              <button
-                type="button"
-                className="sidebar-mobile-recents-toggle"
-                aria-expanded={mobileAssessmentsOpen}
-                onClick={() => setMobileAssessmentsOpen(v => !v)}
-              >
-                <span>Recent assessments</span>
-                <ChevronDown
-                  size={14}
-                  strokeWidth={2}
-                  style={{ transform: mobileAssessmentsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                />
-              </button>
-              {mobileAssessmentsOpen && (
-                <div className="sidebar-mobile-recents-panel">
-                  {assessments.map(item => {
-                    const c = TIER[tierKey(item.risk_tier)];
-                    const isActive = activeId === item.id;
-                    return (
-                      <div key={item.id} className="recent-item-row">
-                        <Link
-                          href={`/assess?id=${item.id}`}
-                          className={`recent-item${isActive ? " active" : ""}`}
-                        >
-                          <div className="recent-dot" style={{ background: c.dot }} />
-                          <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
-                          <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
-                            {item.risk_score}
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          className="recent-delete"
-                          aria-label={`Delete ${item.title}`}
-                          disabled={deletingId === item.id}
-                          onClick={() => deleteAssessment(item.id, item.title)}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                  <Link href="/history" className="sidebar-all-link">
-                    All assessments
-                    <ChevronRight size={14} strokeWidth={2} />
-                  </Link>
-                </div>
-              )}
-            </>
-          ) : (
           <>
             <div className="sidebar-divider" />
-            <div className="sidebar-section">Recent assessments</div>
-            {assessments.map(item => {
-              const c = TIER[tierKey(item.risk_tier)];
-              const isActive = activeId === item.id;
-              return (
-                <div key={item.id} className="recent-item-row">
-                  <Link
-                    href={`/assess?id=${item.id}`}
-                    className={`recent-item${isActive ? " active" : ""}`}
-                  >
-                    <div className="recent-dot" style={{ background: c.dot }} />
-                    <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
-                    <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
-                      {item.risk_score}
-                    </span>
-                  </Link>
-                  <button
-                    type="button"
-                    className="recent-delete"
-                    aria-label={`Delete ${item.title}`}
-                    disabled={deletingId === item.id}
-                    onClick={() => deleteAssessment(item.id, item.title)}
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              );
-            })}
-            <Link href="/history" className="sidebar-all-link">
-              All assessments
-              <ChevronRight size={14} strokeWidth={2} />
-            </Link>
+            <button
+              type="button"
+              className="sidebar-recents-toggle"
+              aria-expanded={recentAssessmentsOpen}
+              aria-label={recentAssessmentsOpen ? "Collapse recent assessments" : "Expand recent assessments"}
+              onClick={() => setRecentAssessmentsOpen(v => !v)}
+            >
+              <span>Recent assessments</span>
+              <ChevronDown
+                size={isMobileView ? 14 : 12}
+                strokeWidth={2}
+                style={{ transform: recentAssessmentsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              />
+            </button>
+            {recentAssessmentsOpen && (
+              <div className="sidebar-recents-panel">
+                {assessments.map(item => {
+                  const c = TIER[tierKey(item.risk_tier)];
+                  const isActive = activeId === item.id;
+                  return (
+                    <div key={item.id} className="recent-item-row">
+                      <Link
+                        href={`/assess?id=${item.id}`}
+                        className={`recent-item${isActive ? " active" : ""}`}
+                      >
+                        <div className="recent-dot" style={{ background: c.dot }} />
+                        <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
+                        <span className="recent-score" style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}>
+                          {item.risk_score}
+                        </span>
+                      </Link>
+                      <button
+                        type="button"
+                        className="recent-delete"
+                        aria-label={`Delete ${item.title}`}
+                        disabled={deletingId === item.id}
+                        onClick={() => deleteAssessment(item.id, item.title)}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  );
+                })}
+                <Link href="/history" className="sidebar-all-link">
+                  All assessments
+                  <ChevronRight size={14} strokeWidth={2} />
+                </Link>
+              </div>
+            )}
           </>
-          )
         )}
 
         {conversations.length > 0 && (isMobileView ? sidebarMode === "chat" : isChat) && (
-          isMobileView ? (
-            <>
-              <div className="sidebar-divider" />
-              <button
-                type="button"
-                className="sidebar-mobile-recents-toggle"
-                aria-expanded={mobileChatsOpen}
-                onClick={() => setMobileChatsOpen(v => !v)}
-              >
-                <span>Recent chats</span>
-                <ChevronDown
-                  size={14}
-                  strokeWidth={2}
-                  style={{ transform: mobileChatsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                />
-              </button>
-              {mobileChatsOpen && (
-                <div className="sidebar-mobile-recents-panel">
-                  {conversations.map(item => {
-                    const isActive = activeId === item.id;
-                    return (
-                      <div key={item.id} className="recent-item-row">
-                        <Link
-                          href={`/chat?id=${item.id}`}
-                          className={`recent-item${isActive ? " active" : ""}`}
-                        >
-                          <div className="recent-dot" style={{ background: "var(--fg3)" }} />
-                          <span className={`recent-text${isActive ? " active-text" : ""}`}>
-                            {item.title || "Untitled chat"}
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          className="recent-delete"
-                          aria-label={`Delete ${item.title || "chat"}`}
-                          disabled={deletingChatId === item.id}
-                          onClick={() => deleteConversation(item.id, item.title)}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                  <Link href="/chat/history" className="sidebar-all-link">
-                    All chats
-                    <ChevronRight size={14} strokeWidth={2} />
-                  </Link>
-                </div>
-              )}
-            </>
-          ) : (
           <>
             <div className="sidebar-divider" />
-            <div className="sidebar-section">Recent chats</div>
-            {conversations.map(item => {
-              const isActive = activeId === item.id;
-              return (
-                <div key={item.id} className="recent-item-row">
-                  <Link
-                    href={`/chat?id=${item.id}`}
-                    className={`recent-item${isActive ? " active" : ""}`}
-                  >
-                    <div className="recent-dot" style={{ background: "var(--fg3)" }} />
-                    <span className={`recent-text${isActive ? " active-text" : ""}`}>
-                      {item.title || "Untitled chat"}
-                    </span>
-                  </Link>
-                  <button
-                    type="button"
-                    className="recent-delete"
-                    aria-label={`Delete ${item.title || "chat"}`}
-                    disabled={deletingChatId === item.id}
-                    onClick={() => deleteConversation(item.id, item.title)}
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              );
-            })}
-            <Link href="/chat/history" className="sidebar-all-link">
-              All chats
-              <ChevronRight size={14} strokeWidth={2} />
-            </Link>
+            <button
+              type="button"
+              className="sidebar-recents-toggle"
+              aria-expanded={recentChatsOpen}
+              aria-label={recentChatsOpen ? "Collapse recent chats" : "Expand recent chats"}
+              onClick={() => setRecentChatsOpen(v => !v)}
+            >
+              <span>Recent chats</span>
+              <ChevronDown
+                size={isMobileView ? 14 : 12}
+                strokeWidth={2}
+                style={{ transform: recentChatsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              />
+            </button>
+            {recentChatsOpen && (
+              <div className="sidebar-recents-panel">
+                {conversations.map(item => {
+                  const isActive = activeId === item.id;
+                  return (
+                    <div key={item.id} className="recent-item-row">
+                      <Link
+                        href={`/chat?id=${item.id}`}
+                        className={`recent-item${isActive ? " active" : ""}`}
+                      >
+                        <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                        <span className={`recent-text${isActive ? " active-text" : ""}`}>
+                          {item.title || "Untitled chat"}
+                        </span>
+                      </Link>
+                      <button
+                        type="button"
+                        className="recent-delete"
+                        aria-label={`Delete ${item.title || "chat"}`}
+                        disabled={deletingChatId === item.id}
+                        onClick={() => deleteConversation(item.id, item.title)}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  );
+                })}
+                <Link href="/chat/history" className="sidebar-all-link">
+                  All chats
+                  <ChevronRight size={14} strokeWidth={2} />
+                </Link>
+              </div>
+            )}
           </>
-          )
         )}
 
         {extra && (

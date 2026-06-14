@@ -1,7 +1,6 @@
 // Norvar logo mark — three fading slashes. Motion, scanning, tiers.
 
 const BRAND_RED = "#8b1a1a";
-const SLASH_LIGHT = "#e2e2e0";
 
 type LogoProps = {
   size?: number;
@@ -12,7 +11,8 @@ type LogoProps = {
 
 export default function Logo({ size = 26, variant = "mark", className }: LogoProps) {
   const isHero = variant === "hero";
-  const firstStroke = isHero ? BRAND_RED : SLASH_LIGHT;
+  const isMark = variant === "mark";
+  const firstStroke = isHero ? BRAND_RED : isMark ? "#e2e2e0" : "var(--logo-slash)";
 
   return (
     <svg
@@ -25,7 +25,7 @@ export default function Logo({ size = 26, variant = "mark", className }: LogoPro
       style={{ display: "block", flexShrink: 0 }}
       aria-hidden
     >
-      {variant === "mark" && <rect width="52" height="52" rx="11" fill={BRAND_RED} />}
+      {isMark && <rect width="52" height="52" rx="11" fill={BRAND_RED} />}
       <line
         x1="16" y1="38" x2="22" y2="14"
         stroke={firstStroke}
@@ -34,17 +34,17 @@ export default function Logo({ size = 26, variant = "mark", className }: LogoPro
       />
       <line
         x1="24" y1="38" x2="28" y2="14"
-        stroke={SLASH_LIGHT}
+        stroke={isMark ? "#e2e2e0" : "var(--logo-slash-dim)"}
         strokeWidth={isHero ? 3.5 : 3}
         strokeLinecap="round"
-        opacity="0.55"
+        opacity={isMark ? 0.55 : 1}
       />
       <line
         x1="30" y1="38" x2="36" y2="14"
-        stroke={SLASH_LIGHT}
+        stroke={isMark ? "#e2e2e0" : "var(--logo-slash-faint)"}
         strokeWidth={isHero ? 3.5 : 3}
         strokeLinecap="round"
-        opacity="0.3"
+        opacity={isMark ? 0.3 : 1}
       />
     </svg>
   );

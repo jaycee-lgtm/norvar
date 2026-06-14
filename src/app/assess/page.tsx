@@ -585,7 +585,7 @@ function InfoTip({ text }: { text: string }) {
           color: "var(--fg2)", lineHeight: 1.65, fontFamily: "'Sora', sans-serif",
           letterSpacing: "-.01em", opacity: 0, transition: "opacity 0.15s",
           pointerEvents: "none", zIndex: 50,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         {text}
@@ -1443,7 +1443,7 @@ function Home() {
                           {msg.tags && msg.tags.length > 0 && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 7 }}>
                               {msg.tags.map(t => (
-                                <span key={t} style={{ fontSize: 10, color: "var(--fg3)", background: "rgba(255,255,255,.05)", padding: "1px 7px", borderRadius: 10, border: "0.5px solid var(--bdr)", fontFamily: "'Sora', sans-serif" }}>{t}</span>
+                                <span key={t} style={{ fontSize: 10, color: "var(--fg3)", background: "var(--card2)", padding: "1px 7px", borderRadius: 10, border: "0.5px solid var(--bdr)", fontFamily: "'Sora', sans-serif" }}>{t}</span>
                               ))}
                             </div>
                           )}

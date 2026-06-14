@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import AiSettingsPanel from "@/components/AiSettingsPanel";
+import AppearanceSettingsPanel from "@/components/AppearanceSettingsPanel";
 import GapOwnerRolesPanel from "@/components/GapOwnerRolesPanel";
 import OrgSettingsPanel from "@/components/OrgSettingsPanel";
 import { UserProfile } from "@clerk/nextjs";
@@ -13,6 +14,8 @@ export default function SettingsPage() {
           <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.04em", marginBottom: 24, fontFamily: "'Sora', sans-serif" }}>
             Your profile
           </h1>
+
+          <AppearanceSettingsPanel />
 
           <AiSettingsPanel />
 

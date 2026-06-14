@@ -13,6 +13,7 @@ import {
   normalizeStreamGap,
   type StreamGap,
 } from "@/lib/streaming-assessment";
+import { generateAssessmentTitle } from "@/lib/generate-thread-title";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -72,10 +73,11 @@ async function persistAssessment(row: PersistInput) {
     ...row.result,
     id: row.assessmentId,
   };
+  const title = row.title ?? (row.result.title as string) ?? row.description.slice(0, 80);
 
   await supabase.from("assessments").update({
-    title:     row.title ?? (row.result.title as string) ?? row.description.slice(0, 80),
-    result:    row.result,
+    title,
+    result:    { ...row.result, title },
     risk_tier: row.riskTier,
     messages:  [
       { role: "user", content: row.description, tags: row.messageTags },
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
     let assessmentId: string | null = null;
     let streamedGaps: StreamGap[]   = [];
     let summaryText                   = "";
+    let descriptionText               = "";
 
     try {
       const { userId } = await auth();
@@ -119,6 +122,8 @@ export async function POST(req: NextRequest) {
         prior_assessment_number = null as string | null,
         guided_scoping = false,
       } = body;
+
+      descriptionText = description;
 
       if (description.trim().length < 10) {
         await send({ type: "error", text: "Description too short" });
@@ -352,6 +357,14 @@ export async function POST(req: NextRequest) {
         streamedGaps       = gaps as StreamGap[];
       }
 
+      const gapsForTitle = (Array.isArray(assessment.gaps) ? assessment.gaps : streamedGaps) as Array<{ title?: string }>;
+      const summaryForTitle = String(assessment.summary || summaryText || "");
+      const aiTitle = await generateAssessmentTitle(summaryForTitle, {
+        gapTitles: gapsForTitle.map(g => String(g.title || "")).filter(Boolean),
+        description: descriptionText,
+      });
+      assessment.title = aiTitle;
+
       assessment.id                = assessmentId;
       assessment.assessment_number = created.assessment_number;
 
@@ -367,7 +380,7 @@ export async function POST(req: NextRequest) {
         folderId: folder_id,
         result:     assessment,
         riskTier:   String(assessment.risk_tier || "low"),
-        title:      assessment.title as string | undefined,
+        title:      aiTitle,
       });
 
       await send({ type: "saved", assessment });
@@ -378,10 +391,19 @@ export async function POST(req: NextRequest) {
           summary: summaryText,
           status:  streamedGaps.length ? "partial" : "failed",
         });
+        let partialTitle: string | undefined;
+        if (summaryText || streamedGaps.length) {
+          partialTitle = await generateAssessmentTitle(summaryText, {
+            gapTitles: streamedGaps.map(g => g.title),
+            description: descriptionText,
+          });
+          partialResult.title = partialTitle;
+        }
         const partial = { ...partialResult, id: assessmentId };
         await supabase.from("assessments").update({
           result:    partial,
           risk_tier: partial.risk_tier,
+          ...(partialTitle ? { title: partialTitle } : {}),
         }).eq("id", assessmentId);
 
         if (streamedGaps.length) {

@@ -2,6 +2,9 @@ import {
   ELEVENLABS_SPEECH_MODEL,
   ELEVENLABS_VOICE_ID,
 } from "@/lib/elevenlabs-config";
+import { isThemePreference, type ThemePreference } from "@/lib/theme";
+
+export type { ThemePreference };
 
 export type UserAiSettings = {
   voiceSpeakResponses: boolean;
@@ -12,6 +15,7 @@ export type UserAiSettings = {
   speechModel: string;
   /** Framework abbreviations to include in RAG and model output; empty = all frameworks. */
   selectedFrameworkAbbrs: string[];
+  themePreference: ThemePreference;
 };
 
 export const AI_SETTINGS_EVENT = "norvar-ai-settings-updated";
@@ -38,6 +42,7 @@ export const DEFAULT_USER_AI_SETTINGS: UserAiSettings = {
   speechSpeed: 1,
   speechModel: ELEVENLABS_SPEECH_MODEL,
   selectedFrameworkAbbrs: [],
+  themePreference: "dark",
 };
 
 export function mergeUserAiSettings(raw: unknown): UserAiSettings {
@@ -49,6 +54,10 @@ export function mergeUserAiSettings(raw: unknown): UserAiSettings {
   const selectedFrameworkAbbrs = Array.isArray(input.selectedFrameworkAbbrs)
     ? input.selectedFrameworkAbbrs.filter((v): v is string => typeof v === "string" && v.length > 0)
     : DEFAULT_USER_AI_SETTINGS.selectedFrameworkAbbrs;
+
+  const themePreference = isThemePreference(input.themePreference)
+    ? input.themePreference
+    : DEFAULT_USER_AI_SETTINGS.themePreference;
 
   return {
     voiceSpeakResponses: !!input.voiceSpeakResponses,
@@ -62,6 +71,7 @@ export function mergeUserAiSettings(raw: unknown): UserAiSettings {
       ? input.speechModel
       : DEFAULT_USER_AI_SETTINGS.speechModel,
     selectedFrameworkAbbrs,
+    themePreference,
   };
 }
 

@@ -63,7 +63,7 @@ function FrameworkRow({ entry, selected, onToggle }: FrameworkRowProps) {
           marginTop: 2,
         }}
       >
-        {selected && <Check size={11} strokeWidth={2.5} color="var(--bg)" />}
+        {selected && <Check size={11} strokeWidth={2.5} color="var(--on-red)" />}
       </button>
 
       <div style={{ minWidth: 0 }}>
@@ -303,7 +303,7 @@ export default function FrameworkCatalogPanel() {
               style={{
                 padding: "6px 14px", borderRadius: 6, fontSize: 11.5, fontWeight: 500,
                 border: "0.5px solid var(--accent)", background: "var(--accent)",
-                color: "var(--bg)", cursor: saving || !isDirty ? "not-allowed" : "pointer",
+                color: "var(--on-red)", cursor: saving || !isDirty ? "not-allowed" : "pointer",
                 opacity: saving || !isDirty ? 0.6 : 1,
                 fontFamily: "'Sora', sans-serif",
               }}
