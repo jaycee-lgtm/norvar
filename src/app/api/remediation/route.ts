@@ -96,6 +96,7 @@ async function dispatchEscalationEmail(
     gap_domain: string;
     gap_detail?: string | null;
     project_title?: string | null;
+    assessment_number?: string | null;
     assigned_to?: string[] | null;
     assignee_meta?: AssigneeMeta | null;
     escalation_token: string;
@@ -111,8 +112,9 @@ async function dispatchEscalationEmail(
   const meta        = item.assignee_meta ?? {};
 
   return sendEscalationEmail({
-    token:           item.escalation_token,
-    recipientEmail:  item.escalation_email,
+    token:             item.escalation_token,
+    assessmentNumber:  item.assessment_number,
+    recipientEmail:    item.escalation_email,
     recipientName:   item.escalation_recipient_name,
     gapTitle:        item.gap_title,
     gapSeverity:     item.gap_severity,
@@ -376,6 +378,7 @@ export async function PATCH(req: NextRequest) {
     gap_domain: string;
     gap_detail: string | null;
     project_title: string | null;
+    assessment_number: string | null;
     escalation_token: string | null;
     escalation_email: string | null;
     escalation_recipient_name: string | null;
@@ -405,6 +408,7 @@ export async function PATCH(req: NextRequest) {
         gap_domain:       current.gap_domain,
         gap_detail:       current.gap_detail,
         project_title:    current.project_title,
+        assessment_number: current.assessment_number,
         assigned_to:      current.assigned_to,
         assignee_meta:    current.assignee_meta as AssigneeMeta,
         escalation_token: current.escalation_token,
@@ -578,6 +582,7 @@ export async function PATCH(req: NextRequest) {
         gap_domain:       current.gap_domain,
         gap_detail:       current.gap_detail,
         project_title:    current.project_title,
+        assessment_number: current.assessment_number,
         assigned_to:      current.assigned_to,
         assignee_meta:    current.assignee_meta as AssigneeMeta,
         escalation_token: token,

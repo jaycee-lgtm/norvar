@@ -188,8 +188,9 @@ export async function POST(req: NextRequest) {
   const senderEmail = profiles[userId]?.email ?? userId;
 
   const emailResult = await sendEscalationInboxReply({
-    token:          row.escalation_token,
-    recipientEmail: row.escalation_email,
+    token:             row.escalation_token,
+    assessmentNumber:  row.assessment_number,
+    recipientEmail:    row.escalation_email,
     recipientName:  row.escalation_recipient_name,
     gapTitle:       row.gap_title,
     projectTitle:   row.project_title,

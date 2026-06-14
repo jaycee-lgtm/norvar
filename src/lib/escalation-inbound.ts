@@ -3,8 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ESCALATION_EMAIL_REPLY_ACTION,
   collectRecipientAddresses,
-  extractEscalationTokenFromAddresses,
-  extractEscalationTokenFromSubject,
+  assessmentNumberFromSlug,
+  extractEscalationRefFromAddresses,
+  extractEscalationRefFromSubject,
+  isEscalationUuid,
   type EscalationStatus,
 } from "@/lib/escalation";
 
@@ -99,6 +101,119 @@ function parseSender(from: string): { email: string; name: string | null } {
   return { name: null, email: from.trim().toLowerCase() };
 }
 
+function headerAddresses(
+  headers: Record<string, string | string[]> | undefined,
+  ...keys: string[]
+): string[] {
+  if (!headers) return [];
+  const out: string[] = [];
+  for (const key of keys) {
+    const value = headers[key] ?? headers[key.toLowerCase()];
+    if (!value) continue;
+    if (Array.isArray(value)) out.push(...value.map(String));
+    else out.push(String(value));
+  }
+  return out;
+}
+
+function collectInboundRecipientAddresses(
+  event: InboundWebhookEvent,
+  email?: ReceivedEmail | null,
+): string[] {
+  return collectRecipientAddresses(
+    event.data?.to,
+    event.data?.cc,
+    event.data?.bcc,
+    email?.to,
+    email?.cc,
+    email?.bcc,
+    headerAddresses(email?.headers, "to", "delivered-to", "x-original-to", "envelope-to"),
+  );
+}
+
+async function resolveEscalationTokenBySender(
+  supabase: SupabaseClient,
+  senderEmail: string,
+  subject?: string | null,
+): Promise<string | null> {
+  const sender = senderEmail.trim().toLowerCase();
+  if (!sender) return null;
+
+  const { data, error } = await supabase
+    .from("remediation_items")
+    .select("escalation_token, gap_title, escalated_at, escalation_status")
+    .ilike("escalation_email", sender)
+    .not("escalation_token", "is", null)
+    .neq("escalation_status", "closed")
+    .order("escalated_at", { ascending: false });
+
+  if (error || !data?.length) return null;
+  if (data.length === 1) return data[0].escalation_token ?? null;
+
+  if (subject) {
+    const match = data.find(row => row.gap_title && subject.includes(row.gap_title.slice(0, 48)));
+    if (match?.escalation_token) return match.escalation_token;
+  }
+
+  return data[0]?.escalation_token ?? null;
+}
+
+export async function resolveEscalationToken(
+  supabase: SupabaseClient,
+  ref: string,
+  senderEmail?: string | null,
+): Promise<string | null> {
+  if (isEscalationUuid(ref)) {
+    const { data } = await supabase
+      .from("remediation_items")
+      .select("escalation_token")
+      .eq("escalation_token", ref)
+      .maybeSingle();
+    return data?.escalation_token ?? ref;
+  }
+
+  const assessmentNumber = assessmentNumberFromSlug(ref);
+  const sender = senderEmail?.trim().toLowerCase();
+
+  const { data, error } = await supabase
+    .from("remediation_items")
+    .select("escalation_token, escalation_email, escalated_at")
+    .ilike("assessment_number", assessmentNumber)
+    .not("escalation_token", "is", null)
+    .not("escalation_email", "is", null)
+    .order("escalated_at", { ascending: false });
+
+  if (error || !data?.length) return null;
+
+  if (sender) {
+    const match = data.find(row => row.escalation_email?.toLowerCase() === sender);
+    if (match?.escalation_token) return match.escalation_token;
+  }
+
+  return data[0]?.escalation_token ?? null;
+}
+
+async function resolveEscalationTokenFromInbound(
+  supabase: SupabaseClient,
+  event: InboundWebhookEvent,
+  email?: ReceivedEmail | null,
+): Promise<string | null> {
+  const addresses = collectInboundRecipientAddresses(event, email);
+  const sender = parseSender(email?.from ?? event.data?.from ?? "");
+  const subject = email?.subject ?? event.data?.subject ?? null;
+
+  for (const ref of [
+    extractEscalationRefFromAddresses(addresses),
+    extractEscalationRefFromSubject(subject),
+  ]) {
+    if (!ref) continue;
+    const token = await resolveEscalationToken(supabase, ref, sender.email);
+    if (token) return token;
+  }
+
+  return resolveEscalationTokenBySender(supabase, sender.email, subject);
+}
+
 function advanceToResponded(current: EscalationStatus | null): EscalationStatus {
   if (!current || current === "sent" || current === "viewed" || current === "in_review") {
     return "responded";
@@ -134,43 +249,39 @@ export function verifyResendWebhook(
   return false;
 }
 
-export async function fetchReceivedEmail(emailId: string): Promise<ReceivedEmail | null> {
+export async function fetchReceivedEmail(
+  emailId: string,
+  attempts = 4,
+): Promise<ReceivedEmail | null> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-
-  const res = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-
-  if (!res.ok) {
-    console.error("[escalation-inbound] fetch received email failed:", res.status, await res.text().catch(() => ""));
+  if (!apiKey) {
+    console.error("[escalation-inbound] RESEND_API_KEY not set — cannot fetch received email");
     return null;
   }
 
-  const json = await res.json() as ReceivedEmail & { data?: ReceivedEmail };
-  return json.data ?? json;
-}
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const res = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
 
-function resolveEscalationToken(
-  event: InboundWebhookEvent,
-  email: ReceivedEmail,
-): string | null {
-  const addresses = collectRecipientAddresses(
-    event.data?.to,
-    event.data?.cc,
-    event.data?.bcc,
-    email.to,
-    email.cc,
-    email.bcc,
-  );
+    if (res.ok) {
+      const json = await res.json() as ReceivedEmail & { data?: ReceivedEmail };
+      return json.data ?? json;
+    }
 
-  const fromAddress = extractEscalationTokenFromAddresses([email.from ?? ""]);
-  if (fromAddress) return fromAddress;
+    const errText = await res.text().catch(() => "");
+    const retriable = res.status === 404 || res.status === 429 || res.status >= 500;
+    console.error(
+      `[escalation-inbound] fetch received email failed (attempt ${attempt}/${attempts}):`,
+      res.status,
+      errText,
+    );
 
-  const fromRecipients = extractEscalationTokenFromAddresses(addresses);
-  if (fromRecipients) return fromRecipients;
+    if (!retriable || attempt === attempts) return null;
+    await new Promise(r => setTimeout(r, attempt * 500));
+  }
 
-  return extractEscalationTokenFromSubject(email.subject ?? event.data?.subject);
+  return null;
 }
 
 export async function recordEscalationEmailReply(
@@ -206,7 +317,8 @@ export async function recordEscalationEmailReply(
   const rawBody = input.bodyText?.trim()
     || (input.bodyHtml ? htmlToText(decodeDataUriHtml(input.bodyHtml)) : "")
     || "";
-  const body = stripEmailQuote(rawBody);
+  const stripped = stripEmailQuote(rawBody);
+  const body = stripped || rawBody.trim();
   if (!body) return { ok: false, error: "Empty reply body" };
 
   const sender = parseSender(input.from);
@@ -248,11 +360,25 @@ export async function processInboundEscalationEmail(
   const emailId = event.data?.email_id;
   if (!emailId) return { ok: false, error: "Missing email_id", retriable: false };
 
-  const email = await fetchReceivedEmail(emailId);
-  if (!email) return { ok: false, error: "Could not fetch received email", retriable: true };
+  let token = await resolveEscalationTokenFromInbound(supabase, event, null);
 
-  const token = resolveEscalationToken(event, email);
-  if (!token) return { ok: false, error: "No escalation token in recipient address", retriable: false };
+  const email = await fetchReceivedEmail(emailId);
+  if (!email) {
+    return { ok: false, error: "Could not fetch received email", retriable: true };
+  }
+
+  if (!token) {
+    token = await resolveEscalationTokenFromInbound(supabase, event, email);
+  }
+  if (!token) {
+    console.warn("[escalation-inbound] could not resolve escalation", {
+      email_id: emailId,
+      from:     email.from ?? event.data?.from,
+      to:       collectInboundRecipientAddresses(event, email),
+      subject:  email.subject ?? event.data?.subject,
+    });
+    return { ok: false, error: "No escalation reference in recipient address", retriable: false };
+  }
 
   const bodyText = extractEmailBody(email);
   const result = await recordEscalationEmailReply(supabase, {
@@ -265,6 +391,11 @@ export async function processInboundEscalationEmail(
   });
 
   if (!result.ok && !result.duplicate) {
+    console.warn("[escalation-inbound] failed to record reply", {
+      email_id: emailId,
+      token,
+      error:    result.error,
+    });
     return { ok: false, error: result.error ?? "Failed to record reply", retriable: false };
   }
 

@@ -89,14 +89,64 @@ export function escalationReplyDomain() {
   return match?.[1] ?? "norvar.io";
 }
 
-export function escalationReplyToAddress(token: string) {
-  return `escalations+${token}@${escalationReplyDomain()}`;
+export function formatEscalationRef(
+  assessmentNumber: string | null | undefined,
+  token: string,
+): string {
+  const num = assessmentNumber?.trim();
+  return num || token;
+}
+
+export function slugifyEscalationRef(ref: string): string {
+  return ref.trim().toLowerCase();
+}
+
+export function isEscalationUuid(ref: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref);
+}
+
+export function assessmentNumberFromSlug(slug: string): string {
+  const trimmed = slug.trim();
+  if (!trimmed.includes("-")) return trimmed.toUpperCase();
+  const parts = trimmed.split("-");
+  parts[0] = parts[0].toUpperCase();
+  return parts.join("-");
+}
+
+export function escalationReplyToAddress(
+  token: string,
+  assessmentNumber?: string | null,
+): string {
+  const ref = formatEscalationRef(assessmentNumber, token);
+  return `escalations+${slugifyEscalationRef(ref)}@${escalationReplyDomain()}`;
+}
+
+export function extractEscalationRefFromAddress(address: string): string | null {
+  const email = address.trim().toLowerCase();
+  const match = email.match(/escalations\+([^@]+)@/i);
+  return match?.[1] ?? null;
+}
+
+export function extractEscalationRefFromAddresses(addresses: string[]): string | null {
+  for (const address of addresses) {
+    const ref = extractEscalationRefFromAddress(address);
+    if (ref) return ref;
+  }
+  return null;
+}
+
+export function extractEscalationRefFromSubject(subject: string | null | undefined): string | null {
+  if (!subject) return null;
+  const refMatch = subject.match(/\[ref:([^\]]+)\]/i);
+  if (refMatch?.[1]) return refMatch[1].trim();
+  const uuidMatch = subject.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  return uuidMatch?.[1] ?? null;
 }
 
 export function extractEscalationTokenFromAddress(address: string): string | null {
-  const email = address.trim().toLowerCase();
-  const match = email.match(/escalations\+([0-9a-f-]{36})@/i);
-  return match?.[1] ?? null;
+  const ref = extractEscalationRefFromAddress(address);
+  if (!ref || !isEscalationUuid(ref)) return null;
+  return ref;
 }
 
 export function extractEscalationTokenFromAddresses(addresses: string[]): string | null {
@@ -108,11 +158,9 @@ export function extractEscalationTokenFromAddresses(addresses: string[]): string
 }
 
 export function extractEscalationTokenFromSubject(subject: string | null | undefined): string | null {
-  if (!subject) return null;
-  const refMatch = subject.match(/\[ref:([0-9a-f-]{36})\]/i);
-  if (refMatch?.[1]) return refMatch[1];
-  const uuidMatch = subject.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-  return uuidMatch?.[1] ?? null;
+  const ref = extractEscalationRefFromSubject(subject);
+  if (!ref || !isEscalationUuid(ref)) return null;
+  return ref;
 }
 
 export function collectRecipientAddresses(

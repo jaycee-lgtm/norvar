@@ -42,10 +42,15 @@ export async function POST(req: NextRequest) {
 
   const result = await processInboundEscalationEmail(supabase, event);
   if (!result.ok) {
-    console.warn("[webhooks/resend]", result.error);
+    console.warn("[webhooks/resend]", event.type, result.error, {
+      email_id: event.data?.email_id,
+      from:     event.data?.from,
+      to:       event.data?.to,
+      subject:  event.data?.subject,
+    });
     return Response.json(
       { ok: false, error: result.error },
-      { status: result.retriable ? 500 : 200 },
+      { status: result.retriable ? 500 : 422 },
     );
   }
 

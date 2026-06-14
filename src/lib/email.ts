@@ -1,8 +1,9 @@
-import { escalationReplyToAddress, escalationViewUrl } from "@/lib/escalation";
+import { escalationReplyToAddress, escalationViewUrl, formatEscalationRef } from "@/lib/escalation";
 
 type EscalationEmailPayload = {
-  token:           string;
-  recipientEmail:  string;
+  token:             string;
+  assessmentNumber?: string | null;
+  recipientEmail:    string;
   recipientName?:  string | null;
   gapTitle:        string;
   gapSeverity:     string;
@@ -107,10 +108,11 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
     return { ok: false, error: "Email not configured" };
   }
 
-  const subject = `[ref:${payload.token}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+  const ref     = formatEscalationRef(payload.assessmentNumber, payload.token);
+  const subject = `[ref:${ref}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
   const html    = buildEscalationHtml(payload);
   const text    = buildEscalationText(payload);
-  const replyTo = escalationReplyToAddress(payload.token);
+  const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
   const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
 
   try {
@@ -142,8 +144,9 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
 }
 
 type EscalationInboxReplyPayload = {
-  token:          string;
-  recipientEmail: string;
+  token:             string;
+  assessmentNumber?: string | null;
+  recipientEmail:    string;
   recipientName?: string | null;
   gapTitle:       string;
   projectTitle?:  string | null;
@@ -161,8 +164,9 @@ export async function sendEscalationInboxReply(
     return { ok: false, error: "Email not configured" };
   }
 
-  const subject = `Re: [ref:${payload.token}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
-  const replyTo = escalationReplyToAddress(payload.token);
+  const ref     = formatEscalationRef(payload.assessmentNumber, payload.token);
+  const subject = `Re: [ref:${ref}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+  const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
   const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
   const greeting  = payload.recipientName ? `Hi ${payload.recipientName},\n\n` : "";
   const text      = `${greeting}${payload.body.trim()}\n\n— ${payload.senderName} (via Norvar)`;
