@@ -11,6 +11,7 @@ import {
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { GRC_FORMATTING_RULES, GRC_PLAIN_LANGUAGE_RULES } from "@/lib/grc-prompt";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
+import { toClaudeMessages } from "@/lib/claude-messages";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
         model:      "claude-sonnet-4-6",
         max_tokens: 1200,
         system,
-        messages:   claudeMessages,
+        messages:   toClaudeMessages(claudeMessages),
         stream:     true,
       });
 

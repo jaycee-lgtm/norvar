@@ -12,6 +12,7 @@ import { buildDocumentContextBlock } from "@/lib/documents";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { generateChatTitle } from "@/lib/generate-thread-title";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
+import { toClaudeMessages, userFacingClaudeError } from "@/lib/claude-messages";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
         model:      "claude-sonnet-4-6",
         max_tokens: hasDocumentContext ? 4000 : 1500,
         system,
-        messages:   typedMessages,
+        messages:   toClaudeMessages(typedMessages),
         stream:     true,
       });
 

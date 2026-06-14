@@ -10,6 +10,7 @@ import { buildDocumentContextBlock } from "@/lib/documents";
 import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
+import { toClaudeMessages } from "@/lib/claude-messages";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
         model:      "claude-sonnet-4-6",
         max_tokens: docContext ? 4000 : isStandalone ? 1500 : 1000,
         system:     systemPrompt,
-        messages:   resolvedMessages,
+        messages:   toClaudeMessages(resolvedMessages),
         stream:     true,
       });
 
