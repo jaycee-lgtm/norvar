@@ -799,6 +799,65 @@ input, textarea, select, button {
   display: flex; align-items: center; gap: 6px;
 }
 
+.message-feedback {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.ai-disclaimer {
+  margin-top: 10px;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+}
+
+.ai-disclaimer--gap-chat {
+  margin-top: 8px;
+}
+
+.message-feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 0.5px solid var(--bdr2);
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.message-feedback-btn:hover:not(:disabled) {
+  color: var(--fg2);
+  border-color: var(--bdr3);
+  background: var(--card2);
+}
+
+.message-feedback-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.message-feedback-btn.active.up {
+  color: var(--fg);
+  border-color: var(--bdr3);
+  background: var(--card2);
+}
+
+.message-feedback-btn.active.down {
+  color: var(--rh);
+  border-color: color-mix(in srgb, var(--rh) 35%, var(--bdr2));
+  background: color-mix(in srgb, var(--rh) 8%, var(--card2));
+}
+
 .score-row {
   display: flex;
   align-items: baseline;

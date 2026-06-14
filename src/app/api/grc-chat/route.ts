@@ -11,6 +11,7 @@ import {
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { generateChatTitle } from "@/lib/generate-thread-title";
+import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -24,7 +25,7 @@ function sse(d: object) {
   return `data: ${JSON.stringify(d)}\n\n`;
 }
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; id?: string; feedback?: "up" | "down" | null };
 
 export async function POST(req: NextRequest) {
   const enc = new TextEncoder();
@@ -96,6 +97,8 @@ export async function POST(req: NextRequest) {
         // RAG is best-effort
       }
 
+      system = await appendLikedFramingExamples(supabase, system);
+
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
         max_tokens: hasDocumentContext ? 4000 : 1500,
@@ -113,7 +116,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (!auditMode && fullText && userId) {
-        const newMessages: ChatMessage[] = [...typedMessages, { role: "assistant", content: fullText }];
+        const assistantId = newMessageId();
+        const newMessages: ChatMessage[] = [
+          ...typedMessages,
+          { role: "assistant", content: fullText, id: assistantId },
+        ];
         if (conversation_id) {
           const { error: updateError } = await supabase.from("conversations")
             .update({ messages: newMessages, updated_at: new Date().toISOString() })
@@ -124,7 +131,7 @@ export async function POST(req: NextRequest) {
             await send({ type: "error", text: `Could not save chat: ${updateError.message}` });
             return;
           }
-          await send({ type: "done", text: fullText, conversation_id });
+          await send({ type: "done", text: fullText, conversation_id, message_id: assistantId });
         } else {
           const title = await generateChatTitle(lastUser, fullText);
           const { data: saved, error: insertError } = await supabase.from("conversations")
@@ -148,7 +155,7 @@ export async function POST(req: NextRequest) {
               item_id:   saved.id,
             });
           }
-          await send({ type: "done", text: fullText, conversation_id: saved.id });
+          await send({ type: "done", text: fullText, conversation_id: saved.id, message_id: assistantId });
         }
       } else {
         await send({ type: "done", text: fullText, conversation_id: conversation_id ?? null });

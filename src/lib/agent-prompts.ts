@@ -61,6 +61,10 @@ export const CASSIUS_GREETINGS = {
     ];
     return variants[Math.floor(Math.random() * variants.length)];
   },
+  handoff: (name?: string) => {
+    const nameStr = name ? `, ${name}` : "";
+    return `I have Nora's chat context${nameStr}. Describe what you're building and I'll scope the assessment from there.`;
+  },
 };
 
 // ─── NORA FOLLOW-UP PROMPTS ──────────────────────────────────────────────────

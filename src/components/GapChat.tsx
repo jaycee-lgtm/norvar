@@ -5,8 +5,15 @@ import { ArrowUp, Loader2, MessageSquare } from "lucide-react";
 import { readSSEStream } from "@/lib/sse";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import FormattedMessage from "@/components/FormattedMessage";
+import MessageFeedback from "@/components/MessageFeedback";
+import AiDisclaimer from "@/components/AiDisclaimer";
 
-export type GapChatMessage = { role: "user" | "assistant"; content: string };
+export type GapChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  id?: string;
+  feedback?: "up" | "down" | null;
+};
 
 export type GapChatContext = {
   title:              string;
@@ -156,7 +163,7 @@ export default function GapChat({
           <div className="gap-chat-msgs">
           {messages.map((msg, i) => (
             <div
-              key={i}
+              key={msg.id ?? i}
               className={msg.role === "user" ? "gap-chat-msg gap-chat-msg-user" : "gap-chat-msg gap-chat-msg-ai"}
             >
               {msg.role === "assistant" ? (
@@ -168,6 +175,31 @@ export default function GapChat({
                       <span className="loading-dot" />
                       <span className="loading-dot" />
                     </span>
+                  )}
+                  {!(loading && i === messages.length - 1 && !msg.content) && (
+                    <AiDisclaimer agentName="Norvar" className="ai-disclaimer ai-disclaimer--gap-chat" />
+                  )}
+                  {!(loading && i === messages.length - 1 && !msg.content) && (
+                    <MessageFeedback
+                      messageId={msg.id}
+                      feedback={msg.feedback}
+                      disabled={loading}
+                      source="gap_chat"
+                      containerId={remediationId ?? assessmentId ?? null}
+                      gapKey={gapKey}
+                      messageContent={msg.content}
+                      userMessage={messages[i - 1]?.role === "user" ? messages[i - 1].content : undefined}
+                      agent="norvar"
+                      onFeedbackChange={rating => {
+                        setMessages(prev => {
+                          const next = prev.map((m, j) => (
+                            j === i && m.role === "assistant" ? { ...m, feedback: rating } : m
+                          ));
+                          onMessagesChange?.(next);
+                          return next;
+                        });
+                      }}
+                    />
                   )}
                 </>
               ) : (

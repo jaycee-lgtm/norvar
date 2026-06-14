@@ -9,6 +9,7 @@ import { CHAT_AGENT } from "@/lib/agents";
 import { buildDocumentContextBlock } from "@/lib/documents";
 import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/lib/regulatory-rag";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
+import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -131,6 +132,8 @@ export async function POST(req: NextRequest) {
         // RAG is best-effort
       }
 
+      systemPrompt = await appendLikedFramingExamples(supabase, systemPrompt);
+
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
         max_tokens: docContext ? 4000 : isStandalone ? 1500 : 1000,
@@ -156,19 +159,23 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (row) {
+          const messageId = newMessageId();
           const updated = [
             ...(Array.isArray(row.messages) ? row.messages : []),
             { role: "user", content: new_user_message },
-            { role: "chat", text: fullText },
+            { role: "chat", text: fullText, id: messageId },
           ];
           await supabase.from("assessments")
             .update({ messages: updated })
             .eq("id", assessment_id)
             .eq("user_id", userId);
+          await send({ type: "done", text: fullText, conversation_id: assessment_id, message_id: messageId });
+        } else {
+          await send({ type: "done", text: fullText, conversation_id: assessment_id ?? null });
         }
+      } else {
+        await send({ type: "done", text: fullText, conversation_id: assessment_id ?? null });
       }
-
-      await send({ type: "done", text: fullText, conversation_id: assessment_id ?? null });
     } catch (err: unknown) {
       await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });
     } finally {

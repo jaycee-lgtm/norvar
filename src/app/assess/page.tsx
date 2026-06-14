@@ -9,6 +9,9 @@ import LandingPage from "@/components/LandingPage";
 import Logo from "@/components/Logo";
 import InfoTip from "@/components/InfoTip";
 import FormattedMessage from "@/components/FormattedMessage";
+import MessageFeedback from "@/components/MessageFeedback";
+import AiDisclaimer from "@/components/AiDisclaimer";
+import type { MessageFeedbackRating } from "@/lib/message-feedback";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import { splitRemediationSteps } from "@/lib/remediation-steps";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
@@ -26,11 +29,16 @@ import {
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { ASSESS_AGENT } from "@/lib/agents";
+import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 import { pickNoraFollowUps, CASSIUS_GREETINGS } from "@/lib/agent-prompts";
 import { firstNameFromUser, getTimeOfDay } from "@/lib/agent-greeting-utils";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
+import {
+  type NoraChatMessage,
+  clearNoraCassiusHandoff,
+  consumeNoraCassiusHandoff,
+} from "@/lib/nora-cassius-handoff";
 import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
@@ -117,14 +125,16 @@ type Assessment = {
 
 type Message =
   | { role: "user"; content: string; tags?: string[] }
+  | { role: "nora"; content: string }
   | { role: "assistant"; assessment: Assessment }
   | { role: "thinking"; text: string; status?: string; isFollowUp?: boolean; followUpOptions?: string[]; guidedQuestionId?: string; guidedMulti?: boolean; guidedText?: boolean; riskTag?: string }
-  | { role: "chat"; text: string };
+  | { role: "chat"; text: string; id?: string; feedback?: MessageFeedbackRating | null };
 
 type StoredMessage =
   | { role: "user"; content: string; tags?: string[] }
+  | { role: "nora"; content: string }
   | { role: "assistant"; assessment: Assessment }
-  | { role: "chat"; text: string };
+  | { role: "chat"; text: string; id?: string; feedback?: MessageFeedbackRating | null };
 
 function restoreMessages(
   row: {
@@ -135,6 +145,7 @@ function restoreMessages(
     risk_score: number;
     domains?: string[];
     result?: Assessment;
+    prior_nora_chat?: NoraChatMessage[];
     messages?: StoredMessage[];
   },
 ): Message[] {
@@ -151,8 +162,11 @@ function restoreMessages(
           tags: m.tags,
         }];
       }
+      if (m.role === "nora") {
+        return [{ role: "nora", content: m.content }];
+      }
       if (m.role === "chat") {
-        return [{ role: "chat", text: m.text }];
+        return [{ role: "chat", text: m.text, id: m.id, feedback: m.feedback }];
       }
       if (m.role === "assistant" && m.assessment) {
         const a = m.assessment;
@@ -698,6 +712,7 @@ function Home() {
   const [sector,        setSector]        = useState<string[]>([]);
   const [assessmentId,  setAssessmentId]  = useState<string | null>(null);
   const [gapChats,      setGapChats]      = useState<Record<string, GapChatMessage[]>>({});
+  const [priorNoraChat, setPriorNoraChat] = useState<NoraChatMessage[]>([]);
 
   const [pendingDesc, setPendingDesc] = useState("");
   const [guidedActive, setGuidedActive] = useState(false);
@@ -723,6 +738,20 @@ function Home() {
       setError("");
       setAssessmentId(null);
       setGapChats({});
+      const handoff = consumeNoraCassiusHandoff();
+      if (handoff.length > 0) {
+        setPriorNoraChat(handoff);
+        setGuidedActive(false);
+        setActiveGuidedQuestionId(null);
+        setGuidedTyping(false);
+        const noraThread: Message[] = handoff.map((entry) => ({
+          role: "nora",
+          content: `${entry.role === "assistant" ? "Nora" : "You"}: ${entry.content}`,
+        }));
+        setMessages(noraThread);
+      } else {
+        setPriorNoraChat([]);
+      }
       greetedRef.current = false;
       setGreetingTyping(false);
       return;
@@ -739,12 +768,18 @@ function Home() {
         setAssessmentId(id);
         setGapChats(d.assessment.gap_chats ?? {});
         if (Array.isArray(d.assessment.domains)) setDomains(d.assessment.domains);
+        if (Array.isArray(d.assessment.prior_nora_chat)) {
+          setPriorNoraChat(d.assessment.prior_nora_chat);
+        } else {
+          setPriorNoraChat([]);
+        }
         setMessages(restoreMessages(d.assessment));
         const status = (d.assessment.result as Assessment | undefined)?.status;
         if (status === "processing") setLoading(true);
       })
       .catch((e: unknown) => {
         setMessages([]);
+        setPriorNoraChat([]);
         setError(e instanceof Error ? e.message : "Failed to load assessment");
       })
       .finally(() => setLoadingSaved(false));
@@ -824,6 +859,8 @@ function Home() {
     setSelectedDocumentIds([]);
     setAssessmentId(null);
     setGapChats({});
+    setPriorNoraChat([]);
+    clearNoraCassiusHandoff();
     setPendingDesc("");
     setGuidedActive(false);
     setGuidedAnswers({});
@@ -889,10 +926,12 @@ function Home() {
     if (greetedRef.current || messages.length > 0 || loadingSaved || loading || guidedActive) return;
     greetedRef.current = true;
 
-    const text = CASSIUS_GREETINGS.cold(
-      firstNameFromUser(user),
-      getTimeOfDay(),
-    );
+    const text = priorNoraChat.length > 0
+      ? CASSIUS_GREETINGS.handoff(firstNameFromUser(user))
+      : CASSIUS_GREETINGS.cold(
+          firstNameFromUser(user),
+          getTimeOfDay(),
+        );
     setGreetingTyping(true);
     setMessages([{ role: "chat", text: "" }]);
 
@@ -1004,7 +1043,7 @@ function Home() {
         guidedDataTypes,
         guidedSector,
         folderId,
-        { guidedScoping: true, userMessage },
+        { guidedScoping: true, userMessage, priorNoraChat },
       );
     } finally {
       assessingRef.current = false;
@@ -1104,7 +1143,7 @@ function Home() {
     resolvedDataTypes: string[],
     resolvedSector: string,
     folderId?: string | null,
-    opts?: { guidedScoping?: boolean; userMessage?: string },
+    opts?: { guidedScoping?: boolean; userMessage?: string; priorNoraChat?: NoraChatMessage[] },
   ): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
@@ -1143,6 +1182,7 @@ function Home() {
           tags,
           folder_id:     folderId || undefined,
           guided_scoping: opts?.guidedScoping ?? false,
+          prior_nora_chat: opts?.priorNoraChat ?? priorNoraChat,
         }),
       });
       if (!res.ok) {
@@ -1242,6 +1282,8 @@ function Home() {
 
           if (ev.type === "done") {
             applyAssessment({ ...assessment, status: assessment.status ?? "complete" });
+            clearNoraCassiusHandoff();
+            setPriorNoraChat([]);
             clearAll();
             setContractText("");
             setContractName("");
@@ -1355,6 +1397,19 @@ function Home() {
         if (event.type === "token") {
           chatText += event.text ?? "";
           typewriterRef.current?.enqueue(event.text ?? "");
+        } else if (event.type === "done") {
+          const messageId = (event as { message_id?: string }).message_id;
+          if (messageId) {
+            setMessages(prev => {
+              const next = [...prev];
+              const idx = next.findLastIndex(m => m.role === "chat");
+              if (idx >= 0) {
+                const msg = next[idx] as Extract<Message, { role: "chat" }>;
+                next[idx] = { ...msg, text: chatText || msg.text, id: messageId };
+              }
+              return next;
+            });
+          }
         } else if (event.type === "error") {
           throw new Error(event.text);
         }
@@ -1608,6 +1663,21 @@ function Home() {
                       );
                     }
 
+                    if (msg.role === "nora") {
+                      return (
+                        <div key={i} className="msg-ai fade-up">
+                          <div className="msg-ai-card">
+                            <div className="msg-ai-label">
+                              <ShieldAlert size={11} color="var(--fg3)" />
+                              Nora transcript
+                            </div>
+                            <FormattedMessage content={msg.content} />
+                            <AiDisclaimer agentName={CHAT_AGENT.name} />
+                          </div>
+                        </div>
+                      );
+                    }
+
                     if (msg.role === "thinking") {
                       const isFollowUp = msg.isFollowUp && msg.followUpOptions;
                       const isGuidedQuestion = !!msg.guidedQuestionId;
@@ -1641,6 +1711,9 @@ function Home() {
                                 <span className="loading-dot" />
                                 <span className="loading-dot" />
                               </div>
+                            )}
+                            {msg.text && !msg.status && !isTypingGuided && (
+                              <AiDisclaimer agentName={ASSESS_AGENT.name} />
                             )}
                             {showFollowUpOptions && (
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
@@ -1702,6 +1775,26 @@ function Home() {
                             </div>
                             <FormattedMessage content={msg.text || ""} />
                             {(loading || greetingTyping) && i === messages.length - 1 && streamCursor}
+                            {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && (
+                              <AiDisclaimer agentName={ASSESS_AGENT.name} />
+                            )}
+                            {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && (
+                              <MessageFeedback
+                                messageId={msg.id}
+                                feedback={msg.feedback}
+                                disabled={loading}
+                                source="assessment"
+                                containerId={assessmentId}
+                                messageContent={msg.text || ""}
+                                userMessage={[...messages.slice(0, i)].reverse().find(m => m.role === "user")?.content}
+                                agent="nora"
+                                onFeedbackChange={rating => {
+                                  setMessages(prev => prev.map((m, j) => (
+                                    j === i && m.role === "chat" ? { ...m, feedback: rating } : m
+                                  )));
+                                }}
+                              />
+                            )}
                           </div>
                         </div>
                       );

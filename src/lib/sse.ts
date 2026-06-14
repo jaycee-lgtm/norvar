@@ -2,7 +2,8 @@ export type SSEEvent = {
   type: string;
   text?: string;
   conversation_id?: string | null;
-  messages?: { role: "user" | "assistant"; content: string }[];
+  message_id?: string;
+  messages?: { role: "user" | "assistant"; content: string; id?: string; feedback?: "up" | "down" | null }[];
   assessment?: unknown;
 };
 

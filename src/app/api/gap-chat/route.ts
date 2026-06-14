@@ -10,6 +10,7 @@ import {
 } from "@/lib/regulatory-rag";
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { GRC_FORMATTING_RULES } from "@/lib/grc-prompt";
+import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -17,7 +18,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; id?: string; feedback?: "up" | "down" | null };
 
 type GapPayload = {
   title:              string;
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest) {
         // RAG is best-effort
       }
 
+      system = await appendLikedFramingExamples(supabase, system);
+
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
         max_tokens: 1200,
@@ -125,10 +128,11 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const assistantId = newMessageId();
       const updatedMessages: ChatMessage[] = [
         ...history,
         { role: "user", content: new_user_message.trim() },
-        { role: "assistant", content: fullText },
+        { role: "assistant", content: fullText, id: assistantId },
       ];
 
       let linkedAssessmentId = assessment_id as string | undefined;
@@ -203,7 +207,7 @@ export async function POST(req: NextRequest) {
         await syncGapChatToAssessment(linkedAssessmentId, linkedGapKey, updatedMessages, userId);
       }
 
-      await send({ type: "done", text: fullText, messages: updatedMessages });
+      await send({ type: "done", text: fullText, messages: updatedMessages, message_id: assistantId });
     } catch (err: unknown) {
       await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });
     } finally {

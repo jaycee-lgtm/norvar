@@ -5,7 +5,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export type GapChatMessage = { role: "user" | "assistant"; content: string };
+export type GapChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  id?: string;
+  feedback?: "up" | "down" | null;
+};
 
 export async function syncGapChatToAssessment(
   assessmentId: string,

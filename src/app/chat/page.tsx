@@ -11,27 +11,39 @@ import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import FormattedMessage from "@/components/FormattedMessage";
+import MessageFeedback from "@/components/MessageFeedback";
+import AiDisclaimer from "@/components/AiDisclaimer";
+import type { MessageFeedbackRating } from "@/lib/message-feedback";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
 import { shouldRedirectToCassius } from "@/lib/cassius-handoff";
+import { stashNoraCassiusHandoff } from "@/lib/nora-cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import { NORA_GREETINGS } from "@/lib/agent-prompts";
 import { firstNameFromUser, getTimeOfDay } from "@/lib/agent-greeting-utils";
 import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  id?: string;
+  feedback?: MessageFeedbackRating | null;
+};
 
 type DisplayMessage =
   | { role: "user"; content: string }
-  | { role: "assistant"; content: string }
+  | { role: "assistant"; content: string; id?: string; feedback?: MessageFeedbackRating | null }
   | { role: "streaming"; content: string };
 
-type SSEEvent =
-  | { type: "token"; text: string }
-  | { type: "done"; text?: string; conversation_id?: string }
-  | { type: "error"; text: string };
+function priorUserMessage(msgs: DisplayMessage[], index: number): string | undefined {
+  for (let j = index - 1; j >= 0; j--) {
+    const m = msgs[j];
+    if (m.role === "user") return m.content;
+  }
+  return undefined;
+}
 
 // ── Chat page ──────────────────────────────────────────────────────────────────
 
@@ -75,6 +87,17 @@ function Chat() {
 
   const [greetingTyping, setGreetingTyping] = useState(false);
 
+  const buildNoraHandoffThread = (): Array<{ role: "user" | "assistant"; content: string }> => {
+    if (history.length > 0) {
+      return history.map((msg) => ({ role: msg.role, content: msg.content }));
+    }
+    return messages
+      .filter((msg): msg is Extract<DisplayMessage, { role: "user" | "assistant" }> =>
+        msg.role === "user" || msg.role === "assistant",
+      )
+      .map((msg) => ({ role: msg.role, content: msg.content }));
+  };
+
   useEffect(() => {
     const id = searchParams.get("id");
     if (!id) {
@@ -107,7 +130,12 @@ function Chat() {
         if (!d.conversation) throw new Error("Conversation not found");
         const msgs: ChatMessage[] = d.conversation.messages ?? [];
         setHistory(msgs);
-        setMessages(msgs.map(m => ({ role: m.role, content: m.content })));
+        setMessages(msgs.map(m => ({
+          role: m.role,
+          content: m.content,
+          id: m.id,
+          feedback: m.feedback,
+        })));
         setConversationId(id);
         loadedIdRef.current = id;
       })
@@ -120,6 +148,11 @@ function Chat() {
       })
       .finally(() => setLoadingSaved(false));
   }, [searchParams]);
+
+  useEffect(() => {
+    const handoff = buildNoraHandoffThread();
+    if (handoff.length > 0) stashNoraCassiusHandoff(handoff);
+  }, [history, messages]);
 
   useEffect(() => {
     fetch("/api/documents?status=active")
@@ -221,6 +254,13 @@ function Chat() {
     if (shouldRedirectToCassius(content, lastAssistant?.content)) {
       if (!textOverride) setInput("");
       setError("");
+      const handoffMessages: Array<{ role: "user" | "assistant"; content: string }> = [
+        ...buildNoraHandoffThread(),
+        { role: "user", content },
+      ];
+      stashNoraCassiusHandoff(handoffMessages);
+      setMessages(prev => [...prev, { role: "user", content }]);
+      setHistory(prev => [...prev, { role: "user", content }]);
       router.push("/assess");
       return null;
     }
@@ -281,14 +321,15 @@ function Chat() {
           typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "done") {
           const finalText = streamText || event.text || "";
+          const messageId = event.message_id;
           finalResponse = finalText;
           setMessages(prev => {
             const next = [...prev];
             const idx  = next.findLastIndex(m => m.role === "streaming");
-            if (idx >= 0) next[idx] = { role: "assistant", content: finalText };
+            if (idx >= 0) next[idx] = { role: "assistant", content: finalText, id: messageId };
             return next;
           });
-          setHistory(prev => [...prev, { role: "assistant", content: finalText }]);
+          setHistory(prev => [...prev, { role: "assistant", content: finalText, id: messageId }]);
           if (event.conversation_id) {
             setConversationId(event.conversation_id);
             loadedIdRef.current = event.conversation_id;
@@ -593,6 +634,35 @@ function Chat() {
                           </p>
                         ) : (
                           <FormattedMessage content={msg.content} />
+                        )}
+                        {msg.role === "assistant" && !isStreaming && !(greetingTyping && i === messages.length - 1) && (
+                          <AiDisclaimer agentName={CHAT_AGENT.name} />
+                        )}
+                        {msg.role === "assistant" && !isStreaming && !(greetingTyping && i === messages.length - 1) && (
+                          <MessageFeedback
+                            messageId={msg.id}
+                            feedback={msg.feedback}
+                            disabled={loading}
+                            source="conversation"
+                            containerId={conversationId}
+                            messageContent={msg.content}
+                            userMessage={priorUserMessage(messages, i)}
+                            agent="nora"
+                            onFeedbackChange={rating => {
+                              setMessages(prev => prev.map((m, j) => (
+                                j === i && m.role === "assistant"
+                                  ? { ...m, feedback: rating }
+                                  : m
+                              )));
+                              if (msg.id) {
+                                setHistory(prev => prev.map(m => (
+                                  m.role === "assistant" && m.id === msg.id
+                                    ? { ...m, feedback: rating }
+                                    : m
+                                )));
+                              }
+                            }}
+                          />
                         )}
                       </div>
                     </div>

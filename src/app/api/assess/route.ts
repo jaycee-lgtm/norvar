@@ -16,6 +16,7 @@ import {
 import { generateAssessmentTitle } from "@/lib/generate-thread-title";
 import { sanitizeAssessmentUserMessage } from "@/lib/assessment-questionnaire";
 import { isAuditRequest } from "@/lib/audit";
+import { formatNoraChatForCassius, type NoraChatMessage } from "@/lib/nora-cassius-handoff";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -62,6 +63,7 @@ type PersistInput = {
   userId:         string;
   description:    string;
   userMessage:    string;
+  priorNoraChat:  NoraChatMessage[];
   messageTags:    string[];
   domains:        string[];
   jurisdictions:  string[];
@@ -84,9 +86,14 @@ async function persistAssessment(row: PersistInput) {
     result:    { ...row.result, title },
     risk_tier: row.riskTier,
     messages:  [
+      ...row.priorNoraChat.map((msg) => ({
+        role: "nora" as const,
+        content: `${msg.role === "assistant" ? "Nora" : "User"}: ${msg.content}`,
+      })),
       { role: "user", content: row.userMessage, tags: row.messageTags },
       { role: "assistant", assessment: assistantAssessment },
     ],
+    prior_nora_chat: row.priorNoraChat,
   })
     .eq("id", row.assessmentId)
     .eq("user_id", row.userId);
@@ -135,6 +142,7 @@ export async function POST(req: NextRequest) {
         folder_id     = null as string | null,
         prior_assessment_number = null as string | null,
         guided_scoping = false,
+        prior_nora_chat = [] as NoraChatMessage[],
       } = body;
 
       descriptionText = description;
@@ -151,6 +159,15 @@ export async function POST(req: NextRequest) {
       const messageTags = tags.length > 0
         ? tags
         : [...domains, ...jurisdictions, ...data_types, sector].filter(Boolean);
+      const priorNoraChat = Array.isArray(prior_nora_chat)
+        ? prior_nora_chat.filter(
+            (msg): msg is NoraChatMessage =>
+              !!msg
+              && (msg.role === "user" || msg.role === "assistant")
+              && typeof msg.content === "string"
+              && msg.content.trim().length > 0,
+          ).map((msg) => ({ role: msg.role, content: msg.content.trim() }))
+        : [];
 
       const initialResult = buildProcessingResult([], {
         title:   userMessage.slice(0, 80) || "Compliance assessment",
@@ -170,9 +187,14 @@ export async function POST(req: NextRequest) {
           description:   userMessage.slice(0, 500),
           result:        initialResult,
           messages:      [
+            ...priorNoraChat.map((msg) => ({
+              role: "nora" as const,
+              content: `${msg.role === "assistant" ? "Nora" : "User"}: ${msg.content}`,
+            })),
             { role: "user", content: userMessage, tags: messageTags },
             { role: "assistant", assessment: { ...initialResult, status: "processing" } },
           ],
+          prior_nora_chat: priorNoraChat,
           risk_tier:     "low",
           domains,
           jurisdictions,
@@ -228,6 +250,10 @@ export async function POST(req: NextRequest) {
       const userMsg = [
         description,
         ``,
+        priorNoraChat.length
+          ? `NORA CHAT HANDOFF:\n${formatNoraChatForCassius(priorNoraChat)}`
+          : "",
+        ``,
         `${contextLabel}: domains=${domains.join(",") || "none"} | jurisdictions=${jurisdictions.join(",") || "none"} | data=${data_types.join(",") || "none"} | sector=${sector || "none"}`,
         guided_scoping
           ? `NOTE: The deployment description above includes an AUTHORITATIVE USER SCOPING block. Every gap must follow from those confirmed answers — do not assume facts outside that block.`
@@ -281,6 +307,7 @@ export async function POST(req: NextRequest) {
             userId: userId!,
             description,
             userMessage,
+            priorNoraChat,
             messageTags,
             domains,
             jurisdictions,
@@ -353,6 +380,7 @@ export async function POST(req: NextRequest) {
               userId: userId!,
               description,
               userMessage,
+              priorNoraChat,
               messageTags,
               domains,
               jurisdictions,
@@ -410,6 +438,7 @@ export async function POST(req: NextRequest) {
           userId: userId!,
           description,
           userMessage,
+          priorNoraChat,
           messageTags,
           domains,
           jurisdictions,
