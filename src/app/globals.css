@@ -1014,6 +1014,35 @@ input, textarea, select, button {
   color: var(--fg3);
 }
 
+.refs-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.ref-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--card2);
+  color: var(--fg3);
+  border: 0.5px solid var(--bdr2);
+  letter-spacing: 0.02em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ref-chip--link {
+  text-decoration: none;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.ref-chip--link:hover {
+  color: var(--fg);
+  border-color: var(--bdr3);
+}
+
 .mobile-composer-attach {
   display: flex;
   align-items: center;

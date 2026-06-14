@@ -1,5 +1,8 @@
 "use client";
 
+import RefsLine from "@/components/RefsLine";
+import { splitRefsLine } from "@/lib/regulatory-ref-urls";
+
 type Block =
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
@@ -95,15 +98,19 @@ function parseBlocks(content: string): Block[] {
 }
 
 export default function FormattedMessage({ content }: { content: string }) {
-  const blocks = parseBlocks(content);
+  const { body, refsLine } = splitRefsLine(content);
+  const blocks = parseBlocks(body);
 
-  if (blocks.length === 0) {
+  if (blocks.length === 0 && !refsLine) {
     return <p className="formatted-message-p">{content}</p>;
   }
 
   return (
     <div className="formatted-message">
-      {blocks.map((block, i) => {
+      {blocks.length === 0 ? (
+        body ? <p className="formatted-message-p">{body}</p> : null
+      ) : (
+        blocks.map((block, i) => {
         if (block.type === "heading") {
           return (
             <h3 key={i} className="formatted-message-heading">
@@ -132,7 +139,9 @@ export default function FormattedMessage({ content }: { content: string }) {
             ))}
           </p>
         );
-      })}
+      })
+      )}
+      {refsLine && <RefsLine line={refsLine} />}
     </div>
   );
 }
