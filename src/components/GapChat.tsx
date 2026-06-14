@@ -161,7 +161,9 @@ export default function GapChat({
           )}
 
           <div className="gap-chat-msgs">
-          {messages.map((msg, i) => (
+          {(() => {
+            const firstAssistantIndex = messages.findIndex(m => m.role === "assistant");
+            return messages.map((msg, i) => (
             <div
               key={msg.id ?? i}
               className={msg.role === "user" ? "gap-chat-msg gap-chat-msg-user" : "gap-chat-msg gap-chat-msg-ai"}
@@ -176,7 +178,7 @@ export default function GapChat({
                       <span className="loading-dot" />
                     </span>
                   )}
-                  {!(loading && i === messages.length - 1 && !msg.content) && (
+                  {!(loading && i === messages.length - 1 && !msg.content) && i === firstAssistantIndex && (
                     <AiDisclaimer agentName="Norvar" className="ai-disclaimer ai-disclaimer--gap-chat" />
                   )}
                   {!(loading && i === messages.length - 1 && !msg.content) && (
@@ -206,7 +208,8 @@ export default function GapChat({
                 msg.content
               )}
             </div>
-          ))}
+            ));
+          })()}
           </div>
 
           {error && <p className="gap-chat-error">{error}</p>}

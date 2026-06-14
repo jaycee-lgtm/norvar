@@ -841,6 +841,11 @@ function Home() {
     (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
   )?.assessment;
   const noraFollowUps = latestAssessment ? pickNoraFollowUps(latestAssessment.gaps ?? []) : [];
+  const firstDisclaimerIndex = messages.findIndex(m =>
+    m.role === "nora"
+    || m.role === "chat"
+    || (m.role === "thinking" && !!m.text && !m.status),
+  );
 
   function clearAll() {
     setJurisdictions([]);
@@ -1672,7 +1677,9 @@ function Home() {
                               Nora transcript
                             </div>
                             <FormattedMessage content={msg.content} />
-                            <AiDisclaimer agentName={CHAT_AGENT.name} />
+                            {i === firstDisclaimerIndex && (
+                              <AiDisclaimer agentName={CHAT_AGENT.name} />
+                            )}
                           </div>
                         </div>
                       );
@@ -1712,7 +1719,7 @@ function Home() {
                                 <span className="loading-dot" />
                               </div>
                             )}
-                            {msg.text && !msg.status && !isTypingGuided && (
+                            {msg.text && !msg.status && !isTypingGuided && i === firstDisclaimerIndex && (
                               <AiDisclaimer agentName={ASSESS_AGENT.name} />
                             )}
                             {showFollowUpOptions && (
@@ -1775,7 +1782,7 @@ function Home() {
                             </div>
                             <FormattedMessage content={msg.text || ""} />
                             {(loading || greetingTyping) && i === messages.length - 1 && streamCursor}
-                            {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && (
+                            {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && i === firstDisclaimerIndex && (
                               <AiDisclaimer agentName={ASSESS_AGENT.name} />
                             )}
                             {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && (

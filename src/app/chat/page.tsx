@@ -84,8 +84,11 @@ function Chat() {
   const typewriterRef    = useRef<TypewriterDrain | null>(null);
   const greetedRef       = useRef(false);
   const openingGreetingRef = useRef<string | null>(null);
+  const sendQueueRef     = useRef<string[]>([]);
+  const sendInFlightRef  = useRef(false);
 
   const [greetingTyping, setGreetingTyping] = useState(false);
+  const [queuedCount, setQueuedCount]       = useState(0);
 
   const buildNoraHandoffThread = (): Array<{ role: "user" | "assistant"; content: string }> => {
     if (history.length > 0) {
@@ -176,7 +179,9 @@ function Chat() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  const canSend = input.trim().length > 2 && !loading && !fileExtracting;
+  const canSend = input.trim().length > 2 && !fileExtracting;
+
+  const firstAssistantIndex = messages.findIndex(m => m.role === "assistant");
 
   const hasAttachedDocs = selectedDocumentIds.length > 0 || !!attachedDocText;
 
@@ -246,7 +251,13 @@ function Chat() {
   const handleSend = async (textOverride?: string, fromVoice = false): Promise<string | null> => {
     const content = (textOverride ?? input).trim();
     if (!content || content.length <= 2) return null;
-    if (!fromVoice && loading) return null;
+
+    if (sendInFlightRef.current) {
+      sendQueueRef.current.push(content);
+      setQueuedCount(sendQueueRef.current.length);
+      if (!textOverride) setInput("");
+      return null;
+    }
 
     const lastAssistant = [...history].reverse().find(
       (m): m is ChatMessage & { role: "assistant" } => m.role === "assistant",
@@ -278,6 +289,7 @@ function Chat() {
 
     setMessages(prev => [...prev, { role: "user", content }, { role: "streaming", content: "" }]);
     setHistory(newHistory);
+    sendInFlightRef.current = true;
     setLoading(true);
 
     typewriterRef.current?.reset();
@@ -295,7 +307,24 @@ function Chat() {
 
     let streamText = "";
     let finalResponse: string | null = null;
+    let gotDone = false;
+    let savedMessageId: string | undefined;
     const wasNewConversation = !conversationId;
+
+    const commitAssistantReply = (text: string, messageId?: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return null;
+      typewriterRef.current?.reset();
+      finalResponse = trimmed;
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m => m.role === "streaming");
+        if (idx >= 0) next[idx] = { role: "assistant", content: trimmed, id: messageId };
+        return next;
+      });
+      setHistory(prev => [...prev, { role: "assistant", content: trimmed, id: messageId }]);
+      return trimmed;
+    };
 
     try {
       const res = await fetch("/api/grc-chat", {
@@ -320,16 +349,10 @@ function Chat() {
           streamText += event.text ?? "";
           typewriterRef.current?.enqueue(event.text ?? "");
         } else if (event.type === "done") {
+          gotDone = true;
+          savedMessageId = event.message_id;
           const finalText = streamText || event.text || "";
-          const messageId = event.message_id;
-          finalResponse = finalText;
-          setMessages(prev => {
-            const next = [...prev];
-            const idx  = next.findLastIndex(m => m.role === "streaming");
-            if (idx >= 0) next[idx] = { role: "assistant", content: finalText, id: messageId };
-            return next;
-          });
-          setHistory(prev => [...prev, { role: "assistant", content: finalText, id: messageId }]);
+          commitAssistantReply(finalText, event.message_id);
           if (event.conversation_id) {
             setConversationId(event.conversation_id);
             loadedIdRef.current = event.conversation_id;
@@ -342,6 +365,19 @@ function Chat() {
           throw new Error(event.text);
         }
       });
+
+      if (!finalResponse && streamText.trim()) {
+        gotDone = true;
+        commitAssistantReply(streamText, savedMessageId);
+      }
+
+      if (!gotDone || !finalResponse) {
+        typewriterRef.current?.reset();
+        setMessages(prev => prev.filter(m => m.role !== "streaming"));
+        setHistory(prev => prev.slice(0, -1));
+        setError("No response received. Try again.");
+        return null;
+      }
     } catch (e: unknown) {
       typewriterRef.current?.reset();
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -350,6 +386,14 @@ function Chat() {
       return null;
     } finally {
       setLoading(false);
+      sendInFlightRef.current = false;
+      if (sendQueueRef.current.length > 0) {
+        const next = sendQueueRef.current.shift()!;
+        setQueuedCount(sendQueueRef.current.length);
+        void handleSend(next, false);
+      } else {
+        setQueuedCount(0);
+      }
     }
 
     return finalResponse;
@@ -419,6 +463,9 @@ function Chat() {
     openingGreetingRef.current = null;
     setGreetingTyping(false);
     typewriterRef.current?.reset();
+    sendQueueRef.current = [];
+    setQueuedCount(0);
+    sendInFlightRef.current = false;
     router.replace("/chat", { scroll: false });
   };
 
@@ -624,8 +671,16 @@ function Chat() {
                         </div>
                         {isStreaming ? (
                           <>
-                            <FormattedMessage content={msg.content} />
-                            {streamCursor}
+                            {msg.content ? (
+                              <FormattedMessage content={msg.content} />
+                            ) : loading ? (
+                              <div style={{ display: "flex", gap: 5, padding: "4px 0" }}>
+                                <span className="loading-dot" />
+                                <span className="loading-dot" />
+                                <span className="loading-dot" />
+                              </div>
+                            ) : null}
+                            {msg.content.length > 0 && streamCursor}
                           </>
                         ) : greetingTyping && i === messages.length - 1 ? (
                           <p className="formatted-message-p" style={{ whiteSpace: "pre-wrap" }}>
@@ -635,7 +690,7 @@ function Chat() {
                         ) : (
                           <FormattedMessage content={msg.content} />
                         )}
-                        {msg.role === "assistant" && !isStreaming && !(greetingTyping && i === messages.length - 1) && (
+                        {msg.role === "assistant" && i === firstAssistantIndex && !isStreaming && !(greetingTyping && i === messages.length - 1) && (
                           <AiDisclaimer agentName={CHAT_AGENT.name} />
                         )}
                         {msg.role === "assistant" && !isStreaming && !(greetingTyping && i === messages.length - 1) && (
@@ -701,7 +756,7 @@ function Chat() {
                   {!isMobileView && (
                   <div className="chat-input-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
-                      Chat
+                      Chat{queuedCount > 0 ? ` · ${queuedCount} queued` : ""}
                     </span>
                     <div className="chat-input-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {conversationId && (
@@ -739,6 +794,11 @@ function Chat() {
                   )}
                   {isMobileView && (
                     <div className="mobile-thread-toolbar mobile-only">
+                      {queuedCount > 0 && (
+                        <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
+                          {queuedCount} queued
+                        </span>
+                      )}
                       <button type="button" className="mobile-thread-action" onClick={startNew}>
                         <SquarePen size={13} strokeWidth={2} />
                         New chat
@@ -793,9 +853,7 @@ function Chat() {
                           agentName={CHAT_AGENT.name}
                         />
                         <button type="button" className="chat-send-btn send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                          {loading
-                            ? <Loader2 size={14} className="spin" />
-                            : <ArrowUp size={14} strokeWidth={2.5} />}
+                          <ArrowUp size={14} strokeWidth={2.5} />
                         </button>
                       </div>
                     </div>
@@ -831,9 +889,7 @@ function Chat() {
                           agentName={CHAT_AGENT.name}
                         />
                         <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                          {loading
-                            ? <Loader2 size={14} className="spin" />
-                            : <ArrowUp size={14} strokeWidth={2.5} />}
+                          <ArrowUp size={14} strokeWidth={2.5} />
                         </button>
                       </div>
                     </div>
