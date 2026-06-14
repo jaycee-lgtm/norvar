@@ -318,7 +318,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
               escalatedAt={item.escalated_at}
               escalationStatus={item.escalation_status}
               lastNotifiedAt={item.last_notified_at}
-              emailReplies={parseEscalationEmailReplies(item.remediation_activity ?? [])}
+              replyCount={parseEscalationEmailReplies(item.remediation_activity ?? []).length}
               onUpdate={onUpdate}
             />
 
@@ -432,14 +432,37 @@ export default function RemediationPage() {
     load({ silent: true });
   };
 
-  const counts = {
-    open:        items.filter(i => i.status === "open").length,
-    in_progress: items.filter(i => i.status === "in_progress").length,
-    escalated:   items.filter(i => i.status === "escalated").length,
-    resolved:    items.filter(i => i.status === "resolved").length,
-    wont_fix:    items.filter(i => i.status === "wont_fix").length,
-    high: items.filter(i => normalizeGapSeverity(i.gap_severity) === "high").length,
-  };
+  const domainFiltered = useMemo(
+    () => items.filter(i => !filterDomain || i.gap_domain === filterDomain),
+    [items, filterDomain],
+  );
+
+  const counts = useMemo(() => ({
+    open: domainFiltered.filter(i =>
+      i.status === "open"
+      && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
+    ).length,
+    in_progress: domainFiltered.filter(i =>
+      i.status === "in_progress"
+      && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
+    ).length,
+    escalated: domainFiltered.filter(i =>
+      i.status === "escalated"
+      && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
+    ).length,
+    resolved: domainFiltered.filter(i =>
+      i.status === "resolved"
+      && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
+    ).length,
+    wont_fix: domainFiltered.filter(i =>
+      i.status === "wont_fix"
+      && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
+    ).length,
+    high: domainFiltered.filter(i =>
+      normalizeGapSeverity(i.gap_severity) === "high"
+      && (!filterStatus || i.status === filterStatus),
+    ).length,
+  }), [domainFiltered, filterSev, filterStatus]);
 
   const SUMMARY_FILTERS: Array<{
     key:   string;
@@ -479,25 +502,24 @@ export default function RemediationPage() {
     type === "status" ? filterStatus === value : filterSev === value;
 
   const statusFilters = (
-    <>
+    <div className="sidebar-extra-section">
       <div className="sidebar-section">Filter by status</div>
       {STATUS_FILTERS.map(({ value, label }) => (
         <button
           key={value || "all"}
           type="button"
           onClick={() => applyStatusFilter(value)}
-          className={`sidebar-nav-item${filterStatus === value ? " active" : ""}`}
-          style={{ width: "100%", textAlign: "left" }}
+          className={`sidebar-nav-item sidebar-filter-item${filterStatus === value ? " active" : ""}`}
         >
-          {label}
+          <span className="sidebar-filter-label">{label}</span>
           {value && counts[value as keyof typeof counts] !== undefined && (
-            <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--fg3)" }}>
+            <span className="sidebar-filter-count">
               {counts[value as keyof typeof counts]}
             </span>
           )}
         </button>
       ))}
-    </>
+    </div>
   );
 
   const headerSelectStyle: React.CSSProperties = {

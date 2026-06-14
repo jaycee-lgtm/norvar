@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Clock } from "lucide-react";
+import { Bell, Clock, Inbox } from "lucide-react";
+import Link from "next/link";
 import {
   ESCALATION_STEPS,
   escalationStepIndex,
   formatDuration,
-  type EscalationEmailReply,
   type EscalationStatus,
 } from "@/lib/escalation";
-import EscalationEmailReplies from "@/components/EscalationEmailReplies";
 
 type EscalationTrackerProps = {
   itemId:                   string;
@@ -21,7 +20,7 @@ type EscalationTrackerProps = {
   escalatedAt?:             string | null;
   escalationStatus?:        EscalationStatus | null;
   lastNotifiedAt?:          string | null;
-  emailReplies?:            EscalationEmailReply[];
+  replyCount?:              number;
   onUpdate:                 () => void;
 };
 
@@ -42,7 +41,7 @@ export default function EscalationTracker({
   escalatedAt,
   escalationStatus,
   lastNotifiedAt,
-  emailReplies = [],
+  replyCount = 0,
   onUpdate,
 }: EscalationTrackerProps) {
   const [renotifyBusy, setRenotifyBusy] = useState(false);
@@ -122,7 +121,15 @@ export default function EscalationTracker({
         </div>
       )}
 
-      <EscalationEmailReplies replies={emailReplies} />
+      <Link href={`/inbox?thread=${itemId}`} className="remediation-inbox-link">
+        <Inbox size={10} />
+        Open escalation inbox
+        {replyCount > 0 && (
+          <span className="remediation-inbox-link-count">
+            {replyCount} response{replyCount === 1 ? "" : "s"}
+          </span>
+        )}
+      </Link>
 
       <div className="remediation-escalation-steps">
         {ESCALATION_STEPS.map((step, i) => {

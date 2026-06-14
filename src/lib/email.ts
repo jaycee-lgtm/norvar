@@ -140,3 +140,69 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
     return { ok: false, error: err instanceof Error ? err.message : "Send failed" };
   }
 }
+
+type EscalationInboxReplyPayload = {
+  token:          string;
+  recipientEmail: string;
+  recipientName?: string | null;
+  gapTitle:       string;
+  projectTitle?:  string | null;
+  body:           string;
+  senderName:     string;
+};
+
+export async function sendEscalationInboxReply(
+  payload: EscalationInboxReplyPayload,
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY not set — inbox reply saved but email not sent");
+    return { ok: false, error: "Email not configured" };
+  }
+
+  const subject = `Re: [ref:${payload.token}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+  const replyTo = escalationReplyToAddress(payload.token);
+  const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
+  const greeting  = payload.recipientName ? `Hi ${payload.recipientName},\n\n` : "";
+  const text      = `${greeting}${payload.body.trim()}\n\n— ${payload.senderName} (via Norvar)`;
+  const html      = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; line-height: 1.5; max-width: 560px;">
+  <p style="font-size: 14px;">${payload.recipientName ? `Hi ${escapeHtml(payload.recipientName)},` : "Hi,"}</p>
+  <p style="font-size: 14px; white-space: pre-wrap;">${escapeHtml(payload.body.trim())}</p>
+  <p style="font-size: 13px; color: #737373; margin-top: 20px;">— ${escapeHtml(payload.senderName)} (via Norvar)</p>
+  <p style="font-size: 12px; color: #737373; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e5e5;">
+    Reply to this email to continue the escalation thread. Your response will appear in Norvar.
+  </p>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method:  "POST",
+      headers: {
+        Authorization:  `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to:       [payload.recipientEmail],
+        reply_to: replyTo,
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.message ?? `Resend error ${res.status}` };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Send failed" };
+  }
+}

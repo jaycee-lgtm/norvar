@@ -58,11 +58,23 @@ export function escalationViewUrl(token: string) {
 }
 
 export const ESCALATION_EMAIL_REPLY_ACTION = "escalation_email_reply";
+export const ESCALATION_INBOX_SENT_ACTION = "escalation_inbox_sent";
 
 export type EscalationEmailReply = {
   id:         string;
   from_email: string;
   from_name:  string | null;
+  subject:    string | null;
+  body:       string;
+  created_at: string;
+};
+
+export type EscalationInboxMessage = {
+  id:         string;
+  direction:  "inbound" | "outbound";
+  from_email: string;
+  from_name:  string | null;
+  to_email?:  string | null;
   subject:    string | null;
   body:       string;
   created_at: string;
@@ -124,35 +136,73 @@ export function parseEscalationEmailReplies(
     user_id?: string;
   }>,
 ): EscalationEmailReply[] {
+  return parseEscalationInboxThread(activity)
+    .filter((m): m is EscalationInboxMessage & { direction: "inbound" } => m.direction === "inbound")
+    .map(m => ({
+      id:         m.id,
+      from_email: m.from_email,
+      from_name:  m.from_name,
+      subject:    m.subject,
+      body:       m.body,
+      created_at: m.created_at,
+    }));
+}
+
+function parseInboxDetail(
+  detail: string | null,
+  fallbackFrom: string,
+): { from_email: string; from_name: string | null; to_email: string | null; subject: string | null; body: string } {
+  try {
+    const parsed = JSON.parse(detail ?? "{}") as {
+      from_email?: string;
+      from_name?:  string | null;
+      to_email?:   string | null;
+      subject?:    string | null;
+      body?:       string;
+    };
+    return {
+      from_email: parsed.from_email ?? fallbackFrom,
+      from_name:  parsed.from_name ?? null,
+      to_email:   parsed.to_email ?? null,
+      subject:    parsed.subject ?? null,
+      body:       parsed.body ?? detail ?? "",
+    };
+  } catch {
+    return {
+      from_email: fallbackFrom,
+      from_name:  null,
+      to_email:   null,
+      subject:    null,
+      body:       detail ?? "",
+    };
+  }
+}
+
+export function parseEscalationInboxThread(
+  activity: Array<{
+    id: string;
+    action: string;
+    detail: string | null;
+    created_at: string;
+    user_id?: string;
+  }>,
+): EscalationInboxMessage[] {
   return activity
-    .filter(a => a.action === ESCALATION_EMAIL_REPLY_ACTION)
+    .filter(a => a.action === ESCALATION_EMAIL_REPLY_ACTION || a.action === ESCALATION_INBOX_SENT_ACTION)
     .map(a => {
       const fallbackFrom = a.user_id ?? "unknown";
-      try {
-        const parsed = JSON.parse(a.detail ?? "{}") as {
-          from_email?: string;
-          from_name?: string | null;
-          subject?: string | null;
-          body?: string;
-        };
-        return {
-          id:         a.id,
-          from_email: parsed.from_email ?? fallbackFrom,
-          from_name:  parsed.from_name ?? null,
-          subject:    parsed.subject ?? null,
-          body:       parsed.body ?? a.detail ?? "",
-          created_at: a.created_at,
-        };
-      } catch {
-        return {
-          id:         a.id,
-          from_email: fallbackFrom,
-          from_name:  null,
-          subject:    null,
-          body:       a.detail ?? "",
-          created_at: a.created_at,
-        };
-      }
+      const parsed = parseInboxDetail(a.detail, fallbackFrom);
+      const inbound = a.action === ESCALATION_EMAIL_REPLY_ACTION;
+      return {
+        id:         a.id,
+        direction:  inbound ? "inbound" as const : "outbound" as const,
+        from_email: parsed.from_email,
+        from_name:  parsed.from_name,
+        to_email:   parsed.to_email,
+        subject:    parsed.subject,
+        body:       parsed.body,
+        created_at: a.created_at,
+      };
     })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 }
