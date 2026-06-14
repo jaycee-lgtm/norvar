@@ -13,13 +13,13 @@ import StatusBadge from "@/components/StatusBadge";
 import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
 import { ESCALATION_EMAIL_REPLY_ACTION, parseEscalationEmailReplies } from "@/lib/escalation";
 import { parseInboxMessages } from "@/lib/inbox";
-import { sortBySeverity, STATUS_LABELS, type RemediationStatus } from "@/lib/remediation";
+import { sortBySeverity, STATUS_LABELS, SELECTABLE_STATUSES, type RemediationStatus } from "@/lib/remediation";
 import type { RemediationStepItem } from "@/lib/remediation-steps";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
   ShieldAlert, ChevronDown, User, Calendar, AlertTriangle,
-  CheckCircle, ArrowUpRight, Clock, X, ExternalLink, SlidersHorizontal,
+  CheckCircle, ArrowUpRight, Clock, ExternalLink, SlidersHorizontal,
 } from "lucide-react";
 
 interface ProjectOption {
@@ -93,7 +93,6 @@ const STATUS_FILTERS = [
   { value: "in_progress", label: "In progress" },
   { value: "escalated",   label: "Escalated" },
   { value: "resolved",    label: "Resolved" },
-  { value: "wont_fix",    label: "Won't fix" },
 ];
 
 const SEV_FILTERS = [
@@ -142,6 +141,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
   const [localStatus, setLocalStatus] = useState(item.status);
   const [statusError, setStatusError] = useState("");
   const [detailExpanded, setDetailExpanded] = useState(false);
+  const [activityOpen, setActivityOpen]     = useState(false);
 
   useEffect(() => {
     setLocalStatus(item.status);
@@ -241,7 +241,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
                     onChange={e => updateStatus(e.target.value as RemediationStatus)}
                     className="remediation-status-select"
                   >
-                    {(Object.keys(STATUS_LABELS) as RemediationStatus[]).map(s => (
+                    {(SELECTABLE_STATUSES).map(s => (
                       <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                     ))}
                   </select>
@@ -333,15 +333,31 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
               return (
               <section className="remediation-detail-section remediation-activity">
                 <div className="remediation-section-label">Activity</div>
-                <ul className="remediation-activity-list">
-                  {activityRows.map(a => (
-                    <li key={a.id} className="remediation-activity-row">
-                      <Clock size={10} />
-                      <span className="remediation-activity-detail">{a.detail ?? a.action}</span>
-                      <span className="remediation-activity-date">{fmt_date(a.created_at)}</span>
-                    </li>
-                  ))}
-                </ul>
+                <button
+                  type="button"
+                  className="remediation-assignees-details-toggle"
+                  aria-expanded={activityOpen}
+                  onClick={() => setActivityOpen(v => !v)}
+                >
+                  <ChevronDown
+                    size={12}
+                    className={`remediation-assignees-chevron${activityOpen ? " open" : ""}`}
+                  />
+                  {activityOpen
+                    ? "Hide activity"
+                    : `Show activity (${activityRows.length})`}
+                </button>
+                {activityOpen && (
+                  <ul className="remediation-activity-list">
+                    {activityRows.map(a => (
+                      <li key={a.id} className="remediation-activity-row">
+                        <Clock size={10} />
+                        <span className="remediation-activity-detail">{a.detail ?? a.action}</span>
+                        <span className="remediation-activity-date">{fmt_date(a.created_at)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
               );
             })()}
@@ -360,9 +376,6 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
                 )}
                 <button type="button" disabled={statusBusy} onClick={() => updateStatus("resolved")} className="remediation-action-btn success">
                   <CheckCircle size={10} /> Resolve
-                </button>
-                <button type="button" disabled={statusBusy} onClick={() => updateStatus("wont_fix")} className="remediation-action-btn subtle">
-                  <X size={10} /> Won&apos;t fix
                 </button>
               </div>
             )}
@@ -455,10 +468,6 @@ export default function RemediationPage() {
     ).length,
     resolved: domainFiltered.filter(i =>
       i.status === "resolved"
-      && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
-    ).length,
-    wont_fix: domainFiltered.filter(i =>
-      i.status === "wont_fix"
       && (!filterSev || normalizeGapSeverity(i.gap_severity) === filterSev),
     ).length,
     high: domainFiltered.filter(i =>

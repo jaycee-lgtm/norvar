@@ -56,7 +56,19 @@ export function extractActionableContentFromChat(text: string): string {
   return rest;
 }
 
-/** Parse numbered / bulleted items from a gap-chat assistant reply. */
+function isSectionHeader(line: string): boolean {
+  return (
+    /^[A-Z][A-Z0-9\s()/\u2014\u2013\-—:]+$/.test(line)
+    && line.length < 90
+    && !/^\d+[.)]/.test(line)
+  );
+}
+
+function stripChatMarkdown(line: string): string {
+  return line.replace(/\*\*/g, "").trim();
+}
+
+/** Parse top-level numbered actions from a gap-chat assistant reply. */
 export function parseChatResponseToSteps(text: string): string[] {
   const body = extractActionableContentFromChat(text);
   if (!body) return [];
@@ -64,33 +76,47 @@ export function parseChatResponseToSteps(text: string): string[] {
   const lines = body.split("\n");
   const steps: string[] = [];
   let section = "";
+  let stepNum = 0;
+  let stepLines: string[] = [];
+
+  const flush = () => {
+    if (stepNum === 0 || stepLines.length === 0) return;
+    const sectionPrefix = section ? `${section}\n\n` : "";
+    const content = stepLines.join("\n").trim();
+    steps.push(`${sectionPrefix}${stepNum}. ${content}`);
+    stepNum = 0;
+    stepLines = [];
+  };
 
   for (const raw of lines) {
-    const line = raw.trim().replace(/\*\*/g, "");
-    if (!line) continue;
+    const line = stripChatMarkdown(raw);
+    if (!line) {
+      if (stepLines.length > 0 && stepLines[stepLines.length - 1] !== "") {
+        stepLines.push("");
+      }
+      continue;
+    }
 
-    if (
-      /^[A-Z][A-Z0-9\s()/\u2014\u2013\-—:]+$/.test(line)
-      && line.length < 90
-      && !/^\d+[.)]/.test(line)
-    ) {
+    if (isSectionHeader(line)) {
+      flush();
       section = line;
       continue;
     }
 
     const numbered = line.match(/^(\d+)[.)]\s+(.+)/);
     if (numbered) {
-      const stepText = section ? `${section}: ${numbered[2]}` : numbered[2];
-      steps.push(stepText.trim());
+      flush();
+      stepNum = Number(numbered[1]);
+      stepLines = [numbered[2]];
       continue;
     }
 
-    const bullet = line.match(/^[-•*]\s+(.+)/);
-    if (bullet) {
-      const stepText = section ? `${section}: ${bullet[1]}` : bullet[1];
-      steps.push(stepText.trim());
+    if (stepNum > 0) {
+      stepLines.push(line);
     }
   }
+
+  flush();
 
   if (steps.length > 0) return steps;
   return splitRemediationSteps(body);

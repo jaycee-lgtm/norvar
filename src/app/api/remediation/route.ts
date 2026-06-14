@@ -541,6 +541,9 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (status) {
+    if (status === "wont_fix") {
+      return Response.json({ error: "Won't fix is not a supported status" }, { status: 400 });
+    }
     updates.status = status;
     activityAction = "status_changed";
     activityDetail = `Status changed to ${status.replace("_", " ")}`;

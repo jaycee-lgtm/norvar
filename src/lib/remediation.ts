@@ -18,6 +18,11 @@ export const STATUS_LABELS = {
 
 export type RemediationStatus = keyof typeof STATUS_LABELS;
 
+/** Statuses users can set in the UI — excludes legacy/read-only values. */
+export const SELECTABLE_STATUSES = (
+  Object.keys(STATUS_LABELS) as RemediationStatus[]
+).filter(s => s !== "wont_fix");
+
 export const STATUS_STYLES: Record<RemediationStatus, { bg: string; color: string; bdr: string }> = {
   open:        { bg: "rgba(245,245,244,.08)", color: "var(--fg)",   bdr: "var(--bdr2)" },
   in_progress: { bg: "rgba(59,109,17,.12)",   color: "var(--rl)",   bdr: "var(--rl-bdr)" },
