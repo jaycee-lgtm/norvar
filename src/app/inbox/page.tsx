@@ -11,7 +11,7 @@ import { INBOX_FOLDERS } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
   Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail,
-  Archive, Trash2, RotateCcw, Inbox as InboxIcon,
+  Archive, Trash2, RotateCcw, Inbox as InboxIcon, ChevronDown,
 } from "lucide-react";
 
 type FolderCounts = InboxFolderCounts;
@@ -48,6 +48,110 @@ function parseFolder(value: string | null): InboxFolder {
   return "received";
 }
 
+function InboxThreadRow({
+  item,
+  folder,
+  active,
+  onSelect,
+}: {
+  item:     InboxListItem;
+  folder:   InboxFolder;
+  active:   boolean;
+  onSelect: () => void;
+}) {
+  const sev = normalizeGapSeverity(item.gap_severity);
+
+  return (
+    <li key={item.message_id}>
+      <button
+        type="button"
+        className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
+        onClick={onSelect}
+      >
+        <div className="inbox-thread-row-top">
+          {!item.is_read && item.direction === "inbound" && (
+            <span className="inbox-unread-dot" aria-hidden />
+          )}
+          <span className="inbox-thread-recipient">
+            {item.direction === "inbound"
+              ? (item.from_name ?? item.from_email)
+              : (item.recipient_name ?? item.recipient_email)}
+          </span>
+          <span className="inbox-thread-date">{fmtDate(item.created_at)}</span>
+        </div>
+        <div className="inbox-thread-gap" style={{ color: SEV_COLORS[sev] }}>
+          {item.gap_title}
+        </div>
+        <div className="inbox-thread-meta">
+          {item.body_preview}
+          {item.project_title && <> · {item.project_title}</>}
+        </div>
+        {folder === "trash" && item.days_until_purge !== null && (
+          <div className="inbox-purge-hint">
+            Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
+          </div>
+        )}
+      </button>
+    </li>
+  );
+}
+
+function InboxListSection({
+  title,
+  items,
+  folder,
+  threadId,
+  open,
+  onToggle,
+  onSelectThread,
+  emptyLabel,
+}: {
+  title:          string;
+  items:          InboxListItem[];
+  folder:         InboxFolder;
+  threadId:       string | null;
+  open:           boolean;
+  onToggle:       () => void;
+  onSelectThread: (id: string) => void;
+  emptyLabel?:    string;
+}) {
+  return (
+    <section className="inbox-list-section">
+      <button
+        type="button"
+        className="inbox-list-section-toggle"
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        <ChevronDown
+          size={14}
+          strokeWidth={2}
+          className={`inbox-list-section-chevron${open ? " open" : ""}`}
+        />
+        <span className="inbox-list-section-label">{title}</span>
+        <span className="inbox-list-section-count">{items.length}</span>
+      </button>
+      {open && (
+        items.length > 0 ? (
+          <ul className="inbox-thread-list inbox-thread-list--section">
+            {items.map(item => (
+              <InboxThreadRow
+                key={item.message_id}
+                item={item}
+                folder={folder}
+                active={item.remediation_id === threadId}
+                onSelect={() => onSelectThread(item.remediation_id)}
+              />
+            ))}
+          </ul>
+        ) : emptyLabel ? (
+          <p className="inbox-list-section-empty">{emptyLabel}</p>
+        ) : null
+      )}
+    </section>
+  );
+}
+
 function InboxContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
@@ -66,6 +170,23 @@ function InboxContent() {
   const [reply, setReply]             = useState("");
   const [sending, setSending]         = useState(false);
   const [error, setError]             = useState("");
+  const [unreadOpen, setUnreadOpen]   = useState(true);
+  const [readOpen, setReadOpen]       = useState(false);
+
+  const unreadItems = items.filter(i => !i.is_read);
+  const readItems   = items.filter(i => i.is_read);
+  const groupByRead = folder === "received";
+
+  useEffect(() => {
+    if (!groupByRead) return;
+    if (unreadItems.length > 0) {
+      setUnreadOpen(true);
+      setReadOpen(false);
+    } else {
+      setUnreadOpen(false);
+      setReadOpen(true);
+    }
+  }, [groupByRead, unreadItems.length]);
 
   const loadList = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoadingList(true);
@@ -226,46 +347,44 @@ function InboxContent() {
               </div>
             )}
 
-            <ul className="inbox-thread-list">
-              {items.map(item => {
-                const sev = normalizeGapSeverity(item.gap_severity);
-                const active = item.remediation_id === threadId;
+            {!loadingList && items.length > 0 && groupByRead && (
+              <div className="inbox-list-sections">
+                <InboxListSection
+                  title="Unread"
+                  items={unreadItems}
+                  folder={folder}
+                  threadId={threadId}
+                  open={unreadOpen}
+                  onToggle={() => setUnreadOpen(v => !v)}
+                  onSelectThread={selectThread}
+                  emptyLabel="No unread messages"
+                />
+                <InboxListSection
+                  title="Read"
+                  items={readItems}
+                  folder={folder}
+                  threadId={threadId}
+                  open={readOpen}
+                  onToggle={() => setReadOpen(v => !v)}
+                  onSelectThread={selectThread}
+                  emptyLabel="No read messages yet"
+                />
+              </div>
+            )}
 
-                return (
-                  <li key={item.message_id}>
-                    <button
-                      type="button"
-                      className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
-                      onClick={() => selectThread(item.remediation_id)}
-                    >
-                      <div className="inbox-thread-row-top">
-                        {!item.is_read && item.direction === "inbound" && (
-                          <span className="inbox-unread-dot" aria-hidden />
-                        )}
-                        <span className="inbox-thread-recipient">
-                          {item.direction === "inbound"
-                            ? (item.from_name ?? item.from_email)
-                            : (item.recipient_name ?? item.recipient_email)}
-                        </span>
-                        <span className="inbox-thread-date">{fmtDate(item.created_at)}</span>
-                      </div>
-                      <div className="inbox-thread-gap" style={{ color: SEV_COLORS[sev] }}>
-                        {item.gap_title}
-                      </div>
-                      <div className="inbox-thread-meta">
-                        {item.body_preview}
-                        {item.project_title && <> · {item.project_title}</>}
-                      </div>
-                      {folder === "trash" && item.days_until_purge !== null && (
-                        <div className="inbox-purge-hint">
-                          Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
-                        </div>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
+            {!loadingList && items.length > 0 && !groupByRead && (
+            <ul className="inbox-thread-list">
+              {items.map(item => (
+                <InboxThreadRow
+                  key={item.message_id}
+                  item={item}
+                  folder={folder}
+                  active={item.remediation_id === threadId}
+                  onSelect={() => selectThread(item.remediation_id)}
+                />
+              ))}
             </ul>
+            )}
           </aside>
         )}
 
