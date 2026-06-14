@@ -8,10 +8,12 @@ import GapChat, { type GapChatMessage } from "@/components/GapChat";
 import AssigneeManager from "@/components/AssigneeManager";
 import EscalateModal from "@/components/EscalateModal";
 import EscalationTracker from "@/components/EscalationTracker";
+import RemediationStepChecklist from "@/components/RemediationStepChecklist";
 import StatusBadge from "@/components/StatusBadge";
 import type { AssigneeMeta, EscalationStatus } from "@/lib/escalation";
 import { ESCALATION_EMAIL_REPLY_ACTION, parseEscalationEmailReplies } from "@/lib/escalation";
 import { sortBySeverity, STATUS_LABELS, type RemediationStatus } from "@/lib/remediation";
+import type { RemediationStepItem } from "@/lib/remediation-steps";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import type { UserProfile } from "@/lib/clerk-users";
 import {
@@ -45,6 +47,7 @@ interface RemediationItem {
   gap_detail:           string | null;
   gap_frameworks:       string[];
   remediation_steps:    string | null;
+  step_checklist?:      RemediationStepItem[];
   assigned_to:          string[];
   created_by:           string;
   status:               "open" | "in_progress" | "escalated" | "resolved" | "wont_fix";
@@ -266,14 +269,13 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
               </section>
             )}
 
-            {item.remediation_steps && (
-              <section className="remediation-detail-section">
-                <div className="remediation-section-label">Remediation steps</div>
-                <p className="remediation-body-text remediation-steps-text">
-                  {item.remediation_steps}
-                </p>
-              </section>
-            )}
+            <RemediationStepChecklist
+              itemId={item.id}
+              remediationSteps={item.remediation_steps}
+              initialChecklist={item.step_checklist ?? []}
+              profiles={profiles}
+              onUpdate={onUpdate}
+            />
 
             <section className="remediation-detail-section remediation-detail-section--chat">
               <GapChat

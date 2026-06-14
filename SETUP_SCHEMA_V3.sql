@@ -100,6 +100,7 @@ create table if not exists remediation_items (
   gap_detail        text,
   gap_frameworks    text[] default '{}',
   remediation_steps text,
+  step_checklist    jsonb not null default '[]'::jsonb,
 
   -- Assignment — multiple users can be assigned simultaneously
   assigned_to       text[] default '{}',  -- Clerk user IDs
@@ -224,4 +225,5 @@ on conflict (id) do nothing;
 alter table remediation_items add column if not exists messages jsonb not null default '[]'::jsonb;
 alter table remediation_items add column if not exists gap_key text;
 alter table remediation_items add column if not exists project_title text;
+alter table remediation_items add column if not exists step_checklist jsonb not null default '[]'::jsonb;
 alter table assessments add column if not exists gap_chats jsonb not null default '{}'::jsonb;

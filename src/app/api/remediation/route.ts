@@ -10,6 +10,17 @@ import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
 import { sendEscalationEmail } from "@/lib/email";
 import { rolesForAssignees } from "@/lib/org-assignee-roles-server";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
+import { splitRemediationSteps, type RemediationStepItem } from "@/lib/remediation-steps";
+
+function buildStepChecklist(text: string): RemediationStepItem[] {
+  return splitRemediationSteps(text).map((stepText, order) => ({
+    id:           randomUUID(),
+    text:         stepText,
+    order,
+    completed_at: null,
+    completed_by: null,
+  }));
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,6 +47,8 @@ type ItemRow = {
   escalation_role?: string | null;
   escalation_question?: string | null;
   escalation_note?: string | null;
+  remediation_steps?: string | null;
+  step_checklist?: RemediationStepItem[] | null;
   assessments?: { title: string; assessment_number: string | null } | null;
 };
 
@@ -261,6 +274,7 @@ export async function PATCH(req: NextRequest) {
     escalation_email, escalation_role, escalation_question, escalation_note,
     escalation_status, assignee_role, assignee_id, renotify,
     resolution_note, due_date,
+    init_step_checklist, step_id, step_completed,
   } = await req.json();
 
   const activeOrgId = await getActiveOrganizationId(userId, orgId);
@@ -363,6 +377,8 @@ export async function PATCH(req: NextRequest) {
     escalation_role: string | null;
     escalation_question: string | null;
     escalation_note: string | null;
+    remediation_steps: string | null;
+    step_checklist: RemediationStepItem[] | null;
   };
 
   const canManage = async () => canAccessRemediationItem(current, userId, activeOrgId);
@@ -430,9 +446,56 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if ((init_step_checklist || step_id) && !(await canManage())) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const updates: Record<string, unknown> = {};
   let activityAction = "note_added";
   let activityDetail = "";
+
+  if (init_step_checklist) {
+    const existing = Array.isArray(current.step_checklist) ? current.step_checklist : [];
+    if (existing.length > 0) {
+      return Response.json({ error: "Checklist already exists for this gap" }, { status: 400 });
+    }
+    if (!current.remediation_steps?.trim()) {
+      return Response.json({ error: "No remediation steps to add" }, { status: 400 });
+    }
+    const checklist = buildStepChecklist(current.remediation_steps);
+    if (!checklist.length) {
+      return Response.json({ error: "Could not parse remediation steps" }, { status: 400 });
+    }
+    updates.step_checklist = checklist;
+    activityAction = "steps_queued";
+    activityDetail = `Added ${checklist.length} remediation step${checklist.length === 1 ? "" : "s"} to checklist`;
+    if (current.status === "open") updates.status = "in_progress";
+  } else if (step_id) {
+    const checklist = Array.isArray(current.step_checklist) ? [...current.step_checklist] : [];
+    const idx = checklist.findIndex(s => s.id === step_id);
+    if (idx < 0) return Response.json({ error: "Step not found" }, { status: 404 });
+
+    const step = checklist[idx];
+    if (step_completed) {
+      checklist[idx] = {
+        ...step,
+        completed_at: new Date().toISOString(),
+        completed_by: userId,
+      };
+      activityAction = "step_completed";
+      activityDetail = `Completed: ${step.text.slice(0, 120)}${step.text.length > 120 ? "…" : ""}`;
+      if (current.status === "open") updates.status = "in_progress";
+    } else {
+      checklist[idx] = {
+        ...step,
+        completed_at: null,
+        completed_by: null,
+      };
+      activityAction = "step_reopened";
+      activityDetail = `Reopened: ${step.text.slice(0, 120)}${step.text.length > 120 ? "…" : ""}`;
+    }
+    updates.step_checklist = checklist;
+  }
 
   if (status) {
     updates.status = status;
