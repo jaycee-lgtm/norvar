@@ -13,6 +13,7 @@ import {
   normalizeStreamGap,
   type StreamGap,
 } from "@/lib/streaming-assessment";
+import { generateAssessmentTitle } from "@/lib/generate-thread-title";
 import { isAuditRequest } from "@/lib/audit";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
