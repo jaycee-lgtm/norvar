@@ -169,7 +169,8 @@ export async function POST(req: NextRequest) {
         await send({ type: "done", text: fullText, conversation_id: conversation_id ?? null });
       }
     } catch (err: unknown) {
-      await send({ type: "error", text: err instanceof Error ? err.message : "Chat failed" });
+      const text = err instanceof Error ? userFacingClaudeError(err.message) : "Chat failed";
+      await send({ type: "error", text });
     } finally {
       await writer.close();
     }
