@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import {
@@ -9,8 +8,12 @@ import {
   parseDraftJSON,
   type DraftOutput,
 } from "@/lib/draft";
+import { generateRedlineText } from "@/lib/redline-generate";
+import {
+  normalizeRedlineReviewModelChoice,
+  resolveRedlineReviewModel,
+} from "@/lib/redline-models";
 
-const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -51,7 +54,8 @@ export async function POST(req: NextRequest) {
         jurisdictions   = [] as string[],
         context         = "",
         include_clauses = [] as string[],
-        agent           = "cassius" as "cassius" | "nora",
+        review_model    = undefined as unknown,
+        agent           = undefined as "cassius" | "nora" | undefined,
       } = body;
 
       if (!agreement_type) {
@@ -60,14 +64,33 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      const agentLabel = agent === "nora" ? "Nora" : "Cassius";
+      const modelChoice = review_model !== undefined
+        ? normalizeRedlineReviewModelChoice(review_model)
+        : agent === "nora"
+        ? "sonnet"
+        : agent === "cassius"
+        ? "opus"
+        : normalizeRedlineReviewModelChoice(undefined);
+
+      const resolved = resolveRedlineReviewModel(modelChoice, 0);
+      const {
+        agent: resolvedAgent,
+        provider,
+        modelId,
+        repairProvider,
+        repairModelId,
+        maxTokens,
+        displayName,
+      } = resolved;
+
+      const typeLabel = agreement_type_label || agreement_type;
       await send({
         type: "status",
-        text: `${agentLabel} is drafting ${agreement_type_label || agreement_type}...`,
+        text: `${displayName} is drafting ${typeLabel}...`,
       });
 
       const userMsg = [
-        `Draft a complete ${agreement_type_label || agreement_type}.`,
+        `Draft a complete ${typeLabel}.`,
         "",
         "Parties:",
         `- Provider: ${provider_name}`,
@@ -82,36 +105,99 @@ export async function POST(req: NextRequest) {
         `Use "${provider_name}" and "${customer_name}" throughout.`,
       ].filter(Boolean).join("\n");
 
-      const systemPrompt = agent === "nora" ? NORA_DRAFT_PROMPT : CASSIUS_DRAFT_PROMPT;
+      const systemPrompt = resolvedAgent === "nora" ? NORA_DRAFT_PROMPT : CASSIUS_DRAFT_PROMPT;
 
-      const response = await claude.messages.create({
-        model:      "claude-opus-4-6",
-        max_tokens: 12000,
-        system:     systemPrompt,
-        messages:   [{ role: "user", content: userMsg }],
-      });
+      const pulse = setInterval(() => {
+        void send({
+          type: "pulse",
+          text: `${displayName} is still drafting clauses — this can take a few minutes...`,
+        });
+      }, 20000);
 
-      const raw = response.content[0].type === "text" ? response.content[0].text : "";
-
-      let draft: DraftOutput;
+      let response;
       try {
-        draft = parseDraftJSON(raw);
-      } catch {
-        await send({ type: "error", text: "Failed to parse draft output. Please try again." });
-        await writer.close();
-        return;
+        response = await generateRedlineText({
+          provider,
+          modelId,
+          systemPrompt,
+          userMsg,
+          maxTokens,
+        });
+      } finally {
+        clearInterval(pulse);
       }
 
-      draft.drafted_by = agent;
+      await send({ type: "status", text: "Parsing draft sections..." });
+
+      let rawText = response.text;
+      let draft: DraftOutput;
+
+      try {
+        draft = parseDraftJSON(rawText);
+      } catch (parseErr) {
+        console.error("Draft parse failed:", parseErr, {
+          truncated: response.truncated,
+          length:      rawText.length,
+        });
+
+        if (response.truncated || rawText.length > 0) {
+          await send({
+            type: "status",
+            text: "Response was incomplete — finishing the draft...",
+          });
+
+          try {
+            const repair = await generateRedlineText({
+              provider:     repairProvider,
+              modelId:      repairModelId,
+              maxTokens:    12_000,
+              systemPrompt: [
+                systemPrompt,
+                "",
+                "The previous response was truncated or invalid JSON.",
+                "Return ONLY one complete valid JSON object in the required draft schema.",
+                "Include all sections with full clause text.",
+              ].join("\n"),
+              userMsg: [
+                userMsg,
+                "",
+                "TRUNCATED OR INVALID MODEL OUTPUT TO REPAIR:",
+                rawText.slice(-14000),
+              ].join("\n"),
+            });
+
+            draft = parseDraftJSON(repair.text);
+          } catch (repairErr) {
+            console.error("Draft repair failed:", repairErr);
+            await send({
+              type: "error",
+              text: "Could not complete the draft output. Please try again.",
+            });
+            await writer.close();
+            return;
+          }
+        } else {
+          await send({
+            type: "error",
+            text: "Failed to parse draft output. Please try again.",
+          });
+          await writer.close();
+          return;
+        }
+      }
+
+      draft.drafted_by = resolvedAgent;
       draft.agreement_type_key = agreement_type;
 
       if (!auditMode) {
+        await send({ type: "status", text: "Saving your draft..." });
+
         const { data: saved, error: insertErr } = await supabase
           .from("drafted_agreements")
           .insert({
             user_id:        userId,
-            agent,
-            agreement_type: agreement_type_label || agreement_type,
+            agent:          resolvedAgent,
+            agreement_type: typeLabel,
             governing_law:  draft.governing_law || null,
             result:         draft,
             created_at:     new Date().toISOString(),

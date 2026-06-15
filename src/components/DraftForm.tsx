@@ -1,218 +1,337 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUp, FileText, Loader2 } from "lucide-react";
+import RedlineModelSelector from "@/components/RedlineModelSelector";
+import ContractReviewActivity, {
+  appendActivityStep,
+  completeAllActivity,
+  createActivityStep,
+  failActiveActivity,
+  friendlyReviewError,
+  markActiveDone,
+  type ReviewActivityStep,
+} from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
-import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
-import { DRAFT_AGREEMENT_TYPES } from "@/lib/draft";
-import { JURISDICTION_CHIP_OPTIONS } from "@/lib/jurisdictions";
+import { SCRIBE_AGENT } from "@/lib/agents";
+import {
+  compileDraftRequest,
+  draftQuestionOptions,
+  formatDraftQuestionText,
+  labelForDraftAnswer,
+  nextDraftQuestion,
+  type DraftAnswers,
+  type DraftQuestion,
+} from "@/lib/draft-questionnaire";
+import {
+  DEFAULT_REDLINE_REVIEW_MODEL,
+  redlineModelLabel,
+  type RedlineReviewModelChoice,
+} from "@/lib/redline-models";
+
+type UserTurn = { questionId: string; label: string };
 
 export default function DraftForm({
   onDone,
   onCancel,
   variant = "home",
+  isMobileView = false,
 }: {
-  onDone:    () => void;
-  onCancel?: () => void;
-  variant?:  "home" | "modal";
+  onDone:         () => void;
+  onCancel?:      () => void;
+  variant?:       "home" | "modal";
+  isMobileView?:  boolean;
 }) {
-  const [agreementType, setAgreementType] = useState("");
-  const [providerName, setProviderName]   = useState("");
-  const [customerName, setCustomerName]   = useState("");
-  const [jurisdictions, setJurisdictions] = useState<string[]>([]);
-  const [context, setContext]             = useState("");
-  const [agent, setAgent]                 = useState<"cassius" | "nora">("cassius");
-  const [working, setWorking]             = useState(false);
-  const [statusText, setStatusText]       = useState("");
-  const [error, setError]                 = useState("");
+  const [answers, setAnswers]               = useState<DraftAnswers>({});
+  const [userTurns, setUserTurns]           = useState<UserTurn[]>([]);
+  const [multiSelections, setMultiSelections] = useState<string[]>([]);
+  const [input, setInput]                   = useState("");
+  const [reviewModel, setReviewModel]       = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
+  const [activitySteps, setActivitySteps]   = useState<ReviewActivityStep[]>([]);
+  const [working, setWorking]               = useState(false);
+  const [error, setError]                   = useState("");
 
-  const selectedType = DRAFT_AGREEMENT_TYPES.find(t => t.value === agreementType);
-  const isHome = variant === "home";
+  const isHome        = variant === "home";
+  const modelLabel    = redlineModelLabel(reviewModel);
+  const activeQuestion = nextDraftQuestion(answers);
+  const showActivity  = activitySteps.length > 0;
 
-  const toggleJurisdiction = (j: string) =>
-    setJurisdictions(prev => prev.includes(j) ? prev.filter(x => x !== j) : [...prev, j]);
+  useEffect(() => {
+    if (activeQuestion?.type === "multi") setMultiSelections([]);
+  }, [activeQuestion?.id]);
 
-  const submit = async () => {
-    if (!agreementType) { setError("Please select an agreement type"); return; }
+  const pushStatus = (text: string) => {
+    setActivitySteps(prev => appendActivityStep(prev, text));
+  };
+
+  const commitAnswer = (question: DraftQuestion, value: string | string[], displayLabel: string) => {
+    setUserTurns(prev => [...prev, { questionId: question.id, label: displayLabel }]);
+    setInput("");
+    setMultiSelections([]);
+
+    const nextAnswers = { ...answers, [question.id]: value };
+    setAnswers(nextAnswers);
+
+    const nextQ = nextDraftQuestion(nextAnswers);
+    if (!nextQ) {
+      void submitDraft(nextAnswers);
+    }
+  };
+
+  const handleOption = (optionLabel: string) => {
+    if (!activeQuestion || working) return;
+
+    if (activeQuestion.type === "multi") {
+      if (optionLabel === "Continue") {
+        const labels = multiSelections.map(v => labelForDraftAnswer(activeQuestion.id, v));
+        commitAnswer(activeQuestion, multiSelections, labels.join(", ") || "None selected");
+        return;
+      }
+      const opt = activeQuestion.options?.find(o => o.label === optionLabel);
+      if (!opt) return;
+      setMultiSelections(prev =>
+        prev.includes(opt.value) ? prev.filter(v => v !== opt.value) : [...prev, opt.value],
+      );
+      return;
+    }
+
+    const opt = activeQuestion.options?.find(o => o.label === optionLabel);
+    commitAnswer(activeQuestion, opt?.value ?? optionLabel, optionLabel);
+  };
+
+  const handleSend = () => {
+    if (!activeQuestion || working) return;
+
+    if (activeQuestion.type === "text") {
+      const text = input.trim();
+      if (activeQuestion.optional && (!text || text.toLowerCase() === "skip")) {
+        commitAnswer(activeQuestion, "", "Skipped");
+        return;
+      }
+      if (!text) return;
+      commitAnswer(activeQuestion, text, text);
+    }
+  };
+
+  const submitDraft = async (finalAnswers: DraftAnswers) => {
+    const payload = compileDraftRequest(finalAnswers);
     setError("");
     setWorking(true);
-    setStatusText("Starting draft...");
+    setActivitySteps([createActivityStep(`Starting draft with ${modelLabel}...`)]);
 
     try {
       const res = await fetch("/api/draft", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agreement_type:       agreementType,
-          agreement_type_label: selectedType?.label,
-          provider_name:        providerName.trim() || "[Provider Name]",
-          customer_name:        customerName.trim() || "[Customer Name]",
-          jurisdictions,
-          context:              context.trim(),
-          agent,
-        }),
+        body:    JSON.stringify({ ...payload, review_model: reviewModel }),
       });
 
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || "Draft failed");
+        throw new Error((d as { error?: string }).error || "Draft failed");
       }
 
       await readSSEStream(res, (event) => {
-        if (event.type === "status") setStatusText(event.text ?? "");
-        if (event.type === "error")  throw new Error(event.text ?? "Draft failed");
-        if (event.type === "done")   onDone();
+        if (event.type === "status") pushStatus(event.text ?? "");
+        if (event.type === "pulse") {
+          setActivitySteps(prev => {
+            const active = [...prev].reverse().find(step => step.state === "active");
+            if (!active) return appendActivityStep(prev, event.text ?? "");
+            return prev.map(step => step.id === active.id ? { ...step, text: event.text ?? step.text } : step);
+          });
+        }
+        if (event.type === "error") throw new Error(event.text ?? "Draft failed");
+        if (event.type === "done") {
+          setActivitySteps(prev => completeAllActivity(prev, "Opening your draft..."));
+          onDone();
+        }
       });
-
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setActivitySteps(prev => failActiveActivity(prev));
+      setError(friendlyReviewError(e));
     } finally {
       setWorking(false);
-      setStatusText("");
     }
   };
 
-  const fields = (
-    <>
-      <div className="contract-review-field">
-        <span className="contract-review-label">Drafted by</span>
-        <div className="contract-review-agent-row">
-          {([["cassius", ASSESS_AGENT.name], ["nora", CHAT_AGENT.name]] as const).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setAgent(key)}
-              className={`contract-review-agent${agent === key ? " active" : ""}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <p className="contract-review-hint">
-          {agent === "cassius"
-            ? "Cassius drafts with strict regulatory precision — best for formal agreements"
-            : "Nora drafts in plain, practical language — best for a quick first pass"}
-        </p>
-      </div>
+  const canSend = !working && !!activeQuestion && (
+    activeQuestion.type === "text"
+      ? activeQuestion.optional || input.trim().length > 0
+      : false
+  );
 
-      <div className="contract-review-field">
-        <span className="contract-review-label">Agreement type</span>
-        <div className="contract-review-select-wrap">
-          <select
-            value={agreementType}
-            onChange={e => setAgreementType(e.target.value)}
-            className={`contract-review-select${agreementType ? " filled" : ""}`}
+  const composerPlaceholder = !activeQuestion
+    ? "Draft complete"
+    : activeQuestion.type === "text"
+    ? activeQuestion.optional
+      ? "Add context or press send to skip"
+      : activeQuestion.sub ?? "Type your answer..."
+    : activeQuestion.type === "multi"
+    ? "Select jurisdictions above, then Continue"
+    : "Choose an agreement type above";
+
+  const modelSelector = (
+    <RedlineModelSelector
+      value={reviewModel}
+      onChange={setReviewModel}
+      disabled={working}
+      menuPlacement="top"
+    />
+  );
+
+  const sendButton = (
+    <button
+      type="button"
+      className="send-btn"
+      onClick={() => { void handleSend(); }}
+      disabled={!canSend}
+      aria-label="Send answer"
+    >
+      {working ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+    </button>
+  );
+
+  const optionChips = activeQuestion && draftQuestionOptions(activeQuestion) && (
+    <div className="scribe-option-chips">
+      {draftQuestionOptions(activeQuestion)!.map(opt => {
+        const optValue = activeQuestion.options?.find(o => o.label === opt)?.value;
+        const selected = !!(activeQuestion.type === "multi" && optValue && multiSelections.includes(optValue));
+        const isContinue = opt === "Continue";
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => handleOption(opt)}
             disabled={working}
+            className={`scribe-option-chip${selected ? " active" : ""}${isContinue ? " continue" : ""}`}
           >
-            <option value="">Select agreement type...</option>
-            {DRAFT_AGREEMENT_TYPES.map(t => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
-          <ChevronDown size={13} color="var(--fg3)" className="contract-review-select-chevron" aria-hidden />
-        </div>
-      </div>
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
 
-      <div className="contract-review-grid">
-        <div className="contract-review-field">
-          <span className="contract-review-label">Provider / Service company</span>
-          <input
-            value={providerName}
-            onChange={e => setProviderName(e.target.value)}
-            placeholder="e.g. Norvar Inc."
-            className="contract-review-input"
-            disabled={working}
-          />
-        </div>
-        <div className="contract-review-field">
-          <span className="contract-review-label">Customer / Client</span>
-          <input
-            value={customerName}
-            onChange={e => setCustomerName(e.target.value)}
-            placeholder="e.g. Acme Corp."
-            className="contract-review-input"
-            disabled={working}
-          />
-        </div>
+  const guidanceCard = activeQuestion && (
+    <div className="scribe-guidance-card fade-up">
+      <div className="scribe-guidance-label">
+        <FileText size={11} color="var(--fg3)" />
+        {SCRIBE_AGENT.name}
       </div>
+      <p className="scribe-guidance-text">{formatDraftQuestionText(activeQuestion)}</p>
+      {optionChips}
+    </div>
+  );
 
-      <div className="contract-review-field">
-        <span className="contract-review-label">Jurisdictions</span>
-        <div className="input-chips" style={{ marginTop: 0, justifyContent: "flex-start" }}>
-          {JURISDICTION_CHIP_OPTIONS.map(j => (
-            <button
-              key={j}
-              type="button"
-              onClick={() => toggleJurisdiction(j)}
-              className={`chip${jurisdictions.includes(j) ? " active" : ""}`}
-              disabled={working}
-            >
-              {j}
-            </button>
-          ))}
+  const answerHistory = userTurns.length > 0 && (
+    <div className="scribe-answer-history">
+      {userTurns.map((turn, i) => (
+        <div key={`${turn.questionId}-${i}`} className="scribe-answer-bubble">
+          {turn.label}
         </div>
-      </div>
+      ))}
+    </div>
+  );
 
-      <div className="contract-review-field">
-        <span className="contract-review-label">Additional context (optional)</span>
-        <textarea
-          value={context}
-          onChange={e => setContext(e.target.value)}
-          placeholder="e.g. SaaS platform processing EU health data, BAA for a HIPAA-covered entity, AI model used for automated hiring decisions..."
-          className="contract-review-textarea"
-          disabled={working}
-          rows={3}
+  const activityPanel = showActivity && (
+    <ContractReviewActivity
+      agentName={modelLabel}
+      steps={activitySteps}
+      working={working}
+    />
+  );
+
+  const homeComposer = isMobileView ? (
+    <div className="mobile-composer">
+      <div className="mobile-composer-input-row">
+        <input
+          className="chat-input-field mobile-composer-field"
+          placeholder={composerPlaceholder}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          disabled={working || activeQuestion?.type !== "text"}
         />
       </div>
-
-      {error && <p className="contract-review-error">{error}</p>}
-
-      {working && statusText && (
-        <div className="contract-review-status">
-          <Loader2 size={13} className="spin" />
-          {statusText}
+      <div className="mobile-composer-tools mobile-composer-tools--minimal">
+        {modelSelector}
+        <div className="mobile-composer-actions">{sendButton}</div>
+      </div>
+    </div>
+  ) : (
+    <div className="input-bar">
+      <input
+        className="chat-input-field"
+        placeholder={composerPlaceholder}
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
+        disabled={working || activeQuestion?.type !== "text"}
+      />
+      <div className="composer-toolbar">
+        <div className="composer-toolbar-start" />
+        <div className="composer-toolbar-end">
+          {modelSelector}
+          {sendButton}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 
   if (isHome) {
     return (
       <div className="contracts-review-home draft-review-home">
-        <div className="input-bar draft-input-panel">
-          {fields}
-          <div className="draft-home-actions">
-            <button
-              type="button"
-              onClick={() => void submit()}
-              disabled={working || !agreementType}
-              className="app-modal-btn app-modal-btn--primary draft-home-submit"
-            >
-              {working ? "Drafting..." : "Draft agreement"}
-            </button>
-          </div>
-        </div>
+        {answerHistory}
+        {guidanceCard}
+        {homeComposer}
+        {activityPanel}
+        {error && <p className="contract-review-error contracts-home-error">{error}</p>}
       </div>
     );
   }
 
   return (
     <>
-      {fields}
+      {answerHistory}
+      {guidanceCard}
+      <div className="contract-review-field">
+        <span className="contract-review-label">Model</span>
+        {modelSelector}
+      </div>
+      <div className="contract-review-field">
+        <span className="contract-review-label">Your answer</span>
+        <input
+          className="contract-review-input"
+          placeholder={composerPlaceholder}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          disabled={working || activeQuestion?.type !== "text"}
+        />
+      </div>
+      {activityPanel}
+      {error && <p className="contract-review-error">{error}</p>}
       <div className="app-modal-actions">
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={working} className="app-modal-btn app-modal-btn--ghost">
             Cancel
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={working || !agreementType}
-          className="app-modal-btn app-modal-btn--primary"
-        >
-          {working ? "Drafting..." : "Draft agreement"}
-        </button>
       </div>
     </>
   );

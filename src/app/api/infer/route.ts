@@ -5,6 +5,7 @@ import { isAuditRequest } from "@/lib/audit";
 import { ASSESS_AGENT } from "@/lib/agents";
 import {
   VALID_INFER_JURISDICTIONS,
+  normalizeJurisdictionList,
   normalizeJurisdictionValue,
 } from "@/lib/jurisdictions";
 

@@ -7,3 +7,8 @@ export const CHAT_AGENT = {
 export const ASSESS_AGENT = {
   name: "Cassius",
 } as const;
+
+/** Agreement drafting assistant on the Contracts page. */
+export const SCRIBE_AGENT = {
+  name: "Scribe",
+} as const;

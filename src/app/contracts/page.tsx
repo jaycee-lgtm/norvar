@@ -251,7 +251,7 @@ function ContractsPageInner() {
                 <>
                   <Logo size={44} animated />
                   <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                    {activeTab === "draft" ? "Draft an agreement in minutes." : "Get a redline in minutes."}
+                    {activeTab === "draft" ? "Draft with Scribe." : "Get a redline in minutes."}
                   </h1>
                 </>
               ) : (
@@ -259,11 +259,11 @@ function ContractsPageInner() {
                   <Logo variant="hero" className="home-hero-logo" size={52} animated />
                   <div className="home-hero-heading-wrap">
                     <h1 className="home-hero-serif home-hero-serif--enter">
-                      {activeTab === "draft" ? "Draft an agreement in minutes." : "Get a redline in minutes."}
+                      {activeTab === "draft" ? "Draft with Scribe." : "Get a redline in minutes."}
                     </h1>
                     <InfoTip
                       text={activeTab === "draft"
-                        ? "Choose an agreement type, parties, and jurisdictions. Cassius or Nora will draft a complete first version aligned to Norvar's regulatory corpus."
+                        ? "Answer a few questions about the agreement you need. Scribe will draft a complete first version aligned to Norvar's regulatory corpus."
                         : "Pull a contract from Documents, upload a file, or paste text. Nora and Cassius will redline it against Norvar's regulatory corpus."}
                     />
                   </div>
@@ -295,7 +295,7 @@ function ContractsPageInner() {
               style={isMobileView ? undefined : { marginBottom: 24, width: "100%", maxWidth: 580 }}
             >
               {activeTab === "draft" ? (
-                <DraftForm variant="home" onDone={handleDraftDone} />
+                <DraftForm variant="home" isMobileView={isMobileView} onDone={handleDraftDone} />
               ) : (
                 <ContractReviewForm
                   variant="home"
