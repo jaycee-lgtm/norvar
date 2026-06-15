@@ -6,7 +6,6 @@ import { ASSESS_AGENT } from "@/lib/agents";
 import {
   VALID_INFER_JURISDICTIONS,
   normalizeJurisdictionList,
-  normalizeJurisdictionValue,
 } from "@/lib/jurisdictions";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -60,7 +59,7 @@ Data type guidance:
 
 function normalizeInferredJurisdictions(field: { values?: string[] } | undefined) {
   if (!field?.values?.length) return;
-  const allowedSet = new Set(VALID_INFER_JURISDICTIONS);
+  const allowedSet = new Set<string>(VALID_INFER_JURISDICTIONS);
   field.values = normalizeJurisdictionList(field.values).filter(v => allowedSet.has(v));
 }
 
