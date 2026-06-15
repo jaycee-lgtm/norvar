@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, FileText, Loader2 } from "lucide-react";
+import ModeSelector from "@/components/ModeSelector";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import DraftProgress, {
   handleDraftSSEEvent,
@@ -10,7 +11,7 @@ import DraftProgress, {
 } from "@/components/DraftProgress";
 import { friendlyReviewError } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
-import { SCRIBE_AGENT } from "@/lib/agents";
+import { PERTA_AGENT } from "@/lib/agents";
 import {
   DRAFT_QUESTIONS,
   compileDraftRequest,
@@ -285,7 +286,7 @@ export default function DraftForm({
           <div key={item.id} className="scribe-thread-scribe">
             <div className="scribe-thread-scribe-label">
               <FileText size={11} color="var(--fg3)" />
-              {SCRIBE_AGENT.name}
+              {PERTA_AGENT.name}
             </div>
             <p className="scribe-thread-scribe-text">{formatDraftQuestionText(question)}</p>
             {renderOptionChips(question, isActive)}
@@ -323,6 +324,7 @@ export default function DraftForm({
         />
       </div>
       <div className="mobile-composer-tools mobile-composer-tools--minimal">
+        <ModeSelector current="draft" embedded menuPlacement="top" />
         {modelSelector}
         <div className="mobile-composer-actions">{sendButton}</div>
       </div>
@@ -346,6 +348,7 @@ export default function DraftForm({
       <div className="composer-toolbar">
         <div className="composer-toolbar-start" />
         <div className="composer-toolbar-end">
+          <ModeSelector current="draft" embedded menuPlacement="top" />
           {modelSelector}
           {sendButton}
         </div>

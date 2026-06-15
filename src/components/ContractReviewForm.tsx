@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
+import ModeSelector from "@/components/ModeSelector";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import ContractReviewActivity, {
   appendActivityStep,
@@ -346,6 +347,7 @@ export default function ContractReviewForm({
           {attachControl}
           {pasteToggle}
         </div>
+        <ModeSelector current="contracts" embedded menuPlacement="top" />
         {modelSelector}
         <div className="mobile-composer-actions">{sendButton}</div>
       </div>
@@ -379,6 +381,7 @@ export default function ContractReviewForm({
           {pasteToggle}
         </div>
         <div className="composer-toolbar-end">
+          <ModeSelector current="contracts" embedded menuPlacement="top" />
           {modelSelector}
           {sendButton}
         </div>

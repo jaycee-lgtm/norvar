@@ -8,7 +8,15 @@ export const ASSESS_AGENT = {
   name: "Cassius",
 } as const;
 
-/** Agreement drafting assistant on the Contracts page. */
-export const SCRIBE_AGENT = {
-  name: "Scribe",
+/** Contract review and redline agent. */
+export const VARRO_AGENT = {
+  name: "Varro",
 } as const;
+
+/** Agreement drafting agent. */
+export const PERTA_AGENT = {
+  name: "Perta",
+} as const;
+
+/** @deprecated Use PERTA_AGENT */
+export const SCRIBE_AGENT = PERTA_AGENT;

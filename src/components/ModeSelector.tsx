@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ShieldAlert, MessageSquare, Check } from "lucide-react";
+import { ChevronDown, ShieldAlert, MessageSquare, Check, FilePenLine, FileText } from "lucide-react";
 
-export type Mode = "assess" | "chat";
+export type Mode = "chat" | "assess" | "contracts" | "draft";
 
 export const MODES: {
   id:      Mode;
@@ -29,6 +29,22 @@ export const MODES: {
     tagline: "Formal compliance risk assessment",
     icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
     href:    "/assess",
+  },
+  {
+    id:      "contracts",
+    label:   "Varro",
+    version: "1.0",
+    tagline: "Contract review and redline",
+    icon:    <FilePenLine size={13} strokeWidth={1.75} />,
+    href:    "/contracts",
+  },
+  {
+    id:      "draft",
+    label:   "Perta",
+    version: "1.0",
+    tagline: "Agreement drafting",
+    icon:    <FileText size={13} strokeWidth={1.75} />,
+    href:    "/draft",
   },
 ];
 

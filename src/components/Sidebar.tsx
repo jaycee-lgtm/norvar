@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type MouseEvent, type ReactNode } from "
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine, FileText } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -45,10 +45,18 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const searchParams = useSearchParams();
   const { user }     = useUser();
   const isMobileView = useIsMobile();
-  const isChat     = path === "/chat" || path.startsWith("/chat/");
-  const isAssess   = path === "/assess" || path === "/history";
-  const isProjects = path.startsWith("/projects");
-  const sidebarMode = isAssess ? "assess" as const : "chat" as const;
+  const isChat      = path === "/chat" || path.startsWith("/chat/");
+  const isAssess    = path === "/assess" || path === "/history";
+  const isContracts = path === "/contracts";
+  const isDraft     = path === "/draft";
+  const isProjects  = path.startsWith("/projects");
+  const sidebarMode = isDraft
+    ? "draft" as const
+    : isContracts
+    ? "contracts" as const
+    : isAssess
+    ? "assess" as const
+    : "chat" as const;
   const activeId     = searchParams.get("id");
   const activeProjectId = path.startsWith("/projects/") ? path.split("/")[2] : null;
 
@@ -176,9 +184,15 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     router.replace("/contracts");
   };
 
+  const goToDraftHome = () => {
+    onNavigate?.();
+    router.replace("/draft");
+  };
+
   const mainNav = [
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
-    { href: "/contracts", label: "Contracts", icon: FilePenLine, active: path === "/contracts" || path === "/draft" },
+    { href: "/contracts", label: "Review", icon: FilePenLine, active: isContracts },
+    { href: "/draft", label: "Draft", icon: FileText, active: isDraft },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     { href: "/inbox", label: "Inbox", icon: Inbox, active: path === "/inbox" },
   ];
@@ -249,12 +263,22 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
               Assessments
             </Link>
             {mainNav.map(({ href, label, icon: Icon, active }) => (
-              label === "Contracts" ? (
+              label === "Review" ? (
                 <Link
                   key={label}
                   href={href}
                   className={`sidebar-nav-item ${active ? "active" : ""}`}
                   onClick={goToContractsHome}
+                >
+                  <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                  {label}
+                </Link>
+              ) : label === "Draft" ? (
+                <Link
+                  key={label}
+                  href={href}
+                  className={`sidebar-nav-item ${active ? "active" : ""}`}
+                  onClick={goToDraftHome}
                 >
                   <Icon size={14} strokeWidth={active ? 2 : 1.75} />
                   {label}
@@ -343,12 +367,22 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </div>
 
           {mainNav.map(({ href, label, icon: Icon, active }) => (
-            label === "Contracts" ? (
+            label === "Review" ? (
               <Link
                 key={label}
                 href={href}
                 className={`sidebar-nav-item ${active ? "active" : ""}`}
                 onClick={goToContractsHome}
+              >
+                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                {label}
+              </Link>
+            ) : label === "Draft" ? (
+              <Link
+                key={label}
+                href={href}
+                className={`sidebar-nav-item ${active ? "active" : ""}`}
+                onClick={goToDraftHome}
               >
                 <Icon size={14} strokeWidth={active ? 2 : 1.75} />
                 {label}
