@@ -87,7 +87,6 @@ function ContractsPageInner() {
   const [loading, setLoading]           = useState(true);
   const [reviewDocId, setReviewDocId]   = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
-  const [filterAgent, setFilterAgent]   = useState("");
 
   const reviewId   = searchParams.get("id");
   const showReviews = searchParams.get("reviews") === "1";
@@ -121,8 +120,7 @@ function ContractsPageInner() {
   };
 
   const filtered = records.filter(r =>
-    (!filterStatus || r.overall_status === filterStatus) &&
-    (!filterAgent || r.agent === filterAgent),
+    !filterStatus || r.overall_status === filterStatus,
   );
 
   const activeRecord = reviewId ? records.find(r => r.id === reviewId) : undefined;
@@ -204,19 +202,6 @@ function ContractsPageInner() {
                       className={`contracts-filter-pill${filterStatus === value ? " active" : ""}`}
                     >
                       {label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="contracts-agent-row">
-                  {(["nora", "cassius"] as const).map(a => (
-                    <button
-                      key={a}
-                      type="button"
-                      onClick={() => setFilterAgent(filterAgent === a ? "" : a)}
-                      className={`contracts-filter-pill${filterAgent === a ? " active" : ""}`}
-                    >
-                      {a === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name}
                     </button>
                   ))}
                 </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
+import ModeSelector, { type Mode } from "@/components/ModeSelector";
 import { readSSEStream } from "@/lib/sse";
 import type { RedlineOutput } from "@/lib/redline";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
@@ -37,6 +38,7 @@ export default function ContractReviewForm({
   const [error, setError]           = useState("");
 
   const isHome = variant === "home";
+  const agentMode: Mode = agent === "nora" ? "chat" : "assess";
   const agentName = agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
 
   useEffect(() => {
@@ -161,20 +163,15 @@ export default function ContractReviewForm({
     }
   };
 
-  const agentToggle = (
-    <div className="contracts-agent-toggle">
-      {(["nora", "cassius"] as const).map(a => (
-        <button
-          key={a}
-          type="button"
-          disabled={working}
-          onClick={() => setAgent(a)}
-          className={`contracts-agent-toggle-btn${agent === a ? " active" : ""}`}
-        >
-          {a === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name}
-        </button>
-      ))}
-    </div>
+  const agentSelector = (
+    <ModeSelector
+      current={agentMode}
+      embedded
+      menuPlacement="top"
+      navigate={false}
+      disabled={working}
+      onSelect={mode => setAgent(mode === "chat" ? "nora" : "cassius")}
+    />
   );
 
   const attachControl = (
@@ -266,7 +263,7 @@ export default function ContractReviewForm({
           <>
             {!sourceLabel && (
               <span className="mobile-composer-prompt-label">
-                Review with {agentName}
+                Choose a contract to review
               </span>
             )}
             {sourceLabel && (
@@ -280,7 +277,7 @@ export default function ContractReviewForm({
           {attachControl}
           {pasteToggle}
         </div>
-        {agentToggle}
+        {agentSelector}
         <div className="mobile-composer-actions">{sendButton}</div>
       </div>
     </div>
@@ -311,7 +308,7 @@ export default function ContractReviewForm({
           {pasteToggle}
         </div>
         <div className="composer-toolbar-end">
-          {agentToggle}
+          {agentSelector}
           {sendButton}
         </div>
       </div>
@@ -332,8 +329,8 @@ export default function ContractReviewForm({
   return (
     <>
       <div className="contract-review-field">
-        <span className="contract-review-label">Reviewed by</span>
-        {agentToggle}
+        <span className="contract-review-label">Reviewed by (optional)</span>
+        {agentSelector}
       </div>
 
       <div className="contract-review-field">

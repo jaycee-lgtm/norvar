@@ -37,11 +37,17 @@ export default function ModeSelector({
   compact = false,
   embedded = false,
   menuPlacement = "bottom",
+  onSelect,
+  navigate = true,
+  disabled = false,
 }: {
   current: Mode;
   compact?: boolean;
   embedded?: boolean;
   menuPlacement?: "bottom" | "top";
+  onSelect?: (mode: Mode) => void;
+  navigate?: boolean;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -70,7 +76,8 @@ export default function ModeSelector({
         className="mode-selector-trigger"
         aria-expanded={open}
         aria-haspopup="listbox"
-        onClick={() => setOpen(o => !o)}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(o => !o)}
         style={{
           display:        "inline-flex",
           alignItems:     "center",
@@ -159,7 +166,12 @@ export default function ModeSelector({
                 type="button"
                 onClick={() => {
                   setOpen(false);
-                  if (!isActive) router.push(mode.href);
+                  if (isActive) return;
+                  if (onSelect) {
+                    onSelect(mode.id);
+                    return;
+                  }
+                  if (navigate) router.push(mode.href);
                 }}
                 style={{
                   width:         "100%",
