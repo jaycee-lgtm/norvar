@@ -3,6 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Check, Loader2, Clock } from "lucide-react";
 import type { DraftClause } from "@/lib/draft";
+import FrameworkRef from "@/components/FrameworkRef";
 
 export type SectionPlanItem = {
   number:       string;
@@ -192,7 +193,7 @@ export default function DraftProgress({
           {plan.frameworks?.length > 0 && (
             <div className="draft-progress-frameworks">
               {plan.frameworks.map((fw, i) => (
-                <span key={i} className="draft-progress-framework-chip">{fw}</span>
+                <FrameworkRef key={i} label={fw} />
               ))}
             </div>
           )}

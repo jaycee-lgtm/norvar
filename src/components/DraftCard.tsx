@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Shield, Copy, Check, ChevronDown, AlertCircle, Download } from "lucide-react";
 import { buildFullDraftText, type DraftOutput, type DraftSection } from "@/lib/draft";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
+import FrameworkRef from "@/components/FrameworkRef";
 
 function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -180,7 +181,7 @@ export default function DraftCard({
           </div>
           <div className="redline-supplement-framework-pills">
             {draft.frameworks.map((fw, i) => (
-              <span key={i} className="ref-chip">{fw}</span>
+              <FrameworkRef key={i} label={fw} />
             ))}
           </div>
         </div>

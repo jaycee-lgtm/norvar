@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Shield, Copy, Check, ExternalLink } from "lucide-react";
+import { Shield, Copy, Check } from "lucide-react";
 import type { RedlineClause, RedlineOutput, RedlineStatus } from "@/lib/redline";
-import { resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
+import FrameworkRef from "@/components/FrameworkRef";
 import RedlineFollowUp from "@/components/RedlineFollowUp";
 import RedlineDocumentView from "@/components/RedlineDocumentView";
 import type { ChangeDecisions } from "@/lib/redline-inline";
@@ -33,36 +32,6 @@ function parsePositiveClause(text: string) {
   const match = /^(.+?)\s*\((.+)\)\s*$/.exec(trimmed);
   if (match) return { title: match[1].trim(), detail: match[2].trim() };
   return { title: trimmed, detail: null as string | null };
-}
-
-function FrameworkRef({ label }: { label: string }) {
-  const entry = resolveCatalogEntryForFrameworkRef(label);
-
-  if (entry?.sourceUrl) {
-    return (
-      <a
-        href={entry.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="redline-fw-link"
-        title={entry.name}
-        onClick={e => e.stopPropagation()}
-      >
-        {label}
-        <ExternalLink size={9} strokeWidth={2} />
-      </a>
-    );
-  }
-
-  return (
-    <Link
-      href="/frameworks"
-      className="redline-fw-link"
-      onClick={e => e.stopPropagation()}
-    >
-      {label}
-    </Link>
-  );
 }
 
 function CopyButton({ text }: { text: string }) {
