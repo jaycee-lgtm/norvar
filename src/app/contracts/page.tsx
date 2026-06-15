@@ -168,6 +168,7 @@ function ContractsPageInner() {
             <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24, width: "100%", maxWidth: 580 }}>
               <ContractReviewForm
                 variant="home"
+                isMobileView={isMobileView}
                 initialDocumentId={reviewDocId}
                 onDone={handleDone}
               />
