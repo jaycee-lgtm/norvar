@@ -3,14 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, FileText, Loader2 } from "lucide-react";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
-import ContractReviewActivity, {
-  appendActivityStep,
-  completeAllActivity,
-  createActivityStep,
-  failActiveActivity,
-  friendlyReviewError,
-  type ReviewActivityStep,
-} from "@/components/ContractReviewActivity";
+import DraftProgress, {
+  handleDraftSSEEvent,
+  type DraftActivityStep,
+  type DraftPlan,
+} from "@/components/DraftProgress";
+import { friendlyReviewError } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import { SCRIBE_AGENT } from "@/lib/agents";
 import {
@@ -58,14 +56,15 @@ export default function DraftForm({
   const [multiSelections, setMultiSelections] = useState<string[]>([]);
   const [input, setInput]                   = useState("");
   const [reviewModel, setReviewModel]       = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
-  const [activitySteps, setActivitySteps]   = useState<ReviewActivityStep[]>([]);
+  const [activitySteps, setActivitySteps]   = useState<DraftActivityStep[]>([]);
+  const [draftPlan, setDraftPlan]           = useState<DraftPlan | null>(null);
   const [working, setWorking]               = useState(false);
   const [error, setError]                   = useState("");
 
   const isHome         = variant === "home";
   const modelLabel     = redlineModelLabel(reviewModel);
   const activeQuestion = nextDraftQuestion(answers);
-  const showActivity   = activitySteps.length > 0;
+  const showActivity   = activitySteps.length > 0 || !!draftPlan;
   const lastThreadItem = thread[thread.length - 1];
   const activeScribeId = lastThreadItem?.role === "scribe" ? lastThreadItem.id : null;
 
@@ -80,8 +79,14 @@ export default function DraftForm({
   }, [thread, activeQuestion?.id]);
 
   const pushStatus = (text: string) => {
-    setActivitySteps(prev => appendActivityStep(prev, text));
+    setActivitySteps(prev => {
+      const cleared = prev.map(s => s.state === "active" ? { ...s, state: "done" as const } : s);
+      return [...cleared, { text, state: "active" as const }];
+    });
   };
+
+  const failSteps = (steps: DraftActivityStep[]) =>
+    steps.map(s => s.state === "active" ? { ...s, state: "error" as const } : s);
 
   const commitAnswer = (question: DraftQuestion, value: string | string[], displayLabel: string) => {
     setInput("");
@@ -141,7 +146,8 @@ export default function DraftForm({
     const payload = compileDraftRequest(finalAnswers);
     setError("");
     setWorking(true);
-    setActivitySteps([createActivityStep(`Starting draft with ${modelLabel}...`)]);
+    setDraftPlan(null);
+    setActivitySteps([]);
 
     try {
       const res = await fetch("/api/draft", {
@@ -156,22 +162,41 @@ export default function DraftForm({
       }
 
       await readSSEStream(res, (event) => {
-        if (event.type === "status") pushStatus(event.text ?? "");
-        if (event.type === "pulse") {
-          setActivitySteps(prev => {
-            const active = [...prev].reverse().find(step => step.state === "active");
-            if (!active) return appendActivityStep(prev, event.text ?? "");
-            return prev.map(step => step.id === active.id ? { ...step, text: event.text ?? step.text } : step);
-          });
+        if (
+          event.type === "step"
+          || event.type === "plan"
+          || event.type === "section_start"
+          || event.type === "section_done"
+        ) {
+          handleDraftSSEEvent(
+            event as { type: string; [key: string]: unknown },
+            setDraftPlan,
+            setActivitySteps,
+          );
+          return;
         }
-        if (event.type === "error") throw new Error(event.text ?? "Draft failed");
+
+        if (event.type === "pulse") return;
+
+        if (event.type === "status") {
+          pushStatus(event.text ?? "");
+          return;
+        }
+
+        if (event.type === "error") {
+          setActivitySteps(prev => failSteps(prev));
+          throw new Error(event.text ?? "Draft failed");
+        }
+
         if (event.type === "done") {
-          setActivitySteps(prev => completeAllActivity(prev, "Opening your draft..."));
+          setActivitySteps(prev => prev.map(s =>
+            s.state === "active" ? { ...s, state: "done" as const } : s,
+          ));
           onDone();
         }
       });
     } catch (e) {
-      setActivitySteps(prev => failActiveActivity(prev));
+      setActivitySteps(prev => failSteps(prev));
       setError(friendlyReviewError(e));
     } finally {
       setWorking(false);
@@ -271,9 +296,10 @@ export default function DraftForm({
   );
 
   const activityPanel = showActivity && (
-    <ContractReviewActivity
-      agentName={modelLabel}
+    <DraftProgress
+      plan={draftPlan}
       steps={activitySteps}
+      agentName={modelLabel}
       working={working}
     />
   );
