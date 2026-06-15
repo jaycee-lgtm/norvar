@@ -67,6 +67,7 @@ function DraftPageInner() {
   const [drafts, setDrafts] = useState<DraftRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [draftFollowups, setDraftFollowups] = useState<DraftFollowUps>({});
+  const [draftThreadActive, setDraftThreadActive] = useState(false);
 
   const draftId    = searchParams.get("draft") ?? searchParams.get("id");
   const showDrafts = searchParams.get("drafts") === "1";
@@ -112,7 +113,7 @@ function DraftPageInner() {
 
   return (
     <AppShell>
-      <div className={`main-area contracts-page draft-page${isHome && !loading ? " draft-page--scoping" : ""}${isHome && !loading && isMobileView ? " mobile-thread-layout" : ""}`}>
+      <div className={`main-area contracts-page draft-page${draftThreadActive && isMobileView ? " mobile-thread-layout" : ""}`}>
         {loading && (
           <div className="home-body">
             <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
@@ -130,6 +131,7 @@ function DraftPageInner() {
             onDone={handleDraftDone}
             pastDraftsCount={drafts.length}
             onPastDrafts={() => router.push("/draft?drafts=1")}
+            onThreadActive={setDraftThreadActive}
           />
         )}
 

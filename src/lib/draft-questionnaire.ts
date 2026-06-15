@@ -65,6 +65,10 @@ export function formatDraftQuestionText(question: DraftQuestion): string {
   return [question.text, question.sub].filter(Boolean).join("\n\n");
 }
 
+export function buildDraftScopingIntroText(): string {
+  return `Great — I'll ask a few questions to scope your agreement, then draft a first version aligned to Norvar's regulatory corpus.`;
+}
+
 export function draftQuestionOptions(question: DraftQuestion): string[] | undefined {
   if (question.type === "text") {
     return question.optional ? ["Skip"] : undefined;
