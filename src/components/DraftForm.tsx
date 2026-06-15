@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUp, FileText, Loader2 } from "lucide-react";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import ContractReviewActivity, {
@@ -9,12 +9,12 @@ import ContractReviewActivity, {
   createActivityStep,
   failActiveActivity,
   friendlyReviewError,
-  markActiveDone,
   type ReviewActivityStep,
 } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import { SCRIBE_AGENT } from "@/lib/agents";
 import {
+  DRAFT_QUESTIONS,
   compileDraftRequest,
   draftQuestionOptions,
   formatDraftQuestionText,
@@ -29,7 +29,15 @@ import {
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
 
-type UserTurn = { questionId: string; label: string };
+type ThreadItem =
+  | { id: string; role: "user"; text: string }
+  | { id: string; role: "scribe"; questionId: string };
+
+const QUESTION_BY_ID = Object.fromEntries(DRAFT_QUESTIONS.map(q => [q.id, q]));
+
+function newId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export default function DraftForm({
   onDone,
@@ -42,8 +50,11 @@ export default function DraftForm({
   variant?:       "home" | "modal";
   isMobileView?:  boolean;
 }) {
+  const threadRef = useRef<HTMLDivElement>(null);
+  const [thread, setThread] = useState<ThreadItem[]>([
+    { id: newId(), role: "scribe", questionId: DRAFT_QUESTIONS[0].id },
+  ]);
   const [answers, setAnswers]               = useState<DraftAnswers>({});
-  const [userTurns, setUserTurns]           = useState<UserTurn[]>([]);
   const [multiSelections, setMultiSelections] = useState<string[]>([]);
   const [input, setInput]                   = useState("");
   const [reviewModel, setReviewModel]       = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
@@ -51,21 +62,28 @@ export default function DraftForm({
   const [working, setWorking]               = useState(false);
   const [error, setError]                   = useState("");
 
-  const isHome        = variant === "home";
-  const modelLabel    = redlineModelLabel(reviewModel);
+  const isHome         = variant === "home";
+  const modelLabel     = redlineModelLabel(reviewModel);
   const activeQuestion = nextDraftQuestion(answers);
-  const showActivity  = activitySteps.length > 0;
+  const showActivity   = activitySteps.length > 0;
+  const lastThreadItem = thread[thread.length - 1];
+  const activeScribeId = lastThreadItem?.role === "scribe" ? lastThreadItem.id : null;
 
   useEffect(() => {
     if (activeQuestion?.type === "multi") setMultiSelections([]);
   }, [activeQuestion?.id]);
+
+  useEffect(() => {
+    const el = threadRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [thread, activeQuestion?.id]);
 
   const pushStatus = (text: string) => {
     setActivitySteps(prev => appendActivityStep(prev, text));
   };
 
   const commitAnswer = (question: DraftQuestion, value: string | string[], displayLabel: string) => {
-    setUserTurns(prev => [...prev, { questionId: question.id, label: displayLabel }]);
     setInput("");
     setMultiSelections([]);
 
@@ -73,6 +91,12 @@ export default function DraftForm({
     setAnswers(nextAnswers);
 
     const nextQ = nextDraftQuestion(nextAnswers);
+    setThread(prev => {
+      const updated: ThreadItem[] = [...prev, { id: newId(), role: "user", text: displayLabel }];
+      if (nextQ) updated.push({ id: newId(), role: "scribe", questionId: nextQ.id });
+      return updated;
+    });
+
     if (!nextQ) {
       void submitDraft(nextAnswers);
     }
@@ -167,8 +191,8 @@ export default function DraftForm({
       ? "Add context or press send to skip"
       : activeQuestion.sub ?? "Type your answer..."
     : activeQuestion.type === "multi"
-    ? "Select jurisdictions above, then Continue"
-    : "Choose an agreement type above";
+    ? "Select jurisdictions in the thread, then Continue"
+    : "Choose an agreement type in the thread";
 
   const modelSelector = (
     <RedlineModelSelector
@@ -191,45 +215,58 @@ export default function DraftForm({
     </button>
   );
 
-  const optionChips = activeQuestion && draftQuestionOptions(activeQuestion) && (
-    <div className="scribe-option-chips">
-      {draftQuestionOptions(activeQuestion)!.map(opt => {
-        const optValue = activeQuestion.options?.find(o => o.label === opt)?.value;
-        const selected = !!(activeQuestion.type === "multi" && optValue && multiSelections.includes(optValue));
-        const isContinue = opt === "Continue";
+  const renderOptionChips = (question: DraftQuestion, isActive: boolean) => {
+    const options = draftQuestionOptions(question);
+    if (!options || !isActive) return null;
+
+    return (
+      <div className="scribe-option-chips">
+        {options.map(opt => {
+          const optValue = question.options?.find(o => o.label === opt)?.value;
+          const selected = !!(question.type === "multi" && optValue && multiSelections.includes(optValue));
+          const isContinue = opt === "Continue";
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => handleOption(opt)}
+              disabled={working}
+              className={`scribe-option-chip${selected ? " active" : ""}${isContinue ? " continue" : ""}`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const threadPanel = (
+    <div ref={threadRef} className="scribe-thread">
+      {thread.map(item => {
+        if (item.role === "user") {
+          return (
+            <div key={item.id} className="scribe-thread-user">
+              {item.text}
+            </div>
+          );
+        }
+
+        const question = QUESTION_BY_ID[item.questionId];
+        if (!question) return null;
+        const isActive = item.id === activeScribeId;
+
         return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => handleOption(opt)}
-            disabled={working}
-            className={`scribe-option-chip${selected ? " active" : ""}${isContinue ? " continue" : ""}`}
-          >
-            {opt}
-          </button>
+          <div key={item.id} className="scribe-thread-scribe">
+            <div className="scribe-thread-scribe-label">
+              <FileText size={11} color="var(--fg3)" />
+              {SCRIBE_AGENT.name}
+            </div>
+            <p className="scribe-thread-scribe-text">{formatDraftQuestionText(question)}</p>
+            {renderOptionChips(question, isActive)}
+          </div>
         );
       })}
-    </div>
-  );
-
-  const guidanceCard = activeQuestion && (
-    <div className="scribe-guidance-card fade-up">
-      <div className="scribe-guidance-label">
-        <FileText size={11} color="var(--fg3)" />
-        {SCRIBE_AGENT.name}
-      </div>
-      <p className="scribe-guidance-text">{formatDraftQuestionText(activeQuestion)}</p>
-      {optionChips}
-    </div>
-  );
-
-  const answerHistory = userTurns.length > 0 && (
-    <div className="scribe-answer-history">
-      {userTurns.map((turn, i) => (
-        <div key={`${turn.questionId}-${i}`} className="scribe-answer-bubble">
-          {turn.label}
-        </div>
-      ))}
     </div>
   );
 
@@ -242,7 +279,8 @@ export default function DraftForm({
   );
 
   const homeComposer = isMobileView ? (
-    <div className="mobile-composer">
+    <div className="mobile-composer scribe-input-bar">
+      {threadPanel}
       <div className="mobile-composer-input-row">
         <input
           className="chat-input-field mobile-composer-field"
@@ -264,7 +302,8 @@ export default function DraftForm({
       </div>
     </div>
   ) : (
-    <div className="input-bar">
+    <div className="input-bar scribe-input-bar">
+      {threadPanel}
       <input
         className="chat-input-field"
         placeholder={composerPlaceholder}
@@ -291,8 +330,6 @@ export default function DraftForm({
   if (isHome) {
     return (
       <div className="contracts-review-home draft-review-home">
-        {answerHistory}
-        {guidanceCard}
         {homeComposer}
         {activityPanel}
         {error && <p className="contract-review-error contracts-home-error">{error}</p>}
@@ -302,14 +339,8 @@ export default function DraftForm({
 
   return (
     <>
-      {answerHistory}
-      {guidanceCard}
-      <div className="contract-review-field">
-        <span className="contract-review-label">Model</span>
-        {modelSelector}
-      </div>
-      <div className="contract-review-field">
-        <span className="contract-review-label">Your answer</span>
+      <div className="input-bar scribe-input-bar scribe-input-bar--modal">
+        {threadPanel}
         <input
           className="contract-review-input"
           placeholder={composerPlaceholder}
@@ -323,6 +354,13 @@ export default function DraftForm({
           }}
           disabled={working || activeQuestion?.type !== "text"}
         />
+        <div className="composer-toolbar">
+          <div className="composer-toolbar-start">
+            <span className="contract-review-label">Model</span>
+            {modelSelector}
+          </div>
+          <div className="composer-toolbar-end">{sendButton}</div>
+        </div>
       </div>
       {activityPanel}
       {error && <p className="contract-review-error">{error}</p>}
