@@ -6,8 +6,9 @@ import AppShell from "@/components/AppShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   Upload, Archive, Trash2, FolderOpen,
-  Download, Search, ChevronDown, X, MoreHorizontal, SlidersHorizontal,
+  Download, Search, ChevronDown, X, MoreHorizontal, SlidersHorizontal, FilePenLine,
 } from "lucide-react";
+import RedlineModal from "@/components/RedlineModal";
 
 interface Document {
   id:          string;
@@ -200,11 +201,12 @@ function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
   );
 }
 
-function DocRow({ doc, folders, onAction, onAssignProject }: {
+function DocRow({ doc, folders, onAction, onAssignProject, onRedline }: {
   doc:      Document;
   folders:  Folder[];
   onAction: (id: string, action: "archive" | "delete" | "restore") => void;
   onAssignProject: (id: string, folderId: string | null) => void;
+  onRedline: (doc: Document) => void;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -290,6 +292,9 @@ function DocRow({ doc, folders, onAction, onAssignProject }: {
           <div className="doc-row-dropdown" role="menu">
             {[
               { label: "Download", icon: <Download size={12} />, action: () => {} },
+              ...(doc.status === "active"
+                ? [{ label: "Redline", icon: <FilePenLine size={12} />, action: () => { onRedline(doc); setOpen(false); } }]
+                : []),
               doc.status === "active"
                 ? { label: "Archive", icon: <Archive size={12} />, action: () => { onAction(doc.id, "archive"); setOpen(false); } }
                 : { label: "Restore", icon: <FolderOpen size={12} />, action: () => { onAction(doc.id, "restore"); setOpen(false); } },
@@ -328,6 +333,7 @@ function DocumentsPageInner() {
   const [filterStatus, setFilterStatus] = useState<"active" | "archived">("active");
   const [filterFolder, setFilterFolder] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [redlineDoc, setRedlineDoc]               = useState<Document | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -568,6 +574,7 @@ function DocumentsPageInner() {
               folders={folders}
               onAction={handleAction}
               onAssignProject={handleAssignProject}
+              onRedline={setRedlineDoc}
             />
           ))}
           </div>
@@ -580,6 +587,14 @@ function DocumentsPageInner() {
           defaultFolderId={filterFolder}
           onClose={() => setShowUpload(false)}
           onUploaded={load}
+        />
+      )}
+
+      {redlineDoc && (
+        <RedlineModal
+          documentId={redlineDoc.id}
+          documentName={redlineDoc.name}
+          onClose={() => setRedlineDoc(null)}
         />
       )}
     </AppShell>
