@@ -13,6 +13,7 @@ import AiDisclaimer from "@/components/AiDisclaimer";
 import ContractReviewForm from "@/components/ContractReviewForm";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { RedlineOutput } from "@/lib/redline";
+import type { RedlineFollowUps } from "@/lib/redline-followup";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 
 type RedlineRecord = {
@@ -22,6 +23,7 @@ type RedlineRecord = {
   governing_law:  string;
   overall_status: RedlineOutput["overall_status"];
   result:         RedlineOutput;
+  followups?:     RedlineFollowUps;
   document_id:    string | null;
   created_at:     string;
 };
@@ -87,6 +89,7 @@ function ContractsPageInner() {
   const [loading, setLoading]           = useState(true);
   const [reviewDocId, setReviewDocId]   = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
+  const [followups, setFollowups]         = useState<RedlineFollowUps>({});
 
   const reviewId   = searchParams.get("id");
   const showReviews = searchParams.get("reviews") === "1";
@@ -124,6 +127,17 @@ function ContractsPageInner() {
   );
 
   const activeRecord = reviewId ? records.find(r => r.id === reviewId) : undefined;
+
+  useEffect(() => {
+    if (activeRecord) {
+      setFollowups((activeRecord.followups && typeof activeRecord.followups === "object")
+        ? activeRecord.followups
+        : {});
+    } else {
+      setFollowups({});
+    }
+  }, [activeRecord?.id, activeRecord?.followups]);
+
   const isHome = !loading && !reviewId && !showReviews;
   const showSplit = !loading && records.length > 0 && (!!reviewId || showReviews);
   const showList = !isMobileView || !reviewId;
@@ -264,7 +278,17 @@ function ContractsPageInner() {
                         <Trash2 size={11} /> Delete
                       </button>
                     </div>
-                    <RedlineCard redline={activeRecord.result} />
+                    <RedlineCard
+                      redline={activeRecord.result}
+                      redlineId={activeRecord.id}
+                      followups={followups}
+                      onFollowupsChange={next => {
+                        setFollowups(next);
+                        setRecords(prev => prev.map(r =>
+                          r.id === activeRecord.id ? { ...r, followups: next } : r,
+                        ));
+                      }}
+                    />
                     <AiDisclaimer agentName={activeRecord.agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name} />
                   </div>
                 )}

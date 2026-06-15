@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
           governing_law:  redline.governing_law,
           overall_status: redline.overall_status,
           result:         redline,
+          followups:      {},
           document_id:    document_id || null,
           created_at:     new Date().toISOString(),
         });

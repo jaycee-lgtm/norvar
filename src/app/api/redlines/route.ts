@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from("redlines")
-    .select("id, agent, agreement_type, governing_law, overall_status, result, document_id, created_at")
+    .select("id, agent, agreement_type, governing_law, overall_status, result, document_id, followups, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);

@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { Shield, AlertTriangle, CheckCircle, XCircle, Copy, Check } from "lucide-react";
 import type { RedlineClause, RedlineOutput, RedlineStatus } from "@/lib/redline";
+import RedlineFollowUp from "@/components/RedlineFollowUp";
+import {
+  getThreadMessages,
+  redlineClauseThreadKey,
+  type RedlineFollowUpMessage,
+  type RedlineFollowUps,
+} from "@/lib/redline-followup";
 
 const SEV_STYLES = {
   high:   { bg: "var(--rh-bg, #FCEBEB)",  color: "var(--rh, #A32D2D)",  bdr: "var(--rh-bdr, #E8C4C4)", label: "High"   },
@@ -48,7 +55,21 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function ClauseCard({ clause, index }: { clause: RedlineClause; index: number }) {
+function ClauseCard({
+  clause,
+  index,
+  redlineId,
+  agent,
+  followups,
+  onClauseFollowUpChange,
+}: {
+  clause: RedlineClause;
+  index: number;
+  redlineId?: string;
+  agent: "nora" | "cassius";
+  followups?: RedlineFollowUps;
+  onClauseFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
+}) {
   const [open, setOpen] = useState(index < 3);
   const sev    = SEV_STYLES[clause.severity] ?? SEV_STYLES.low;
   const status = STATUS_STYLES[clause.status] ?? STATUS_STYLES.compliant;
@@ -151,17 +172,57 @@ function ClauseCard({ clause, index }: { clause: RedlineClause; index: number })
               ))}
             </div>
           )}
+
+          {redlineId && (
+            <RedlineFollowUp
+              key={`${redlineId}-${redlineClauseThreadKey(index)}`}
+              redlineId={redlineId}
+              thread={redlineClauseThreadKey(index)}
+              clauseIndex={index}
+              agent={agent}
+              initialMessages={getThreadMessages(followups, redlineClauseThreadKey(index))}
+              onMessagesChange={msgs => onClauseFollowUpChange?.(index, msgs)}
+              toggleLabel="Ask about this clause"
+              hint="Ask why this was flagged, whether the suggested language is enough, or how to negotiate it."
+              placeholder="Ask about this clause..."
+            />
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export default function RedlineCard({ redline }: { redline: RedlineOutput }) {
+export default function RedlineCard({
+  redline,
+  redlineId,
+  followups,
+  onFollowupsChange,
+}: {
+  redline: RedlineOutput;
+  redlineId?: string;
+  followups?: RedlineFollowUps;
+  onFollowupsChange?: (followups: RedlineFollowUps) => void;
+}) {
   const overall = OVERALL_STYLES[redline.overall_status] ?? OVERALL_STYLES.needs_work;
   const agentLabel = redline.redline_by === "nora" ? "Nora" : "Cassius";
+  const agent = redline.redline_by === "cassius" ? "cassius" : "nora";
   const highCount   = redline.clauses.filter(c => c.severity === "high").length;
   const mediumCount = redline.clauses.filter(c => c.severity === "medium").length;
+
+  const handleClauseFollowUpChange = (index: number, messages: RedlineFollowUpMessage[]) => {
+    onFollowupsChange?.({
+      ...(followups ?? {}),
+      clauses: { ...(followups?.clauses ?? {}), [String(index)]: messages },
+    });
+  };
+
+  const handleGeneralFollowUpChange = (messages: RedlineFollowUpMessage[]) => {
+    onFollowupsChange?.({
+      ...(followups ?? {}),
+      general: messages,
+    });
+  };
 
   return (
     <div style={{ fontFamily: "var(--font-sora, 'Sora', sans-serif)" }}>
@@ -230,7 +291,15 @@ export default function RedlineCard({ redline }: { redline: RedlineOutput }) {
             Clause review · {redline.clauses.length} issue{redline.clauses.length !== 1 ? "s" : ""}
           </div>
           {redline.clauses.map((clause, i) => (
-            <ClauseCard key={i} clause={clause} index={i} />
+            <ClauseCard
+              key={i}
+              clause={clause}
+              index={i}
+              redlineId={redlineId}
+              agent={agent}
+              followups={followups}
+              onClauseFollowUpChange={handleClauseFollowUpChange}
+            />
           ))}
         </div>
       )}
@@ -255,7 +324,7 @@ export default function RedlineCard({ redline }: { redline: RedlineOutput }) {
       )}
 
       {redline.frameworks?.length > 0 && (
-        <div style={{ paddingTop: 12, borderTop: "0.5px solid var(--bdr)" }}>
+        <div style={{ paddingTop: 12, borderTop: "0.5px solid var(--bdr)", marginBottom: redlineId ? 16 : 0 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
             Applicable frameworks
           </div>
@@ -271,6 +340,20 @@ export default function RedlineCard({ redline }: { redline: RedlineOutput }) {
             ))}
           </div>
         </div>
+      )}
+
+      {redlineId && (
+        <RedlineFollowUp
+          key={`${redlineId}-general`}
+          redlineId={redlineId}
+          thread="general"
+          agent={agent}
+          initialMessages={getThreadMessages(followups, "general")}
+          onMessagesChange={handleGeneralFollowUpChange}
+          toggleLabel="Ask about this review"
+          hint="Ask about overall risk, missing clauses, negotiation strategy, or how findings fit together."
+          placeholder="Ask about this review..."
+        />
       )}
     </div>
   );
