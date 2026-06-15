@@ -19,12 +19,6 @@ import {
   type RedlineFollowUps,
 } from "@/lib/redline-followup";
 
-const SEV_LABELS = {
-  high:   "High",
-  medium: "Medium",
-  low:    "Low",
-} as const;
-
 const REWRITE_REQUEST =
   "Please rewrite the suggested language for this clause. Keep it commercially reasonable while fully addressing the compliance issue you flagged. Provide the full replacement text under a **Suggested language:** heading.";
 
@@ -46,7 +40,6 @@ function InlineChangeBlock({
   onClauseFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
 }) {
   const { clause } = change;
-  const sev = SEV_LABELS[clause.severity] ?? clause.severity;
   const thread = redlineClauseThreadKey(change.clauseIndex);
   const baseSuggested = clause.suggested_text?.trim() ?? "";
   const chatRewrite = followupRewriteForClause(followups, change.clauseIndex);
@@ -59,7 +52,6 @@ function InlineChangeBlock({
     >
       <div className="redline-inline-change-head">
         <div className="redline-inline-change-labels">
-          <span className="redline-inline-change-sev">{sev}</span>
           <span>{clause.clause_number}</span>
           <span>{clause.clause_title}</span>
           {showingRewrite && (

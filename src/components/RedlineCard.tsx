@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Shield, AlertTriangle, CheckCircle, XCircle, Copy, Check, ExternalLink } from "lucide-react";
+import { Shield, Copy, Check, ExternalLink } from "lucide-react";
 import type { RedlineClause, RedlineOutput, RedlineStatus } from "@/lib/redline";
 import { resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import RedlineFollowUp from "@/components/RedlineFollowUp";
@@ -16,25 +16,12 @@ import {
   type RedlineFollowUps,
 } from "@/lib/redline-followup";
 
-const SEV_STYLES = {
-  high:   { bg: "var(--rh-bg, #FCEBEB)",  color: "var(--rh, #A32D2D)",  bdr: "var(--rh-bdr, #E8C4C4)", label: "High"   },
-  medium: { bg: "var(--rm-bg, #FAEEDA)",  color: "var(--rm, #854F0B)",  bdr: "var(--rm-bdr, #DEBB88)", label: "Medium" },
-  low:    { bg: "var(--card2, #f5f0eb)",  color: "var(--fg3, #a8998e)", bdr: "var(--bdr2, #e8e0d8)",  label: "Low"    },
-};
-
 const STATUS_STYLES: Record<RedlineStatus, { label: string; color: string }> = {
   non_compliant: { label: "Non-compliant", color: "var(--rh, #A32D2D)"  },
   missing:       { label: "Missing",       color: "var(--rh, #A32D2D)"  },
   weak:          { label: "Weak",          color: "var(--rm, #854F0B)"  },
   recommend:     { label: "Recommend",     color: "var(--rl, #3B6D11)"  },
   compliant:     { label: "Compliant",     color: "var(--fg3, #a8998e)" },
-};
-
-const OVERALL_STYLES = {
-  do_not_sign:        { label: "Do Not Sign",        bg: "var(--rh-bg)",  color: "var(--rh)",  icon: <XCircle size={14} /> },
-  significant_issues: { label: "Significant Issues", bg: "var(--rm-bg)",  color: "var(--rm)",  icon: <AlertTriangle size={14} /> },
-  needs_work:         { label: "Needs Work",          bg: "var(--rl-bg)",  color: "var(--rl)",  icon: <AlertTriangle size={14} /> },
-  clean:              { label: "Clean",               bg: "var(--card2)",  color: "var(--fg3)", icon: <CheckCircle size={14} /> },
 };
 
 const DOMAIN_LABELS: Record<string, string> = {
@@ -50,12 +37,6 @@ function parsePositiveClause(text: string) {
 
 function FrameworkRef({ label }: { label: string }) {
   const entry = resolveCatalogEntryForFrameworkRef(label);
-  const pillStyle = {
-    fontSize: 10, padding: "2px 7px", borderRadius: 4,
-    background: "var(--card2)", color: "var(--fg3)",
-    border: "0.5px solid var(--bdr2)", fontWeight: 500,
-    display: "inline-flex" as const, alignItems: "center" as const, gap: 4,
-  };
 
   if (entry?.sourceUrl) {
     return (
@@ -65,7 +46,6 @@ function FrameworkRef({ label }: { label: string }) {
         rel="noopener noreferrer"
         className="redline-fw-link"
         title={entry.name}
-        style={pillStyle}
         onClick={e => e.stopPropagation()}
       >
         {label}
@@ -78,7 +58,6 @@ function FrameworkRef({ label }: { label: string }) {
     <Link
       href="/frameworks"
       className="redline-fw-link"
-      style={pillStyle}
       onClick={e => e.stopPropagation()}
     >
       {label}
@@ -121,27 +100,17 @@ function ClauseCard({
   onClauseFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
 }) {
   const [open, setOpen] = useState(index < 3);
-  const sev    = SEV_STYLES[clause.severity] ?? SEV_STYLES.low;
   const status = STATUS_STYLES[clause.status] ?? STATUS_STYLES.compliant;
 
   return (
     <div style={{
-      border: `0.5px solid ${sev.bdr}`,
-      borderLeft: `3px solid ${sev.color}`,
+      border: "0.5px solid var(--bdr2)",
       borderRadius: 8, background: "var(--card)", marginBottom: 8, overflow: "hidden",
     }}>
       <div
         onClick={() => setOpen(!open)}
         style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 10 }}
       >
-        <span style={{
-          fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-          background: sev.bg, color: sev.color, border: `0.5px solid ${sev.bdr}`,
-          textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0, marginTop: 1,
-        }}>
-          {sev.label}
-        </span>
-
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: "var(--fg3)", fontWeight: 500 }}>{clause.clause_number}</span>
@@ -393,11 +362,8 @@ export default function RedlineCard({
   decisions?: ChangeDecisions;
   onDecisionsChange?: (decisions: ChangeDecisions) => void;
 }) {
-  const overall = OVERALL_STYLES[redline.overall_status] ?? OVERALL_STYLES.needs_work;
   const agentLabel = redline.redline_by === "nora" ? "Nora" : "Cassius";
   const agent = redline.redline_by === "cassius" ? "cassius" : "nora";
-  const highCount   = (redline.clauses ?? []).filter(c => c.severity === "high").length;
-  const mediumCount = (redline.clauses ?? []).filter(c => c.severity === "medium").length;
 
   const handleClauseFollowUpChange = (index: number, messages: RedlineFollowUpMessage[]) => {
     onFollowupsChange?.({
@@ -430,32 +396,12 @@ export default function RedlineCard({
         {agentLabel} · Agreement Review
       </div>
 
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "10px 14px", borderRadius: 8, marginBottom: 16,
-        background: overall.bg, border: `0.5px solid ${overall.color}20`,
-      }}>
-        <span style={{ color: overall.color }}>{overall.icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: overall.color }}>{overall.label}</div>
-          <div style={{ fontSize: 11, color: "var(--fg3)", marginTop: 2 }}>
-            {redline.agreement_type}
-            {redline.governing_law ? ` · ${redline.governing_law}` : ""}
-            {redline.parties?.length > 0 ? ` · ${redline.parties.join(" — ")}` : ""}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          {highCount > 0 && (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--rm)" }}>{highCount}</div>
-              <div style={{ fontSize: 9, color: "var(--fg3)", textTransform: "uppercase" }}>High</div>
-            </div>
-          )}
-          {mediumCount > 0 && (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--rl)" }}>{mediumCount}</div>
-              <div style={{ fontSize: 9, color: "var(--fg3)", textTransform: "uppercase" }}>Medium</div>
-            </div>
+      <div className="redline-review-meta">
+        <div className="redline-review-meta-title">{redline.agreement_type || "Agreement"}</div>
+        <div className="redline-review-meta-sub">
+          {redline.governing_law && <span>{redline.governing_law}</span>}
+          {redline.parties?.length > 0 && (
+            <span>{redline.governing_law ? " · " : ""}{redline.parties.join(" — ")}</span>
           )}
         </div>
       </div>

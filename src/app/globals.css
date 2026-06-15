@@ -3872,15 +3872,45 @@ input, textarea, select, button {
 }
 
 .redline-fw-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 500;
   text-decoration: none;
   cursor: pointer;
+  color: var(--fg3);
+  background: var(--card2);
+  border: 0.5px solid var(--bdr2);
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .redline-fw-link:hover {
-  color: var(--fg2);
-  border-color: var(--bdr3);
-  background: var(--lift);
+  color: var(--rh);
+  border-color: var(--rh-bdr);
+  background: var(--rh-bg);
+}
+
+.redline-review-meta {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--bdr2);
+}
+
+.redline-review-meta-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+.redline-review-meta-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg3);
 }
 
 .redline-supplement {

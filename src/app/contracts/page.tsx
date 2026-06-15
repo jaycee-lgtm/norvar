@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Shield, AlertTriangle, CheckCircle, XCircle, Plus, Trash2, ArrowLeft,
+  Shield, Plus, Trash2, ArrowLeft,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import Logo from "@/components/Logo";
@@ -40,21 +40,6 @@ function fmt_time(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-const STATUS_META = {
-  do_not_sign:        { label: "Do Not Sign",        color: "var(--rh)",  bg: "var(--rh-bg)",  icon: <XCircle size={11} /> },
-  significant_issues: { label: "Significant Issues", color: "var(--rm)",  bg: "var(--rm-bg)",  icon: <AlertTriangle size={11} /> },
-  needs_work:         { label: "Needs Work",          color: "var(--rl)",  bg: "var(--rl-bg)",  icon: <AlertTriangle size={11} /> },
-  clean:              { label: "Clean",               color: "var(--fg3)", bg: "var(--card2)",  icon: <CheckCircle size={11} /> },
-};
-
-const STATUS_FILTERS = [
-  { value: "", label: "All" },
-  { value: "do_not_sign", label: "Do Not Sign" },
-  { value: "significant_issues", label: "Issues" },
-  { value: "needs_work", label: "Needs Work" },
-  { value: "clean", label: "Clean" },
-] as const;
-
 function hasFollowupThreads(followups: RedlineFollowUps) {
   const general = followups.general?.some(m => m.role === "user");
   const clauses = followups.clauses && Object.values(followups.clauses).some(msgs => msgs.some(m => m.role === "user"));
@@ -71,7 +56,6 @@ function HistoryRow({
   active:  boolean;
   onClick: () => void;
 }) {
-  const meta = STATUS_META[record.overall_status] ?? STATUS_META.needs_work;
   return (
     <button
       type="button"
@@ -81,9 +65,6 @@ function HistoryRow({
       <div className="contracts-history-row-main">
         <div className="contracts-history-row-title">{record.agreement_type || "Agreement"}</div>
         <div className="contracts-history-row-meta">
-          <span className="contracts-status-pill" style={{ background: meta.bg, color: meta.color }}>
-            {meta.icon}{meta.label}
-          </span>
           <span>{record.agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name}</span>
           <span>{fmt_date(record.created_at)}</span>
         </div>
@@ -99,7 +80,6 @@ function ContractsPageInner() {
   const [records, setRecords]         = useState<RedlineRecord[]>([]);
   const [loading, setLoading]           = useState(true);
   const [reviewDocId, setReviewDocId]   = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState("");
   const [followups, setFollowups]         = useState<RedlineFollowUps>({});
   const [appliedMeta, setAppliedMeta]     = useState<AppliedMeta | null>(null);
   const [sourceText, setSourceText]       = useState<string | null>(null);
@@ -136,10 +116,6 @@ function ContractsPageInner() {
     });
     if (searchParams.get("document")) setReviewDocId(null);
   };
-
-  const filtered = records.filter(r =>
-    !filterStatus || r.overall_status === filterStatus,
-  );
 
   const activeRecord = reviewId ? records.find(r => r.id === reviewId) : undefined;
 
@@ -268,24 +244,11 @@ function ContractsPageInner() {
                   </button>
                 </div>
 
-                <div className="contracts-filter-row">
-                  {STATUS_FILTERS.map(({ value, label }) => (
-                    <button
-                      key={value || "all"}
-                      type="button"
-                      onClick={() => setFilterStatus(value)}
-                      className={`contracts-filter-pill${filterStatus === value ? " active" : ""}`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="contracts-history-scroll">
-                  {!loading && filtered.length === 0 && (
-                    <div className="contracts-empty-inline">No matches</div>
+                  {!loading && records.length === 0 && (
+                    <div className="contracts-empty-inline">No reviews yet</div>
                   )}
-                  {filtered.map(record => (
+                  {records.map(record => (
                     <HistoryRow
                       key={record.id}
                       record={record}
