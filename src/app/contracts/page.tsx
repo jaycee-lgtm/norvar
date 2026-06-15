@@ -11,7 +11,6 @@ import InfoTip from "@/components/InfoTip";
 import RedlineCard from "@/components/RedlineCard";
 import AiDisclaimer from "@/components/AiDisclaimer";
 import ContractReviewForm from "@/components/ContractReviewForm";
-import ContractReviewModal from "@/components/ContractReviewModal";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { RedlineOutput } from "@/lib/redline";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
@@ -85,12 +84,13 @@ function ContractsPageInner() {
   const searchParams                  = useSearchParams();
   const router                        = useRouter();
   const [records, setRecords]         = useState<RedlineRecord[]>([]);
-  const [activeId, setActiveId]       = useState<string | null>(null);
   const [loading, setLoading]           = useState(true);
-  const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewDocId, setReviewDocId]   = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAgent, setFilterAgent]   = useState("");
+
+  const reviewId   = searchParams.get("id");
+  const showReviews = searchParams.get("reviews") === "1";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,14 +112,12 @@ function ContractsPageInner() {
       fetch("/api/redlines?limit=1")
         .then(r => r.json())
         .then(({ redlines: r }: { redlines?: RedlineRecord[] }) => {
-          if (r?.[0]) setActiveId(r[0].id);
+          if (r?.[0]) router.replace(`/contracts?id=${r[0].id}`);
+          else router.replace("/contracts");
         })
-        .catch(() => {});
+        .catch(() => router.replace("/contracts"));
     });
-    if (searchParams.get("document")) {
-      router.replace("/contracts");
-      setReviewDocId(null);
-    }
+    if (searchParams.get("document")) setReviewDocId(null);
   };
 
   const filtered = records.filter(r =>
@@ -127,11 +125,11 @@ function ContractsPageInner() {
     (!filterAgent || r.agent === filterAgent),
   );
 
-  const activeRecord = records.find(r => r.id === activeId);
-  const isHome = !loading && records.length === 0 && !activeRecord;
-  const showSplit = !isHome;
-  const showList = !isMobileView || !activeId;
-  const showDetail = !isMobileView || !!activeId;
+  const activeRecord = reviewId ? records.find(r => r.id === reviewId) : undefined;
+  const isHome = !loading && !reviewId && !showReviews;
+  const showSplit = !loading && records.length > 0 && (!!reviewId || showReviews);
+  const showList = !isMobileView || !reviewId;
+  const showDetail = !isMobileView || !!reviewId;
 
   return (
     <AppShell>
@@ -152,13 +150,13 @@ function ContractsPageInner() {
               {isMobileView ? (
                 <>
                   <Logo size={44} animated />
-                  <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">Review an agreement?</h1>
+                  <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">Get a redline in minutes.</h1>
                 </>
               ) : (
                 <div className="home-hero-row home-hero-enter">
                   <Logo variant="hero" className="home-hero-logo" size={52} animated />
                   <div className="home-hero-heading-wrap">
-                    <h1 className="home-hero-serif home-hero-serif--enter">Review an agreement?</h1>
+                    <h1 className="home-hero-serif home-hero-serif--enter">Get a redline in minutes.</h1>
                     <InfoTip text="Pull a contract from Documents, upload a file, or paste text. Nora and Cassius will redline it against Norvar's regulatory corpus." />
                   </div>
                 </div>
@@ -173,6 +171,16 @@ function ContractsPageInner() {
                 onDone={handleDone}
               />
             </div>
+
+            {records.length > 0 && (
+              <button
+                type="button"
+                className="contracts-past-reviews-link"
+                onClick={() => router.push("/contracts?reviews=1")}
+              >
+                Past reviews ({records.length})
+              </button>
+            )}
           </div>
         )}
 
@@ -182,7 +190,7 @@ function ContractsPageInner() {
               <aside className="contracts-history-panel">
                 <div className="contracts-panel-head">
                   <span>Reviews</span>
-                  <button type="button" className="contracts-new-btn" onClick={() => setShowReviewModal(true)}>
+                  <button type="button" className="contracts-new-btn" onClick={() => router.replace("/contracts")}>
                     <Plus size={11} /> New
                   </button>
                 </div>
@@ -221,8 +229,8 @@ function ContractsPageInner() {
                     <HistoryRow
                       key={record.id}
                       record={record}
-                      active={activeId === record.id}
-                      onClick={() => setActiveId(record.id)}
+                      active={reviewId === record.id}
+                      onClick={() => router.push(`/contracts?id=${record.id}`)}
                     />
                   ))}
                 </div>
@@ -239,8 +247,13 @@ function ContractsPageInner() {
                 ) : (
                   <div className="contracts-detail-inner">
                     {isMobileView && (
-                      <button type="button" className="contracts-back-btn" onClick={() => setActiveId(null)}>
+                      <button type="button" className="contracts-back-btn" onClick={() => router.replace("/contracts?reviews=1")}>
                         <ArrowLeft size={14} /> All reviews
+                      </button>
+                    )}
+                    {!isMobileView && (
+                      <button type="button" className="contracts-back-btn" onClick={() => router.replace("/contracts")}>
+                        <ArrowLeft size={14} /> New review
                       </button>
                     )}
                     <div className="contracts-detail-head">
@@ -258,7 +271,8 @@ function ContractsPageInner() {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ id: activeRecord.id }),
                           });
-                          setActiveId(null);
+                          const remaining = records.filter(r => r.id !== activeRecord.id);
+                          router.replace(remaining.length ? "/contracts?reviews=1" : "/contracts");
                           void load();
                         }}
                       >
@@ -274,14 +288,6 @@ function ContractsPageInner() {
           </div>
         )}
       </div>
-
-      {showReviewModal && (
-        <ContractReviewModal
-          initialDocumentId={null}
-          onClose={() => setShowReviewModal(false)}
-          onDone={handleDone}
-        />
-      )}
     </AppShell>
   );
 }

@@ -3774,6 +3774,23 @@ input, textarea, select, button {
   margin-bottom: 0;
 }
 
+.contracts-past-reviews-link {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+  color: var(--fg3);
+  font-size: 12px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.contracts-past-reviews-link:hover {
+  color: var(--fg2);
+}
+
 .contracts-modal-source {
   display: flex;
   flex-wrap: wrap;

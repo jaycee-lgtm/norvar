@@ -171,6 +171,11 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     router.replace("/chat");
   };
 
+  const goToContractsHome = () => {
+    onNavigate?.();
+    router.replace("/contracts");
+  };
+
   const mainNav = [
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
     { href: "/contracts", label: "Contracts", icon: FilePenLine, active: path === "/contracts" },
@@ -244,10 +249,22 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
               Assessments
             </Link>
             {mainNav.map(({ href, label, icon: Icon, active }) => (
-              <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
-                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                {label}
-              </Link>
+              label === "Contracts" ? (
+                <Link
+                  key={label}
+                  href={href}
+                  className={`sidebar-nav-item ${active ? "active" : ""}`}
+                  onClick={goToContractsHome}
+                >
+                  <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                  {label}
+                </Link>
+              ) : (
+                <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
+                  <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                  {label}
+                </Link>
+              )
             ))}
             <Link href="/projects" className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}>
               <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
@@ -326,10 +343,22 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </div>
 
           {mainNav.map(({ href, label, icon: Icon, active }) => (
-            <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
-              <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-              {label}
-            </Link>
+            label === "Contracts" ? (
+              <Link
+                key={label}
+                href={href}
+                className={`sidebar-nav-item ${active ? "active" : ""}`}
+                onClick={goToContractsHome}
+              >
+                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                {label}
+              </Link>
+            ) : (
+              <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
+                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                {label}
+              </Link>
+            )
           ))}
         </div>
 
