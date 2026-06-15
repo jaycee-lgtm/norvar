@@ -119,13 +119,14 @@ export async function POST(req: NextRequest) {
           overall_status: redline.overall_status,
           result:         redline,
           followups:      {},
+          source_text:    text.slice(0, 120000),
           document_id:    document_id || null,
           created_at:     new Date().toISOString(),
         };
         let { error: insertErr } = await supabase.from("redlines").insert(row);
-        if (insertErr?.message.includes("followups")) {
-          const { followups: _drop, ...withoutFollowups } = row;
-          ({ error: insertErr } = await supabase.from("redlines").insert(withoutFollowups));
+        if (insertErr?.message.includes("followups") || insertErr?.message.includes("source_text")) {
+          const { followups: _f, source_text: _s, ...fallbackRow } = row;
+          ({ error: insertErr } = await supabase.from("redlines").insert(fallbackRow));
         }
         if (insertErr) throw new Error(insertErr.message);
       }

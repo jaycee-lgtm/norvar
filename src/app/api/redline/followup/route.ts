@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         messages,
         new_user_message,
         clause_index,
+        positive_index,
       } = await req.json();
 
       if (!redline_id || !new_user_message?.trim()) {
@@ -73,6 +74,9 @@ export async function POST(req: NextRequest) {
       const clause = typeof clause_index === "number"
         ? redline.clauses?.[clause_index] as RedlineClause | undefined
         : undefined;
+      const positiveClause = typeof positive_index === "number"
+        ? redline.positive_clauses?.[positive_index]
+        : undefined;
 
       const history: RedlineFollowUpMessage[] = Array.isArray(messages) ? messages : [];
       const claudeMessages: RedlineFollowUpMessage[] = [
@@ -80,7 +84,7 @@ export async function POST(req: NextRequest) {
         { role: "user", content: new_user_message.trim() },
       ];
 
-      let system = buildRedlineFollowUpSystemPrompt(agent, redline, thread, clause);
+      let system = buildRedlineFollowUpSystemPrompt(agent, redline, thread, clause, positiveClause);
 
       try {
         const { selectedFrameworkAbbrs, scopePrompt } = await getUserFrameworkScope(userId);

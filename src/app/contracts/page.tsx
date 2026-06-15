@@ -13,6 +13,8 @@ import AiDisclaimer from "@/components/AiDisclaimer";
 import ContractReviewForm from "@/components/ContractReviewForm";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { RedlineOutput } from "@/lib/redline";
+import RedlineApplyBar from "@/components/RedlineApplyBar";
+import type { AppliedMeta } from "@/lib/redline-apply";
 import type { RedlineFollowUps } from "@/lib/redline-followup";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 
@@ -24,6 +26,7 @@ type RedlineRecord = {
   overall_status: RedlineOutput["overall_status"];
   result:         RedlineOutput;
   followups?:     RedlineFollowUps;
+  applied_meta?:  AppliedMeta | null;
   document_id:    string | null;
   created_at:     string;
 };
@@ -50,6 +53,13 @@ const STATUS_FILTERS = [
   { value: "needs_work", label: "Needs Work" },
   { value: "clean", label: "Clean" },
 ] as const;
+
+function hasFollowupThreads(followups: RedlineFollowUps) {
+  const general = followups.general?.some(m => m.role === "user");
+  const clauses = followups.clauses && Object.values(followups.clauses).some(msgs => msgs.some(m => m.role === "user"));
+  const positive = followups.positive && Object.values(followups.positive).some(msgs => msgs.some(m => m.role === "user"));
+  return !!(general || clauses || positive);
+}
 
 function HistoryRow({
   record,
@@ -90,6 +100,7 @@ function ContractsPageInner() {
   const [reviewDocId, setReviewDocId]   = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [followups, setFollowups]         = useState<RedlineFollowUps>({});
+  const [appliedMeta, setAppliedMeta]     = useState<AppliedMeta | null>(null);
 
   const reviewId   = searchParams.get("id");
   const showReviews = searchParams.get("reviews") === "1";
@@ -133,10 +144,12 @@ function ContractsPageInner() {
       setFollowups((activeRecord.followups && typeof activeRecord.followups === "object")
         ? activeRecord.followups
         : {});
+      setAppliedMeta(activeRecord.applied_meta ?? null);
     } else {
       setFollowups({});
+      setAppliedMeta(null);
     }
-  }, [activeRecord?.id, activeRecord?.followups]);
+  }, [activeRecord?.id, activeRecord?.followups, activeRecord?.applied_meta]);
 
   const isHome = !loading && !reviewId && !showReviews;
   const showSplit = !loading && records.length > 0 && (!!reviewId || showReviews);
@@ -278,6 +291,17 @@ function ContractsPageInner() {
                         <Trash2 size={11} /> Delete
                       </button>
                     </div>
+                    <RedlineApplyBar
+                      redlineId={activeRecord.id}
+                      appliedMeta={appliedMeta}
+                      hasFollowups={hasFollowupThreads(followups)}
+                      onApplied={next => {
+                        setAppliedMeta(next);
+                        setRecords(prev => prev.map(r =>
+                          r.id === activeRecord.id ? { ...r, applied_meta: next } : r,
+                        ));
+                      }}
+                    />
                     <RedlineCard
                       redline={activeRecord.result}
                       redlineId={activeRecord.id}

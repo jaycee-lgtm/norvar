@@ -13,6 +13,7 @@ type RedlineFollowUpProps = {
   redlineId:         string;
   thread:            string;
   clauseIndex?:      number;
+  positiveIndex?:    number;
   agent:             "nora" | "cassius";
   initialMessages?:  RedlineFollowUpMessage[];
   onMessagesChange?: (messages: RedlineFollowUpMessage[]) => void;
@@ -25,6 +26,7 @@ export default function RedlineFollowUp({
   redlineId,
   thread,
   clauseIndex,
+  positiveIndex,
   agent,
   initialMessages = [],
   onMessagesChange,
@@ -77,6 +79,7 @@ export default function RedlineFollowUp({
           messages:         prior,
           new_user_message: text,
           clause_index:     clauseIndex,
+          positive_index:   positiveIndex,
         }),
       });
 

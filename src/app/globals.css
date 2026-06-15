@@ -3798,6 +3798,156 @@ input, textarea, select, button {
   color: var(--fg2);
 }
 
+.redline-fw-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.redline-fw-link:hover {
+  color: var(--fg2);
+  border-color: var(--bdr3);
+  background: var(--lift);
+}
+
+.redline-positive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.redline-positive-card {
+  border: 0.5px solid var(--rl-bdr);
+  border-left: 3px solid var(--rl);
+  border-radius: 8px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.redline-positive-card-head {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Sora', sans-serif;
+}
+
+.redline-positive-card-head:hover {
+  background: var(--card2);
+}
+
+.redline-positive-check {
+  color: var(--rl);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.redline-positive-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg);
+  line-height: 1.45;
+}
+
+.redline-positive-chevron {
+  color: var(--fg3);
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.redline-positive-chevron.open {
+  transform: rotate(180deg);
+}
+
+.redline-positive-card-body {
+  border-top: 0.5px solid var(--bdr);
+  padding: 12px 14px 14px;
+}
+
+.redline-positive-detail {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--fg2);
+  line-height: 1.6;
+}
+
+.redline-apply-bar {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 0.5px solid var(--bdr2);
+  border-radius: 10px;
+  background: var(--card2);
+}
+
+.redline-apply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.redline-apply-actions:last-of-type {
+  margin-bottom: 0;
+}
+
+.redline-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card);
+  color: var(--fg);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+}
+
+.redline-apply-btn:hover:not(:disabled) {
+  background: var(--lift);
+  border-color: var(--bdr3);
+}
+
+.redline-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.redline-apply-btn--secondary {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.redline-apply-btn--download {
+  color: var(--fg2);
+}
+
+.redline-apply-meta {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--fg3);
+  line-height: 1.5;
+}
+
+.redline-apply-error {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--rh);
+}
+
 .contracts-modal-source {
   display: flex;
   flex-wrap: wrap;

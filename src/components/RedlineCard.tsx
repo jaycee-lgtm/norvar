@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, AlertTriangle, CheckCircle, XCircle, Copy, Check } from "lucide-react";
+import Link from "next/link";
+import { Shield, AlertTriangle, CheckCircle, XCircle, Copy, Check, ExternalLink } from "lucide-react";
 import type { RedlineClause, RedlineOutput, RedlineStatus } from "@/lib/redline";
+import { resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import RedlineFollowUp from "@/components/RedlineFollowUp";
 import {
   getThreadMessages,
   redlineClauseThreadKey,
+  redlinePositiveThreadKey,
   type RedlineFollowUpMessage,
   type RedlineFollowUps,
 } from "@/lib/redline-followup";
@@ -35,6 +38,51 @@ const OVERALL_STYLES = {
 const DOMAIN_LABELS: Record<string, string> = {
   privacy: "Privacy", ai_governance: "AI Governance", cybersecurity: "Cybersecurity",
 };
+
+function parsePositiveClause(text: string) {
+  const trimmed = text.trim();
+  const match = /^(.+?)\s*\((.+)\)\s*$/.exec(trimmed);
+  if (match) return { title: match[1].trim(), detail: match[2].trim() };
+  return { title: trimmed, detail: null as string | null };
+}
+
+function FrameworkRef({ label }: { label: string }) {
+  const entry = resolveCatalogEntryForFrameworkRef(label);
+  const pillStyle = {
+    fontSize: 10, padding: "2px 7px", borderRadius: 4,
+    background: "var(--card2)", color: "var(--fg3)",
+    border: "0.5px solid var(--bdr2)", fontWeight: 500,
+    display: "inline-flex" as const, alignItems: "center" as const, gap: 4,
+  };
+
+  if (entry?.sourceUrl) {
+    return (
+      <a
+        href={entry.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="redline-fw-link"
+        title={entry.name}
+        style={pillStyle}
+        onClick={e => e.stopPropagation()}
+      >
+        {label}
+        <ExternalLink size={9} strokeWidth={2} />
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      href="/frameworks"
+      className="redline-fw-link"
+      style={pillStyle}
+      onClick={e => e.stopPropagation()}
+    >
+      {label}
+    </Link>
+  );
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -162,13 +210,7 @@ function ClauseCard({
           {clause.frameworks?.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
               {clause.frameworks.map((fw, i) => (
-                <span key={i} style={{
-                  fontSize: 10, padding: "2px 7px", borderRadius: 4,
-                  background: "var(--card2)", color: "var(--fg3)",
-                  border: "0.5px solid var(--bdr2)", fontWeight: 500,
-                }}>
-                  {fw}
-                </span>
+                <FrameworkRef key={i} label={fw} />
               ))}
             </div>
           )}
@@ -184,6 +226,64 @@ function ClauseCard({
               onMessagesChange={msgs => onClauseFollowUpChange?.(index, msgs)}
               toggleLabel="Ask about this clause"
               hint="Ask why this was flagged, whether the suggested language is enough, or how to negotiate it."
+              placeholder="Ask about this clause..."
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PositiveClauseCard({
+  text,
+  index,
+  redlineId,
+  agent,
+  followups,
+  onPositiveFollowUpChange,
+}: {
+  text: string;
+  index: number;
+  redlineId?: string;
+  agent: "nora" | "cassius";
+  followups?: RedlineFollowUps;
+  onPositiveFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const { title, detail } = parsePositiveClause(text);
+
+  return (
+    <div className="redline-positive-card">
+      <button
+        type="button"
+        className="redline-positive-card-head"
+        onClick={() => setOpen(v => !v)}
+      >
+        <span className="redline-positive-check">✓</span>
+        <span className="redline-positive-title">{title}</span>
+        <span className={`redline-positive-chevron${open ? " open" : ""}`}>▾</span>
+      </button>
+
+      {open && (
+        <div className="redline-positive-card-body">
+          {detail && (
+            <p className="redline-positive-detail">{detail}</p>
+          )}
+          {!detail && (
+            <p className="redline-positive-detail">{text}</p>
+          )}
+          {redlineId && (
+            <RedlineFollowUp
+              key={`${redlineId}-${redlinePositiveThreadKey(index)}`}
+              redlineId={redlineId}
+              thread={redlinePositiveThreadKey(index)}
+              positiveIndex={index}
+              agent={agent}
+              initialMessages={getThreadMessages(followups, redlinePositiveThreadKey(index))}
+              onMessagesChange={msgs => onPositiveFollowUpChange?.(index, msgs)}
+              toggleLabel="Ask about this clause"
+              hint="Ask why this clause is solid, how to preserve it in negotiation, or what to watch for."
               placeholder="Ask about this clause..."
             />
           )}
@@ -221,6 +321,13 @@ export default function RedlineCard({
     onFollowupsChange?.({
       ...(followups ?? {}),
       general: messages,
+    });
+  };
+
+  const handlePositiveFollowUpChange = (index: number, messages: RedlineFollowUpMessage[]) => {
+    onFollowupsChange?.({
+      ...(followups ?? {}),
+      positive: { ...(followups?.positive ?? {}), [String(index)]: messages },
     });
   };
 
@@ -309,15 +416,17 @@ export default function RedlineCard({
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
             Well drafted
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <div className="redline-positive-list">
             {redline.positive_clauses.map((p, i) => (
-              <span key={i} style={{
-                fontSize: 11, padding: "3px 10px", borderRadius: 4,
-                background: "var(--rl-bg)", color: "var(--rl)",
-                border: "0.5px solid var(--rl-bdr)", fontWeight: 500,
-              }}>
-                ✓ {p}
-              </span>
+              <PositiveClauseCard
+                key={i}
+                text={p}
+                index={i}
+                redlineId={redlineId}
+                agent={agent}
+                followups={followups}
+                onPositiveFollowUpChange={handlePositiveFollowUpChange}
+              />
             ))}
           </div>
         </div>
@@ -330,13 +439,7 @@ export default function RedlineCard({
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {redline.frameworks.map((fw, i) => (
-              <span key={i} style={{
-                fontSize: 10, padding: "2px 7px", borderRadius: 4,
-                background: "var(--card2)", color: "var(--fg3)",
-                border: "0.5px solid var(--bdr2)", fontWeight: 500,
-              }}>
-                {fw}
-              </span>
+              <FrameworkRef key={i} label={fw} />
             ))}
           </div>
         </div>

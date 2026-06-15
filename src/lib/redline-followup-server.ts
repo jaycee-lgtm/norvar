@@ -34,6 +34,9 @@ export async function syncRedlineFollowUp(
 
   if (parsed.kind === "general") {
     next.general = messages;
+  } else if (parsed.kind === "positive") {
+    const key = String(parsed.index ?? 0);
+    next.positive = { ...(current.positive ?? {}), [key]: messages };
   } else {
     const key = String(parsed.index ?? 0);
     next.clauses = { ...(current.clauses ?? {}), [key]: messages };

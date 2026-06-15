@@ -12,16 +12,23 @@ export type RedlineFollowUpMessage = {
 export type RedlineFollowUps = {
   general?: RedlineFollowUpMessage[];
   clauses?: Record<string, RedlineFollowUpMessage[]>;
+  positive?: Record<string, RedlineFollowUpMessage[]>;
 };
 
 export function redlineClauseThreadKey(index: number) {
   return `clause:${index}`;
 }
 
-export function parseRedlineThreadKey(thread: string): { kind: "general" | "clause"; index?: number } {
+export function redlinePositiveThreadKey(index: number) {
+  return `positive:${index}`;
+}
+
+export function parseRedlineThreadKey(thread: string): { kind: "general" | "clause" | "positive"; index?: number } {
   if (thread === "general") return { kind: "general" };
-  const m = /^clause:(\d+)$/.exec(thread);
-  if (m) return { kind: "clause", index: parseInt(m[1], 10) };
+  const clause = /^clause:(\d+)$/.exec(thread);
+  if (clause) return { kind: "clause", index: parseInt(clause[1], 10) };
+  const positive = /^positive:(\d+)$/.exec(thread);
+  if (positive) return { kind: "positive", index: parseInt(positive[1], 10) };
   return { kind: "general" };
 }
 
@@ -57,11 +64,14 @@ export function buildRedlineFollowUpSystemPrompt(
   redline: RedlineOutput,
   thread: string,
   clause?: RedlineClause,
+  positiveClause?: string,
 ) {
   const agentName = agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
   const parsed = parseRedlineThreadKey(thread);
   const scope = parsed.kind === "clause" && clause
     ? `one specific flagged clause from the review.\n\nCLAUSE CONTEXT:\n${buildClauseContext(clause)}`
+    : parsed.kind === "positive" && positiveClause
+    ? `a clause that was marked as well drafted in the review.\n\nCLAUSE CONTEXT:\n${positiveClause}`
     : `their contract redline review as a whole.\n\nREVIEW CONTEXT:\n${buildReviewSummary(redline)}`;
 
   return `You are ${agentName}, Norvar's ${agent === "nora" ? "compliance chat assistant" : "regulatory assessment agent"}. The user completed a contract redline review and is asking a follow-up question about ${scope}
@@ -72,6 +82,7 @@ Rules:
 - Build on prior messages in this thread.
 - Explain regulatory requirements in plain language first; cite specific frameworks when helpful.
 ${GRC_PLAIN_LANGUAGE_RULES}
+- If the user asks for alternative or revised contract language, provide it under a heading **Suggested language:** followed by the full clause text they can paste into the contract.
 ${GRC_FORMATTING_RULES}
 - Stay focused on this contract review — do not drift into unrelated GRC topics.
 - If the question is already answered in the thread, say so briefly and add anything new.`;
@@ -81,5 +92,6 @@ export function getThreadMessages(followups: RedlineFollowUps | undefined, threa
   if (!followups) return [];
   const parsed = parseRedlineThreadKey(thread);
   if (parsed.kind === "general") return followups.general ?? [];
+  if (parsed.kind === "positive") return followups.positive?.[String(parsed.index ?? 0)] ?? [];
   return followups.clauses?.[String(parsed.index ?? 0)] ?? [];
 }

@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const BASE_SELECT =
   "id, agent, agreement_type, governing_law, overall_status, result, document_id, created_at";
-const FULL_SELECT = `${BASE_SELECT}, followups`;
+const FULL_SELECT = `${BASE_SELECT}, followups, applied_meta`;
 
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
@@ -35,6 +35,8 @@ export async function GET(req: NextRequest) {
   let { data, error } = await runQuery(FULL_SELECT);
   if (error?.message.includes("followups")) {
     ({ data, error } = await runQuery(BASE_SELECT));
+  } else if (error?.message.includes("applied_meta")) {
+    ({ data, error } = await runQuery(`${BASE_SELECT}, followups`));
   }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
