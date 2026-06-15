@@ -17,6 +17,7 @@ import type { DraftOutput } from "@/lib/draft";
 import RedlineApplyBar from "@/components/RedlineApplyBar";
 import type { AppliedMeta } from "@/lib/redline-apply";
 import { defaultDecisions, type ChangeDecisions } from "@/lib/redline-inline";
+import type { DraftFollowUps } from "@/lib/draft-followup";
 import type { RedlineFollowUps } from "@/lib/redline-followup";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 
@@ -41,6 +42,9 @@ type DraftRecord = {
   agreement_type: string;
   governing_law:  string | null;
   result:         DraftOutput;
+  followups?:     DraftFollowUps;
+  document_id?:   string | null;
+  folder_id?:     string | null;
   created_at:     string;
 };
 
@@ -98,6 +102,7 @@ function ContractsPageInner() {
   const [loading, setLoading]         = useState(true);
   const [reviewDocId, setReviewDocId] = useState<string | null>(null);
   const [followups, setFollowups]       = useState<RedlineFollowUps>({});
+  const [draftFollowups, setDraftFollowups] = useState<DraftFollowUps>({});
   const [appliedMeta, setAppliedMeta] = useState<AppliedMeta | null>(null);
   const [sourceText, setSourceText]   = useState<string | null>(null);
   const [changeDecisions, setChangeDecisions] = useState<ChangeDecisions>({});
@@ -165,6 +170,16 @@ function ContractsPageInner() {
 
   const activeReview = reviewId ? records.find(r => r.id === reviewId) : undefined;
   const activeDraft  = draftId ? drafts.find(r => r.id === draftId) : undefined;
+
+  useEffect(() => {
+    if (activeDraft) {
+      setDraftFollowups((activeDraft.followups && typeof activeDraft.followups === "object")
+        ? activeDraft.followups
+        : {});
+    } else {
+      setDraftFollowups({});
+    }
+  }, [activeDraft?.id, activeDraft?.followups]);
 
   useEffect(() => {
     if (activeReview) {
@@ -349,7 +364,7 @@ function ContractsPageInner() {
                     drafts.map(record => (
                       <HistoryRow
                         key={record.id}
-                        title={record.agreement_type}
+                        title={record.result?.document_name || record.result?.title || record.agreement_type}
                         agent={record.agent}
                         createdAt={record.created_at}
                         active={draftId === record.id}
@@ -420,7 +435,27 @@ function ContractsPageInner() {
                           <Trash2 size={11} /> Delete
                         </button>
                       </div>
-                      <DraftCard draft={activeDraft.result} draftId={activeDraft.id} />
+                      <DraftCard
+                        draft={activeDraft.result}
+                        draftId={activeDraft.id}
+                        agent={activeDraft.agent}
+                        followups={draftFollowups}
+                        onFollowupsChange={next => {
+                          setDraftFollowups(next);
+                          setDrafts(prev => prev.map(r =>
+                            r.id === activeDraft.id ? { ...r, followups: next } : r,
+                          ));
+                        }}
+                        folderId={activeDraft.folder_id}
+                        documentId={activeDraft.document_id}
+                        onSaved={meta => {
+                          setDrafts(prev => prev.map(r =>
+                            r.id === activeDraft.id
+                              ? { ...r, document_id: meta.document_id, folder_id: meta.folder_id }
+                              : r,
+                          ));
+                        }}
+                      />
                       <AiDisclaimer agentName={activeDraft.agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name} />
                     </div>
                   )

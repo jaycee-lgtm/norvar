@@ -15,6 +15,7 @@ import {
   resolveRedlineReviewModel,
   type RedlineProvider,
 } from "@/lib/redline-models";
+import { generateDraftDocumentTitle } from "@/lib/generate-thread-title";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -320,10 +321,19 @@ export async function POST(req: NextRequest) {
         state: "done",
       });
 
+      const documentTitle = await generateDraftDocumentTitle({
+        agreementTypeLabel: typeLabel,
+        providerName:       provider_name,
+        customerName:       customer_name,
+        jurisdictions,
+        context,
+      });
+
       const draft: DraftOutput = {
         agreement_type:     plan.agreement_type || typeLabel,
         agreement_type_key: agreement_type,
-        title:              plan.title,
+        title:              documentTitle,
+        document_name:      documentTitle,
         parties:            plan.parties || { provider: provider_name, customer: customer_name },
         governing_law:      plan.governing_law || jurisdictions.join(", "),
         summary:            plan.summary || "",
@@ -342,14 +352,33 @@ export async function POST(req: NextRequest) {
             agreement_type: typeLabel,
             governing_law:  draft.governing_law || null,
             result:         draft,
+            followups:      {},
             created_at:     new Date().toISOString(),
           })
           .select("id")
           .single();
 
-        if (insertErr) {
-          console.error("Draft save error:", insertErr);
-          await send({
+      if (insertErr) {
+        console.error("Draft save error:", insertErr);
+        if (insertErr.message?.includes("followups")) {
+          const { followups: _f, ...rowWithoutFollowups } = {
+            user_id:        userId,
+            agent:          resolvedAgent,
+            agreement_type: typeLabel,
+            governing_law:  draft.governing_law || null,
+            result:         draft,
+            followups:      {},
+            created_at:     new Date().toISOString(),
+          };
+          const retry = await supabase.from("drafted_agreements").insert(rowWithoutFollowups).select("id").single();
+          if (!retry.error && retry.data?.id) {
+            draft.id = retry.data.id;
+            await send({ type: "done", draft });
+            await writer.close();
+            return;
+          }
+        }
+        await send({
             type: "error",
             text: "Draft completed but could not be saved. Run the drafted_agreements migration in Supabase.",
           });

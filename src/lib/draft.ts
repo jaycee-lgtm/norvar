@@ -30,6 +30,7 @@ export type DraftOutput = {
   agreement_type:     string;
   agreement_type_key?: string;
   title:              string;
+  document_name?:     string;
   parties:            { provider: string; customer: string };
   governing_law:      string;
   summary:            string;
@@ -150,8 +151,8 @@ export function buildFullDraftText(draft: DraftOutput): string {
   ].filter(line => line !== undefined).join("\n");
 }
 
-export function draftExportFilename(draft: DraftOutput, format: "docx" | "txt"): string {
-  const base = (draft.title || draft.agreement_type || "agreement")
+export function draftExportFilename(draft: DraftOutput, format: "docx" | "txt" | "pdf"): string {
+  const base = (draft.document_name || draft.title || draft.agreement_type || "agreement")
     .replace(/[^\w\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-")

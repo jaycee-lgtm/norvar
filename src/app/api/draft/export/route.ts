@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
-import { buildFullDraftText, draftExportFilename, type DraftOutput } from "@/lib/draft";
-import { buildDocxBuffer } from "@/lib/redline-export";
+import { buildDraftExportBuffer } from "@/lib/draft-document-server";
+import type { DraftOutput } from "@/lib/draft";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
 
   const { draft_id, format = "docx" } = await req.json();
   if (!draft_id) return Response.json({ error: "draft_id required" }, { status: 400 });
-  if (format !== "docx" && format !== "txt") {
-    return Response.json({ error: "format must be docx or txt" }, { status: 400 });
+  if (format !== "docx" && format !== "txt" && format !== "pdf") {
+    return Response.json({ error: "format must be docx, txt, or pdf" }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -30,23 +30,24 @@ export async function POST(req: NextRequest) {
   if (!data) return Response.json({ error: "Draft not found" }, { status: 404 });
 
   const draft = data.result as DraftOutput;
-  const title = draft.title || draft.agreement_type || data.agreement_type || "Agreement Draft";
-  const body  = buildFullDraftText(draft);
-  const filename = draftExportFilename(draft, format);
+  const { buffer, contentType, filename } = await buildDraftExportBuffer(
+    draft,
+    format,
+    data.agreement_type ?? undefined,
+  );
 
   if (format === "txt") {
-    return new Response(body, {
+    return new Response(buffer.toString("utf-8"), {
       headers: {
-        "Content-Type":        "text/plain; charset=utf-8",
+        "Content-Type":        contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   }
 
-  const buffer = await buildDocxBuffer(title, body);
   return new Response(new Uint8Array(buffer), {
     headers: {
-      "Content-Type":        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Type":        contentType,
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });

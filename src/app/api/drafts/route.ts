@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-const SELECT = "id, agent, agreement_type, governing_law, result, document_id, folder_id, created_at";
+const SELECT = "id, agent, agreement_type, governing_law, result, document_id, folder_id, followups, created_at";
 
 export async function GET(req: NextRequest) {
   const { userId } = await auth();

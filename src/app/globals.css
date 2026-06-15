@@ -6769,6 +6769,46 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
 }
 
+.draft-section-followup-wrap {
+  padding: 0 14px 10px;
+}
+
+.draft-general-followup {
+  margin: 8px 0 20px;
+}
+
+.draft-actions-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draft-save-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+.draft-save-project-select {
+  font-size: 11px;
+  font-family: 'Sora', sans-serif;
+  color: var(--fg2);
+  background: var(--card2);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 6px;
+  padding: 5px 8px;
+  max-width: 160px;
+}
+
+.draft-saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--rl, #3B6D11);
+  font-family: 'Sora', sans-serif;
+}
+
 @keyframes draftClauseIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }

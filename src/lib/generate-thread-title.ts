@@ -81,3 +81,38 @@ Name the deployment or compliance scope — e.g. "EU HR Screening Tool" not "Com
 
   return generated ?? fallbackTitle(summaryText || context || "Compliance assessment");
 }
+
+export async function generateDraftDocumentTitle(opts: {
+  agreementTypeLabel: string;
+  providerName:       string;
+  customerName:       string;
+  jurisdictions:      string[];
+  context?:           string;
+}): Promise<string> {
+  const userDesc = [
+    `Agreement type: ${opts.agreementTypeLabel}`,
+    `Provider / service company: ${opts.providerName}`,
+    `Customer / client: ${opts.customerName}`,
+    opts.jurisdictions.length ? `Jurisdictions: ${opts.jurisdictions.join(", ")}` : "",
+    opts.context ? `Additional context: ${opts.context}` : "",
+  ].filter(Boolean).join("\n");
+
+  const generated = await requestTitle(
+    `You name drafted legal agreements saved as documents in a GRC product.
+Return ONLY a concise document title (5–14 words). No quotes. No file extension. No trailing punctuation.
+The title must reflect exactly what the user specified — use their company names, product names, and agreement type.
+Prefer the user's own wording. Examples:
+- "Norvar–Acme Master Services Agreement"
+- "Norvar GRC Platform Data Processing Agreement"
+- "Privacy Policy for Norvar SaaS (EU & US)"`,
+    userDesc,
+  );
+
+  const fallback = [
+    opts.providerName !== "[Provider Name]" ? opts.providerName : "",
+    opts.customerName !== "[Customer Name]" ? opts.customerName : "",
+    opts.agreementTypeLabel,
+  ].filter(Boolean).join(" — ");
+
+  return generated ?? fallbackTitle(fallback || opts.agreementTypeLabel, 80);
+}

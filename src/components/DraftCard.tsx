@@ -1,10 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Copy, Check, ChevronDown, AlertCircle, Download } from "lucide-react";
+import { Shield, Copy, Check, ChevronDown, AlertCircle } from "lucide-react";
 import { buildFullDraftText, type DraftOutput, type DraftSection } from "@/lib/draft";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 import FrameworkRef from "@/components/FrameworkRef";
+import DraftFollowUp from "@/components/DraftFollowUp";
+import DraftActionsBar from "@/components/DraftActionsBar";
+import {
+  draftSectionThreadKey,
+  getDraftThreadMessages,
+  type DraftFollowUpMessage,
+  type DraftFollowUps,
+} from "@/lib/draft-followup";
+
+const SECTION_QUICK_ACTIONS = [
+  {
+    label:    "Suggest revisions",
+    message:  "Please suggest revisions to this section. Provide the full updated section under **Revised language:**",
+    autoSend: true,
+  },
+  {
+    label:    "Explain obligations",
+    message:  "Explain the key obligations in this section in plain language.",
+    autoSend: true,
+  },
+  {
+    label:    "What's missing?",
+    message:  "What provisions are missing from this section given the jurisdictions and context?",
+    autoSend: true,
+  },
+];
 
 function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -24,8 +50,21 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
-function SectionBlock({ section }: { section: DraftSection }) {
+function SectionBlock({
+  section,
+  draftId,
+  agent,
+  followups,
+  onSectionFollowupsChange,
+}: {
+  section:                   DraftSection;
+  draftId?:                  string;
+  agent:                     "nora" | "cassius";
+  followups?:                DraftFollowUps;
+  onSectionFollowupsChange?: (sectionNumber: string, messages: DraftFollowUpMessage[]) => void;
+}) {
   const [open, setOpen] = useState(true);
+  const thread = draftSectionThreadKey(section.number);
 
   const fullText = section.clauses.map(c =>
     `${c.number}  ${c.title}\n${c.text}`,
@@ -54,6 +93,22 @@ function SectionBlock({ section }: { section: DraftSection }) {
         />
       </button>
 
+      {draftId && (
+        <div className="draft-section-followup-wrap">
+          <DraftFollowUp
+            draftId={draftId}
+            thread={thread}
+            sectionNumber={section.number}
+            agent={agent}
+            initialMessages={getDraftThreadMessages(followups, thread)}
+            onMessagesChange={msgs => onSectionFollowupsChange?.(section.number, msgs)}
+            toggleLabel="Ask about this section"
+            hint="Ask questions before or after reviewing this section, or suggest updates to the language."
+            quickActions={SECTION_QUICK_ACTIONS}
+          />
+        </div>
+      )}
+
       {open && (
         <div className="draft-clause-panel-body">
           {section.clauses.map(clause => (
@@ -75,44 +130,40 @@ function SectionBlock({ section }: { section: DraftSection }) {
 export default function DraftCard({
   draft,
   draftId,
-  onExport,
+  agent = draft.drafted_by ?? "cassius",
+  followups,
+  onFollowupsChange,
+  folderId,
+  documentId,
+  onSaved,
 }: {
-  draft:     DraftOutput;
-  draftId?:  string;
-  onExport?: (format: "docx" | "txt") => void;
+  draft:              DraftOutput;
+  draftId?:           string;
+  agent?:             "nora" | "cassius";
+  followups?:         DraftFollowUps;
+  onFollowupsChange?: (next: DraftFollowUps) => void;
+  folderId?:          string | null;
+  documentId?:        string | null;
+  onSaved?:           (meta: { document_id: string; folder_id: string | null; filename: string }) => void;
 }) {
-  const agentLabel = draft.drafted_by === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
+  const agentLabel  = agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
+  const displayTitle = draft.document_name || draft.title || draft.agreement_type;
   const fullDocText = buildFullDraftText(draft);
   const clauseCount = draft.sections?.reduce((n, s) => n + s.clauses.length, 0) ?? 0;
 
-  const handleExport = (format: "docx" | "txt") => {
-    if (onExport) {
-      onExport(format);
-      return;
-    }
-    if (!draftId) return;
-    void fetch("/api/draft/export", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ draft_id: draftId, format }),
-    })
-      .then(async res => {
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d.error || "Export failed");
-        }
-        const blob = await res.blob();
-        const disposition = res.headers.get("Content-Disposition") ?? "";
-        const match = disposition.match(/filename="([^"]+)"/);
-        const filename = match?.[1] ?? `agreement.${format}`;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-      })
-      .catch(err => alert(err instanceof Error ? err.message : "Export failed"));
+  const handleSectionFollowups = (sectionNumber: string, messages: DraftFollowUpMessage[]) => {
+    if (!onFollowupsChange) return;
+    onFollowupsChange({
+      ...(followups ?? {}),
+      sections: {
+        ...(followups?.sections ?? {}),
+        [sectionNumber]: messages,
+      },
+    });
+  };
+
+  const handleGeneralFollowups = (messages: DraftFollowUpMessage[]) => {
+    onFollowupsChange?.({ ...(followups ?? {}), general: messages });
   };
 
   return (
@@ -122,20 +173,23 @@ export default function DraftCard({
         {agentLabel} · Agreement Draft
       </div>
 
-      <div className="redline-apply-bar draft-card-toolbar">
-        <div className="redline-apply-actions">
-          <CopyButton text={fullDocText} label="Copy all" />
-          <button type="button" className="redline-apply-btn redline-apply-btn--download" onClick={() => handleExport("docx")}>
-            <Download size={11} /> DOCX
-          </button>
-          <button type="button" className="redline-apply-btn redline-apply-btn--download" onClick={() => handleExport("txt")}>
-            <Download size={11} /> TXT
-          </button>
+      {draftId ? (
+        <DraftActionsBar
+          draftId={draftId}
+          folderId={folderId}
+          documentId={documentId}
+          onSaved={onSaved}
+        />
+      ) : (
+        <div className="redline-apply-bar draft-card-toolbar">
+          <div className="redline-apply-actions">
+            <CopyButton text={fullDocText} label="Copy all" />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="redline-review-meta">
-        <div className="redline-review-meta-title">{draft.title || draft.agreement_type}</div>
+        <div className="redline-review-meta-title">{displayTitle}</div>
         <div className="redline-review-meta-sub">
           {draft.parties?.provider ?? "[Provider]"}
           {" — "}
@@ -171,8 +225,46 @@ export default function DraftCard({
       </div>
 
       {draft.sections?.map(section => (
-        <SectionBlock key={section.number} section={section} />
+        <SectionBlock
+          key={section.number}
+          section={section}
+          draftId={draftId}
+          agent={agent}
+          followups={followups}
+          onSectionFollowupsChange={handleSectionFollowups}
+        />
       ))}
+
+      {draftId && (
+        <div className="draft-general-followup">
+          <DraftFollowUp
+            draftId={draftId}
+            thread="general"
+            agent={agent}
+            initialMessages={getDraftThreadMessages(followups, "general")}
+            onMessagesChange={handleGeneralFollowups}
+            toggleLabel="Ask about this draft"
+            hint="Ask about the full agreement, suggest overall updates, or get negotiation guidance."
+            quickActions={[
+              {
+                label:    "Suggest overall updates",
+                message:  "Review the full draft and suggest the most important updates. Use **Revised language:** for any replacement text.",
+                autoSend: true,
+              },
+              {
+                label:    "Negotiation priorities",
+                message:  "What should we prioritise in negotiation based on this draft?",
+                autoSend: true,
+              },
+              {
+                label:    "Gap check",
+                message:  "What material gaps or risks remain in this draft?",
+                autoSend: true,
+              },
+            ]}
+          />
+        </div>
+      )}
 
       {draft.frameworks?.length > 0 && (
         <div className="redline-supplement-frameworks">

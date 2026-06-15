@@ -10,6 +10,7 @@ create table if not exists drafted_agreements (
   result          jsonb not null,
   document_id     uuid references documents(id) on delete set null,
   folder_id       uuid references project_folders(id) on delete set null,
+  followups       jsonb default '{}'::jsonb,
   created_at      timestamptz default now()
 );
 
