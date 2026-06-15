@@ -3927,6 +3927,28 @@ input, textarea, select, button {
   color: var(--fg2);
 }
 
+.contracts-home-tabs-wrap {
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto 16px;
+}
+
+.contracts-home-tabs {
+  justify-content: center;
+}
+
+.contracts-home-tabs .contract-review-mode {
+  flex: 1;
+  max-width: 180px;
+}
+
+.contracts-past-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
 .redline-fw-link {
   display: inline-flex;
   align-items: center;

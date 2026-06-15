@@ -9,6 +9,8 @@ export type AssessmentQuestion = {
   riskTag?:     string;
 };
 
+import { normalizeJurisdictionList, normalizeJurisdictionValue } from "@/lib/jurisdictions";
+
 export type AssessmentAnswers = Record<string, string | string[]>;
 
 export type QuestionnaireMeta = {
@@ -49,16 +51,15 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     sub:  "Select all that apply.",
     type: "multi",
     options: [
-      { value: "eu",         label: "EU / EEA"          },
-      { value: "uk",         label: "United Kingdom"    },
-      { value: "us_federal", label: "US Federal"        },
-      { value: "us_state",   label: "US State-level"    },
-      { value: "canada",     label: "Canada"            },
-      { value: "apac",       label: "Asia Pacific"      },
-      { value: "africa",     label: "Africa"            },
-      { value: "latam",      label: "Latin America"     },
-      { value: "mena",       label: "Middle East"       },
-      { value: "global",     label: "Global / not yet determined" },
+      { value: "eu",     label: "EU / EEA"          },
+      { value: "uk",     label: "United Kingdom"    },
+      { value: "us",     label: "US"                },
+      { value: "canada", label: "Canada"            },
+      { value: "apac",   label: "Asia Pacific"      },
+      { value: "africa", label: "Africa"            },
+      { value: "latam",  label: "Latin America"     },
+      { value: "mena",   label: "Middle East"       },
+      { value: "global", label: "Global / not yet determined" },
     ],
   },
   {
@@ -538,8 +539,12 @@ const DOMAIN_LABELS: Record<string, string> = {
 
 function labelFor(questionId: string, value: string): string {
   if (value.startsWith("custom:")) return value.slice(7).trim();
+  if (questionId === "jurisdictions" && (value === "us_federal" || value === "us_state")) {
+    return "US";
+  }
   const q = QUESTION_BY_ID[questionId];
-  return q?.options?.find(o => o.value === value)?.label ?? value;
+  const lookup = questionId === "jurisdictions" ? normalizeJurisdictionValue(value) : value;
+  return q?.options?.find(o => o.value === lookup)?.label ?? value;
 }
 
 function formatAnswerDisplay(questionId: string, answer: string | string[] | undefined): string | null {
@@ -718,7 +723,7 @@ export function buildInitialAnswersFromInference(inferred: {
     answers.domains = inferred.domains.values.map(mapInferDomainToQuestionnaire);
   }
   if (inferred.jurisdictions?.confidence === "high" && inferred.jurisdictions.values?.length) {
-    answers.jurisdictions = inferred.jurisdictions.values;
+    answers.jurisdictions = normalizeJurisdictionList(inferred.jurisdictions.values);
   }
   if (inferred.sector?.confidence === "high" && inferred.sector.values?.[0]) {
     answers.sector = inferred.sector.values[0];

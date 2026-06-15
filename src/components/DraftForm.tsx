@@ -5,11 +5,7 @@ import { ChevronDown, Loader2 } from "lucide-react";
 import { readSSEStream } from "@/lib/sse";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 import { DRAFT_AGREEMENT_TYPES } from "@/lib/draft";
-
-const JURISDICTION_OPTIONS = [
-  "EU", "UK", "US Federal", "US State (California)", "US State (New York)",
-  "Canada", "Australia", "Singapore", "UAE", "Brazil", "India", "Global",
-];
+import { JURISDICTION_CHIP_OPTIONS } from "@/lib/jurisdictions";
 
 export default function DraftForm({
   onDone,
@@ -143,7 +139,7 @@ export default function DraftForm({
       <div className="contract-review-field">
         <span className="contract-review-label">Jurisdictions</span>
         <div className="input-chips" style={{ marginTop: 0, justifyContent: "flex-start" }}>
-          {JURISDICTION_OPTIONS.map(j => (
+          {JURISDICTION_CHIP_OPTIONS.map(j => (
             <button
               key={j}
               type="button"

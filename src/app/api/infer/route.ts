@@ -3,13 +3,16 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isAuditRequest } from "@/lib/audit";
 import { ASSESS_AGENT } from "@/lib/agents";
+import {
+  VALID_INFER_JURISDICTIONS,
+  normalizeJurisdictionValue,
+} from "@/lib/jurisdictions";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const VALID_DOMAINS       = ["privacy", "ai", "cyber"];
-const VALID_JURISDICTIONS = ["eu", "us_federal", "us_state", "uk", "canada", "apac", "latam", "mena"];
-const VALID_DATA_TYPES    = ["biometric", "health", "children", "location", "financial", "behavioural", "communications", "general_pi"];
-const VALID_SECTORS       = ["government", "healthcare", "finance", "hr_recruitment", "education", "transport", "media_adtech", "legal", "retail", "proptech", "technology"];
+const VALID_DOMAINS    = ["privacy", "ai", "cyber"];
+const VALID_DATA_TYPES = ["biometric", "health", "children", "location", "financial", "behavioural", "communications", "general_pi"];
+const VALID_SECTORS    = ["government", "healthcare", "finance", "hr_recruitment", "education", "transport", "media_adtech", "legal", "retail", "proptech", "technology"];
 
 const INFER_PROMPT = `
 You are ${ASSESS_AGENT.name}, a GRC analyst. A user has described a technology deployment.
@@ -25,7 +28,7 @@ Return ONLY valid JSON — no prose, no markdown:
 
 Valid values only:
 - domains: ${VALID_DOMAINS.join(", ")}
-- jurisdictions: ${VALID_JURISDICTIONS.join(", ")}
+- jurisdictions: ${VALID_INFER_JURISDICTIONS.join(", ")}
 - data_types: ${VALID_DATA_TYPES.join(", ")}
 - sector: ${VALID_SECTORS.join(", ")}
 
@@ -42,8 +45,8 @@ Domain guidance:
 
 Jurisdiction guidance:
 - Infer ONLY from stated countries/cities, user-base locations, or company HQ. If no location signal exists, return values: [] with "low" confidence — never guess.
-- Do NOT add us_federal (or any jurisdiction) merely because a company might plausibly operate there. A Germany-only description means eu only.
-- If users are described as "global", include eu + us_federal as the baseline with "medium" confidence.
+- Do NOT add us (or any jurisdiction) merely because a company might plausibly operate there. A Germany-only description means eu only.
+- If users are described as "global", include eu + us as the baseline with "medium" confidence.
 - When HQ and user base differ (e.g. US company, Brazilian users), include both with "medium" confidence.
 
 Data type guidance:
@@ -53,6 +56,12 @@ Data type guidance:
 - children's product → children
 - location services → location
 `;
+
+function normalizeInferredJurisdictions(field: { values?: string[] } | undefined) {
+  if (!field?.values?.length) return;
+  const allowedSet = new Set(VALID_INFER_JURISDICTIONS);
+  field.values = normalizeJurisdictionList(field.values).filter(v => allowedSet.has(v));
+}
 
 export async function POST(req: NextRequest) {
   // Allow audit runner through if secret matches, otherwise require Clerk auth
@@ -81,7 +90,13 @@ export async function POST(req: NextRequest) {
   const clean = start !== -1 && end > start ? raw.slice(start, end + 1) : raw.trim();
 
   try {
-    const inferred = JSON.parse(clean);
+    const inferred = JSON.parse(clean) as {
+      jurisdictions?: { values?: string[] };
+      domains?: { values?: string[] };
+      data_types?: { values?: string[] };
+      sector?: { values?: string[] };
+    };
+    normalizeInferredJurisdictions(inferred.jurisdictions);
     return Response.json({ inferred });
   } catch {
     return Response.json({ error: "Failed to parse inference" }, { status: 500 });

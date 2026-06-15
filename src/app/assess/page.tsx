@@ -60,20 +60,10 @@ import {
   History, SquarePen,
 } from "lucide-react";
 
-// ── Option sets ────────────────────────────────────────────────────────────────
-
-const JURISDICTION_OPTIONS = [
-  { value: "eu",         label: "EU / EEA"      },
-  { value: "uk",         label: "UK"            },
-  { value: "us_federal", label: "US Federal"    },
-  { value: "us_state",   label: "US States"     },
-  { value: "canada",     label: "Canada"        },
-  { value: "apac",       label: "Asia-Pacific"  },
-  { value: "africa",     label: "Africa"        },
-  { value: "latam",      label: "Latin America" },
-  { value: "mena",       label: "MENA"          },
-  { value: "global",     label: "Global"        },
-];
+import {
+  jurisdictionLabel,
+  normalizeJurisdictionList,
+} from "@/lib/jurisdictions";
 
 // Three core domain lenses. CV, ADMT, and Robotics are assessment subjects
 // evaluated through these lenses, not separate domains.
@@ -890,7 +880,7 @@ function Home() {
     guidedDataTypes: string[],
     guidedSector: string,
   ) => [
-    ...guidedJurisdictions.map(v => JURISDICTION_OPTIONS.find(x => x.value === v)?.label ?? v),
+    ...guidedJurisdictions.map(v => jurisdictionLabel(v)),
     ...guidedDomains.map(v => DOMAIN_OPTIONS.find(x => x.value === v)?.label ?? v),
     ...guidedDataTypes.map(v => DATA_TYPE_OPTIONS.find(x => x.value === v)?.label ?? v),
     ...(guidedSector ? [SECTOR_OPTIONS.find(x => x.value === guidedSector)?.label ?? guidedSector] : []),
@@ -1136,7 +1126,7 @@ function Home() {
     const { prompt, userMessage, meta } = buildAssessmentRequest(answers, pendingDesc);
 
     const guidedDomains       = (meta.domains ?? []).map(mapQuestionnaireDomain);
-    const guidedJurisdictions = meta.jurisdictions ?? [];
+    const guidedJurisdictions = normalizeJurisdictionList(meta.jurisdictions ?? []);
     const guidedDataTypes     = meta.data_types ?? [];
     const guidedSector        = meta.sector ?? "";
 
