@@ -1694,7 +1694,7 @@ function Home() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
-              rows={3}
+              rows={1}
             />
           <div className="composer-toolbar">
             <div className="composer-toolbar-start">
