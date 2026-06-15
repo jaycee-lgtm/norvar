@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!auditMode) {
-        await supabase.from("redlines").insert({
+        const row = {
           user_id:        userId,
           agent,
           agreement_type: redline.agreement_type,
@@ -121,7 +121,13 @@ export async function POST(req: NextRequest) {
           followups:      {},
           document_id:    document_id || null,
           created_at:     new Date().toISOString(),
-        });
+        };
+        let { error: insertErr } = await supabase.from("redlines").insert(row);
+        if (insertErr?.message.includes("followups")) {
+          const { followups: _drop, ...withoutFollowups } = row;
+          ({ error: insertErr } = await supabase.from("redlines").insert(withoutFollowups));
+        }
+        if (insertErr) throw new Error(insertErr.message);
       }
 
       await send({ type: "done", redline });

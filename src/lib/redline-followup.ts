@@ -1,12 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import type { RedlineClause, RedlineOutput } from "@/lib/redline";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 import { GRC_FORMATTING_RULES, GRC_PLAIN_LANGUAGE_RULES } from "@/lib/grc-prompt";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 export type RedlineFollowUpMessage = {
   role: "user" | "assistant";
@@ -43,7 +37,7 @@ function buildClauseContext(clause: RedlineClause) {
 }
 
 function buildReviewSummary(redline: RedlineOutput) {
-  const topIssues = redline.clauses.slice(0, 5).map(c =>
+  const topIssues = (redline.clauses ?? []).slice(0, 5).map(c =>
     `${c.clause_number} ${c.clause_title} (${c.severity})`,
   );
   return [
@@ -81,42 +75,6 @@ ${GRC_PLAIN_LANGUAGE_RULES}
 ${GRC_FORMATTING_RULES}
 - Stay focused on this contract review — do not drift into unrelated GRC topics.
 - If the question is already answered in the thread, say so briefly and add anything new.`;
-}
-
-export async function syncRedlineFollowUp(
-  redlineId: string,
-  thread: string,
-  messages: RedlineFollowUpMessage[],
-  userId: string,
-) {
-  const { data: row } = await supabase
-    .from("redlines")
-    .select("followups, user_id")
-    .eq("id", redlineId)
-    .eq("user_id", userId)
-    .single();
-
-  if (!row) return;
-
-  const current = (row.followups && typeof row.followups === "object")
-    ? row.followups as RedlineFollowUps
-    : {};
-
-  const parsed = parseRedlineThreadKey(thread);
-  const next: RedlineFollowUps = { ...current };
-
-  if (parsed.kind === "general") {
-    next.general = messages;
-  } else {
-    const key = String(parsed.index ?? 0);
-    next.clauses = { ...(current.clauses ?? {}), [key]: messages };
-  }
-
-  await supabase
-    .from("redlines")
-    .update({ followups: next })
-    .eq("id", redlineId)
-    .eq("user_id", userId);
 }
 
 export function getThreadMessages(followups: RedlineFollowUps | undefined, thread: string): RedlineFollowUpMessage[] {

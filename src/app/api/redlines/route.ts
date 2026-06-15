@@ -7,6 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+const BASE_SELECT =
+  "id, agent, agreement_type, governing_law, overall_status, result, document_id, created_at";
+const FULL_SELECT = `${BASE_SELECT}, followups`;
+
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
@@ -16,17 +20,23 @@ export async function GET(req: NextRequest) {
   const agent  = searchParams.get("agent");
   const limit  = parseInt(searchParams.get("limit") ?? "50", 10);
 
-  let query = supabase
-    .from("redlines")
-    .select("id, agent, agreement_type, governing_law, overall_status, result, document_id, followups, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const runQuery = (select: string) => {
+    let query = supabase
+      .from("redlines")
+      .select(select)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (status) query = query.eq("overall_status", status);
+    if (agent) query = query.eq("agent", agent);
+    return query;
+  };
 
-  if (status) query = query.eq("overall_status", status);
-  if (agent)  query = query.eq("agent", agent);
+  let { data, error } = await runQuery(FULL_SELECT);
+  if (error?.message.includes("followups")) {
+    ({ data, error } = await runQuery(BASE_SELECT));
+  }
 
-  const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ redlines: data });
 }

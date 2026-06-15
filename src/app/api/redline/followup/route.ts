@@ -4,9 +4,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import {
   buildRedlineFollowUpSystemPrompt,
-  syncRedlineFollowUp,
   type RedlineFollowUpMessage,
 } from "@/lib/redline-followup";
+import { syncRedlineFollowUp } from "@/lib/redline-followup-server";
 import type { RedlineClause, RedlineOutput } from "@/lib/redline";
 import {
   appendRegulatoryContextToSystem,

@@ -207,8 +207,8 @@ export default function RedlineCard({
   const overall = OVERALL_STYLES[redline.overall_status] ?? OVERALL_STYLES.needs_work;
   const agentLabel = redline.redline_by === "nora" ? "Nora" : "Cassius";
   const agent = redline.redline_by === "cassius" ? "cassius" : "nora";
-  const highCount   = redline.clauses.filter(c => c.severity === "high").length;
-  const mediumCount = redline.clauses.filter(c => c.severity === "medium").length;
+  const highCount   = (redline.clauses ?? []).filter(c => c.severity === "high").length;
+  const mediumCount = (redline.clauses ?? []).filter(c => c.severity === "medium").length;
 
   const handleClauseFollowUpChange = (index: number, messages: RedlineFollowUpMessage[]) => {
     onFollowupsChange?.({
