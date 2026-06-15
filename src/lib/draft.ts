@@ -1,0 +1,160 @@
+export const DRAFT_AGREEMENT_TYPES = [
+  { value: "msa",        label: "Master Services Agreement (MSA)" },
+  { value: "dpa",        label: "Data Processing Agreement (DPA)" },
+  { value: "isa",        label: "Information Security Addendum (ISA)" },
+  { value: "nda",        label: "Non-Disclosure Agreement (NDA)" },
+  { value: "baa",        label: "Business Associate Agreement (BAA)" },
+  { value: "ai_use",     label: "AI Use Agreement" },
+  { value: "data_share", label: "Data Sharing Agreement" },
+  { value: "subproc",    label: "Sub-Processor Agreement" },
+  { value: "saas",       label: "SaaS / Subscription Agreement" },
+  { value: "privacy",    label: "Privacy Policy" },
+  { value: "terms",      label: "Terms of Service" },
+] as const;
+
+export type DraftAgreementType = typeof DRAFT_AGREEMENT_TYPES[number]["value"];
+
+export type DraftClause = {
+  number: string;
+  title:  string;
+  text:   string;
+};
+
+export type DraftSection = {
+  number:  string;
+  title:   string;
+  clauses: DraftClause[];
+};
+
+export type DraftOutput = {
+  agreement_type:     string;
+  agreement_type_key?: string;
+  title:              string;
+  parties:            { provider: string; customer: string };
+  governing_law:      string;
+  summary:            string;
+  frameworks:         string[];
+  sections:           DraftSection[];
+  drafting_notes:     string[];
+  drafted_by:         "cassius" | "nora";
+  id?:                string;
+};
+
+const CORPUS_LIST = `Privacy: GDPR, UK GDPR, CCPA/CPRA, HIPAA, BIPA, COPPA, FERPA, LGPD, PDPA, PIPEDA, Quebec Law 25, PIPL, APPI, PIPA, DPDPA, POPIA, UAE DPL, KSA PDPL, ePrivacy, SCCs, EU-US DPF, CA ADMT Regs, EEOC AI Guidance, CFPB Model Risk, NYC LL144, Colorado AI Act, IL AI Video Act, WA AI Fairness Act, CA AB 2013, FTC Act, FTC Safeguards Rule.
+AI Governance: EU AI Act, EU AI Act Art. 5, EU AI Act Annex III, GDPR Art. 22, NIST AI RMF, NIST GenAI, EO 14110, EO 14179, EO 13960, FTC AI Guidance, ISO 42001, ISO 23894, OECD AI Principles, UNESCO AI Ethics, G7 Hiroshima AI Code, UK AISI, Canada ADM Directive, Singapore AI Governance Framework, China GenAI Regulations, China Algorithm Regulations.
+Cybersecurity: NIS2, DORA, EU CRA, EU Cybersecurity Act, NIST CSF 2.0, NIST 800-53, NIST C-SCRM, CISA CPGs, EO 14028, SEC Cyber Rules, ISO 27001, ISO 27002, ISO 27701, SOC 2, PCI DSS, NCSC Cyber Essentials, AU Essential Eight, Singapore Cybersecurity Act, China CSL, China DSL.`;
+
+const DRAFT_JSON_SHAPE = `{
+  "agreement_type":  "full agreement type label",
+  "title":           "full document title e.g. 'DATA PROCESSING AGREEMENT'",
+  "parties": {
+    "provider": "Provider party name or placeholder",
+    "customer": "Customer party name or placeholder"
+  },
+  "governing_law":   "jurisdiction",
+  "summary":         "2-3 sentences plain English — what this agreement covers and the key obligations it establishes",
+  "frameworks":      ["applicable corpus frameworks"],
+  "sections": [
+    {
+      "number":   "1",
+      "title":    "DEFINITIONS",
+      "clauses": [
+        {
+          "number":  "1.1",
+          "title":   "short clause title",
+          "text":    "full clause text — complete, ready to use"
+        }
+      ]
+    }
+  ],
+  "drafting_notes": [
+    "plain English note about a jurisdiction-specific provision or something requiring legal review",
+    "note about any clause that depends on Customer's specific context"
+  ]
+}`;
+
+const DRAFTING_RULES = `
+DRAFTING PRINCIPLES:
+- Write every clause in full. No "[INSERT CLAUSE]" placeholders except for party names, dates, and jurisdiction-specific details the user must fill in.
+- Ground all obligations in the regulatory corpus. Every data protection clause, security requirement, and AI governance provision must reflect actual legal requirements.
+- Structure matters. Number all clauses. Use clear headings. Organise logically: definitions → scope → obligations → data/security → term → general.
+- Include a definitions section that defines all capitalised terms used.
+- Flag anything jurisdiction-specific with a note in [brackets] e.g. [Adjust for UK GDPR if applicable].
+
+CORPUS — ONLY CITE FROM THIS LIST:
+${CORPUS_LIST}
+
+Include at minimum: Definitions, Scope / Grant of Rights, Core Obligations (per agreement type), Data Protection / Security (where applicable), Term and Termination, General Provisions.
+For a DPA: include lawful basis, data subject rights, sub-processors, international transfers, breach notification, deletion.
+For an ISA: include security programme, controls, incident response, audit rights, penetration testing, deletion.
+For an AI Use Agreement: include permitted use, prohibited uses, human oversight, bias and fairness, transparency, data governance, model risk.
+For a BAA: include PHI definition, permitted uses, safeguards, breach notification, termination, certification of destruction.
+
+OUTPUT FORMAT:
+Return a JSON object — no prose outside it, no markdown fences:
+
+${DRAFT_JSON_SHAPE}
+`;
+
+export const CASSIUS_DRAFT_PROMPT = `
+You are Cassius, Norvar's regulatory assessment agent, acting as a specialist agreement drafter.
+You draft legal agreements that are pre-aligned to Norvar's regulatory corpus.
+
+YOUR ROLE:
+Draft a complete, well-structured agreement from scratch. The output must be ready for legal review — not a placeholder, not a template with blanks throughout, but a genuine first draft with real clause language.
+
+- Legal precision where required. Use formal agreement language appropriate for counsel review.
+${DRAFTING_RULES}
+`;
+
+export const NORA_DRAFT_PROMPT = `
+You are Nora, Norvar's compliance chat assistant, acting as a practical agreement drafter.
+You draft agreements that are pre-aligned to Norvar's regulatory corpus.
+
+YOUR ROLE:
+Draft a complete, well-structured agreement from scratch. The output must be ready for legal review — a genuine first draft with real clause language, written so a business reader can follow it.
+
+- Plain language where possible. Issue descriptions and obligations should be understandable without a law degree.
+- Legal precision where required — do not sacrifice enforceability for simplicity.
+${DRAFTING_RULES}
+`;
+
+export function parseDraftJSON(raw: string): DraftOutput {
+  const clean = raw.trim().replace(/^```json?\s*/im, "").replace(/```\s*$/m, "").trim();
+  const start = clean.indexOf("{");
+  if (start < 0) throw new Error("No JSON");
+  const parsed = JSON.parse(clean.slice(start)) as DraftOutput;
+  if (!parsed.sections || !Array.isArray(parsed.sections)) {
+    throw new Error("Invalid draft structure");
+  }
+  return parsed;
+}
+
+export function buildFullDraftText(draft: DraftOutput): string {
+  const parties = draft.parties ?? { provider: "[Provider]", customer: "[Customer]" };
+  return [
+    draft.title || draft.agreement_type,
+    "",
+    `Between: ${parties.provider} ("Provider") and ${parties.customer} ("Customer")`,
+    draft.governing_law ? `Governing law: ${draft.governing_law}` : "",
+    "",
+    ...(draft.sections ?? []).flatMap(s => [
+      `${s.number}.  ${s.title}`,
+      "",
+      ...(s.clauses ?? []).flatMap(c => [
+        `${c.number}  ${c.title}`,
+        c.text,
+        "",
+      ]),
+    ]),
+  ].filter(line => line !== undefined).join("\n");
+}
+
+export function draftExportFilename(draft: DraftOutput, format: "docx" | "txt"): string {
+  const base = (draft.title || draft.agreement_type || "agreement")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 60) || "agreement";
+  return `${base}.${format}`;
+}

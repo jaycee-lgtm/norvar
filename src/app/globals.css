@@ -841,6 +841,12 @@ input, textarea, select, button {
 }
 .chip:hover { border-color: var(--bdr3); color: var(--fg); }
 
+.chip.active {
+  border-color: var(--bdr3);
+  background: var(--lift);
+  color: var(--fg);
+}
+
 /* ══════════════════════════════════════════════════════════════════
    CHAT THREAD
 ══════════════════════════════════════════════════════════════════ */
@@ -3682,6 +3688,56 @@ input, textarea, select, button {
   margin-bottom: 12px;
 }
 
+.contract-review-hint {
+  font-size: 11px;
+  color: var(--fg3);
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.contract-review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.contract-review-select-wrap {
+  position: relative;
+}
+
+.contract-review-select {
+  width: 100%;
+  padding: 9px 32px 9px 12px;
+  border-radius: 6px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card2);
+  color: var(--fg3);
+  font-size: 13px;
+  font-family: 'Sora', sans-serif;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.contract-review-select.filled {
+  border-color: var(--bdr3);
+  color: var(--fg);
+}
+
+.contract-review-select-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .contract-review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .contracts-review-home {
   width: 100%;
 }
@@ -6424,4 +6480,165 @@ input, textarea, select, button {
   .page-toolbar-controls button {
     flex: 1 1 100%;
   }
+}
+
+/* ─── Agreement draft (aligned with contracts / redline) ─────────────────── */
+
+.draft-review-home {
+  width: 100%;
+}
+
+.draft-input-panel {
+  padding: 18px 18px 14px;
+  gap: 0;
+}
+
+.draft-input-panel .contract-review-field:last-of-type {
+  margin-bottom: 0;
+}
+
+.draft-home-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.draft-home-submit {
+  min-width: 140px;
+}
+
+.draft-card-agent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--fg3);
+  font-weight: 500;
+  font-family: 'Sora', sans-serif;
+}
+
+.draft-card-toolbar {
+  margin-bottom: 16px;
+}
+
+.draft-card-toolbar .redline-apply-actions {
+  margin-bottom: 0;
+}
+
+.draft-copy-btn {
+  padding: 6px 10px !important;
+  font-size: 10px !important;
+}
+
+.draft-card-summary {
+  font-size: 13px;
+  color: var(--fg2);
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+
+.draft-notes-panel {
+  margin: 0 0 20px;
+}
+
+.draft-sections-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+
+.draft-clause-panel {
+  border: 0.5px solid var(--bdr2);
+  border-radius: 8px;
+  background: var(--card);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.draft-clause-panel-head {
+  width: 100%;
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card2);
+  border: none;
+  text-align: left;
+  font-family: 'Sora', sans-serif;
+}
+
+.draft-clause-panel-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg3);
+  min-width: 20px;
+}
+
+.draft-clause-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  flex: 1;
+  min-width: 0;
+}
+
+.draft-clause-panel-count {
+  font-size: 10px;
+  color: var(--fg3);
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.draft-clause-panel-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.draft-clause-panel-chevron.open {
+  transform: rotate(180deg);
+}
+
+.draft-clause-panel-body {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.draft-clause-item-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.draft-clause-item-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg3);
+  flex-shrink: 0;
+}
+
+.draft-clause-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+  flex: 1;
+  min-width: 0;
+}
+
+.draft-clause-item-text {
+  font-size: 12px;
+  color: var(--fg2);
+  line-height: 1.75;
+  margin: 0;
+  padding-left: 24px;
+  white-space: pre-wrap;
 }

@@ -5,6 +5,7 @@ export type SSEEvent = {
   message_id?: string;
   messages?: { role: "user" | "assistant"; content: string; id?: string; feedback?: "up" | "down" | null }[];
   assessment?: unknown;
+  draft?: unknown;
 };
 
 function dispatchSSEPart(part: string, onEvent: (event: SSEEvent) => void) {
