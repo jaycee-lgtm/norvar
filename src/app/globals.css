@@ -4274,7 +4274,7 @@ input, textarea, select, button {
   }
 
   .mobile-thread-layout .main-scroll {
-    padding-bottom: 140px;
+    padding-bottom: 220px;
   }
 
   .mobile-thread-layout .chat-input-row {
@@ -4283,7 +4283,7 @@ input, textarea, select, button {
     right: 0;
     bottom: 0;
     z-index: 50;
-    padding: 0 16px max(16px, env(safe-area-inset-bottom, 16px));
+    padding: 10px 16px max(16px, env(safe-area-inset-bottom, 16px));
     border-top: none;
     background: linear-gradient(to top, var(--bg) 70%, transparent);
     overflow: visible;
@@ -4561,7 +4561,8 @@ input, textarea, select, button {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 14px;
+    padding-top: 4px;
     flex-wrap: wrap;
   }
 

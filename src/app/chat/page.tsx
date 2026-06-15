@@ -130,10 +130,22 @@ function Chat() {
     setError("");
 
     fetch(`/api/conversations?id=${id}`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.error) throw new Error(d.error);
-        if (!d.conversation) throw new Error("Conversation not found");
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok || d.error || !d.conversation) {
+          const msg = d.error || "Conversation not found";
+          if (r.status === 404 || msg === "Conversation not found" || !d.conversation) {
+            setMessages([]);
+            setHistory([]);
+            setConversationId(null);
+            loadedIdRef.current = null;
+            setError("");
+            const path = folderId ? `/chat?folder=${encodeURIComponent(folderId)}` : "/chat";
+            router.replace(path);
+            return;
+          }
+          throw new Error(msg);
+        }
         const msgs: ChatMessage[] = d.conversation.messages ?? [];
         setHistory(msgs);
         setMessages(msgs.map(m => ({
@@ -146,14 +158,25 @@ function Chat() {
         loadedIdRef.current = id;
       })
       .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : "Failed to load conversation";
+        if (msg === "Conversation not found") {
+          setMessages([]);
+          setHistory([]);
+          setConversationId(null);
+          loadedIdRef.current = null;
+          setError("");
+          const path = folderId ? `/chat?folder=${encodeURIComponent(folderId)}` : "/chat";
+          router.replace(path);
+          return;
+        }
         setMessages([]);
         setHistory([]);
         setConversationId(null);
         loadedIdRef.current = null;
-        setError(e instanceof Error ? e.message : "Failed to load conversation");
+        setError(msg);
       })
       .finally(() => setLoadingSaved(false));
-  }, [searchParams]);
+  }, [searchParams, folderId, router]);
 
   useEffect(() => {
     const handoff = buildNoraHandoffThread();

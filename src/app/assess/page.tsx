@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Show, useUser } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
 import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
@@ -30,18 +30,19 @@ import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
-import { pickNoraFollowUps, CASSIUS_GREETINGS } from "@/lib/agent-prompts";
+import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import {
   ASSESSMENT_CONFIRM_NOT_YET,
   ASSESSMENT_CONFIRM_OPTIONS,
   ASSESSMENT_CONFIRM_YES,
   buildAssessmentConfirmationText,
   buildAssessmentScopingIntroText,
+  buildConversationDescription,
+  conversationLooksLikeAssessment,
   isAffirmativeAssessmentConfirm,
   isNegativeAssessmentConfirm,
   looksLikeAssessmentDescription,
 } from "@/lib/cassius-prescope";
-import { firstNameFromUser, getTimeOfDay } from "@/lib/agent-greeting-utils";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import {
@@ -700,7 +701,6 @@ export default function HomePage() {
 function Home() {
   const searchParams = useSearchParams();
   const router       = useRouter();
-  const { user }     = useUser();
   const folderId     = searchParams.get("folder");
 
   const [messages,      setMessages]      = useState<Message[]>([]);
@@ -728,7 +728,7 @@ function Home() {
   const [guidedMultiSelections, setGuidedMultiSelections] = useState<string[]>([]);
   const [activeGuidedQuestionId, setActiveGuidedQuestionId] = useState<string | null>(null);
   const [guidedTyping, setGuidedTyping] = useState(false);
-  const [preScopePhase, setPreScopePhase] = useState<"chat" | "confirm" | null>(null);
+  const [preScopePhase, setPreScopePhase] = useState<"chat" | "confirm" | null>("chat");
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -737,8 +737,6 @@ function Home() {
   const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef  = useRef<TypewriterDrain | null>(null);
   const assessingRef   = useRef(false);
-  const greetedRef     = useRef(false);
-  const [greetingTyping, setGreetingTyping] = useState(false);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -761,9 +759,7 @@ function Home() {
       } else {
         setPriorNoraChat([]);
       }
-      greetedRef.current = false;
-      setGreetingTyping(false);
-      setPreScopePhase(null);
+      setPreScopePhase("chat");
       setPendingDesc("");
       return;
     }
@@ -845,7 +841,7 @@ function Home() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading, guidedTyping, greetingTyping]);
+  }, [messages, loading, guidedTyping]);
 
   const hasAssessment   = messages.some(m => m.role === "assistant");
   const latestAssessment = [...messages].reverse().find(
@@ -883,9 +879,7 @@ function Home() {
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
     setGuidedTyping(false);
-    setPreScopePhase(null);
-    greetedRef.current = false;
-    setGreetingTyping(false);
+    setPreScopePhase("chat");
     typewriterRef.current?.reset();
     router.push("/assess");
   }
@@ -937,40 +931,9 @@ function Home() {
     ? activeGuidedQuestion?.type === "text" && input.trim().length > 0 && !loading
     : preScopePhase === "confirm"
     ? input.trim().length > 0 && !loading
-    : input.trim().length > 0 && !loading && !greetingTyping;
+    : input.trim().length > 0 && !loading;
 
   const isMobileView = useIsMobile();
-
-  const triggerAutoGreet = () => {
-    if (greetedRef.current || messages.length > 0 || loadingSaved || loading || guidedActive) return;
-    greetedRef.current = true;
-
-    const text = priorNoraChat.length > 0
-      ? CASSIUS_GREETINGS.handoff(firstNameFromUser(user))
-      : CASSIUS_GREETINGS.cold(
-          firstNameFromUser(user),
-          getTimeOfDay(),
-        );
-    setGreetingTyping(true);
-    setMessages([{ role: "chat", text: "" }]);
-
-    typewriterRef.current?.reset();
-    typewriterRef.current = createTypewriterDrain(ch => {
-      setMessages(prev => {
-        const next = [...prev];
-        const idx  = next.findLastIndex(m => m.role === "chat");
-        if (idx >= 0) {
-          const msg = next[idx] as Extract<Message, { role: "chat" }>;
-          next[idx] = { ...msg, text: msg.text + ch };
-        }
-        return next;
-      });
-    }, () => {
-      setGreetingTyping(false);
-      setPreScopePhase("chat");
-    });
-    typewriterRef.current.enqueue(text);
-  };
 
   const presentAssessmentConfirmation = () => {
     const fullText = buildAssessmentConfirmationText();
@@ -1004,6 +967,9 @@ function Home() {
   };
 
   const handlePreScopeChat = async (text: string): Promise<string | null> => {
+    const threadDesc = buildConversationDescription(messages, text);
+    if (threadDesc) setPendingDesc(threadDesc);
+
     setMessages(prev => [...prev, { role: "user", content: text }]);
     setLoading(true);
     setMessages(prev => [...prev, { role: "chat", text: "" }]);
@@ -1059,7 +1025,11 @@ function Home() {
     }
   };
 
-  const handleAssessmentConfirm = async (label: string, userAlreadyAdded = false): Promise<string | null> => {
+  const handleAssessmentConfirm = async (
+    label: string,
+    userAlreadyAdded = false,
+    descOverride?: string,
+  ): Promise<string | null> => {
     setMessages(prev => {
       const filtered = prev.filter(m => !(m.role === "thinking" && m.assessmentConfirm));
       return userAlreadyAdded
@@ -1069,8 +1039,9 @@ function Home() {
 
     if (label === ASSESSMENT_CONFIRM_YES) {
       setPreScopePhase(null);
-      const desc = pendingDesc.trim();
+      const desc = (descOverride ?? pendingDesc).trim();
       if (!desc) return null;
+      setPendingDesc(desc);
       return startGuidedAssessment(desc, { skipUserBubble: true });
     }
 
@@ -1486,9 +1457,23 @@ function Home() {
   };
 
   const handleAssessment = async (text: string): Promise<string | null> => {
-    if (looksLikeAssessmentDescription(text)) {
+    const priorDesc = buildConversationDescription(messages);
+    const fullDesc = buildConversationDescription(messages, text);
+
+    if (fullDesc) setPendingDesc(fullDesc);
+
+    if (preScopePhase === "chat" && priorDesc && isAffirmativeAssessmentConfirm(text)) {
       setMessages(prev => [...prev, { role: "user", content: text }]);
-      setPendingDesc(text);
+      setPendingDesc(priorDesc);
+      return handleAssessmentConfirm(ASSESSMENT_CONFIRM_YES, true, priorDesc);
+    }
+
+    if (
+      looksLikeAssessmentDescription(text)
+      || conversationLooksLikeAssessment(messages, text)
+    ) {
+      setMessages(prev => [...prev, { role: "user", content: text }]);
+      setPendingDesc(fullDesc || text);
       setPreScopePhase("confirm");
       presentAssessmentConfirmation();
       return buildAssessmentConfirmationText();
@@ -1620,10 +1605,6 @@ function Home() {
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
 
-  const handleComposerFocus = () => {
-    if (isHome) triggerAutoGreet();
-  };
-
   const hasAttachedDocs = !!contractName || selectedDocumentIds.length > 0;
 
   const guidedComposerPlaceholder = hasAssessment
@@ -1687,7 +1668,6 @@ function Home() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
-              onFocus={handleComposerFocus}
               rows={1}
             />
           </div>
@@ -1943,11 +1923,11 @@ function Home() {
                               {ASSESS_AGENT.name}
                             </div>
                             <FormattedMessage content={msg.text || ""} />
-                            {(loading || greetingTyping) && i === messages.length - 1 && streamCursor}
-                            {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && i === firstDisclaimerIndex && (
+                            {(loading) && i === messages.length - 1 && streamCursor}
+                            {!(loading && i === messages.length - 1) && i === firstDisclaimerIndex && (
                               <AiDisclaimer agentName={ASSESS_AGENT.name} />
                             )}
-                            {!(loading && i === messages.length - 1) && !(greetingTyping && i === messages.length - 1) && (
+                            {!(loading && i === messages.length - 1) && (
                               <MessageFeedback
                                 messageId={msg.id}
                                 feedback={msg.feedback}
@@ -2006,18 +1986,12 @@ function Home() {
                           </div>
                         )}
                         <div className="mobile-composer-input-row">
-                          {!input.trim() && (
-                            <span className="mobile-composer-prompt-label">
-                              {hasAssessment ? "Ask a follow-up..." : `Assess with ${ASSESS_AGENT.name}`}
-                            </span>
-                          )}
                           <input
                             className="chat-input-field mobile-composer-field"
                             placeholder={guidedComposerPlaceholder}
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKey}
-                            onFocus={handleComposerFocus}
                           />
                         </div>
                         <div className="mobile-composer-tools mobile-composer-tools--minimal">
@@ -2053,7 +2027,6 @@ function Home() {
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
-              onFocus={handleComposerFocus}
                       />
                       <div className="composer-toolbar">
                         <div className="composer-toolbar-start">

@@ -19,9 +19,44 @@ export function isCasualGreeting(text: string): boolean {
 
 export function looksLikeAssessmentDescription(text: string): boolean {
   const trimmed = text.trim();
-  if (trimmed.length < 20) return false;
+  if (trimmed.length < 15) return false;
   if (isCasualGreeting(trimmed)) return false;
-  return ASSESSMENT_SIGNAL_RE.test(trimmed) || trimmed.length >= 55;
+  return ASSESSMENT_SIGNAL_RE.test(trimmed) || trimmed.length >= 45;
+}
+
+type PrescopeTurn = { role: string; content?: string; text?: string };
+
+export function buildConversationDescription(
+  messages: PrescopeTurn[],
+  latestText?: string,
+): string {
+  const parts: string[] = [];
+  for (const m of messages) {
+    if (m.role !== "user" || !m.content) continue;
+    const t = m.content.trim();
+    if (!t || isCasualGreeting(t)) continue;
+    parts.push(t);
+  }
+  if (latestText) {
+    const t = latestText.trim();
+    if (t && !isCasualGreeting(t) && !parts.includes(t)) parts.push(t);
+  }
+  return parts.join(" ").trim();
+}
+
+export function conversationLooksLikeAssessment(
+  messages: PrescopeTurn[],
+  latestText?: string,
+): boolean {
+  const combined = buildConversationDescription(messages, latestText);
+  return combined.length > 0 && looksLikeAssessmentDescription(combined);
+}
+
+export function isAssessmentReadyReply(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  return /^(okay|ok|yes|yeah|yep|yup|sure|correct|right|absolutely|definitely|let's assess|lets assess|go ahead|please do|that'?s right|sounds good)/.test(t)
+    || t.includes("let's assess")
+    || t.includes("lets assess");
 }
 
 export function buildAssessmentConfirmationText(): string {
@@ -33,10 +68,7 @@ export function buildAssessmentScopingIntroText(): string {
 }
 
 export function isAffirmativeAssessmentConfirm(text: string): boolean {
-  const t = text.trim().toLowerCase();
-  return /^(yes|yeah|yep|yup|sure|correct|right|absolutely|definitely|let's assess|lets assess|go ahead|please do|that'?s right|sounds good)/.test(t)
-    || t.includes("let's assess")
-    || t.includes("lets assess");
+  return isAssessmentReadyReply(text);
 }
 
 export function isNegativeAssessmentConfirm(text: string): boolean {
