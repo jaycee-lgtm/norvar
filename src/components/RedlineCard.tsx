@@ -388,6 +388,9 @@ export default function RedlineCard({
           decisions={decisions}
           onDecisionsChange={onDecisionsChange}
           followups={followups}
+          redlineId={redlineId}
+          agent={agent}
+          onClauseFollowUpChange={handleClauseFollowUpChange}
         />
       )}
 

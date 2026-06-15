@@ -46,10 +46,16 @@ export function extractRewriteFromAssistant(content: string): string | null {
     .filter(block => block.length >= 40);
   if (codeBlocks.length) return codeBlocks[codeBlocks.length - 1];
 
-  const labeled = trimmed.match(
-    /(?:Suggested language|Replace with|Revised clause|Updated language|Use this instead)[:\s]*\n+([\s\S]+?)(?:\n\n|$)/i,
+  const normalized = trimmed.replace(/\*\*/g, "");
+  const labeled = normalized.match(
+    /(?:Suggested language|Replace with|Revised clause|Updated language|Use this instead)\s*:?\s*\n+([\s\S]+?)(?:\n\n|$)/i,
   );
   if (labeled?.[1]?.trim() && labeled[1].trim().length >= 40) return labeled[1].trim();
+
+  const inlineLabeled = normalized.match(
+    /(?:Suggested language|Replace with|Revised clause|Updated language|Use this instead)\s*:\s*([\s\S]{40,})/i,
+  );
+  if (inlineLabeled?.[1]?.trim()) return inlineLabeled[1].trim();
 
   const quoted = trimmed.match(/[""]([^""]{40,})[""]/);
   if (quoted?.[1]) return quoted[1].trim();
@@ -57,7 +63,7 @@ export function extractRewriteFromAssistant(content: string): string | null {
   return null;
 }
 
-function followupRewriteForClause(followups: RedlineFollowUps | undefined, index: number): string | null {
+export function followupRewriteForClause(followups: RedlineFollowUps | undefined, index: number): string | null {
   const messages = getThreadMessages(followups, redlineClauseThreadKey(index));
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     if (messages[i].role !== "assistant") continue;

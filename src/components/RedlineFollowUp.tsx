@@ -9,6 +9,12 @@ import AiDisclaimer from "@/components/AiDisclaimer";
 import type { RedlineFollowUpMessage } from "@/lib/redline-followup";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 
+type QuickAction = {
+  label:    string;
+  message:  string;
+  autoSend?: boolean;
+};
+
 type RedlineFollowUpProps = {
   redlineId:         string;
   thread:            string;
@@ -20,6 +26,7 @@ type RedlineFollowUpProps = {
   toggleLabel?:      string;
   hint?:             string;
   placeholder?:      string;
+  quickActions?:     QuickAction[];
 };
 
 export default function RedlineFollowUp({
@@ -33,6 +40,7 @@ export default function RedlineFollowUp({
   toggleLabel = "Ask a follow-up",
   hint = "Ask about the finding, suggested language, or what to push back on in negotiation.",
   placeholder = "Ask a follow-up question...",
+  quickActions = [],
 }: RedlineFollowUpProps) {
   const [open, setOpen]         = useState(initialMessages.length > 0);
   const [messages, setMessages] = useState<RedlineFollowUpMessage[]>(initialMessages);
@@ -44,9 +52,9 @@ export default function RedlineFollowUp({
   const agentName = agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
   const canSend   = input.trim().length > 0 && !loading;
 
-  const send = async () => {
-    if (!canSend) return;
-    const text  = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || loading) return;
     const prior = messages;
     setInput("");
     setError("");
@@ -130,7 +138,7 @@ export default function RedlineFollowUp({
   const firstAssistantIndex = messages.findIndex(m => m.role === "assistant");
 
   return (
-    <div className="gap-chat" onClick={e => e.stopPropagation()}>
+    <div className="gap-chat redline-inline-followup" onClick={e => e.stopPropagation()}>
       <button
         type="button"
         onClick={() => {
@@ -156,6 +164,25 @@ export default function RedlineFollowUp({
         <div className="gap-chat-panel">
           {messages.length === 0 && (
             <p className="gap-chat-hint">{hint}</p>
+          )}
+
+          {quickActions.length > 0 && (
+            <div className="redline-inline-quick-actions">
+              {quickActions.map(action => (
+                <button
+                  key={action.label}
+                  type="button"
+                  className="redline-inline-quick-action"
+                  disabled={loading}
+                  onClick={() => {
+                    if (action.autoSend) void send(action.message);
+                    else setInput(action.message);
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           )}
 
           <div className="gap-chat-msgs">

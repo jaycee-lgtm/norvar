@@ -3,14 +3,21 @@
 import { useMemo } from "react";
 import { Check, X } from "lucide-react";
 import type { RedlineOutput } from "@/lib/redline";
+import RedlineFollowUp from "@/components/RedlineFollowUp";
 import {
   buildDocumentParts,
   countDecisions,
+  followupRewriteForClause,
   type ChangeDecision,
   type ChangeDecisions,
   type MatchedChange,
 } from "@/lib/redline-inline";
-import type { RedlineFollowUps } from "@/lib/redline-followup";
+import {
+  getThreadMessages,
+  redlineClauseThreadKey,
+  type RedlineFollowUpMessage,
+  type RedlineFollowUps,
+} from "@/lib/redline-followup";
 
 const SEV_LABELS = {
   high:   "High",
@@ -18,17 +25,32 @@ const SEV_LABELS = {
   low:    "Low",
 } as const;
 
+const REWRITE_REQUEST =
+  "Please rewrite the suggested language for this clause. Keep it commercially reasonable while fully addressing the compliance issue you flagged. Provide the full replacement text under a **Suggested language:** heading.";
+
 function InlineChangeBlock({
   change,
   decision,
   onDecision,
+  redlineId,
+  agent,
+  followups,
+  onClauseFollowUpChange,
 }: {
   change:   MatchedChange;
   decision: ChangeDecision;
   onDecision: (key: string, value: ChangeDecision) => void;
+  redlineId?: string;
+  agent:      "nora" | "cassius";
+  followups?: RedlineFollowUps;
+  onClauseFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
 }) {
   const { clause } = change;
   const sev = SEV_LABELS[clause.severity] ?? clause.severity;
+  const thread = redlineClauseThreadKey(change.clauseIndex);
+  const baseSuggested = clause.suggested_text?.trim() ?? "";
+  const chatRewrite = followupRewriteForClause(followups, change.clauseIndex);
+  const showingRewrite = !!(chatRewrite && change.suggestedText.trim() === chatRewrite.trim());
 
   return (
     <div
@@ -40,6 +62,9 @@ function InlineChangeBlock({
           <span className="redline-inline-change-sev">{sev}</span>
           <span>{clause.clause_number}</span>
           <span>{clause.clause_title}</span>
+          {showingRewrite && (
+            <span className="redline-inline-change-rewrite-badge">Updated from chat</span>
+          )}
           {!change.matched && <span className="redline-inline-change-flag">Could not locate in text</span>}
         </div>
         <div className="redline-inline-change-actions">
@@ -69,11 +94,38 @@ function InlineChangeBlock({
       )}
 
       {decision !== "declined" && change.suggestedText && (
-        <p className="redline-inline-ins">{change.suggestedText}</p>
+        <div className="redline-inline-ins-wrap">
+          {showingRewrite && baseSuggested && baseSuggested !== change.suggestedText.trim() && (
+            <p className="redline-inline-del redline-inline-del--compact">{baseSuggested}</p>
+          )}
+          <p className="redline-inline-ins">{change.suggestedText}</p>
+        </div>
       )}
 
       {decision === "accepted" && !change.suggestedText && (
         <p className="redline-inline-note">Change accepted.</p>
+      )}
+
+      {redlineId && (
+        <RedlineFollowUp
+          key={`${redlineId}-${thread}`}
+          redlineId={redlineId}
+          thread={thread}
+          clauseIndex={change.clauseIndex}
+          agent={agent}
+          initialMessages={getThreadMessages(followups, thread)}
+          onMessagesChange={msgs => onClauseFollowUpChange?.(change.clauseIndex, msgs)}
+          toggleLabel="Ask about this change"
+          hint="Ask why this was flagged, whether the suggested language is enough, or request a rewrite tailored to your negotiation position."
+          placeholder="Ask about this section..."
+          quickActions={[
+            {
+              label:    "Request rewrite",
+              message:  REWRITE_REQUEST,
+              autoSend: true,
+            },
+          ]}
+        />
       )}
     </div>
   );
@@ -85,18 +137,22 @@ export default function RedlineDocumentView({
   decisions,
   onDecisionsChange,
   followups,
-  includeRewrites = false,
+  redlineId,
+  agent,
+  onClauseFollowUpChange,
 }: {
-  sourceText:        string;
-  redline:           RedlineOutput;
-  decisions:         ChangeDecisions;
-  onDecisionsChange: (next: ChangeDecisions) => void;
-  followups?:        RedlineFollowUps;
-  includeRewrites?:  boolean;
+  sourceText:              string;
+  redline:                 RedlineOutput;
+  decisions:               ChangeDecisions;
+  onDecisionsChange:       (next: ChangeDecisions) => void;
+  followups?:              RedlineFollowUps;
+  redlineId?:              string;
+  agent:                   "nora" | "cassius";
+  onClauseFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
 }) {
   const { parts, unmatched } = useMemo(
-    () => buildDocumentParts(sourceText, redline, decisions, { followups, includeRewrites }),
-    [sourceText, redline, decisions, followups, includeRewrites],
+    () => buildDocumentParts(sourceText, redline, decisions, { followups, includeRewrites: true }),
+    [sourceText, redline, decisions, followups],
   );
 
   const stats = countDecisions(decisions);
@@ -111,6 +167,13 @@ export default function RedlineDocumentView({
       next[`clause:${index}`] = value;
     });
     onDecisionsChange(next);
+  };
+
+  const blockProps = {
+    redlineId,
+    agent,
+    followups,
+    onClauseFollowUpChange,
   };
 
   return (
@@ -149,6 +212,7 @@ export default function RedlineDocumentView({
               change={part.change}
               decision={part.decision}
               onDecision={setDecision}
+              {...blockProps}
             />
           );
         })}
@@ -162,6 +226,7 @@ export default function RedlineDocumentView({
                 change={change}
                 decision={decisions[change.key] ?? "pending"}
                 onDecision={setDecision}
+                {...blockProps}
               />
             ))}
           </div>

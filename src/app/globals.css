@@ -4171,6 +4171,60 @@ input, textarea, select, button {
   letter-spacing: 0.8px;
 }
 
+.redline-inline-followup {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--bdr2);
+}
+
+.redline-inline-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.redline-inline-quick-action {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'Sora', sans-serif;
+  color: var(--fg2);
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.redline-inline-quick-action:hover:not(:disabled) {
+  background: var(--lift);
+  border-color: var(--bdr3);
+}
+
+.redline-inline-quick-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.redline-inline-change-rewrite-badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--rl-bg);
+  color: var(--rl);
+}
+
+.redline-inline-ins-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.redline-inline-del--compact {
+  margin: 0;
+  font-size: 12px;
+}
+
 .contracts-modal-source {
   display: flex;
   flex-wrap: wrap;
