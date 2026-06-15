@@ -56,9 +56,16 @@ export async function POST(req: NextRequest) {
       } = body;
 
       let text = contract_text.trim();
+      const agentLabel = agent === "nora" ? "Nora" : "Cassius";
+
       if (!text && document_id) {
-        await send({ type: "status", text: "Fetching document..." });
+        await send({ type: "status", text: "Fetching your document from Documents..." });
         text = stripDocumentBlock(await fetchDocumentText(document_id, userId));
+      } else if (text) {
+        await send({
+          type: "status",
+          text: `Read ${text.length.toLocaleString()} characters from the agreement.`,
+        });
       }
 
       if (text.length < 100) {
@@ -68,7 +75,21 @@ export async function POST(req: NextRequest) {
       }
 
       const detectedType = agreement_type || detectAgreementType(text);
-      await send({ type: "status", text: `Reviewing ${detectedType}...` });
+      await send({ type: "status", text: `Identified this as a ${detectedType}.` });
+
+      if (jurisdictions.length > 0) {
+        await send({
+          type: "status",
+          text: `Applying jurisdiction context: ${jurisdictions.join(", ")}.`,
+        });
+      }
+
+      if (text.length > 24000) {
+        await send({
+          type: "status",
+          text: "Document is long — reviewing the first 24,000 characters.",
+        });
+      }
 
       const jurisdictionHint = jurisdictions.length > 0
         ? `\nJurisdiction context: ${jurisdictions.join(", ")}`
@@ -89,15 +110,29 @@ export async function POST(req: NextRequest) {
 
       await send({
         type: "status",
-        text: `${agent === "nora" ? "Nora" : "Cassius"} is reviewing clauses...`,
+        text: `${agentLabel} is reviewing clauses against Norvar's regulatory corpus...`,
       });
 
-      const response = await claude.messages.create({
-        model:      "claude-opus-4-6",
-        max_tokens: 8000,
-        system:     systemPrompt,
-        messages:   [{ role: "user", content: userMsg }],
-      });
+      const pulse = setInterval(() => {
+        void send({
+          type: "pulse",
+          text: `${agentLabel} is still reviewing clauses — this can take a few minutes...`,
+        });
+      }, 20000);
+
+      let response;
+      try {
+        response = await claude.messages.create({
+          model:      "claude-opus-4-6",
+          max_tokens: 8000,
+          system:     systemPrompt,
+          messages:   [{ role: "user", content: userMsg }],
+        });
+      } finally {
+        clearInterval(pulse);
+      }
+
+      await send({ type: "status", text: "Parsing findings and suggested language..." });
 
       const rawText = response.content[0].type === "text" ? response.content[0].text : "";
 
@@ -111,6 +146,8 @@ export async function POST(req: NextRequest) {
       }
 
       if (!auditMode) {
+        await send({ type: "status", text: "Saving your review..." });
+
         const row = {
           user_id:        userId,
           agent,
@@ -130,6 +167,14 @@ export async function POST(req: NextRequest) {
         }
         if (insertErr) throw new Error(insertErr.message);
       }
+
+      const issueCount = redline.clauses?.length ?? 0;
+      await send({
+        type: "status",
+        text: issueCount
+          ? `Found ${issueCount} clause${issueCount === 1 ? "" : "s"} to review.`
+          : "Review complete — no major issues flagged.",
+      });
 
       await send({ type: "done", redline });
     } catch (err: unknown) {

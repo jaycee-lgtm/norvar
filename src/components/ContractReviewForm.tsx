@@ -4,11 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import ModeSelector, { type Mode } from "@/components/ModeSelector";
+import ContractReviewActivity, {
+  appendActivityStep,
+  completeAllActivity,
+  createActivityStep,
+  failActiveActivity,
+  friendlyReviewError,
+  markActiveDone,
+  type ReviewActivityStep,
+} from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import type { RedlineOutput } from "@/lib/redline";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 
 type InputMode = "document" | "upload" | "paste";
+
+function formatCount(n: number) {
+  return n.toLocaleString();
+}
 
 export default function ContractReviewForm({
   initialDocumentId,
@@ -32,7 +45,7 @@ export default function ContractReviewForm({
   const [pastedText, setPastedText] = useState("");
   const [agent, setAgent]           = useState<"cassius" | "nora">("nora");
   const [jurisdictions, setJurisdictions] = useState("");
-  const [statusText, setStatusText] = useState("");
+  const [activitySteps, setActivitySteps] = useState<ReviewActivityStep[]>([]);
   const [working, setWorking]       = useState(false);
   const [fileExtracting, setFileExtracting] = useState(false);
   const [error, setError]           = useState("");
@@ -40,6 +53,7 @@ export default function ContractReviewForm({
   const isHome = variant === "home";
   const agentMode: Mode = agent === "nora" ? "chat" : "assess";
   const agentName = agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
+  const showActivity = activitySteps.length > 0;
 
   useEffect(() => {
     fetch("/api/documents?status=active")
@@ -59,6 +73,18 @@ export default function ContractReviewForm({
     }
   }, [initialDocumentId]);
 
+  const pushStatus = (text: string) => {
+    setActivitySteps(prev => appendActivityStep(prev, text));
+  };
+
+  const pulseStatus = (text: string) => {
+    setActivitySteps(prev => {
+      const active = [...prev].reverse().find(step => step.state === "active");
+      if (!active) return appendActivityStep(prev, text);
+      return prev.map(step => step.id === active.id ? { ...step, text } : step);
+    });
+  };
+
   const extractFileText = async (f: File): Promise<string> => {
     const form = new FormData();
     form.append("file", f);
@@ -74,6 +100,7 @@ export default function ContractReviewForm({
     if (!f) return;
     setFileExtracting(true);
     setError("");
+    setActivitySteps([createActivityStep(`Reading ${f.name}...`)]);
     try {
       const text = await extractFileText(f);
       setContractText(text);
@@ -81,7 +108,15 @@ export default function ContractReviewForm({
       setSelectedDocId(null);
       setInputMode("upload");
       setPastedText("");
+      setActivitySteps(prev => [
+        ...markActiveDone(prev),
+        createActivityStep(
+          `Extracted ${formatCount(text.length)} characters from ${f.name}.`,
+          "done",
+        ),
+      ]);
     } catch (err: unknown) {
+      setActivitySteps(prev => failActiveActivity(prev));
       setError(err instanceof Error ? err.message : "Could not read file");
     } finally {
       setFileExtracting(false);
@@ -94,6 +129,8 @@ export default function ContractReviewForm({
     setUploadName("");
     setPastedText("");
     setInputMode("document");
+    setActivitySteps([]);
+    setError("");
   };
 
   const canSend = working
@@ -107,6 +144,7 @@ export default function ContractReviewForm({
   const submit = async () => {
     setError("");
     setWorking(true);
+    setActivitySteps([createActivityStep(`Starting review with ${agentName}...`)]);
 
     try {
       const body: Record<string, unknown> = {
@@ -118,22 +156,37 @@ export default function ContractReviewForm({
         if (!selectedDocId) {
           setError("Choose a contract from Documents.");
           setWorking(false);
+          setActivitySteps([]);
           return;
         }
         body.document_id = selectedDocId;
-        setStatusText("Fetching document...");
+        const docName = docCatalog[selectedDocId] ?? "your document";
+        setActivitySteps(prev => appendActivityStep(prev, `Connecting to ${docName} in Documents...`));
       } else {
         const text = inputMode === "paste" ? pastedText.trim() : contractText.trim();
         if (text.length < 100) {
           setError("Please provide at least 100 characters of contract text.");
           setWorking(false);
+          setActivitySteps([]);
           return;
         }
         body.contract_text = text;
-        setStatusText("Reading contract...");
+        if (inputMode === "paste") {
+          setActivitySteps(prev => appendActivityStep(
+            prev,
+            `Using ${formatCount(text.length)} characters from pasted text.`,
+            "done",
+          ));
+        } else {
+          setActivitySteps(prev => appendActivityStep(
+            prev,
+            `Using text extracted from ${uploadName} (${formatCount(text.length)} characters).`,
+            "done",
+          ));
+        }
       }
 
-      setStatusText(`${agentName} is reviewing clauses...`);
+      setActivitySteps(prev => appendActivityStep(prev, "Sending contract for review..."));
 
       const res = await fetch("/api/redline", {
         method:  "POST",
@@ -148,18 +201,21 @@ export default function ContractReviewForm({
 
       let redline: RedlineOutput | null = null;
       await readSSEStream(res, event => {
-        if (event.type === "status") setStatusText(event.text ?? "");
+        if (event.type === "status") pushStatus(event.text ?? "");
+        if (event.type === "pulse") pulseStatus(event.text ?? "");
         if (event.type === "done") redline = (event as { redline?: RedlineOutput }).redline ?? null;
         if (event.type === "error") throw new Error(event.text ?? "Redline failed");
       });
 
       if (!redline) throw new Error("No redline output received");
+
+      setActivitySteps(prev => completeAllActivity(prev, "Opening your redline..."));
       onDone();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setActivitySteps(prev => failActiveActivity(prev));
+      setError(friendlyReviewError(e));
     } finally {
       setWorking(false);
-      setStatusText("");
     }
   };
 
@@ -169,7 +225,7 @@ export default function ContractReviewForm({
       embedded
       menuPlacement="top"
       navigate={false}
-      disabled={working}
+      disabled={working || fileExtracting}
       onSelect={mode => setAgent(mode === "chat" ? "nora" : "cassius")}
     />
   );
@@ -185,6 +241,8 @@ export default function ContractReviewForm({
           setContractText("");
           setUploadName("");
           setPastedText("");
+          setActivitySteps([]);
+          setError("");
         }
       }}
       disabled={working || fileExtracting}
@@ -198,12 +256,14 @@ export default function ContractReviewForm({
     <button
       type="button"
       className={`contracts-paste-toggle${inputMode === "paste" ? " active" : ""}`}
-      disabled={working}
+      disabled={working || fileExtracting}
       onClick={() => {
         setInputMode("paste");
         setSelectedDocId(null);
         setContractText("");
         setUploadName("");
+        setActivitySteps([]);
+        setError("");
       }}
     >
       Paste
@@ -227,6 +287,14 @@ export default function ContractReviewForm({
     : inputMode === "upload" && uploadName
     ? uploadName
     : null;
+
+  const activityPanel = showActivity && (
+    <ContractReviewActivity
+      agentName={agentName}
+      steps={activitySteps}
+      working={working || fileExtracting}
+    />
+  );
 
   const homeComposer = isMobileView ? (
     <div className="mobile-composer">
@@ -256,7 +324,7 @@ export default function ContractReviewForm({
             placeholder="Paste contract text..."
             value={pastedText}
             onChange={e => setPastedText(e.target.value)}
-            disabled={working}
+            disabled={working || fileExtracting}
             rows={2}
           />
         ) : (
@@ -289,13 +357,15 @@ export default function ContractReviewForm({
           placeholder="Paste the contract text to review..."
           value={pastedText}
           onChange={e => setPastedText(e.target.value)}
-          disabled={working}
+          disabled={working || fileExtracting}
           rows={3}
         />
       ) : sourceLabel ? (
         <div className="contracts-selected-bar">
           <span className="contracts-selected-label">{sourceLabel}</span>
-          <button type="button" className="contracts-clear-source" onClick={clearSource}>Change</button>
+          <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
+            Change
+          </button>
         </div>
       ) : (
         <div className="contracts-selected-bar contracts-selected-bar--empty">
@@ -320,7 +390,7 @@ export default function ContractReviewForm({
       <div className="contracts-review-home">
         {homeComposer}
         <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: "none" }} onChange={handleFileUpload} />
-        {working && statusText && <p className="contract-review-status contracts-home-status">{statusText}</p>}
+        {activityPanel}
         {error && <p className="contract-review-error contracts-home-error">{error}</p>}
       </div>
     );
@@ -341,7 +411,7 @@ export default function ContractReviewForm({
           {(selectedDocId || uploadName) && (
             <span className="contracts-modal-source-name">
               {selectedDocId ? docCatalog[selectedDocId] : uploadName}
-              <button type="button" onClick={clearSource}>Clear</button>
+              <button type="button" onClick={clearSource} disabled={working || fileExtracting}>Clear</button>
             </span>
           )}
         </div>
@@ -351,7 +421,7 @@ export default function ContractReviewForm({
             value={pastedText}
             onChange={e => setPastedText(e.target.value)}
             placeholder="Paste contract text..."
-            disabled={working}
+            disabled={working || fileExtracting}
             rows={5}
           />
         )}
@@ -364,17 +434,17 @@ export default function ContractReviewForm({
           className="contract-review-input"
           value={jurisdictions}
           onChange={e => setJurisdictions(e.target.value)}
-          disabled={working}
+          disabled={working || fileExtracting}
           placeholder="e.g. EU, UK, US"
         />
       </div>
 
-      {working && statusText && <p className="contract-review-status">{statusText}</p>}
+      {activityPanel}
       {error && <p className="contract-review-error">{error}</p>}
 
       <div className="app-modal-actions">
         {onCancel && (
-          <button type="button" onClick={onCancel} disabled={working} className="app-modal-btn app-modal-btn--ghost">
+          <button type="button" onClick={onCancel} disabled={working || fileExtracting} className="app-modal-btn app-modal-btn--ghost">
             Cancel
           </button>
         )}
