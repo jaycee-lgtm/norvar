@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type MouseEvent, type ReactNode } from "
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox } from "lucide-react";
+import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -173,6 +173,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
   const mainNav = [
     { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
+    { href: "/contracts", label: "Contracts", icon: FilePenLine, active: path === "/contracts" },
     { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
     { href: "/inbox", label: "Inbox", icon: Inbox, active: path === "/inbox" },
   ];
