@@ -67,7 +67,9 @@ Overall status rules:
 - "clean": no issues or low severity recommendations only
 
 Only include clauses in the "clauses" array if they have an issue. Put compliant clauses in "positive_clauses" instead.
-Order clauses by severity descending.`;
+Order clauses by severity descending. Flag at most 12 clauses (highest severity first).
+Keep original_text under 300 characters and suggested_text under 500 characters — use ellipsis if needed.
+Your response must be complete, valid JSON. Do not truncate mid-object.`;
 
 export const CASSIUS_REDLINE_PROMPT = `
 You are Cassius, Norvar's regulatory assessment agent. You are conducting a clause-by-clause redline review of a legal agreement.
@@ -133,25 +135,175 @@ export function detectAgreementType(text: string): string {
   return "Commercial Agreement";
 }
 
-export function parseRedlineJSON(raw: string): RedlineOutput {
-  let s = raw.trim().replace(/^```json?\s*/im, "").replace(/```\s*$/m, "").trim();
+function findMatchingBrace(s: string, start: number): number {
+  const stack: string[] = [];
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      esc = c === "\\" && !esc;
+      if (!esc && c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === "{") stack.push("}");
+    else if (c === "[") stack.push("]");
+    else if ((c === "}" || c === "]") && stack.length && stack[stack.length - 1] === c) {
+      stack.pop();
+      if (stack.length === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function stripMarkdownFence(raw: string): string {
+  const trimmed = raw.trim();
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(trimmed);
+  if (fenced?.[1]?.trim()) return fenced[1].trim();
+  return trimmed.replace(/^```json?\s*/im, "").replace(/```\s*$/m, "").trim();
+}
+
+function removeTrailingCommas(json: string): string {
+  let prev = "";
+  let cur = json;
+  while (cur !== prev) {
+    prev = cur;
+    cur = cur.replace(/,\s*([}\]])/g, "$1");
+  }
+  return cur;
+}
+
+function closeOpenJson(json: string): string {
+  const stack: string[] = [];
+  let inStr = false;
+  let esc = false;
+  for (const c of json) {
+    if (inStr) {
+      esc = c === "\\" && !esc;
+      if (!esc && c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === "{") stack.push("}");
+    else if (c === "[") stack.push("]");
+    else if ((c === "}" || c === "]") && stack.length && stack[stack.length - 1] === c) stack.pop();
+  }
+  let repaired = json;
+  if (inStr) repaired += '"';
+  repaired += stack.reverse().join("");
+  return repaired;
+}
+
+function extractJsonSlice(raw: string): string {
+  const s = stripMarkdownFence(raw);
   const start = s.indexOf("{");
   if (start < 0) throw new Error("No JSON object found in response");
-  s = s.slice(start);
-  try {
-    return JSON.parse(s) as RedlineOutput;
-  } catch {
-    const stack: string[] = [];
-    let inStr = false, esc = false;
-    for (const c of s) {
-      if (inStr) { esc = c === "\\" && !esc; if (!esc && c === '"') inStr = false; continue; }
-      if (c === '"') inStr = true;
-      else if (c === "{") stack.push("}");
-      else if (c === "[") stack.push("]");
-      else if ((c === "}" || c === "]") && stack.length && stack[stack.length - 1] === c) stack.pop();
+  let slice = s.slice(start);
+  const end = findMatchingBrace(slice, 0);
+  if (end >= 0) slice = slice.slice(0, end + 1);
+  return slice;
+}
+
+function tryParseRedlineJson(json: string): RedlineOutput | null {
+  const attempts = [
+    json,
+    removeTrailingCommas(json),
+    removeTrailingCommas(closeOpenJson(json)),
+  ];
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(attempt) as RedlineOutput;
+    } catch {
+      // try next repair pass
     }
-    return JSON.parse(s + stack.reverse().join("")) as RedlineOutput;
   }
+  return null;
+}
+
+function unescapeJsonString(value: string) {
+  return value.replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+}
+
+function salvagePartialRedline(raw: string): RedlineOutput | null {
+  const slice = stripMarkdownFence(raw);
+  const start = slice.indexOf("{");
+  if (start < 0) return null;
+  const body = slice.slice(start);
+
+  const agreement_type = /"agreement_type"\s*:\s*"((?:\\.|[^"\\])*)"/.exec(body)?.[1];
+  const governing_law  = /"governing_law"\s*:\s*"((?:\\.|[^"\\])*)"/.exec(body)?.[1];
+  const summary        = /"summary"\s*:\s*"((?:\\.|[^"\\])*)"/.exec(body)?.[1];
+
+  const clausesKey = body.indexOf('"clauses"');
+  if (clausesKey < 0) return null;
+  const arrayStart = body.indexOf("[", clausesKey);
+  if (arrayStart < 0) return null;
+
+  const clauses: RedlineClause[] = [];
+  let i = arrayStart + 1;
+  while (i < body.length) {
+    while (i < body.length && /[\s,]/.test(body[i])) i += 1;
+    if (i >= body.length || body[i] === "]") break;
+    if (body[i] !== "{") break;
+    const end = findMatchingBrace(body, i);
+    if (end < 0) break;
+    try {
+      clauses.push(JSON.parse(body.slice(i, end + 1)) as RedlineClause);
+    } catch {
+      break;
+    }
+    i = end + 1;
+  }
+
+  if (!clauses.length && !summary) return null;
+
+  return {
+    agreement_type: agreement_type ? unescapeJsonString(agreement_type) : "Commercial Agreement",
+    parties:        [],
+    governing_law:  governing_law ? unescapeJsonString(governing_law) : "",
+    overall_status: "needs_work",
+    summary: summary
+      ? unescapeJsonString(summary)
+      : "Review completed from a partial model response. Some findings may be missing — retry if needed.",
+    clauses,
+    missing_clauses:  [],
+    positive_clauses: [],
+    frameworks:       [],
+    redline_by:       "nora",
+  };
+}
+
+export function parseRedlineJSON(raw: string): RedlineOutput {
+  if (!raw.trim()) throw new Error("Empty response");
+
+  const slice = extractJsonSlice(raw);
+  const parsed = tryParseRedlineJson(slice);
+  if (parsed) return parsed;
+
+  const salvaged = salvagePartialRedline(raw);
+  if (salvaged) return salvaged;
+
+  throw new Error("Could not parse redline JSON");
+}
+
+const VALID_STATUS = new Set<RedlineStatus>(["compliant", "missing", "weak", "non_compliant", "recommend"]);
+const VALID_SEVERITY = new Set<RedlineClause["severity"]>(["high", "medium", "low"]);
+const VALID_DOMAIN = new Set<RedlineClause["domain"]>(["privacy", "ai_governance", "cybersecurity"]);
+
+function sanitizeClause(clause: RedlineClause): RedlineClause {
+  return {
+    ...clause,
+    clause_number:  String(clause.clause_number ?? "").trim() || "—",
+    clause_title:   String(clause.clause_title ?? "").trim() || "Flagged clause",
+    original_text:  String(clause.original_text ?? ""),
+    suggested_text: String(clause.suggested_text ?? ""),
+    issue:          String(clause.issue ?? ""),
+    status:         VALID_STATUS.has(clause.status) ? clause.status : "recommend",
+    severity:       VALID_SEVERITY.has(clause.severity) ? clause.severity : "medium",
+    domain:         VALID_DOMAIN.has(clause.domain) ? clause.domain : "privacy",
+    frameworks:     Array.isArray(clause.frameworks) ? clause.frameworks.map(String) : [],
+  };
 }
 
 export function normalizeRedlineOutput(
@@ -162,11 +314,16 @@ export function normalizeRedlineOutput(
   const next = { ...redline };
   next.redline_by = agent;
   next.agreement_type = next.agreement_type || detectedType;
+  next.parties = Array.isArray(next.parties) ? next.parties.map(String) : [];
+  next.missing_clauses = Array.isArray(next.missing_clauses) ? next.missing_clauses.map(String) : [];
+  next.positive_clauses = Array.isArray(next.positive_clauses) ? next.positive_clauses.map(String) : [];
+  next.frameworks = Array.isArray(next.frameworks) ? next.frameworks.map(String) : [];
+  next.summary = String(next.summary ?? "").trim() || "Review complete.";
 
   const sevRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
-  next.clauses = (next.clauses ?? []).sort((a, b) =>
-    (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0),
-  );
+  next.clauses = (next.clauses ?? [])
+    .map(sanitizeClause)
+    .sort((a, b) => (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0));
 
   const hasDoNotSign = next.clauses.some(c => c.severity === "high" && c.status === "non_compliant");
   const hasHigh      = next.clauses.some(c => c.severity === "high");

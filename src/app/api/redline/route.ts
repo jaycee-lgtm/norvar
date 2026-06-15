@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
       try {
         response = await claude.messages.create({
           model:      "claude-opus-4-6",
-          max_tokens: 8000,
+          max_tokens: 16000,
           system:     systemPrompt,
           messages:   [{ role: "user", content: userMsg }],
         });
@@ -134,15 +134,65 @@ export async function POST(req: NextRequest) {
 
       await send({ type: "status", text: "Parsing findings and suggested language..." });
 
-      const rawText = response.content[0].type === "text" ? response.content[0].text : "";
+      let rawText = response.content[0]?.type === "text" ? response.content[0].text : "";
 
       let redline: RedlineOutput;
       try {
         redline = normalizeRedlineOutput(parseRedlineJSON(rawText), agent, detectedType);
-      } catch {
-        await send({ type: "error", text: "Failed to parse redline output. Please try again." });
-        await writer.close();
-        return;
+      } catch (parseErr) {
+        console.error("Redline parse failed:", parseErr, {
+          stop_reason: response.stop_reason,
+          length:      rawText.length,
+        });
+
+        if (response.stop_reason === "max_tokens" || rawText.length > 0) {
+          await send({
+            type: "status",
+            text: "Response was incomplete — finishing the review...",
+          });
+
+          try {
+            const repair = await claude.messages.create({
+              model:      "claude-sonnet-4-6",
+              max_tokens: 12000,
+              system:     [
+                systemPrompt,
+                "",
+                "The previous response was truncated or invalid JSON.",
+                "Return ONLY one complete valid JSON object in the required redline schema.",
+                "Include at most 12 highest-severity clauses.",
+                "Keep original_text under 300 characters and suggested_text under 500 characters.",
+              ].join("\n"),
+              messages: [{
+                role:    "user",
+                content: [
+                  userMsg,
+                  "",
+                  "TRUNCATED OR INVALID MODEL OUTPUT TO REPAIR:",
+                  rawText.slice(-14000),
+                ].join("\n"),
+              }],
+            });
+
+            const repairText = repair.content[0]?.type === "text" ? repair.content[0].text : rawText;
+            redline = normalizeRedlineOutput(parseRedlineJSON(repairText), agent, detectedType);
+          } catch (repairErr) {
+            console.error("Redline repair failed:", repairErr);
+            await send({
+              type: "error",
+              text: "Could not complete the review output. Please try again with a shorter document or paste a section at a time.",
+            });
+            await writer.close();
+            return;
+          }
+        } else {
+          await send({
+            type: "error",
+            text: "Failed to parse redline output. Please try again.",
+          });
+          await writer.close();
+          return;
+        }
       }
 
       if (!auditMode) {
