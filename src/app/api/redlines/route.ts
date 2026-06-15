@@ -16,9 +16,37 @@ export async function GET(req: NextRequest) {
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
+  const id     = searchParams.get("id");
   const status = searchParams.get("status");
   const agent  = searchParams.get("agent");
   const limit  = parseInt(searchParams.get("limit") ?? "50", 10);
+  const includeSource = searchParams.get("include_source") === "1";
+
+  if (id) {
+    const detailSelect = includeSource
+      ? "id, agent, agreement_type, governing_law, overall_status, result, document_id, followups, applied_meta, change_decisions, source_text, created_at"
+      : "id, agent, agreement_type, governing_law, overall_status, result, document_id, followups, applied_meta, change_decisions, created_at";
+
+    let { data, error } = await supabase
+      .from("redlines")
+      .select(detailSelect)
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+
+    if (error?.message.includes("change_decisions") || error?.message.includes("source_text")) {
+      ({ data, error } = await supabase
+        .from("redlines")
+        .select("id, agent, agreement_type, governing_law, overall_status, result, document_id, followups, applied_meta, created_at")
+        .eq("id", id)
+        .eq("user_id", userId)
+        .single());
+    }
+
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (!data) return Response.json({ error: "Not found" }, { status: 404 });
+    return Response.json({ redline: data });
+  }
 
   const runQuery = (select: string) => {
     let query = supabase

@@ -6,6 +6,8 @@ import { Shield, AlertTriangle, CheckCircle, XCircle, Copy, Check, ExternalLink 
 import type { RedlineClause, RedlineOutput, RedlineStatus } from "@/lib/redline";
 import { resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import RedlineFollowUp from "@/components/RedlineFollowUp";
+import RedlineDocumentView from "@/components/RedlineDocumentView";
+import type { ChangeDecisions } from "@/lib/redline-inline";
 import {
   getThreadMessages,
   redlineClauseThreadKey,
@@ -296,13 +298,19 @@ function PositiveClauseCard({
 export default function RedlineCard({
   redline,
   redlineId,
+  sourceText,
   followups,
   onFollowupsChange,
+  decisions,
+  onDecisionsChange,
 }: {
   redline: RedlineOutput;
   redlineId?: string;
+  sourceText?: string | null;
   followups?: RedlineFollowUps;
   onFollowupsChange?: (followups: RedlineFollowUps) => void;
+  decisions?: ChangeDecisions;
+  onDecisionsChange?: (decisions: ChangeDecisions) => void;
 }) {
   const overall = OVERALL_STYLES[redline.overall_status] ?? OVERALL_STYLES.needs_work;
   const agentLabel = redline.redline_by === "nora" ? "Nora" : "Cassius";
@@ -373,6 +381,22 @@ export default function RedlineCard({
 
       <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.7, marginBottom: 20 }}>{redline.summary}</p>
 
+      {sourceText && decisions && onDecisionsChange && (
+        <RedlineDocumentView
+          sourceText={sourceText}
+          redline={redline}
+          decisions={decisions}
+          onDecisionsChange={onDecisionsChange}
+          followups={followups}
+        />
+      )}
+
+      {!sourceText && redline.clauses?.length > 0 && (
+        <p className="redline-document-fallback">
+          Full contract text is not available for this review. Showing clause-by-clause findings below.
+        </p>
+      )}
+
       {redline.missing_clauses?.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
@@ -392,7 +416,7 @@ export default function RedlineCard({
         </div>
       )}
 
-      {redline.clauses?.length > 0 && (
+      {!sourceText && redline.clauses?.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10 }}>
             Clause review · {redline.clauses.length} issue{redline.clauses.length !== 1 ? "s" : ""}

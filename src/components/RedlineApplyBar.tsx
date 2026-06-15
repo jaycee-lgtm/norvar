@@ -3,15 +3,23 @@
 import { useState } from "react";
 import { Check, Download, FileText, Loader2, Sparkles } from "lucide-react";
 import type { AppliedMeta } from "@/lib/redline-apply";
+import type { ChangeDecisions } from "@/lib/redline-inline";
 
 type RedlineApplyBarProps = {
-  redlineId:      string;
-  appliedMeta?:   AppliedMeta | null;
-  hasFollowups?:  boolean;
-  onApplied?:     (meta: AppliedMeta) => void;
+  redlineId:           string;
+  appliedMeta?:        AppliedMeta | null;
+  hasFollowups?:       boolean;
+  decisions?:          ChangeDecisions;
+  hasInlineDocument?:  boolean;
+  onApplied?:          (meta: AppliedMeta) => void;
 };
 
-async function downloadExport(redlineId: string, format: "docx" | "pdf", includeRewrites: boolean) {
+async function downloadExport(
+  redlineId: string,
+  format: "docx" | "pdf",
+  includeRewrites: boolean,
+  decisions?: ChangeDecisions,
+) {
   const res = await fetch("/api/redline/export", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
@@ -20,6 +28,7 @@ async function downloadExport(redlineId: string, format: "docx" | "pdf", include
       format,
       include_rewrites: includeRewrites,
       apply_first:      true,
+      decisions,
     }),
   });
 
@@ -45,6 +54,8 @@ export default function RedlineApplyBar({
   redlineId,
   appliedMeta,
   hasFollowups = false,
+  decisions,
+  hasInlineDocument = false,
   onApplied,
 }: RedlineApplyBarProps) {
   const [busy, setBusy]           = useState<string | null>(null);
@@ -58,7 +69,11 @@ export default function RedlineApplyBar({
       const res = await fetch("/api/redline/apply", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ redline_id: redlineId, include_rewrites: includeRewrites }),
+        body:    JSON.stringify({
+          redline_id:       redlineId,
+          include_rewrites: includeRewrites,
+          decisions,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not apply changes");
@@ -75,7 +90,7 @@ export default function RedlineApplyBar({
     setBusy(`download-${format}-${includeRewrites ? "rewrites" : "base"}`);
     setError("");
     try {
-      await downloadExport(redlineId, format, includeRewrites);
+      await downloadExport(redlineId, format, includeRewrites, decisions);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Download failed");
     } finally {
@@ -84,6 +99,7 @@ export default function RedlineApplyBar({
   };
 
   const activeMeta = meta ?? appliedMeta;
+  const applyLabel = hasInlineDocument ? "Apply accepted changes" : "Apply all proposed changes";
 
   return (
     <div className="redline-apply-bar">
@@ -95,7 +111,7 @@ export default function RedlineApplyBar({
           onClick={() => void apply(false)}
         >
           {busy === "apply" ? <Loader2 size={12} className="spin" /> : <Check size={12} />}
-          Apply all proposed changes
+          {applyLabel}
         </button>
 
         {hasFollowups && (
@@ -106,7 +122,7 @@ export default function RedlineApplyBar({
             onClick={() => void apply(true)}
           >
             {busy === "apply-rewrites" ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />}
-            Apply all changes &amp; rewrites
+            {hasInlineDocument ? "Apply accepted & rewrites" : "Apply all changes & rewrites"}
           </button>
         )}
       </div>
@@ -119,7 +135,7 @@ export default function RedlineApplyBar({
           onClick={() => void download("docx", false)}
         >
           {busy === "download-docx-base" ? <Loader2 size={12} className="spin" /> : <FileText size={12} />}
-          Download Word
+          {hasInlineDocument ? "Download Word (accepted)" : "Download Word"}
         </button>
         <button
           type="button"
@@ -128,7 +144,7 @@ export default function RedlineApplyBar({
           onClick={() => void download("pdf", false)}
         >
           {busy === "download-pdf-base" ? <Loader2 size={12} className="spin" /> : <Download size={12} />}
-          Download PDF
+          {hasInlineDocument ? "Download PDF (accepted)" : "Download PDF"}
         </button>
         {hasFollowups && (
           <>

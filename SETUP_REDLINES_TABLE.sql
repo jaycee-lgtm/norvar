@@ -12,6 +12,7 @@ create table if not exists redlines (
   source_text    text,
   applied_text   text,
   applied_meta   jsonb,
+  change_decisions jsonb,
   document_id    uuid references documents(id) on delete set null,
   created_at     timestamptz default now()
 );
@@ -24,5 +25,6 @@ alter table redlines add column if not exists followups jsonb not null default '
 alter table redlines add column if not exists source_text text;
 alter table redlines add column if not exists applied_text text;
 alter table redlines add column if not exists applied_meta jsonb;
+alter table redlines add column if not exists change_decisions jsonb;
 
 grant all on public.redlines to service_role;

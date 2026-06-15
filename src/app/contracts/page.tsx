@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Shield, AlertTriangle, CheckCircle, XCircle, Plus, Trash2, ArrowLeft,
@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import type { RedlineOutput } from "@/lib/redline";
 import RedlineApplyBar from "@/components/RedlineApplyBar";
 import type { AppliedMeta } from "@/lib/redline-apply";
+import { defaultDecisions, type ChangeDecisions } from "@/lib/redline-inline";
 import type { RedlineFollowUps } from "@/lib/redline-followup";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 
@@ -101,6 +102,9 @@ function ContractsPageInner() {
   const [filterStatus, setFilterStatus] = useState("");
   const [followups, setFollowups]         = useState<RedlineFollowUps>({});
   const [appliedMeta, setAppliedMeta]     = useState<AppliedMeta | null>(null);
+  const [sourceText, setSourceText]       = useState<string | null>(null);
+  const [changeDecisions, setChangeDecisions] = useState<ChangeDecisions>({});
+  const decisionsSaveRef                  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reviewId   = searchParams.get("id");
   const showReviews = searchParams.get("reviews") === "1";
@@ -148,8 +152,52 @@ function ContractsPageInner() {
     } else {
       setFollowups({});
       setAppliedMeta(null);
+      setSourceText(null);
+      setChangeDecisions({});
     }
   }, [activeRecord?.id, activeRecord?.followups, activeRecord?.applied_meta]);
+
+  useEffect(() => {
+    if (!reviewId) {
+      setSourceText(null);
+      setChangeDecisions({});
+      return;
+    }
+
+    let cancelled = false;
+    void fetch(`/api/redlines?id=${reviewId}&include_source=1`)
+      .then(r => r.json())
+      .then(({ redline }: { redline?: RedlineRecord & { source_text?: string | null; change_decisions?: ChangeDecisions } }) => {
+        if (cancelled || !redline) return;
+        setSourceText(redline.source_text ?? null);
+        setChangeDecisions(
+          redline.change_decisions && typeof redline.change_decisions === "object"
+            ? redline.change_decisions
+            : defaultDecisions(redline.result),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSourceText(null);
+          setChangeDecisions({});
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [reviewId]);
+
+  const handleDecisionsChange = useCallback((next: ChangeDecisions) => {
+    setChangeDecisions(next);
+    if (!reviewId) return;
+    if (decisionsSaveRef.current) clearTimeout(decisionsSaveRef.current);
+    decisionsSaveRef.current = setTimeout(() => {
+      void fetch("/api/redline/decisions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ redline_id: reviewId, decisions: next }),
+      });
+    }, 600);
+  }, [reviewId]);
 
   const isHome = !loading && !reviewId && !showReviews;
   const showSplit = !loading && records.length > 0 && (!!reviewId || showReviews);
@@ -295,6 +343,8 @@ function ContractsPageInner() {
                       redlineId={activeRecord.id}
                       appliedMeta={appliedMeta}
                       hasFollowups={hasFollowupThreads(followups)}
+                      decisions={changeDecisions}
+                      hasInlineDocument={!!sourceText}
                       onApplied={next => {
                         setAppliedMeta(next);
                         setRecords(prev => prev.map(r =>
@@ -305,6 +355,9 @@ function ContractsPageInner() {
                     <RedlineCard
                       redline={activeRecord.result}
                       redlineId={activeRecord.id}
+                      sourceText={sourceText}
+                      decisions={changeDecisions}
+                      onDecisionsChange={handleDecisionsChange}
                       followups={followups}
                       onFollowupsChange={next => {
                         setFollowups(next);

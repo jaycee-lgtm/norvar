@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { fetchDocumentText } from "@/lib/documents";
 import { applyRedlineChanges, type AppliedMeta } from "@/lib/redline-apply";
+import type { ChangeDecisions } from "@/lib/redline-inline";
 import type { RedlineOutput } from "@/lib/redline";
 import { stripDocumentBlock } from "@/lib/redline";
 import type { RedlineFollowUps } from "@/lib/redline-followup";
@@ -21,11 +22,12 @@ export type RedlineRow = {
   source_text:    string | null;
   applied_text:   string | null;
   applied_meta:   AppliedMeta | null;
+  change_decisions?: ChangeDecisions | null;
 };
 
 export async function loadRedlineRow(redlineId: string, userId: string): Promise<RedlineRow | null> {
   const fullSelect =
-    "id, user_id, agent, agreement_type, document_id, result, followups, source_text, applied_text, applied_meta";
+    "id, user_id, agent, agreement_type, document_id, result, followups, source_text, applied_text, applied_meta, change_decisions";
   const baseSelect = "id, user_id, agent, agreement_type, document_id, result, followups";
 
   let { data, error } = await supabase
@@ -63,6 +65,7 @@ export async function applyAndSaveRedline(
   row: RedlineRow,
   userId: string,
   includeRewrites: boolean,
+  decisions?: ChangeDecisions,
 ) {
   const sourceText = await resolveRedlineSourceText(row, userId);
   if (!sourceText) {
@@ -73,14 +76,18 @@ export async function applyAndSaveRedline(
     ? row.followups
     : {};
 
+  const activeDecisions = decisions ?? row.change_decisions ?? undefined;
+
   const { text, meta } = applyRedlineChanges(sourceText, row.result, {
     includeRewrites,
     followups,
+    decisions: activeDecisions ?? undefined,
   });
 
   const payload = {
     applied_text: text,
     applied_meta: meta,
+    ...(decisions ? { change_decisions: decisions } : {}),
     ...(row.source_text ? {} : { source_text: sourceText.slice(0, 120000) }),
   };
 
@@ -102,9 +109,14 @@ export async function getAppliedOrFreshText(
   row: RedlineRow,
   userId: string,
   includeRewrites: boolean,
+  decisions?: ChangeDecisions,
 ) {
-  if (row.applied_text?.trim() && row.applied_meta?.include_rewrites === includeRewrites) {
+  if (
+    row.applied_text?.trim()
+    && row.applied_meta?.include_rewrites === includeRewrites
+    && !decisions
+  ) {
     return { text: row.applied_text, meta: row.applied_meta };
   }
-  return applyAndSaveRedline(row, userId, includeRewrites);
+  return applyAndSaveRedline(row, userId, includeRewrites, decisions);
 }

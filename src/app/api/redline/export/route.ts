@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     format = "docx",
     include_rewrites = false,
     apply_first = true,
+    decisions,
   } = await req.json();
 
   if (!redline_id) return Response.json({ error: "redline_id required" }, { status: 400 });
@@ -28,9 +29,10 @@ export async function POST(req: NextRequest) {
   if (!row) return Response.json({ error: "Review not found" }, { status: 404 });
 
   try {
+    const activeDecisions = decisions ?? row.change_decisions ?? undefined;
     const { text, meta } = apply_first
-      ? await applyAndSaveRedline(row, userId, !!include_rewrites)
-      : await getAppliedOrFreshText(row, userId, !!include_rewrites);
+      ? await applyAndSaveRedline(row, userId, !!include_rewrites, activeDecisions ?? undefined)
+      : await getAppliedOrFreshText(row, userId, !!include_rewrites, activeDecisions ?? undefined);
 
     const title = `${row.result.agreement_type || row.agreement_type || "Agreement"} — Redlined`;
     const filename = buildExportFilename(row.result.agreement_type || row.agreement_type || "contract", format);

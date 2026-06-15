@@ -1,5 +1,10 @@
 import type { RedlineClause, RedlineOutput } from "@/lib/redline";
 import {
+  applyDocumentDecisions,
+  extractRewriteFromAssistant,
+  type ChangeDecisions,
+} from "@/lib/redline-inline";
+import {
   getThreadMessages,
   redlineClauseThreadKey,
   type RedlineFollowUps,
@@ -13,6 +18,7 @@ export type AppliedMeta = {
   missing_added:          number;
   followup_rewrites_used: number;
   skipped_clauses:        string[];
+  decisions_used?:        boolean;
 };
 
 export type ApplyResult = {
@@ -26,26 +32,6 @@ function normalizeSpace(value: string) {
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export function extractRewriteFromAssistant(content: string): string | null {
-  const trimmed = content.trim();
-  if (!trimmed) return null;
-
-  const codeBlocks = [...trimmed.matchAll(/```(?:[\w-]*\n)?([\s\S]*?)```/g)]
-    .map(m => m[1].trim())
-    .filter(block => block.length >= 40);
-  if (codeBlocks.length) return codeBlocks[codeBlocks.length - 1];
-
-  const labeled = trimmed.match(
-    /(?:Suggested language|Replace with|Revised clause|Updated language|Use this instead)[:\s]*\n+([\s\S]+?)(?:\n\n|$)/i,
-  );
-  if (labeled?.[1]?.trim() && labeled[1].trim().length >= 40) return labeled[1].trim();
-
-  const quoted = trimmed.match(/[""]([^""]{40,})[""]/);
-  if (quoted?.[1]) return quoted[1].trim();
-
-  return null;
 }
 
 function followupRewriteForClause(followups: RedlineFollowUps | undefined, index: number): string | null {
@@ -125,10 +111,42 @@ export function applyRedlineChanges(
   options: {
     includeRewrites?: boolean;
     followups?: RedlineFollowUps;
+    decisions?: ChangeDecisions;
   } = {},
 ): ApplyResult {
   const includeRewrites = options.includeRewrites ?? false;
   const followups = options.followups;
+  const decisions = options.decisions;
+
+  if (decisions && Object.keys(decisions).length > 0) {
+    const text = applyDocumentDecisions(sourceText, redline, decisions, {
+      includeRewrites,
+      followups,
+    });
+    const counts = Object.values(decisions).reduce(
+      (acc, value) => {
+        if (value === "accepted") acc.accepted += 1;
+        else if (value === "declined") acc.declined += 1;
+        else acc.pending += 1;
+        return acc;
+      },
+      { accepted: 0, declined: 0, pending: 0 },
+    );
+    return {
+      text,
+      meta: {
+        applied_at: new Date().toISOString(),
+        include_rewrites: includeRewrites,
+        clauses_applied: counts.accepted,
+        clauses_skipped: counts.declined,
+        missing_added: 0,
+        followup_rewrites_used: 0,
+        skipped_clauses: [],
+        decisions_used: true,
+      },
+    };
+  }
+
   let text = sourceText;
 
   let clausesApplied = 0;
