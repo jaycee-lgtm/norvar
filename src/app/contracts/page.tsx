@@ -3,11 +3,14 @@
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Shield, AlertTriangle, CheckCircle, XCircle, Plus, Trash2, ArrowLeft, FilePenLine,
+  Shield, AlertTriangle, CheckCircle, XCircle, Plus, Trash2, ArrowLeft,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import Logo from "@/components/Logo";
+import InfoTip from "@/components/InfoTip";
 import RedlineCard from "@/components/RedlineCard";
 import AiDisclaimer from "@/components/AiDisclaimer";
+import ContractReviewForm from "@/components/ContractReviewForm";
 import ContractReviewModal from "@/components/ContractReviewModal";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { RedlineOutput } from "@/lib/redline";
@@ -84,7 +87,7 @@ function ContractsPageInner() {
   const [records, setRecords]         = useState<RedlineRecord[]>([]);
   const [activeId, setActiveId]       = useState<string | null>(null);
   const [loading, setLoading]           = useState(true);
-  const [showReview, setShowReview]     = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewDocId, setReviewDocId]   = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAgent, setFilterAgent]   = useState("");
@@ -101,24 +104,8 @@ function ContractsPageInner() {
 
   useEffect(() => {
     const documentId = searchParams.get("document");
-    if (documentId) {
-      setReviewDocId(documentId);
-      setShowReview(true);
-    }
+    if (documentId) setReviewDocId(documentId);
   }, [searchParams]);
-
-  const openReview = (documentId?: string | null) => {
-    setReviewDocId(documentId ?? null);
-    setShowReview(true);
-  };
-
-  const closeReview = () => {
-    setShowReview(false);
-    setReviewDocId(null);
-    if (searchParams.get("document")) {
-      router.replace("/contracts");
-    }
-  };
 
   const handleDone = () => {
     void load().then(() => {
@@ -129,6 +116,10 @@ function ContractsPageInner() {
         })
         .catch(() => {});
     });
+    if (searchParams.get("document")) {
+      router.replace("/contracts");
+      setReviewDocId(null);
+    }
   };
 
   const filtered = records.filter(r =>
@@ -137,21 +128,60 @@ function ContractsPageInner() {
   );
 
   const activeRecord = records.find(r => r.id === activeId);
-  const hasHistory = records.length > 0;
-  const showSplit = hasHistory || !!activeRecord;
+  const isHome = !loading && records.length === 0 && !activeRecord;
+  const showSplit = !isHome;
   const showList = !isMobileView || !activeId;
   const showDetail = !isMobileView || !!activeId;
 
   return (
     <AppShell>
-      <main className="main-area contracts-page">
-        {showSplit ? (
+      <div className="main-area contracts-page">
+        {loading && (
+          <div className="home-body">
+            <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
+              <span className="loading-dot" />
+              <span className="loading-dot" />
+              <span className="loading-dot" />
+            </div>
+          </div>
+        )}
+
+        {isHome && (
+          <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
+            <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
+              {isMobileView ? (
+                <>
+                  <Logo size={44} animated />
+                  <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">Review an agreement?</h1>
+                </>
+              ) : (
+                <div className="home-hero-row home-hero-enter">
+                  <Logo variant="hero" className="home-hero-logo" size={52} animated />
+                  <div className="home-hero-heading-wrap">
+                    <h1 className="home-hero-serif home-hero-serif--enter">Review an agreement?</h1>
+                    <InfoTip text="Pull a contract from Documents, upload a file, or paste text. Nora and Cassius will redline it against Norvar's regulatory corpus." />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24, width: "100%", maxWidth: 580 }}>
+              <ContractReviewForm
+                variant="home"
+                initialDocumentId={reviewDocId}
+                onDone={handleDone}
+              />
+            </div>
+          </div>
+        )}
+
+        {showSplit && (
           <div className="contracts-split">
             {showList && (
               <aside className="contracts-history-panel">
                 <div className="contracts-panel-head">
                   <span>Reviews</span>
-                  <button type="button" className="contracts-new-btn" onClick={() => openReview()}>
+                  <button type="button" className="contracts-new-btn" onClick={() => setShowReviewModal(true)}>
                     <Plus size={11} /> New
                   </button>
                 </div>
@@ -183,13 +213,10 @@ function ContractsPageInner() {
                 </div>
 
                 <div className="contracts-history-scroll">
-                  {loading && <div className="contracts-empty-inline">Loading...</div>}
                   {!loading && filtered.length === 0 && (
-                    <div className="contracts-empty-inline">
-                      {records.length === 0 ? "No reviews yet" : "No matches"}
-                    </div>
+                    <div className="contracts-empty-inline">No matches</div>
                   )}
-                  {!loading && filtered.map(record => (
+                  {filtered.map(record => (
                     <HistoryRow
                       key={record.id}
                       record={record}
@@ -244,24 +271,13 @@ function ContractsPageInner() {
               </div>
             )}
           </div>
-        ) : (
-          <div className="contracts-empty-state">
-            <div className="contracts-empty-icon">
-              <FilePenLine size={28} color="var(--fg4)" />
-            </div>
-            <h1>Contract reviews</h1>
-            <p>Redline agreements against Norvar&apos;s regulatory corpus. Pull a contract from Documents, upload a file, or paste text.</p>
-            <button type="button" className="contracts-empty-cta" onClick={() => openReview()}>
-              <Plus size={14} /> Start a review
-            </button>
-          </div>
         )}
-      </main>
+      </div>
 
-      {showReview && (
+      {showReviewModal && (
         <ContractReviewModal
-          initialDocumentId={reviewDocId}
-          onClose={closeReview}
+          initialDocumentId={null}
+          onClose={() => setShowReviewModal(false)}
           onDone={handleDone}
         />
       )}
