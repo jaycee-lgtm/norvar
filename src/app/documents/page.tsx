@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   Upload, Archive, Trash2, FolderOpen,
   Download, Search, ChevronDown, X, MoreHorizontal, SlidersHorizontal, FilePenLine,
 } from "lucide-react";
-import RedlineModal from "@/components/RedlineModal";
-
 interface Document {
   id:          string;
   name:        string;
@@ -201,12 +199,12 @@ function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
   );
 }
 
-function DocRow({ doc, folders, onAction, onAssignProject, onRedline }: {
+function DocRow({ doc, folders, onAction, onAssignProject, onReview }: {
   doc:      Document;
   folders:  Folder[];
   onAction: (id: string, action: "archive" | "delete" | "restore") => void;
   onAssignProject: (id: string, folderId: string | null) => void;
-  onRedline: (doc: Document) => void;
+  onReview: (doc: Document) => void;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -293,7 +291,7 @@ function DocRow({ doc, folders, onAction, onAssignProject, onRedline }: {
             {[
               { label: "Download", icon: <Download size={12} />, action: () => {} },
               ...(doc.status === "active"
-                ? [{ label: "Redline", icon: <FilePenLine size={12} />, action: () => { onRedline(doc); setOpen(false); } }]
+                ? [{ label: "Review contract", icon: <FilePenLine size={12} />, action: () => { onReview(doc); setOpen(false); } }]
                 : []),
               doc.status === "active"
                 ? { label: "Archive", icon: <Archive size={12} />, action: () => { onAction(doc.id, "archive"); setOpen(false); } }
@@ -324,6 +322,7 @@ export default function DocumentsPage() {
 
 function DocumentsPageInner() {
   const isMobileView = useIsMobile();
+  const router       = useRouter();
   const searchParams = useSearchParams();
   const [docs, setDocs]                 = useState<Document[]>([]);
   const [folders, setFolders]           = useState<Folder[]>([]);
@@ -333,7 +332,6 @@ function DocumentsPageInner() {
   const [filterStatus, setFilterStatus] = useState<"active" | "archived">("active");
   const [filterFolder, setFilterFolder] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [redlineDoc, setRedlineDoc]               = useState<Document | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -574,7 +572,7 @@ function DocumentsPageInner() {
               folders={folders}
               onAction={handleAction}
               onAssignProject={handleAssignProject}
-              onRedline={setRedlineDoc}
+              onReview={doc => router.push(`/contracts?document=${doc.id}`)}
             />
           ))}
           </div>
@@ -590,13 +588,6 @@ function DocumentsPageInner() {
         />
       )}
 
-      {redlineDoc && (
-        <RedlineModal
-          documentId={redlineDoc.id}
-          documentName={redlineDoc.name}
-          onClose={() => setRedlineDoc(null)}
-        />
-      )}
     </AppShell>
   );
 }
