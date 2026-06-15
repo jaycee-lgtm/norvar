@@ -574,7 +574,7 @@ input, textarea, select, button {
    INPUT BAR
 ══════════════════════════════════════════════════════════════════ */
 
-.input-wrap { width: 100%; max-width: 580px; margin: 0 auto; }
+.input-wrap { width: 100%; max-width: 720px; margin: 0 auto; }
 
 .input-bar {
   display: flex;
@@ -654,6 +654,67 @@ input, textarea, select, button {
   max-height: 160px;
 }
 .input-textarea::placeholder { color: var(--fg4); }
+
+/* Home agent composers — larger Claude-style prompt area */
+.home-body .input-wrap,
+.home-composer-block {
+  max-width: 720px;
+}
+
+.home-body .input-bar,
+.home-composer-block .input-bar {
+  border-radius: 22px;
+  padding: 22px 22px 12px;
+  min-height: 132px;
+}
+
+.home-body .input-bar .input-textarea,
+.home-composer-block .input-textarea {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1.45;
+  min-height: 58px;
+  padding: 2px 4px 14px;
+}
+
+.home-body .input-textarea::placeholder,
+.home-composer-block .input-textarea::placeholder {
+  font-size: 18px;
+  color: var(--fg3);
+}
+
+.home-body .contracts-selected-bar,
+.home-composer-block .contracts-selected-bar {
+  min-height: 58px;
+  align-items: flex-start;
+  padding: 2px 4px 14px;
+}
+
+.home-body .contracts-selected-bar--empty .contracts-selected-label,
+.home-composer-block .contracts-selected-bar--empty .contracts-selected-label {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1.45;
+  color: var(--fg3);
+  white-space: normal;
+}
+
+.home-body .mobile-composer-prompt-label,
+.home-composer-block .mobile-composer-prompt-label {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1.45;
+  color: var(--fg3);
+  white-space: normal;
+  width: 100%;
+  padding: 0 2px 14px;
+}
+
+.home-body .mobile-composer-input-row,
+.home-composer-block .mobile-composer-input-row {
+  flex-direction: column;
+  align-items: stretch;
+}
 
 .send-btn {
   width: 34px; height: 34px;
@@ -5138,7 +5199,7 @@ input, textarea, select, button {
   }
 
   .home-hero-block { flex: 0 0 auto; }
-  .home-composer-block { width: 100%; max-width: 580px; }
+  .home-composer-block { width: 100%; max-width: 720px; }
 
   .mobile-home-layout .mobile-composer {
     border-radius: 14px;
@@ -5521,8 +5582,30 @@ input, textarea, select, button {
   .home-composer-block {
     flex-shrink: 0;
     width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
     padding: 0 16px max(20px, env(safe-area-inset-bottom, 20px));
     overflow: visible;
+  }
+
+  .home-composer-block .mobile-composer,
+  .home-body .mobile-composer {
+    border-radius: 22px;
+    padding: 20px 18px 12px;
+    min-height: 132px;
+  }
+
+  .home-composer-block .mobile-composer-field,
+  .home-body .mobile-composer-field {
+    font-size: 18px !important;
+    min-height: 58px;
+    padding: 0 2px 14px;
+  }
+
+  .home-composer-block .mobile-composer-field::placeholder,
+  .home-body .mobile-composer-field::placeholder {
+    font-size: 18px;
+    color: var(--fg3);
   }
 
   .mobile-home-error {

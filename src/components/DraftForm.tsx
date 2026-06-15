@@ -448,7 +448,7 @@ export default function DraftForm({
           <div className="mobile-composer-input-row">
             {!input.trim() && (
               <span className="mobile-composer-prompt-label">
-                Draft with {PERTA_AGENT.name}
+                What can I help draft?
               </span>
             )}
             <textarea
@@ -470,11 +470,11 @@ export default function DraftForm({
         <div className="input-bar">
           <textarea
             className="input-textarea"
-            placeholder="Describe the agreement you need..."
+            placeholder="What can I help draft?"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            rows={1}
+            rows={3}
           />
           <div className="composer-toolbar">
             <div className="composer-toolbar-start" />

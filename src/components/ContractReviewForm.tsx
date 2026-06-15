@@ -333,7 +333,7 @@ export default function ContractReviewForm({
           <>
             {!sourceLabel && (
               <span className="mobile-composer-prompt-label">
-                Choose a contract to review
+                What can I help review?
               </span>
             )}
             {sourceLabel && (
@@ -372,7 +372,7 @@ export default function ContractReviewForm({
         </div>
       ) : (
         <div className="contracts-selected-bar contracts-selected-bar--empty">
-          <span className="contracts-selected-label">Choose a contract from Documents or upload a file</span>
+          <span className="contracts-selected-label">What can I help review?</span>
         </div>
       )}
       <div className="composer-toolbar">

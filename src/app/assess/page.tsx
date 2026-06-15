@@ -1648,7 +1648,7 @@ function Home() {
           <div className="mobile-composer-input-row">
             {!input.trim() && (
               <span className="mobile-composer-prompt-label">
-                Assess with {ASSESS_AGENT.name}
+                What are you building?
               </span>
             )}
             <textarea
@@ -1687,15 +1687,15 @@ function Home() {
         </div>
       ) : (
         <div className="input-bar">
-          <textarea
-            ref={textareaRef}
-            className="input-textarea"
-              placeholder="Describe what you're building in a sentence..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            rows={1}
-          />
+            <textarea
+              ref={textareaRef}
+              className="input-textarea"
+              placeholder="What are you building?"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              rows={3}
+            />
           <div className="composer-toolbar">
             <div className="composer-toolbar-start">
               {attachControl}

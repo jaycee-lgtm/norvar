@@ -560,7 +560,7 @@ function Chat() {
                     <div className="mobile-composer-input-row">
                       {!input.trim() && (
                         <span className="mobile-composer-prompt-label">
-                          Chat with {CHAT_AGENT.name}
+                          How can I help you today?
                         </span>
                       )}
                       <textarea
@@ -594,11 +594,11 @@ function Chat() {
                       <textarea
                         ref={inputRef}
                         className="input-textarea"
-                        placeholder="Ask a GRC question..."
+                        placeholder="How can I help you today?"
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
-                        rows={1}
+                        rows={3}
                       />
                       <div className="composer-toolbar">
                         <div className="composer-toolbar-start">
