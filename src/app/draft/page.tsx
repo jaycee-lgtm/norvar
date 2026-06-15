@@ -4,8 +4,6 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, FileText } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import Logo from "@/components/Logo";
-import InfoTip from "@/components/InfoTip";
 import DraftCard from "@/components/DraftCard";
 import DraftForm from "@/components/DraftForm";
 import AiDisclaimer from "@/components/AiDisclaimer";
@@ -114,7 +112,7 @@ function DraftPageInner() {
 
   return (
     <AppShell>
-      <div className="main-area contracts-page draft-page">
+      <div className={`main-area contracts-page draft-page${isHome && !loading ? " draft-page--scoping" : ""}${isHome && !loading && isMobileView ? " mobile-thread-layout" : ""}`}>
         {loading && (
           <div className="home-body">
             <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
@@ -126,49 +124,13 @@ function DraftPageInner() {
         )}
 
         {isHome && (
-          <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
-            <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
-              {isMobileView ? (
-                <>
-                  <Logo size={44} animated />
-                  <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                    Draft with {PERTA_AGENT.name}.
-                  </h1>
-                </>
-              ) : (
-                <div className="home-hero-row home-hero-enter">
-                  <Logo variant="hero" className="home-hero-logo" size={52} animated />
-                  <div className="home-hero-heading-wrap">
-                    <h1 className="home-hero-serif home-hero-serif--enter">
-                      Draft with {PERTA_AGENT.name}.
-                    </h1>
-                    <InfoTip
-                      text={`Answer a few questions about the agreement you need. ${PERTA_AGENT.name} will draft a complete first version aligned to Norvar's regulatory corpus.`}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div
-              className={isMobileView ? "home-composer-block" : "input-wrap"}
-              style={isMobileView ? undefined : { marginBottom: 24, width: "100%", maxWidth: 580 }}
-            >
-              <DraftForm variant="home" isMobileView={isMobileView} onDone={handleDraftDone} />
-            </div>
-
-            {drafts.length > 0 && (
-              <div className="contracts-past-links">
-                <button
-                  type="button"
-                  className="contracts-past-reviews-link"
-                  onClick={() => router.push("/draft?drafts=1")}
-                >
-                  Past drafts ({drafts.length})
-                </button>
-              </div>
-            )}
-          </div>
+          <DraftForm
+            variant="home"
+            isMobileView={isMobileView}
+            onDone={handleDraftDone}
+            pastDraftsCount={drafts.length}
+            onPastDrafts={() => router.push("/draft?drafts=1")}
+          />
         )}
 
         {showSplit && (

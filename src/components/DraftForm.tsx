@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, FileText, Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
+import InfoTip from "@/components/InfoTip";
 import ModeSelector from "@/components/ModeSelector";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import DraftProgress, {
@@ -11,6 +13,7 @@ import DraftProgress, {
 } from "@/components/DraftProgress";
 import { friendlyReviewError } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
+import { createTypewriterDrain } from "@/lib/typewriter-drain";
 import { PERTA_AGENT } from "@/lib/agents";
 import {
   DRAFT_QUESTIONS,
@@ -28,33 +31,55 @@ import {
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
 
-type ThreadItem =
-  | { id: string; role: "user"; text: string }
-  | { id: string; role: "scribe"; questionId: string };
-
-const QUESTION_BY_ID = Object.fromEntries(DRAFT_QUESTIONS.map(q => [q.id, q]));
+type DraftMessage =
+  | { id: string; role: "user"; content: string }
+  | { id: string; role: "perta"; text: string; questionId: string }
+  | {
+      id:            string;
+      role:          "thinking";
+      text:          string;
+      questionId:    string;
+      isFollowUp?:   boolean;
+      followUpOptions?: string[];
+      guidedMulti?:  boolean;
+      guidedText?:   boolean;
+    };
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+const streamCursor = (
+  <span style={{
+    display: "inline-block", width: 2, height: "1em", background: "var(--fg3)",
+    marginLeft: 2, animation: "pulse-dot 1s ease infinite", verticalAlign: "text-bottom",
+  }} />
+);
 
 export default function DraftForm({
   onDone,
   onCancel,
   variant = "home",
   isMobileView = false,
+  pastDraftsCount = 0,
+  onPastDrafts,
 }: {
-  onDone:         () => void;
-  onCancel?:      () => void;
-  variant?:       "home" | "modal";
-  isMobileView?:  boolean;
+  onDone:            () => void;
+  onCancel?:         () => void;
+  variant?:          "home" | "modal";
+  isMobileView?:     boolean;
+  pastDraftsCount?:  number;
+  onPastDrafts?:     () => void;
 }) {
-  const threadRef = useRef<HTMLDivElement>(null);
-  const [thread, setThread] = useState<ThreadItem[]>([
-    { id: newId(), role: "scribe", questionId: DRAFT_QUESTIONS[0].id },
-  ]);
+  const scrollRef      = useRef<HTMLDivElement>(null);
+  const typewriterRef  = useRef<ReturnType<typeof createTypewriterDrain> | null>(null);
+  const startedRef     = useRef(false);
+
+  const [messages, setMessages]             = useState<DraftMessage[]>([]);
   const [answers, setAnswers]               = useState<DraftAnswers>({});
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [multiSelections, setMultiSelections] = useState<string[]>([]);
+  const [guidedTyping, setGuidedTyping]     = useState(false);
   const [input, setInput]                   = useState("");
   const [reviewModel, setReviewModel]       = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
   const [activitySteps, setActivitySteps]   = useState<DraftActivityStep[]>([]);
@@ -64,20 +89,65 @@ export default function DraftForm({
 
   const isHome         = variant === "home";
   const modelLabel     = redlineModelLabel(reviewModel);
-  const activeQuestion = nextDraftQuestion(answers);
+  const activeQuestion = activeQuestionId
+    ? DRAFT_QUESTIONS.find(q => q.id === activeQuestionId) ?? nextDraftQuestion(answers)
+    : nextDraftQuestion(answers);
   const showActivity   = activitySteps.length > 0 || !!draftPlan;
-  const lastThreadItem = thread[thread.length - 1];
-  const activeScribeId = lastThreadItem?.role === "scribe" ? lastThreadItem.id : null;
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    presentDraftQuestion(DRAFT_QUESTIONS[0]);
+  }, []);
 
   useEffect(() => {
     if (activeQuestion?.type === "multi") setMultiSelections([]);
   }, [activeQuestion?.id]);
 
   useEffect(() => {
-    const el = threadRef.current;
+    const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [thread, activeQuestion?.id]);
+  }, [messages, guidedTyping, showActivity]);
+
+  const presentDraftQuestion = (question: DraftQuestion) => {
+    setActiveQuestionId(question.id);
+    if (question.type === "multi") setMultiSelections([]);
+
+    const fullText = formatDraftQuestionText(question);
+    typewriterRef.current?.reset();
+    setGuidedTyping(true);
+
+    setMessages(prev => {
+      const filtered = prev.filter(m => m.role !== "thinking");
+      return [...filtered, {
+        id:              newId(),
+        role:            "thinking",
+        text:            "",
+        questionId:      question.id,
+        isFollowUp:      question.type !== "text",
+        followUpOptions: draftQuestionOptions(question),
+        guidedMulti:     question.type === "multi",
+        guidedText:      question.type === "text",
+      }];
+    });
+
+    typewriterRef.current = createTypewriterDrain(ch => {
+      setMessages(prev => {
+        const next = [...prev];
+        const idx  = next.findLastIndex(m =>
+          m.role === "thinking" && m.questionId === question.id,
+        );
+        if (idx >= 0) {
+          const msg = next[idx] as Extract<DraftMessage, { role: "thinking" }>;
+          next[idx] = { ...msg, text: msg.text + ch };
+        }
+        return next;
+      });
+    }, () => setGuidedTyping(false));
+
+    typewriterRef.current.enqueue(fullText);
+  };
 
   const pushStatus = (text: string) => {
     setActivitySteps(prev => {
@@ -96,20 +166,27 @@ export default function DraftForm({
     const nextAnswers = { ...answers, [question.id]: value };
     setAnswers(nextAnswers);
 
-    const nextQ = nextDraftQuestion(nextAnswers);
-    setThread(prev => {
-      const updated: ThreadItem[] = [...prev, { id: newId(), role: "user", text: displayLabel }];
-      if (nextQ) updated.push({ id: newId(), role: "scribe", questionId: nextQ.id });
-      return updated;
+    setMessages(prev => {
+      const frozen = prev.map(m => {
+        if (m.role === "thinking" && m.questionId === question.id) {
+          return { id: m.id, role: "perta" as const, text: m.text, questionId: m.questionId };
+        }
+        return m;
+      }).filter(m => m.role !== "thinking");
+      return [...frozen, { id: newId(), role: "user" as const, content: displayLabel }];
     });
 
+    const nextQ = nextDraftQuestion(nextAnswers);
     if (!nextQ) {
+      setActiveQuestionId(null);
       void submitDraft(nextAnswers);
+    } else {
+      presentDraftQuestion(nextQ);
     }
   };
 
   const handleOption = (optionLabel: string) => {
-    if (!activeQuestion || working) return;
+    if (!activeQuestion || working || guidedTyping) return;
 
     if (activeQuestion.type === "multi") {
       if (optionLabel === "Continue") {
@@ -130,7 +207,7 @@ export default function DraftForm({
   };
 
   const handleSend = () => {
-    if (!activeQuestion || working) return;
+    if (!activeQuestion || working || guidedTyping) return;
 
     if (activeQuestion.type === "text") {
       const text = input.trim();
@@ -204,21 +281,21 @@ export default function DraftForm({
     }
   };
 
-  const canSend = !working && !!activeQuestion && (
+  const canSend = !working && !guidedTyping && !!activeQuestion && (
     activeQuestion.type === "text"
       ? activeQuestion.optional || input.trim().length > 0
       : false
   );
 
   const composerPlaceholder = !activeQuestion
-    ? "Draft complete"
+    ? working ? "Drafting your agreement..." : "Draft complete"
     : activeQuestion.type === "text"
     ? activeQuestion.optional
       ? "Add context or press send to skip"
       : activeQuestion.sub ?? "Type your answer..."
     : activeQuestion.type === "multi"
-    ? "Select jurisdictions in the thread, then Continue"
-    : "Choose an agreement type in the thread";
+    ? "Select jurisdictions above, then Continue"
+    : "Select an option above...";
 
   const modelSelector = (
     <RedlineModelSelector
@@ -241,55 +318,86 @@ export default function DraftForm({
     </button>
   );
 
-  const renderOptionChips = (question: DraftQuestion, isActive: boolean) => {
-    const options = draftQuestionOptions(question);
-    if (!options || !isActive) return null;
-
-    return (
-      <div className="scribe-option-chips">
-        {options.map(opt => {
-          const optValue = question.options?.find(o => o.label === opt)?.value;
-          const selected = !!(question.type === "multi" && optValue && multiSelections.includes(optValue));
-          const isContinue = opt === "Continue";
+  const messageThread = (
+    <div className="chat-scroll">
+      {messages.map((msg, i) => {
+        if (msg.role === "user") {
           return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => handleOption(opt)}
-              disabled={working}
-              className={`scribe-option-chip${selected ? " active" : ""}${isContinue ? " continue" : ""}`}
-            >
-              {opt}
-            </button>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const threadPanel = (
-    <div ref={threadRef} className="scribe-thread">
-      {thread.map(item => {
-        if (item.role === "user") {
-          return (
-            <div key={item.id} className="scribe-thread-user">
-              {item.text}
+            <div key={msg.id} className="msg-user fade-up">
+              <div>{msg.content}</div>
             </div>
           );
         }
 
-        const question = QUESTION_BY_ID[item.questionId];
-        if (!question) return null;
-        const isActive = item.id === activeScribeId;
+        if (msg.role === "perta") {
+          return (
+            <div key={msg.id} className="msg-ai fade-up">
+              <div className="msg-ai-card">
+                <div className="msg-ai-label">
+                  <FileText size={11} color="var(--fg3)" />
+                  {PERTA_AGENT.name}
+                </div>
+                <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap", margin: 0 }}>
+                  {msg.text}
+                </p>
+              </div>
+            </div>
+          );
+        }
+
+        const isFollowUp = msg.isFollowUp && msg.followUpOptions;
+        const isTypingGuided = guidedTyping && i === messages.length - 1;
+        const showFollowUpOptions = isFollowUp && msg.followUpOptions && !isTypingGuided;
+        const question = DRAFT_QUESTIONS.find(q => q.id === msg.questionId);
 
         return (
-          <div key={item.id} className="scribe-thread-scribe">
-            <div className="scribe-thread-scribe-label">
-              <FileText size={11} color="var(--fg3)" />
-              {PERTA_AGENT.name}
+          <div key={msg.id} className="msg-ai fade-up">
+            <div className="msg-ai-card">
+              <div className="msg-ai-label">
+                <FileText size={11} color="var(--fg3)" />
+                {PERTA_AGENT.name}
+              </div>
+              {msg.text ? (
+                <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap", margin: 0 }}>
+                  {msg.text}
+                  {isTypingGuided && streamCursor}
+                </p>
+              ) : (
+                <div style={{ display: "flex", gap: 5, padding: "8px 0" }}>
+                  <span className="loading-dot" />
+                  <span className="loading-dot" />
+                  <span className="loading-dot" />
+                </div>
+              )}
+              {showFollowUpOptions && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                  {(msg.followUpOptions ?? []).map(opt => {
+                    const optValue = question?.options?.find(o => o.label === opt)?.value;
+                    const selected = !!(msg.guidedMulti && optValue && multiSelections.includes(optValue));
+                    const isContinue = opt === "Continue";
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => handleOption(opt)}
+                        disabled={working}
+                        style={{
+                          fontSize: 11, padding: "5px 12px", borderRadius: 16,
+                          border: selected || isContinue ? "0.5px solid var(--red)" : "0.5px solid var(--bdr2)",
+                          background: selected ? "rgba(139,26,26,0.09)" : isContinue ? "var(--lift)" : "var(--card2)",
+                          color: selected || isContinue ? "var(--fg)" : "var(--fg2)",
+                          cursor: "pointer",
+                          fontFamily: "'Sora', sans-serif",
+                          fontWeight: isContinue ? 500 : 400,
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <p className="scribe-thread-scribe-text">{formatDraftQuestionText(question)}</p>
-            {renderOptionChips(question, isActive)}
           </div>
         );
       })}
@@ -305,33 +413,8 @@ export default function DraftForm({
     />
   );
 
-  const homeComposer = isMobileView ? (
-    <div className="mobile-composer scribe-input-bar">
-      {threadPanel}
-      <div className="mobile-composer-input-row">
-        <input
-          className="chat-input-field mobile-composer-field"
-          placeholder={composerPlaceholder}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          disabled={working || activeQuestion?.type !== "text"}
-        />
-      </div>
-      <div className="mobile-composer-tools mobile-composer-tools--minimal">
-        <ModeSelector current="draft" embedded menuPlacement="top" />
-        {modelSelector}
-        <div className="mobile-composer-actions">{sendButton}</div>
-      </div>
-    </div>
-  ) : (
-    <div className="input-bar scribe-input-bar">
-      {threadPanel}
+  const desktopComposer = (
+    <div className="input-bar">
       <input
         className="chat-input-field"
         placeholder={composerPlaceholder}
@@ -343,7 +426,7 @@ export default function DraftForm({
             handleSend();
           }
         }}
-        disabled={working || activeQuestion?.type !== "text"}
+        disabled={working || guidedTyping || activeQuestion?.type !== "text"}
       />
       <div className="composer-toolbar">
         <div className="composer-toolbar-start" />
@@ -356,20 +439,97 @@ export default function DraftForm({
     </div>
   );
 
+  const mobileComposer = (
+    <div className="mobile-composer thread-composer">
+      <div className="mobile-composer-input-row">
+        {!input.trim() && activeQuestion?.type === "text" && (
+          <span className="mobile-composer-prompt-label">{composerPlaceholder}</span>
+        )}
+        <input
+          className="chat-input-field mobile-composer-field"
+          placeholder=""
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          disabled={working || guidedTyping || activeQuestion?.type !== "text"}
+        />
+      </div>
+      <div className="mobile-composer-tools mobile-composer-tools--minimal">
+        <ModeSelector current="draft" embedded menuPlacement="top" />
+        {modelSelector}
+        <div className="mobile-composer-actions">{sendButton}</div>
+      </div>
+    </div>
+  );
+
   if (isHome) {
     return (
-      <div className="contracts-review-home draft-review-home">
-        {homeComposer}
-        {activityPanel}
-        {error && <p className="contract-review-error contracts-home-error">{error}</p>}
+      <div className={`draft-form-scoping${isMobileView ? " draft-form-scoping--mobile" : ""}`}>
+        <div className="draft-form-scoping-hero">
+          {isMobileView ? (
+            <>
+              <Logo size={44} animated />
+              <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
+                Draft with {PERTA_AGENT.name}.
+              </h1>
+            </>
+          ) : (
+            <div className="home-hero-row home-hero-enter">
+              <Logo variant="hero" className="home-hero-logo" size={52} animated />
+              <div className="home-hero-heading-wrap">
+                <h1 className="home-hero-serif home-hero-serif--enter">
+                  Draft with {PERTA_AGENT.name}.
+                </h1>
+                <InfoTip
+                  text={`Answer a few questions about the agreement you need. ${PERTA_AGENT.name} will draft a complete first version aligned to Norvar's regulatory corpus.`}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div ref={scrollRef} className="main-scroll draft-form-scoping-scroll">
+          {messageThread}
+          {activityPanel && (
+            <div className="draft-form-activity-wrap">
+              {activityPanel}
+            </div>
+          )}
+        </div>
+
+        <div className="chat-input-row">
+          <div className="chat-input-inner">
+            {isMobileView ? mobileComposer : desktopComposer}
+          </div>
+          {error && (
+            <p className="contract-review-error" style={{ marginTop: 10, textAlign: isMobileView ? "center" : undefined }}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        {pastDraftsCount > 0 && onPastDrafts && (
+          <div className="contracts-past-links draft-form-past-links">
+            <button type="button" className="contracts-past-reviews-link" onClick={onPastDrafts}>
+              Past drafts ({pastDraftsCount})
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <>
-      <div className="input-bar scribe-input-bar scribe-input-bar--modal">
-        {threadPanel}
+      <div ref={scrollRef} className="scribe-thread" style={{ maxHeight: "none", marginBottom: 12 }}>
+        {messageThread}
+      </div>
+      <div className="input-bar">
         <input
           className="contract-review-input"
           placeholder={composerPlaceholder}
@@ -381,7 +541,7 @@ export default function DraftForm({
               handleSend();
             }
           }}
-          disabled={working || activeQuestion?.type !== "text"}
+          disabled={working || guidedTyping || activeQuestion?.type !== "text"}
         />
         <div className="composer-toolbar">
           <div className="composer-toolbar-start">
