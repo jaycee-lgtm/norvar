@@ -3883,26 +3883,33 @@ input, textarea, select, button {
   background: var(--lift);
 }
 
-.redline-positive-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.redline-positive-card {
-  border: 0.5px solid var(--rl-bdr);
-  border-left: 3px solid var(--rl);
-  border-radius: 8px;
+.redline-supplement {
+  margin: 24px 0 20px;
+  border: 0.5px solid var(--bdr2);
+  border-radius: 10px;
   background: var(--card);
   overflow: hidden;
 }
 
-.redline-positive-card-head {
-  width: 100%;
+.redline-supplement-block {
+  padding: 16px 18px;
+}
+
+.redline-supplement-block--divider {
+  border-top: 0.5px solid var(--bdr2);
+}
+
+.redline-supplement-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.redline-supplement-head--toggle {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 8px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -3910,48 +3917,128 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
 }
 
-.redline-positive-card-head:hover {
-  background: var(--card2);
-}
-
-.redline-positive-check {
-  color: var(--rl);
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.redline-positive-title {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 500;
+.redline-supplement-head--toggle:hover .redline-supplement-title {
   color: var(--fg);
-  line-height: 1.45;
 }
 
-.redline-positive-chevron {
+.redline-supplement-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg2);
+  letter-spacing: -0.01em;
+}
+
+.redline-supplement-count {
+  font-size: 11px;
+  color: var(--fg3);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--card2);
+  border: 0.5px solid var(--bdr2);
+}
+
+.redline-supplement-chevron {
+  margin-left: auto;
   color: var(--fg3);
   font-size: 13px;
-  flex-shrink: 0;
   transition: transform 0.15s;
 }
 
-.redline-positive-chevron.open {
+.redline-supplement-chevron.open {
   transform: rotate(180deg);
 }
 
-.redline-positive-card-body {
-  border-top: 0.5px solid var(--bdr);
-  padding: 12px 14px 14px;
+.redline-supplement-lead {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg3);
 }
 
-.redline-positive-detail {
-  margin: 0 0 10px;
+.redline-supplement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.redline-supplement-item {
+  padding: 10px 0;
+  border-top: 0.5px solid var(--bdr2);
   font-size: 12px;
+  line-height: 1.55;
   color: var(--fg2);
-  line-height: 1.6;
+}
+
+.redline-supplement-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.redline-supplement-item--missing {
+  padding-left: 14px;
+  position: relative;
+}
+
+.redline-supplement-item--missing::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rm);
+}
+
+.redline-supplement-item-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.redline-supplement-item-title {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.redline-supplement-item-detail {
+  color: var(--fg3);
+}
+
+.redline-supplement-item-actions {
+  margin-top: 8px;
+}
+
+.redline-supplement-item-link {
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  color: var(--fg3);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.redline-supplement-item-link:hover {
+  color: var(--fg2);
+}
+
+.redline-supplement-item-chat {
+  margin-top: 10px;
+}
+
+.redline-supplement-frameworks {
+  margin-bottom: 16px;
+  padding-top: 4px;
+}
+
+.redline-supplement-framework-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .redline-apply-bar {

@@ -237,7 +237,7 @@ function ClauseCard({
   );
 }
 
-function PositiveClauseCard({
+function RedlinePositiveRow({
   text,
   index,
   redlineId,
@@ -254,44 +254,125 @@ function PositiveClauseCard({
 }) {
   const [open, setOpen] = useState(false);
   const { title, detail } = parsePositiveClause(text);
+  const body = detail || (title !== text ? null : text);
 
   return (
-    <div className="redline-positive-card">
-      <button
-        type="button"
-        className="redline-positive-card-head"
-        onClick={() => setOpen(v => !v)}
-      >
-        <span className="redline-positive-check">✓</span>
-        <span className="redline-positive-title">{title}</span>
-        <span className={`redline-positive-chevron${open ? " open" : ""}`}>▾</span>
-      </button>
-
-      {open && (
-        <div className="redline-positive-card-body">
-          {detail && (
-            <p className="redline-positive-detail">{detail}</p>
-          )}
-          {!detail && (
-            <p className="redline-positive-detail">{text}</p>
-          )}
-          {redlineId && (
-            <RedlineFollowUp
-              key={`${redlineId}-${redlinePositiveThreadKey(index)}`}
-              redlineId={redlineId}
-              thread={redlinePositiveThreadKey(index)}
-              positiveIndex={index}
-              agent={agent}
-              initialMessages={getThreadMessages(followups, redlinePositiveThreadKey(index))}
-              onMessagesChange={msgs => onPositiveFollowUpChange?.(index, msgs)}
-              toggleLabel="Ask about this clause"
-              hint="Ask why this clause is solid, how to preserve it in negotiation, or what to watch for."
-              placeholder="Ask about this clause..."
-            />
+    <li className="redline-supplement-item">
+      <div className="redline-supplement-item-copy">
+        <span className="redline-supplement-item-title">{title}</span>
+        {body && <span className="redline-supplement-item-detail">{body}</span>}
+      </div>
+      {redlineId && (
+        <div className="redline-supplement-item-actions">
+          <button
+            type="button"
+            className="redline-supplement-item-link"
+            onClick={() => setOpen(v => !v)}
+          >
+            {open ? "Hide" : "Ask"}
+          </button>
+          {open && (
+            <div className="redline-supplement-item-chat">
+              <RedlineFollowUp
+                key={`${redlineId}-${redlinePositiveThreadKey(index)}`}
+                redlineId={redlineId}
+                thread={redlinePositiveThreadKey(index)}
+                positiveIndex={index}
+                agent={agent}
+                initialMessages={getThreadMessages(followups, redlinePositiveThreadKey(index))}
+                onMessagesChange={msgs => onPositiveFollowUpChange?.(index, msgs)}
+                toggleLabel="Ask about this clause"
+                hint="Ask why this clause is solid, how to preserve it in negotiation, or what to watch for."
+                placeholder="Ask about this clause..."
+              />
+            </div>
           )}
         </div>
       )}
-    </div>
+    </li>
+  );
+}
+
+function RedlineSupplement({
+  missingClauses,
+  positiveClauses,
+  redlineId,
+  agent,
+  followups,
+  onPositiveFollowUpChange,
+}: {
+  missingClauses:  string[];
+  positiveClauses: string[];
+  redlineId?:      string;
+  agent:           "nora" | "cassius";
+  followups?:      RedlineFollowUps;
+  onPositiveFollowUpChange?: (index: number, messages: RedlineFollowUpMessage[]) => void;
+}) {
+  const [positiveOpen, setPositiveOpen] = useState(positiveClauses.length <= 6);
+
+  if (!missingClauses.length && !positiveClauses.length) return null;
+
+  return (
+    <section className="redline-supplement">
+      {missingClauses.length > 0 && (
+        <div className="redline-supplement-block">
+          <div className="redline-supplement-head">
+            <h3 className="redline-supplement-title">Absent provisions</h3>
+            <span className="redline-supplement-count">{missingClauses.length}</span>
+          </div>
+          <p className="redline-supplement-lead">
+            These standard protections are not present in the agreement and should be addressed in negotiation.
+          </p>
+          <ul className="redline-supplement-list">
+            {missingClauses.map((item, i) => (
+              <li key={i} className="redline-supplement-item redline-supplement-item--missing">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {positiveClauses.length > 0 && (
+        <div className={`redline-supplement-block${missingClauses.length ? " redline-supplement-block--divider" : ""}`}>
+          <button
+            type="button"
+            className="redline-supplement-head redline-supplement-head--toggle"
+            onClick={() => setPositiveOpen(v => !v)}
+            aria-expanded={positiveOpen}
+          >
+            <h3 className="redline-supplement-title">Well drafted</h3>
+            <span className="redline-supplement-count">{positiveClauses.length}</span>
+            <span className={`redline-supplement-chevron${positiveOpen ? " open" : ""}`}>▾</span>
+          </button>
+          {!positiveOpen && (
+            <p className="redline-supplement-lead">
+              {positiveClauses.length} clause{positiveClauses.length === 1 ? "" : "s"} need no changes.
+            </p>
+          )}
+          {positiveOpen && (
+            <>
+              <p className="redline-supplement-lead">
+                Clauses that meet regulatory expectations and do not require redlines.
+              </p>
+              <ul className="redline-supplement-list">
+                {positiveClauses.map((text, i) => (
+                  <RedlinePositiveRow
+                    key={i}
+                    text={text}
+                    index={i}
+                    redlineId={redlineId}
+                    agent={agent}
+                    followups={followups}
+                    onPositiveFollowUpChange={onPositiveFollowUpChange}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -400,25 +481,27 @@ export default function RedlineCard({
         </p>
       )}
 
-      {redline.missing_clauses?.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
-            Missing clauses
+      <RedlineSupplement
+        missingClauses={redline.missing_clauses ?? []}
+        positiveClauses={redline.positive_clauses ?? []}
+        redlineId={redlineId}
+        agent={agent}
+        followups={followups}
+        onPositiveFollowUpChange={handlePositiveFollowUpChange}
+      />
+
+      {redline.frameworks?.length > 0 && (
+        <div className="redline-supplement-frameworks">
+          <div className="redline-supplement-head">
+            <h3 className="redline-supplement-title">Applicable frameworks</h3>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {redline.missing_clauses.map((m, i) => (
-              <span key={i} style={{
-                fontSize: 11, padding: "3px 10px", borderRadius: 4,
-                background: "var(--rh-bg)", color: "var(--rh)",
-                border: "0.5px solid var(--rh-bdr)", fontWeight: 500,
-              }}>
-                ✕ {m}
-              </span>
+          <div className="redline-supplement-framework-pills">
+            {redline.frameworks.map((fw, i) => (
+              <FrameworkRef key={i} label={fw} />
             ))}
           </div>
         </div>
       )}
-
       {!sourceText && redline.clauses?.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10 }}>
@@ -435,40 +518,6 @@ export default function RedlineCard({
               onClauseFollowUpChange={handleClauseFollowUpChange}
             />
           ))}
-        </div>
-      )}
-
-      {redline.positive_clauses?.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
-            Well drafted
-          </div>
-          <div className="redline-positive-list">
-            {redline.positive_clauses.map((p, i) => (
-              <PositiveClauseCard
-                key={i}
-                text={p}
-                index={i}
-                redlineId={redlineId}
-                agent={agent}
-                followups={followups}
-                onPositiveFollowUpChange={handlePositiveFollowUpChange}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {redline.frameworks?.length > 0 && (
-        <div style={{ paddingTop: 12, borderTop: "0.5px solid var(--bdr)", marginBottom: redlineId ? 16 : 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
-            Applicable frameworks
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-            {redline.frameworks.map((fw, i) => (
-              <FrameworkRef key={i} label={fw} />
-            ))}
-          </div>
         </div>
       )}
 
