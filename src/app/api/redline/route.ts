@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { isAuditRequest } from "@/lib/audit";
 import { fetchDocumentText } from "@/lib/documents";
+import { generateRedlineText } from "@/lib/redline-generate";
 import {
   CASSIUS_REDLINE_PROMPT,
   NORA_REDLINE_PROMPT,
@@ -13,8 +13,10 @@ import {
   stripDocumentBlock,
   type RedlineOutput,
 } from "@/lib/redline";
-
-const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import {
+  normalizeRedlineReviewModelChoice,
+  resolveRedlineReviewModel,
+} from "@/lib/redline-models";
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -51,12 +53,12 @@ export async function POST(req: NextRequest) {
         contract_text  = "",
         document_id    = "",
         agent          = "cassius" as "cassius" | "nora",
+        review_model   = undefined as unknown,
         jurisdictions  = [] as string[],
         agreement_type = "",
       } = body;
 
       let text = contract_text.trim();
-      const agentLabel = agent === "nora" ? "Nora" : "Cassius";
 
       if (!text && document_id) {
         await send({ type: "status", text: "Fetching your document from Documents..." });
@@ -73,6 +75,25 @@ export async function POST(req: NextRequest) {
         await writer.close();
         return;
       }
+
+      const modelChoice = review_model !== undefined
+        ? normalizeRedlineReviewModelChoice(review_model)
+        : agent === "nora"
+        ? "sonnet"
+        : agent === "cassius"
+        ? "opus"
+        : normalizeRedlineReviewModelChoice(undefined);
+      const resolved = resolveRedlineReviewModel(modelChoice, text.length);
+      const {
+        agent: resolvedAgent,
+        provider,
+        modelId,
+        repairProvider,
+        repairModelId,
+        maxTokens,
+        displayName,
+        statusLead,
+      } = resolved;
 
       const detectedType = agreement_type || detectAgreementType(text);
       await send({ type: "status", text: `Identified this as a ${detectedType}.` });
@@ -106,27 +127,28 @@ export async function POST(req: NextRequest) {
         text.length > 24000 ? "\n[Note: Agreement truncated at 24,000 characters. Review covers the text above.]" : "",
       ].join("\n");
 
-      const systemPrompt = agent === "nora" ? NORA_REDLINE_PROMPT : CASSIUS_REDLINE_PROMPT;
+      const systemPrompt = resolvedAgent === "nora" ? NORA_REDLINE_PROMPT : CASSIUS_REDLINE_PROMPT;
 
       await send({
         type: "status",
-        text: `${agentLabel} is reviewing clauses against Norvar's regulatory corpus...`,
+        text: `${statusLead}...`,
       });
 
       const pulse = setInterval(() => {
         void send({
           type: "pulse",
-          text: `${agentLabel} is still reviewing clauses — this can take a few minutes...`,
+          text: `${displayName} is still reviewing clauses — this can take a few minutes...`,
         });
       }, 20000);
 
       let response;
       try {
-        response = await claude.messages.create({
-          model:      "claude-opus-4-6",
-          max_tokens: 16000,
-          system:     systemPrompt,
-          messages:   [{ role: "user", content: userMsg }],
+        response = await generateRedlineText({
+          provider,
+          modelId,
+          systemPrompt,
+          userMsg,
+          maxTokens,
         });
       } finally {
         clearInterval(pulse);
@@ -134,28 +156,29 @@ export async function POST(req: NextRequest) {
 
       await send({ type: "status", text: "Parsing findings and suggested language..." });
 
-      let rawText = response.content[0]?.type === "text" ? response.content[0].text : "";
+      let rawText = response.text;
 
       let redline: RedlineOutput;
       try {
-        redline = normalizeRedlineOutput(parseRedlineJSON(rawText), agent, detectedType);
+        redline = normalizeRedlineOutput(parseRedlineJSON(rawText), resolvedAgent, detectedType);
       } catch (parseErr) {
         console.error("Redline parse failed:", parseErr, {
-          stop_reason: response.stop_reason,
+          truncated: response.truncated,
           length:      rawText.length,
         });
 
-        if (response.stop_reason === "max_tokens" || rawText.length > 0) {
+        if (response.truncated || rawText.length > 0) {
           await send({
             type: "status",
             text: "Response was incomplete — finishing the review...",
           });
 
           try {
-            const repair = await claude.messages.create({
-              model:      "claude-sonnet-4-6",
-              max_tokens: 12000,
-              system:     [
+            const repair = await generateRedlineText({
+              provider:     repairProvider,
+              modelId:      repairModelId,
+              maxTokens:    12_000,
+              systemPrompt: [
                 systemPrompt,
                 "",
                 "The previous response was truncated or invalid JSON.",
@@ -163,19 +186,15 @@ export async function POST(req: NextRequest) {
                 "Include at most 12 highest-severity clauses.",
                 "Keep original_text under 300 characters and suggested_text under 500 characters.",
               ].join("\n"),
-              messages: [{
-                role:    "user",
-                content: [
-                  userMsg,
-                  "",
-                  "TRUNCATED OR INVALID MODEL OUTPUT TO REPAIR:",
-                  rawText.slice(-14000),
-                ].join("\n"),
-              }],
+              userMsg: [
+                userMsg,
+                "",
+                "TRUNCATED OR INVALID MODEL OUTPUT TO REPAIR:",
+                rawText.slice(-14000),
+              ].join("\n"),
             });
 
-            const repairText = repair.content[0]?.type === "text" ? repair.content[0].text : rawText;
-            redline = normalizeRedlineOutput(parseRedlineJSON(repairText), agent, detectedType);
+            redline = normalizeRedlineOutput(parseRedlineJSON(repair.text), resolvedAgent, detectedType);
           } catch (repairErr) {
             console.error("Redline repair failed:", repairErr);
             await send({
@@ -200,7 +219,7 @@ export async function POST(req: NextRequest) {
 
         const row = {
           user_id:        userId,
-          agent,
+          agent:          resolvedAgent,
           agreement_type: redline.agreement_type,
           governing_law:  redline.governing_law,
           overall_status: redline.overall_status,

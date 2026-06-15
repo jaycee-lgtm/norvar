@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
-import ModeSelector, { type Mode } from "@/components/ModeSelector";
+import RedlineModelSelector from "@/components/RedlineModelSelector";
 import ContractReviewActivity, {
   appendActivityStep,
   completeAllActivity,
@@ -15,7 +15,11 @@ import ContractReviewActivity, {
 } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import type { RedlineOutput } from "@/lib/redline";
-import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
+import {
+  DEFAULT_REDLINE_REVIEW_MODEL,
+  redlineModelLabel,
+  type RedlineReviewModelChoice,
+} from "@/lib/redline-models";
 
 type InputMode = "document" | "upload" | "paste";
 
@@ -43,7 +47,7 @@ export default function ContractReviewForm({
   const [uploadName, setUploadName] = useState("");
   const [contractText, setContractText] = useState("");
   const [pastedText, setPastedText] = useState("");
-  const [agent, setAgent]           = useState<"cassius" | "nora">("nora");
+  const [reviewModel, setReviewModel] = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
   const [jurisdictions, setJurisdictions] = useState("");
   const [activitySteps, setActivitySteps] = useState<ReviewActivityStep[]>([]);
   const [working, setWorking]       = useState(false);
@@ -51,8 +55,7 @@ export default function ContractReviewForm({
   const [error, setError]           = useState("");
 
   const isHome = variant === "home";
-  const agentMode: Mode = agent === "nora" ? "chat" : "assess";
-  const agentName = agent === "nora" ? CHAT_AGENT.name : ASSESS_AGENT.name;
+  const modelLabel = redlineModelLabel(reviewModel);
   const showActivity = activitySteps.length > 0;
 
   useEffect(() => {
@@ -144,11 +147,11 @@ export default function ContractReviewForm({
   const submit = async () => {
     setError("");
     setWorking(true);
-    setActivitySteps([createActivityStep(`Starting review with ${agentName}...`)]);
+    setActivitySteps([createActivityStep(`Starting review with ${modelLabel}...`)]);
 
     try {
       const body: Record<string, unknown> = {
-        agent,
+        review_model: reviewModel,
         jurisdictions: jurisdictions.split(",").map(j => j.trim()).filter(Boolean),
       };
 
@@ -219,14 +222,12 @@ export default function ContractReviewForm({
     }
   };
 
-  const agentSelector = (
-    <ModeSelector
-      current={agentMode}
-      embedded
-      menuPlacement="top"
-      navigate={false}
+  const modelSelector = (
+    <RedlineModelSelector
+      value={reviewModel}
+      onChange={setReviewModel}
       disabled={working || fileExtracting}
-      onSelect={mode => setAgent(mode === "chat" ? "nora" : "cassius")}
+      menuPlacement="top"
     />
   );
 
@@ -290,7 +291,7 @@ export default function ContractReviewForm({
 
   const activityPanel = showActivity && (
     <ContractReviewActivity
-      agentName={agentName}
+      agentName={modelLabel}
       steps={activitySteps}
       working={working || fileExtracting}
     />
@@ -345,7 +346,7 @@ export default function ContractReviewForm({
           {attachControl}
           {pasteToggle}
         </div>
-        {agentSelector}
+        {modelSelector}
         <div className="mobile-composer-actions">{sendButton}</div>
       </div>
     </div>
@@ -378,7 +379,7 @@ export default function ContractReviewForm({
           {pasteToggle}
         </div>
         <div className="composer-toolbar-end">
-          {agentSelector}
+          {modelSelector}
           {sendButton}
         </div>
       </div>
@@ -399,8 +400,8 @@ export default function ContractReviewForm({
   return (
     <>
       <div className="contract-review-field">
-        <span className="contract-review-label">Reviewed by (optional)</span>
-        {agentSelector}
+        <span className="contract-review-label">Model</span>
+        {modelSelector}
       </div>
 
       <div className="contract-review-field">
