@@ -454,7 +454,7 @@ input, textarea, select, button {
 
 @media (min-width: 769px) {
   .home-hero-row {
-    gap: 14px;
+    gap: 0;
     margin-bottom: 32px;
     transform: translateY(-12px);
   }
@@ -465,7 +465,11 @@ input, textarea, select, button {
 
   .home-hero-logo {
     transform: scale(1);
-    margin-right: 0;
+    margin-right: -8px;
+  }
+
+  .home-hero-heading-wrap {
+    margin-left: -4px;
   }
 }
 
