@@ -46,7 +46,7 @@ export default function RedlineModelSelector({
   return (
     <div
       ref={ref}
-      className="mode-selector mode-selector--embedded mode-selector--menu-up"
+      className="mode-selector mode-selector--embedded mode-selector--menu-up redline-model-picker"
       style={{ position: "relative", display: "inline-block" }}
     >
       <button

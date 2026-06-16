@@ -1745,7 +1745,7 @@ function Home() {
           <div className={`main-area${!isHome && !loadingSaved && isMobileView ? " mobile-thread-layout" : ""}`}>
 
             {loadingSaved && (
-              <div className="home-body">
+              <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
                 <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
                   <span className="loading-dot" />
                   <span className="loading-dot" />
@@ -1942,6 +1942,7 @@ function Home() {
                     return null;
                   })}
                   {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
+                  {isMobileView && noraFollowUpChips}
                 </div>
                 </div>
 
@@ -2047,7 +2048,7 @@ function Home() {
                     {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                     )}
-                    {noraFollowUpChips}
+                    {!isMobileView && noraFollowUpChips}
                     </div>
                   </div>
                 </div>

@@ -1398,7 +1398,7 @@ input, textarea, select, button {
   background: var(--card2);
   color: var(--fg2);
   font-family: 'Sora', sans-serif;
-  max-width: 140;
+  max-width: 140px;
 }
 
 .doc-row-tag {
@@ -5656,12 +5656,23 @@ input, textarea, select, button {
   }
 
   .mobile-composer-tools--minimal {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     width: 100%;
+    gap: 8px;
+    row-gap: 6px;
   }
 
-  .mobile-home-layout .mobile-composer-tools .mode-selector--embedded {
-    display: none;
+  .mobile-composer-tools--minimal .composer-toolbar-start {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mobile-composer-tools--minimal .mode-selector--embedded {
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .mobile-composer-actions {
@@ -5669,6 +5680,16 @@ input, textarea, select, button {
     align-items: center;
     gap: 4px;
     margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .mobile-home-layout .mobile-composer-tools .mode-selector--embedded:not(.redline-model-picker) {
+    display: none;
+  }
+
+  .mobile-home-layout .redline-model-picker {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 
   .mobile-mode-pill button {
@@ -5719,7 +5740,22 @@ input, textarea, select, button {
   }
 
   .mobile-thread-layout .main-scroll {
-    padding-bottom: 220px;
+    padding-bottom: min(320px, 42dvh);
+  }
+
+  .mobile-thread-layout .mobile-composer-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-thread-layout .mobile-composer-prompt-label {
+    white-space: normal;
+    width: 100%;
+    padding: 0 2px 8px;
+  }
+
+  .mobile-thread-layout .sample-questions-wrap {
+    display: none;
   }
 
   .mobile-thread-layout .chat-input-row {
@@ -5729,9 +5765,21 @@ input, textarea, select, button {
     bottom: 0;
     z-index: 50;
     padding: 10px 16px max(16px, env(safe-area-inset-bottom, 16px));
-    border-top: none;
-    background: linear-gradient(to top, var(--bg) 70%, transparent);
+    border-top: 0.5px solid var(--bdr);
+    background: var(--bg);
     overflow: visible;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .light .mobile-thread-layout .chat-input-row,
+  [data-theme="light"] .mobile-thread-layout .chat-input-row {
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-thread-layout .nora-follow-ups {
+    margin-top: 0;
+    margin-bottom: 10px;
+    padding: 0 2px;
   }
 
   .mobile-thread-layout .desktop-only {
@@ -6157,6 +6205,34 @@ input, textarea, select, button {
 
   .contracts-detail-inner {
     padding: 16px 14px 32px;
+  }
+
+  .contracts-detail-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .contracts-detail-head p {
+    width: 100%;
+  }
+
+  .contracts-delete-btn {
+    align-self: flex-end;
+  }
+
+  .contracts-past-links {
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  }
+
+  .redline-document-page {
+    padding: 14px 12px;
+    max-height: min(60dvh, 560px);
+  }
+
+  .redline-document-toolbar-actions {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .contracts-empty-state {

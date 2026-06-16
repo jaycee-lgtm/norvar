@@ -504,7 +504,7 @@ function Chat() {
           <div className={`main-area${!isHome && !loadingSaved && isMobileView ? " mobile-thread-layout" : ""}`}>
 
           {loadingSaved && (
-            <div className="home-body">
+            <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
               <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
                 <span className="loading-dot" />
                 <span className="loading-dot" />
@@ -805,14 +805,9 @@ function Chat() {
                   {isMobileView ? (
                   <div className="mobile-composer thread-composer">
                     <div className="mobile-composer-input-row">
-                      {!input.trim() && (
-                        <span className="mobile-composer-prompt-label">
-                          Chat with {CHAT_AGENT.name}
-                        </span>
-                      )}
                       <input
                         className="chat-input-field mobile-composer-field"
-                        placeholder=""
+                        placeholder="Ask a follow-up question..."
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}

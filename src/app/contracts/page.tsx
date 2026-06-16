@@ -197,7 +197,7 @@ function ContractsPageInner() {
     return (
       <AppShell>
         <div className="main-area contracts-page">
-          <div className="home-body">
+          <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
             <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
               <span className="loading-dot" />
               <span className="loading-dot" />
@@ -213,7 +213,7 @@ function ContractsPageInner() {
     <AppShell>
       <div className="main-area contracts-page">
         {loading && (
-          <div className="home-body">
+          <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
             <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>
               <span className="loading-dot" />
               <span className="loading-dot" />
