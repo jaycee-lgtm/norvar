@@ -52,6 +52,34 @@ function fmtDate(iso: string | null | undefined) {
   });
 }
 
+function fmtListDate(iso: string) {
+  const d   = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  if (diffDays < 7) {
+    return d.toLocaleDateString("en-GB", { weekday: "short" });
+  }
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+const AVATAR_COLORS = [
+  "#5C6BC0", "#26A69A", "#EF5350", "#AB47BC", "#FFA726", "#42A5F5", "#66BB6A", "#8D6E63",
+];
+
+function avatarMeta(name: string | null | undefined, email: string) {
+  const label = name?.trim() || email;
+  const parts = label.split(/\s+/).filter(Boolean);
+  const initial = parts.length >= 2
+    ? `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase()
+    : (label[0] ?? "?").toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) hash = (hash + label.charCodeAt(i) * 17) % AVATAR_COLORS.length;
+  return { initial, color: AVATAR_COLORS[hash] ?? AVATAR_COLORS[0] };
+}
+
 function parseFolder(value: string | null): InboxFolder {
   if (value === "sent" || value === "archived" || value === "trash") return value;
   return "received";
@@ -75,6 +103,11 @@ function InboxThreadRow({
   onToggleSelect: () => void;
 }) {
   const sev = normalizeGapSeverity(item.gap_severity);
+  const senderName = item.direction === "inbound"
+    ? (item.from_name ?? item.from_email)
+    : (item.recipient_name ?? item.recipient_email ?? "Recipient");
+  const senderEmail = item.direction === "inbound" ? item.from_email : (item.recipient_email ?? "");
+  const avatar = avatarMeta(senderName, senderEmail);
 
   const handleRowClick = () => {
     if (selectMode) onToggleSelect();
@@ -93,7 +126,7 @@ function InboxThreadRow({
               type="checkbox"
               checked={selected}
               onChange={onToggleSelect}
-              aria-label={`Select message from ${item.from_name ?? item.from_email}`}
+              aria-label={`Select message from ${senderName}`}
             />
           </label>
         )}
@@ -102,29 +135,37 @@ function InboxThreadRow({
           className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
           onClick={handleRowClick}
         >
-          <div className="inbox-thread-row-top">
-            {!selectMode && !item.is_read && item.direction === "inbound" && (
-              <span className="inbox-unread-dot" aria-hidden />
-            )}
-            <span className="inbox-thread-recipient">
-              {item.direction === "inbound"
-                ? (item.from_name ?? item.from_email)
-                : (item.recipient_name ?? item.recipient_email)}
-            </span>
-            <span className="inbox-thread-date">{fmtDate(item.created_at)}</span>
+          <div
+            className="inbox-thread-avatar"
+            style={{ background: `${avatar.color}22`, color: avatar.color }}
+            aria-hidden
+          >
+            {avatar.initial}
           </div>
-          <div className="inbox-thread-gap" style={{ color: SEV_COLORS[sev] }}>
-            {item.gap_title}
-          </div>
-          <div className="inbox-thread-meta">
-            {item.body_preview}
-            {item.project_title && <> · {item.project_title}</>}
-          </div>
-          {folder === "trash" && item.days_until_purge !== null && (
-            <div className="inbox-purge-hint">
-              Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
+
+          <div className="inbox-thread-content">
+            <div className="inbox-thread-line1">
+              <span className="inbox-thread-sender">{senderName}</span>
+              <span className="inbox-thread-date">{fmtListDate(item.created_at)}</span>
             </div>
-          )}
+            <div className="inbox-thread-subject">{item.gap_title}</div>
+            <div className="inbox-thread-snippet">
+              {item.body_preview}
+              {item.project_title ? ` · ${item.project_title}` : ""}
+            </div>
+            {folder === "trash" && item.days_until_purge !== null && (
+              <div className="inbox-purge-hint">
+                Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
+              </div>
+            )}
+          </div>
+
+          <span
+            className="inbox-thread-severity"
+            style={{ background: SEV_COLORS[sev] ?? "var(--fg3)" }}
+            title={`${sev} severity`}
+            aria-hidden
+          />
         </button>
       </div>
     </li>
@@ -411,8 +452,17 @@ function InboxContent() {
   };
 
   const showList  = !isMobile || !threadId;
-  const showPanel = !isMobile || threadId;
+  const showPanel = !isMobile || !!threadId;
   const canCompose = folder === "received" || folder === "sent";
+  const listHref = `/inbox?folder=${folder}`;
+  const activeFolderLabel = INBOX_FOLDERS.find(f => f.id === folder)?.label ?? "Inbox";
+
+  const closeThread = () => {
+    setThread(null);
+    setReply("");
+    setError("");
+    router.replace(listHref);
+  };
 
   const emptyCopy: Record<InboxFolder, { title: string; sub: string }> = {
     received: { title: "No received messages", sub: "Replies to escalations appear here." },
@@ -420,6 +470,9 @@ function InboxContent() {
     archived: { title: "No archived messages", sub: "Archive messages to keep threads tidy." },
     trash:    { title: "Recycle bin is empty", sub: "Deleted messages stay here for 90 days." },
   };
+
+  const threadSev = thread ? normalizeGapSeverity(thread.gap_severity) : "low";
+  const threadSevColor = SEV_COLORS[threadSev] ?? "var(--fg3)";
 
   return (
     <main className={`main-area inbox-page${isMobile ? " inbox-page--mobile" : ""}`}>
@@ -591,33 +644,59 @@ function InboxContent() {
               </div>
             )}
 
-            {threadId && !loadingThread && thread && (
+            {threadId && !loadingThread && thread ? (
               <>
-                <div className="inbox-thread-head">
-                  {isMobile && (
-                    <button
-                      type="button"
-                      className="inbox-back-btn"
-                      onClick={() => router.push(`/inbox?folder=${folder}`)}
-                    >
-                      <ArrowLeft size={14} />
-                    </button>
-                  )}
-                  <div className="inbox-thread-head-main">
-                    <h2 className="inbox-thread-title">{thread.gap_title}</h2>
-                    <p className="inbox-thread-sub">
-                      To {thread.recipient_name ?? thread.recipient_email}
-                      {thread.recipient_email && thread.recipient_name && (
-                        <> · {thread.recipient_email}</>
-                      )}
-                      {thread.project_title && <> · {thread.project_title}</>}
-                    </p>
+                <header className="inbox-thread-head">
+                  <div className="inbox-thread-nav">
+                    {isMobile && (
+                      <Link
+                        href={listHref}
+                        className="inbox-back-btn"
+                        aria-label="Back to inbox"
+                        onClick={e => {
+                          e.preventDefault();
+                          closeThread();
+                        }}
+                      >
+                        <ArrowLeft size={18} strokeWidth={2} />
+                      </Link>
+                    )}
+                    <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
+                    <Link href="/remediation" className="inbox-open-gap">
+                      View gap
+                      <ExternalLink size={12} strokeWidth={2} />
+                    </Link>
                   </div>
-                  <Link href="/remediation" className="inbox-open-gap">
-                    <ExternalLink size={11} />
-                    View gap
-                  </Link>
-                </div>
+
+                  <div className="inbox-thread-head-body">
+                    <div className="inbox-thread-badges">
+                      <span
+                        className="inbox-severity-pill"
+                        style={{
+                          color:       threadSevColor,
+                          borderColor: `${threadSevColor}44`,
+                          background:  `${threadSevColor}14`,
+                        }}
+                      >
+                        {threadSev} severity
+                      </span>
+                      {thread.project_title && (
+                        <span className="inbox-project-pill">{thread.project_title}</span>
+                      )}
+                    </div>
+                    <h1 className="inbox-thread-title">{thread.gap_title}</h1>
+                    <div className="inbox-thread-recipient">
+                      <Mail size={12} strokeWidth={1.75} />
+                      <span>
+                        To{" "}
+                        <strong>{thread.recipient_name ?? thread.recipient_email ?? "Recipient"}</strong>
+                      </span>
+                      {thread.recipient_email && thread.recipient_name && (
+                        <span className="inbox-thread-email">{thread.recipient_email}</span>
+                      )}
+                    </div>
+                  </div>
+                </header>
 
                 {(thread.escalation_question || thread.escalation_note) && (
                   <div className="inbox-thread-context">
@@ -767,7 +846,7 @@ function InboxContent() {
                   </div>
                 )}
               </>
-            )}
+            ) : null}
 
             {error && <p className="inbox-error">{error}</p>}
           </section>
