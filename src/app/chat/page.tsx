@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
 import Logo from "@/components/Logo";
-import InfoTip from "@/components/InfoTip";
+import HomeHero from "@/components/HomeHero";
+import HomeComposerWrap from "@/components/HomeComposerWrap";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
@@ -516,27 +517,17 @@ function Chat() {
 
           {isHome && (
             <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
-              <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
-                {isMobileView ? (
-                  <>
-                    <Logo size={40} animated />
-                    <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">How can I help?</h1>
-                  </>
-                ) : (
-                  <div className="home-hero-row home-hero-enter">
-                    <Logo variant="hero" className="home-hero-logo" size={46} animated />
-                    <div className="home-hero-heading-wrap">
-                      <h1 className="home-hero-serif home-hero-serif--enter">How can I help?</h1>
-                      <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
-                    </div>
-                  </div>
-                )}
-              </div>
+              <HomeHero
+                isMobileView={isMobileView}
+                title="How can I help?"
+                infoTip="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work."
+              />
 
-              <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
+              <HomeComposerWrap isMobileView={isMobileView}>
                 <AgentComposer
                   variant="home"
                   mode="chat"
+                  attachPlacement="end"
                   value={input}
                   onChange={setInput}
                   onKeyDown={handleKey}
@@ -578,7 +569,7 @@ function Chat() {
                 {voice.voiceError && (
                   <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                 )}
-              </div>
+              </HomeComposerWrap>
 
               {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
             </div>
@@ -734,6 +725,7 @@ function Chat() {
                   <AgentComposer
                     variant="thread"
                     mode="chat"
+                    attachPlacement="end"
                     value={input}
                     onChange={setInput}
                     onKeyDown={handleKey}
@@ -744,21 +736,7 @@ function Chat() {
                     onSend={() => { void sendWithVoice(); }}
                     showSendButton={showSendButton}
                     attachControl={attachControl}
-                    voiceControl={
-                      <VoiceInputIcon
-                        isListening={voice.isListening}
-                        isTranscribing={voice.isTranscribing}
-                        isSpeaking={voice.isSpeaking}
-                        voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                        configured={voice.support.configured}
-                        disabled={loading}
-                        onStartListening={voice.startListening}
-                        onStopListening={voice.stopListening}
-                        onStopSpeaking={voice.stopSpeak}
-                        size="sm"
-                        agentName={CHAT_AGENT.name}
-                      />
-                    }
+                    voiceControl={voiceIcon}
                     extraToolbarStart={examplesControl}
                   />
                   {voice.voiceError && (

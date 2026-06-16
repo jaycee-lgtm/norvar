@@ -5,9 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Show } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
 import LandingPage from "@/components/LandingPage";
+import HomeHero from "@/components/HomeHero";
+import HomeComposerWrap from "@/components/HomeComposerWrap";
 import AgentComposer from "@/components/AgentComposer";
-import Logo from "@/components/Logo";
-import InfoTip from "@/components/InfoTip";
 import FormattedMessage from "@/components/FormattedMessage";
 import MessageFeedback from "@/components/MessageFeedback";
 import AiDisclaimer from "@/components/AiDisclaimer";
@@ -1647,7 +1647,6 @@ function Home() {
       onStartListening={voice.startListening}
       onStopListening={voice.stopListening}
       onStopSpeaking={voice.stopSpeak}
-      size="sm"
       agentName={ASSESS_AGENT.name}
     />
   );
@@ -1671,13 +1670,11 @@ function Home() {
   ) : undefined;
 
   const InputBar = (
-    <div
-      className={isMobileView ? "home-composer-block" : "input-wrap"}
-      style={isMobileView ? undefined : { marginBottom: 24 }}
-    >
+    <HomeComposerWrap isMobileView={isMobileView}>
       <AgentComposer
         variant="home"
         mode="assess"
+        attachPlacement="end"
         value={input}
         onChange={setInput}
         onKeyDown={handleKey}
@@ -1697,7 +1694,7 @@ function Home() {
       {voice.voiceError && (
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
-    </div>
+    </HomeComposerWrap>
   );
 
   const streamCursor = (
@@ -1725,22 +1722,11 @@ function Home() {
 
             {isHome && (
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
-                <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
-                  {isMobileView ? (
-                    <>
-                      <Logo size={40} animated />
-                      <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">What are you building?</h1>
-                    </>
-                  ) : (
-                    <div className="home-hero-row home-hero-enter">
-                      <Logo variant="hero" className="home-hero-logo" size={46} animated />
-                      <div className="home-hero-heading-wrap">
-                        <h1 className="home-hero-serif home-hero-serif--enter">What are you building?</h1>
-                        <InfoTip text={`Chat with ${ASSESS_AGENT.name} about your project. When you're ready, he'll confirm and ask a few scoping questions before running your assessment.`} />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <HomeHero
+                  isMobileView={isMobileView}
+                  title="What are you building?"
+                  infoTip={`Chat with ${ASSESS_AGENT.name} about your project. When you're ready, he'll confirm and ask a few scoping questions before running your assessment.`}
+                />
                 {InputBar}
                 {error && <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>{error}</p>}
               </div>
@@ -1922,6 +1908,7 @@ function Home() {
                     <AgentComposer
                       variant="thread"
                       mode="assess"
+                      attachPlacement="end"
                       value={input}
                       onChange={setInput}
                       onKeyDown={handleKey}

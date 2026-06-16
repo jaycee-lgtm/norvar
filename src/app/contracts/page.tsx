@@ -4,8 +4,8 @@ import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Shield, Plus, Trash2, ArrowLeft } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import Logo from "@/components/Logo";
-import InfoTip from "@/components/InfoTip";
+import HomeHero from "@/components/HomeHero";
+import HomeComposerWrap from "@/components/HomeComposerWrap";
 import RedlineCard from "@/components/RedlineCard";
 import AiDisclaimer from "@/components/AiDisclaimer";
 import ContractReviewForm from "@/components/ContractReviewForm";
@@ -225,40 +225,20 @@ function ContractsPageInner() {
 
         {isHome && (
           <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
-            <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
-              {isMobileView ? (
-                <>
-                  <Logo size={40} animated />
-                  <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                    What can I help review?
-                  </h1>
-                </>
-              ) : (
-                <div className="home-hero-row home-hero-enter">
-                  <Logo variant="hero" className="home-hero-logo" size={46} animated />
-                  <div className="home-hero-heading-wrap">
-                    <h1 className="home-hero-serif home-hero-serif--enter">
-                      What can I help review?
-                    </h1>
-                    <InfoTip
-                      text={`Pull a contract from Documents or upload a file. ${VARRO_AGENT.name} will redline it against Norvar's regulatory corpus.`}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            <HomeHero
+              isMobileView={isMobileView}
+              title="What can I help review?"
+              infoTip={`Pull a contract from Documents or upload a file. ${VARRO_AGENT.name} will redline it against Norvar's regulatory corpus.`}
+            />
 
-            <div
-              className={isMobileView ? "home-composer-block" : "input-wrap"}
-              style={isMobileView ? undefined : { marginBottom: 24, width: "100%" }}
-            >
+            <HomeComposerWrap isMobileView={isMobileView} fullWidth>
               <ContractReviewForm
                 variant="home"
                 isMobileView={isMobileView}
                 initialDocumentId={reviewDocId}
                 onDone={handleReviewDone}
               />
-            </div>
+            </HomeComposerWrap>
           </div>
         )}
 

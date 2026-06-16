@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FileText, SquarePen } from "lucide-react";
-import Logo from "@/components/Logo";
-import InfoTip from "@/components/InfoTip";
+import HomeHero from "@/components/HomeHero";
+import HomeComposerWrap from "@/components/HomeComposerWrap";
 import AgentComposer from "@/components/AgentComposer";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
 import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
@@ -541,10 +541,7 @@ export default function DraftForm({
   );
 
   const homeInputBar = (
-    <div
-      className={isMobileView ? "home-composer-block" : "input-wrap"}
-      style={isMobileView ? undefined : { marginBottom: 24 }}
-    >
+    <HomeComposerWrap isMobileView={isMobileView}>
       <AgentComposer
         variant="home"
         mode="draft"
@@ -569,7 +566,7 @@ export default function DraftForm({
       {voice.voiceError && (
         <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
-    </div>
+    </HomeComposerWrap>
   );
 
   const threadInputBar = (
@@ -615,28 +612,11 @@ export default function DraftForm({
   if (isPageHome && isHome) {
     return (
       <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
-        <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
-          {isMobileView ? (
-            <>
-              <Logo size={40} animated />
-              <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                What can I help draft?
-              </h1>
-            </>
-          ) : (
-            <div className="home-hero-row home-hero-enter">
-              <Logo variant="hero" className="home-hero-logo" size={46} animated />
-              <div className="home-hero-heading-wrap">
-                <h1 className="home-hero-serif home-hero-serif--enter">
-                  What can I help draft?
-                </h1>
-                <InfoTip
-                  text={`Describe the agreement you need. ${PETRA_AGENT.name} will ask a few scoping questions, then draft a first version aligned to Norvar's regulatory corpus.`}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <HomeHero
+          isMobileView={isMobileView}
+          title="What can I help draft?"
+          infoTip={`Describe the agreement you need. ${PETRA_AGENT.name} will ask a few scoping questions, then draft a first version aligned to Norvar's regulatory corpus.`}
+        />
         {homeInputBar}
         {error && (
           <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>

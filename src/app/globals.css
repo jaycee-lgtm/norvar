@@ -1051,23 +1051,16 @@ input, textarea, select, button {
 }
 
 .agent-composer--attach-end .agent-composer-toolbar-start {
-  flex: 1;
-  justify-content: center;
-}
-
-.agent-composer--hide-input.agent-composer--attach-end .agent-composer-toolbar-start {
   flex: 0 1 auto;
   justify-content: flex-start;
 }
 
-.agent-composer--hide-input .agent-composer-toolbar-end,
 .agent-composer--attach-end .agent-composer-toolbar-end {
-  margin-left: 0;
+  margin-left: auto;
   align-items: center;
 }
 
 .agent-composer--hide-input.agent-composer--attach-end .agent-composer-toolbar-end {
-  margin-left: auto;
   align-items: flex-start;
   padding-top: 1px;
 }

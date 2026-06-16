@@ -63,13 +63,17 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const isAssess    = path === "/assess" || path === "/history";
   const isContracts = path === "/contracts";
   const isDraft     = path === "/draft";
-  const isProjects  = path.startsWith("/projects");
+  const isInbox       = path === "/inbox";
+  const isRemediation = path === "/remediation";
+  const isDocuments   = path === "/documents";
+  const isFrameworks  = path === "/frameworks";
   const sidebarMode = getSidebarMode(path);
   const newAction = getNewAction(path);
   const activeId     = searchParams.get("id");
   const activeDraftId = isDraft ? (searchParams.get("draft") ?? searchParams.get("id")) : null;
   const activeReviewId = isContracts ? searchParams.get("id") : null;
   const activeProjectId = path.startsWith("/projects/") ? path.split("/")[2] : null;
+  const isProjects  = path.startsWith("/projects");
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
@@ -82,7 +86,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [chatNavOpen, setChatNavOpen]     = useState(path === "/chat/history");
   const [contractsNavOpen, setContractsNavOpen] = useState(isContracts);
   const [draftNavOpen, setDraftNavOpen] = useState(isDraft);
-  const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(isAssess);
+  const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(false);
   const [recentChatsOpen, setRecentChatsOpen] = useState(false);
   const [recentReviewsOpen, setRecentReviewsOpen] = useState(isContracts);
   const [recentDraftsOpen, setRecentDraftsOpen] = useState(isDraft);
@@ -164,7 +168,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
   useEffect(() => {
     if (isAssess) setAssessNavOpen(true);
-    if (isAssess) setRecentAssessmentsOpen(true);
     if (isContracts) {
       setContractsNavOpen(true);
       setRecentReviewsOpen(true);
@@ -175,7 +178,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     }
     if (path === "/chat/history") setChatNavOpen(true);
     if (isMobileView) {
-      setRecentAssessmentsOpen(sidebarMode === "assess");
       setRecentReviewsOpen(sidebarMode === "contracts");
       setRecentDraftsOpen(sidebarMode === "draft");
     }
@@ -268,13 +270,89 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     router.replace("/draft");
   };
 
-  const mainNav = [
-    { href: "/documents", label: "Documents", icon: FolderOpen, active: path === "/documents" },
-    { href: "/contracts", label: "Review", icon: FilePenLine, active: isContracts },
-    { href: "/draft", label: "Draft", icon: FileText, active: isDraft },
-    { href: "/remediation", label: "Remediation", icon: ShieldAlert, active: path === "/remediation" },
-    { href: "/inbox", label: "Inbox", icon: Inbox, active: path === "/inbox" },
-  ];
+  const projectsSection = (
+    <>
+      <div className="sidebar-divider" />
+      <div className="sidebar-section">Projects</div>
+      <div style={{ padding: "0 0 4px" }}>
+        <Link
+          href="/projects"
+          className={`sidebar-nav-item${path === "/projects" ? " active" : ""}`}
+        >
+          <Briefcase size={14} strokeWidth={path === "/projects" ? 2 : 1.75} />
+          All projects
+        </Link>
+        {isProjects && projects.map(project => (
+          <Link
+            key={project.id}
+            href={`/projects/${project.id}`}
+            className={`sidebar-nav-item recent-project-item${activeProjectId === project.id ? " active" : ""}`}
+            style={{ paddingLeft: 22 }}
+          >
+            <span
+              style={{
+                width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                background: project.color || "var(--fg3)",
+              }}
+            />
+            <span style={{
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {project.name}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+
+  const remediationSection = (
+    <>
+      <div className="sidebar-divider" />
+      <div className="sidebar-section">Remediation</div>
+      <div style={{ padding: "0 0 4px" }}>
+        <Link
+          href="/remediation"
+          className={`sidebar-nav-item${isRemediation ? " active" : ""}`}
+        >
+          <ShieldAlert size={14} strokeWidth={isRemediation ? 2 : 1.75} />
+          Remediation queue
+        </Link>
+      </div>
+    </>
+  );
+
+  const documentsSection = (
+    <>
+      <div className="sidebar-divider" />
+      <div className="sidebar-section">Documents</div>
+      <div style={{ padding: "0 0 4px" }}>
+        <Link
+          href="/documents"
+          className={`sidebar-nav-item${isDocuments ? " active" : ""}`}
+        >
+          <FolderOpen size={14} strokeWidth={isDocuments ? 2 : 1.75} />
+          All documents
+        </Link>
+      </div>
+    </>
+  );
+
+  const frameworksSection = (
+    <>
+      <div className="sidebar-divider" />
+      <div className="sidebar-section">Frameworks</div>
+      <div style={{ padding: "0 0 4px" }}>
+        <Link
+          href="/frameworks"
+          className={`sidebar-nav-item${isFrameworks ? " active" : ""}`}
+        >
+          <Layers size={14} strokeWidth={isFrameworks ? 2 : 1.75} />
+          Browse frameworks
+        </Link>
+      </div>
+    </>
+  );
 
   return (
     <aside
@@ -333,6 +411,10 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       <div className="sidebar-scroll">
         {isMobileView ? (
           <div className="sidebar-mobile-nav" style={{ padding: "0 0 4px" }}>
+            <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
+              <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
+              Inbox
+            </Link>
             <Link href="/chat" className={`sidebar-nav-item${path === "/chat" || path.startsWith("/chat/") ? " active" : ""}`}>
               <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
               Chat
@@ -341,42 +423,31 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
               <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
               Assessments
             </Link>
-            {mainNav.map(({ href, label, icon: Icon, active }) => (
-              label === "Review" ? (
-                <Link
-                  key={label}
-                  href={href}
-                  className={`sidebar-nav-item ${active ? "active" : ""}`}
-                  onClick={goToContractsHome}
-                >
-                  <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                  {label}
-                </Link>
-              ) : label === "Draft" ? (
-                <Link
-                  key={label}
-                  href={href}
-                  className={`sidebar-nav-item ${active ? "active" : ""}`}
-                  onClick={goToDraftHome}
-                >
-                  <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                  {label}
-                </Link>
-              ) : (
-                <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
-                  <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                  {label}
-                </Link>
-              )
-            ))}
-            <Link href="/projects" className={`sidebar-nav-item${path.startsWith("/projects") ? " active" : ""}`}>
-              <Briefcase size={14} strokeWidth={path.startsWith("/projects") ? 2 : 1.75} />
-              Projects
+            <Link
+              href="/contracts"
+              className={`sidebar-nav-item${isContracts ? " active" : ""}`}
+              onClick={goToContractsHome}
+            >
+              <FilePenLine size={14} strokeWidth={isContracts ? 2 : 1.75} />
+              Review
+            </Link>
+            <Link
+              href="/draft"
+              className={`sidebar-nav-item${isDraft ? " active" : ""}`}
+              onClick={goToDraftHome}
+            >
+              <FileText size={14} strokeWidth={isDraft ? 2 : 1.75} />
+              Draft
             </Link>
           </div>
         ) : (
         <>
         <div style={{ padding: "0 0 4px" }}>
+          <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
+            <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
+            Inbox
+          </Link>
+
           <div className="sidebar-nav-group">
             <div className="sidebar-nav-group-row">
               <Link
@@ -445,129 +516,81 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             )}
           </div>
 
-          {mainNav.map(({ href, label, icon: Icon, active }) => (
-            label === "Review" ? (
-              <div key={label} className="sidebar-nav-group">
-                <div className="sidebar-nav-group-row">
-                  <Link
-                    href={href}
-                    className={`sidebar-nav-item sidebar-nav-group-main${active ? " active" : ""}`}
-                    onClick={goToContractsHome}
-                  >
-                    <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                    {label}
-                  </Link>
-                  <button
-                    type="button"
-                    className="sidebar-nav-toggle"
-                    aria-expanded={contractsNavOpen}
-                    aria-label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}
-                    onClick={() => setContractsNavOpen(v => !v)}
-                  >
-                    <ChevronDown
-                      size={12}
-                      strokeWidth={2}
-                      style={{ transform: contractsNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                    />
-                  </button>
-                </div>
-                {contractsNavOpen && (
-                  <Link
-                    href="/contracts?reviews=1"
-                    className={`sidebar-nav-subitem${path === "/contracts" && searchParams.get("reviews") === "1" ? " active" : ""}`}
-                  >
-                    <LayoutDashboard size={12} strokeWidth={path === "/contracts" && searchParams.get("reviews") === "1" ? 2 : 1.75} />
-                    History
-                  </Link>
-                )}
-              </div>
-            ) : label === "Draft" ? (
-              <div key={label} className="sidebar-nav-group">
-                <div className="sidebar-nav-group-row">
-                  <Link
-                    href={href}
-                    className={`sidebar-nav-item sidebar-nav-group-main${active ? " active" : ""}`}
-                    onClick={goToDraftHome}
-                  >
-                    <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                    {label}
-                  </Link>
-                  <button
-                    type="button"
-                    className="sidebar-nav-toggle"
-                    aria-expanded={draftNavOpen}
-                    aria-label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}
-                    onClick={() => setDraftNavOpen(v => !v)}
-                  >
-                    <ChevronDown
-                      size={12}
-                      strokeWidth={2}
-                      style={{ transform: draftNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                    />
-                  </button>
-                </div>
-                {draftNavOpen && (
-                  <Link
-                    href="/draft?drafts=1"
-                    className={`sidebar-nav-subitem${path === "/draft" && searchParams.get("drafts") === "1" ? " active" : ""}`}
-                  >
-                    <LayoutDashboard size={12} strokeWidth={path === "/draft" && searchParams.get("drafts") === "1" ? 2 : 1.75} />
-                    History
-                  </Link>
-                )}
-              </div>
-            ) : (
-              <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
-                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                {label}
+          <div className="sidebar-nav-group">
+            <div className="sidebar-nav-group-row">
+              <Link
+                href="/contracts"
+                className={`sidebar-nav-item sidebar-nav-group-main${isContracts ? " active" : ""}`}
+                onClick={goToContractsHome}
+              >
+                <FilePenLine size={14} strokeWidth={isContracts ? 2 : 1.75} />
+                Review
               </Link>
-            )
-          ))}
+              <button
+                type="button"
+                className="sidebar-nav-toggle"
+                aria-expanded={contractsNavOpen}
+                aria-label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}
+                onClick={() => setContractsNavOpen(v => !v)}
+              >
+                <ChevronDown
+                  size={12}
+                  strokeWidth={2}
+                  style={{ transform: contractsNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                />
+              </button>
+            </div>
+            {contractsNavOpen && (
+              <Link
+                href="/contracts?reviews=1"
+                className={`sidebar-nav-subitem${path === "/contracts" && searchParams.get("reviews") === "1" ? " active" : ""}`}
+              >
+                <LayoutDashboard size={12} strokeWidth={path === "/contracts" && searchParams.get("reviews") === "1" ? 2 : 1.75} />
+                History
+              </Link>
+            )}
+          </div>
+
+          <div className="sidebar-nav-group">
+            <div className="sidebar-nav-group-row">
+              <Link
+                href="/draft"
+                className={`sidebar-nav-item sidebar-nav-group-main${isDraft ? " active" : ""}`}
+                onClick={goToDraftHome}
+              >
+                <FileText size={14} strokeWidth={isDraft ? 2 : 1.75} />
+                Draft
+              </Link>
+              <button
+                type="button"
+                className="sidebar-nav-toggle"
+                aria-expanded={draftNavOpen}
+                aria-label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}
+                onClick={() => setDraftNavOpen(v => !v)}
+              >
+                <ChevronDown
+                  size={12}
+                  strokeWidth={2}
+                  style={{ transform: draftNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                />
+              </button>
+            </div>
+            {draftNavOpen && (
+              <Link
+                href="/draft?drafts=1"
+                className={`sidebar-nav-subitem${path === "/draft" && searchParams.get("drafts") === "1" ? " active" : ""}`}
+              >
+                <LayoutDashboard size={12} strokeWidth={path === "/draft" && searchParams.get("drafts") === "1" ? 2 : 1.75} />
+                History
+              </Link>
+            )}
+          </div>
         </div>
 
-        <div className="sidebar-divider" />
-        <div className="sidebar-section">Projects</div>
-        <div style={{ padding: "0 0 4px" }}>
-          <Link
-            href="/projects"
-            className={`sidebar-nav-item${path === "/projects" ? " active" : ""}`}
-          >
-            <Briefcase size={14} strokeWidth={path === "/projects" ? 2 : 1.75} />
-            All projects
-          </Link>
-          {isProjects && projects.map(project => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className={`sidebar-nav-item recent-project-item${activeProjectId === project.id ? " active" : ""}`}
-              style={{ paddingLeft: 22 }}
-            >
-              <span
-                style={{
-                  width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                  background: project.color || "var(--fg3)",
-                }}
-              />
-              <span style={{
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
-                {project.name}
-              </span>
-            </Link>
-          ))}
-        </div>
-
-        <div className="sidebar-divider" />
-        <div className="sidebar-section">Frameworks</div>
-        <div style={{ padding: "0 0 4px" }}>
-          <Link
-            href="/frameworks"
-            className={`sidebar-nav-item${path === "/frameworks" ? " active" : ""}`}
-          >
-            <Layers size={14} strokeWidth={path === "/frameworks" ? 2 : 1.75} />
-            Browse frameworks
-          </Link>
-        </div>
+        {projectsSection}
+        {remediationSection}
+        {documentsSection}
+        {frameworksSection}
         </>
         )}
 
@@ -762,6 +785,14 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 </Link>
               </div>
             )}
+          </>
+        )}
+
+        {isMobileView && (
+          <>
+            {projectsSection}
+            {remediationSection}
+            {documentsSection}
           </>
         )}
 
