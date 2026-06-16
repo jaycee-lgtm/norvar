@@ -58,8 +58,8 @@ export default function SampleQuestionsDropdown({
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label="Example questions"
-        title="Example questions"
+        aria-label="Browse example questions"
+        title="Browse example questions"
       >
         {isIcon ? (
           refreshing

@@ -967,6 +967,15 @@ function Home() {
 
   const isMobileView = useIsMobile();
 
+  const hideMobileGuidedComposer = isMobileView
+    && guidedActive
+    && !!activeGuidedQuestion
+    && activeGuidedQuestion.type !== "text";
+
+  const threadLayoutClass = !isHome && !loadingSaved && isMobileView
+    ? ` mobile-thread-layout${hideMobileGuidedComposer ? " mobile-thread-layout--guided-options" : ""}`
+    : "";
+
   const presentAssessmentConfirmation = () => {
     const fullText = buildAssessmentConfirmationText();
     typewriterRef.current?.reset();
@@ -1744,7 +1753,7 @@ function Home() {
     <>
       <Show when="signed-in">
         <AppShell>
-          <div className={`main-area${!isHome && !loadingSaved && isMobileView ? " mobile-thread-layout" : ""}`}>
+          <div className={`main-area${threadLayoutClass}`}>
 
             {loadingSaved && (
               <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
@@ -1843,7 +1852,7 @@ function Home() {
                               <AiDisclaimer agentName={ASSESS_AGENT.name} />
                             )}
                             {showFollowUpOptions && (
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                              <div className="assess-guided-options" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                                 {(msg.followUpOptions ?? []).map(opt => {
                                   const question = msg.guidedQuestionId
                                     ? ASSESSMENT_QUESTIONS.find(q => q.id === msg.guidedQuestionId)

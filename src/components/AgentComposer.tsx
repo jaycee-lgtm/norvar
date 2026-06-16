@@ -65,9 +65,11 @@ export default function AgentComposer({
 }: AgentComposerProps) {
   const isHome = variant === "home";
   const hasText = value.trim().length > 0;
+  const isTyping = value.length > 0;
   const [focused, setFocused] = useState(false);
   const isActive = isHome && (hasText || focused);
   const sendVisible = showSendButton ?? (hasText || loading);
+  const hideToolbarIcons = isTyping && !hideInput;
 
   const focusField = () => {
     if (hideInput || disabled || !inputRef?.current) return;
@@ -96,6 +98,7 @@ export default function AgentComposer({
     hideInput ? "agent-composer--hide-input" : "",
     attachPlacement === "end" ? "agent-composer--attach-end" : "",
     isActive ? "agent-composer--active" : "",
+    hideToolbarIcons ? "agent-composer--typing" : "",
     className ?? "",
   ].filter(Boolean).join(" ");
 
@@ -107,9 +110,12 @@ export default function AgentComposer({
   ].filter(Boolean).join(" ");
 
   const attachInEnd = attachPlacement === "end";
-  const hideAccessoryControls = hasText;
-  const showVoice = voiceControl && !hideAccessoryControls;
-  const showAttach = attachControl && !hideAccessoryControls;
+  const showVoice = voiceControl && !hideToolbarIcons;
+  const showAttach = attachControl && !hideToolbarIcons;
+  const showModel = modelControl && !hideToolbarIcons;
+  const showExtraStart = extraToolbarStart && !hideToolbarIcons;
+  const showExtraEnd = extraToolbarEnd && !hideToolbarIcons;
+  const showHomePrompt = isHome && !hideToolbarIcons;
 
   return (
     <div className={rootClass}>
@@ -118,7 +124,7 @@ export default function AgentComposer({
         className={shellClass}
         {...(hideInput ? {} : { onPointerDown: handleShellPointerDown, onClick: handleShellClick })}
       >
-        {isHome && (
+        {showHomePrompt && (
           <div
             className="agent-composer-prompt"
             {...promptHandlers}
@@ -162,28 +168,31 @@ export default function AgentComposer({
         <div className="agent-composer-toolbar">
           <div className="agent-composer-toolbar-start">
             {!attachInEnd && showAttach && attachControl}
-            {modelControl}
-            {extraToolbarStart}
-            {!isHome && (
+            {showModel && modelControl}
+            {showExtraStart}
+            {!isHome && !hideToolbarIcons && (
               <ModeSelector current={mode} embedded menuPlacement="top" />
             )}
           </div>
           <div className="agent-composer-toolbar-end">
-            {extraToolbarEnd}
+            {showExtraEnd}
             {showVoice && voiceControl}
             {attachInEnd && showAttach && attachControl}
             {sendVisible && (
-              <button
-                type="button"
-                className="send-btn"
-                onClick={onSend}
-                disabled={disabled || loading || !canSend}
-                aria-label={sendAriaLabel}
-              >
-                {loading
-                  ? <Loader2 size={16} className="spin" />
-                  : <ArrowUp size={16} strokeWidth={2.5} />}
-              </button>
+              <span className="agent-composer-send-wrap" title={sendAriaLabel}>
+                <button
+                  type="button"
+                  className="send-btn"
+                  onClick={onSend}
+                  disabled={disabled || loading || !canSend}
+                  aria-label={sendAriaLabel}
+                  title={sendAriaLabel}
+                >
+                  {loading
+                    ? <Loader2 size={16} className="spin" />
+                    : <ArrowUp size={16} strokeWidth={2.5} />}
+                </button>
+              </span>
             )}
           </div>
         </div>

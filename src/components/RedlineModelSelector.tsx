@@ -56,6 +56,8 @@ export default function RedlineModelSelector({
     width:     280,
   });
 
+  const triggerTitle = `Choose AI model — ${active.label}`;
+
   return (
     <div
       ref={ref}
@@ -67,7 +69,8 @@ export default function RedlineModelSelector({
         className="mode-selector-trigger redline-model-trigger"
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label={`Review model: ${active.label}`}
+        aria-label={triggerTitle}
+        title={triggerTitle}
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
         style={{

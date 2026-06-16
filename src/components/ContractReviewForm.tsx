@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
+import DocumentPicker from "@/components/DocumentPicker";
 import AgentComposer from "@/components/AgentComposer";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import ContractReviewActivity, {
@@ -171,8 +171,7 @@ export default function ContractReviewForm({
           return;
         }
         body.document_id = selectedDocId;
-        const docName = docCatalog[selectedDocId] ?? "your document";
-        setActivitySteps(prev => appendActivityStep(prev, `Connecting to ${docName} in Documents...`));
+        setActivitySteps(prev => appendActivityStep(prev, "Loading your document from Documents..."));
       } else {
         const text = inputMode === "paste" ? pastedText.trim() : contractText.trim();
         if (text.length < 100) {
@@ -191,7 +190,7 @@ export default function ContractReviewForm({
         } else {
           setActivitySteps(prev => appendActivityStep(
             prev,
-            `Using text extracted from ${uploadName} (${formatCount(text.length)} characters).`,
+            `Using uploaded file (${formatCount(text.length)} characters).`,
             "done",
           ));
         }
@@ -293,7 +292,7 @@ export default function ContractReviewForm({
 
   const sourcePrompt = sourceLabel ? (
     <div className="contracts-selected-bar contracts-selected-bar--home">
-      <span className="contracts-selected-label">{sourceLabel}</span>
+      <span className="contracts-selected-label" title={sourceLabel}>{sourceLabel}</span>
       <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
         Change
       </button>
@@ -318,25 +317,6 @@ export default function ContractReviewForm({
         attachPlacement="end"
         promptOverride={sourcePrompt}
         sendAriaLabel="Start review"
-        header={(selectedDocId || uploadName) ? (
-          <div style={{ padding: isMobileView ? "0 0 8px" : "0 2px 8px" }}>
-            <SelectedDocumentChips
-              documents={selectedDocId ? [{ id: selectedDocId, name: docCatalog[selectedDocId] ?? "Document" }] : []}
-              onRemove={() => clearSource()}
-            />
-            {uploadName && !selectedDocId && (
-              <span style={{
-                fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
-                padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
-                display: "inline-flex", alignItems: "center", gap: 5,
-                fontFamily: "'Sora', sans-serif",
-              }}>
-                {uploadName}
-                <button type="button" onClick={clearSource} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, color: "var(--fg3)" }}>×</button>
-              </span>
-            )}
-          </div>
-        ) : undefined}
       />
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: "none" }} onChange={handleFileUpload} />
       {activityPanel}

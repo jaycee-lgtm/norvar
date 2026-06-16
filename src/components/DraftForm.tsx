@@ -31,7 +31,6 @@ import {
 } from "@/lib/draft-questionnaire";
 import {
   DEFAULT_REDLINE_REVIEW_MODEL,
-  redlineModelLabel,
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
 
@@ -97,7 +96,6 @@ export default function DraftForm({
   const [fileError, setFileError]               = useState("");
 
   const isPageHome   = variant === "home";
-  const modelLabel   = redlineModelLabel(reviewModel);
   const showActivity = activitySteps.length > 0 || !!draftPlan;
   const isHome       = isPageHome && messages.length === 0 && !showActivity;
   const activeQuestion = activeQuestionId
@@ -345,7 +343,18 @@ export default function DraftForm({
           return;
         }
 
-        if (event.type === "pulse") return;
+        if (event.type === "pulse") {
+          const text = event.text ?? "";
+          if (!text) return;
+          setActivitySteps(prev => {
+            const idx = prev.findLastIndex(s => s.state === "active");
+            if (idx < 0) return [...prev, { text, state: "active" as const }];
+            const next = [...prev];
+            next[idx] = { ...next[idx], text };
+            return next;
+          });
+          return;
+        }
 
         if (event.type === "status") {
           pushStatus(event.text ?? "");
@@ -535,7 +544,7 @@ export default function DraftForm({
     <DraftProgress
       plan={draftPlan}
       steps={activitySteps}
-      agentName={modelLabel}
+      agentName={PETRA_AGENT.name}
       working={working}
     />
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
-import { Check, Loader2, Clock } from "lucide-react";
+import { useState, type Dispatch, SetStateAction } from "react";
+import { Check, Loader2, Clock, XCircle, ChevronDown } from "lucide-react";
 import type { DraftClause } from "@/lib/draft";
 import FrameworkRef from "@/components/FrameworkRef";
 
@@ -95,38 +95,67 @@ export function handleDraftSSEEvent(
 }
 
 function SectionRow({ section }: { section: SectionPlanItem }) {
+  const [open, setOpen] = useState(false);
+  const isDone = section.state === "done";
+  const hasClauses = !!(section.clauses && section.clauses.length > 0);
+
+  const head = (
+    <>
+      <div className="draft-progress-section-icon">
+        {section.state === "done"    && <Check size={12} color="var(--rl, #3B6D11)" strokeWidth={2.5} />}
+        {section.state === "active"  && <Loader2 size={12} color="var(--fg3)" className="spin" />}
+        {section.state === "pending" && <Clock size={11} color="var(--fg4, #c8c0b8)" />}
+      </div>
+      <span className="draft-progress-section-number">{section.number}.</span>
+      <span className={`draft-progress-section-title draft-progress-section-title--${section.state}`}>
+        {section.title}
+      </span>
+      <span className="draft-progress-section-meta">
+        {section.state === "done"
+          ? `${section.clauses?.length ?? section.clause_count} clauses`
+          : section.state === "active"
+          ? "drafting..."
+          : `~${section.clause_count} clauses`}
+      </span>
+      {isDone && hasClauses && (
+        <ChevronDown
+          size={13}
+          color="var(--fg3)"
+          className={`draft-progress-section-chevron${open ? " open" : ""}`}
+          aria-hidden
+        />
+      )}
+    </>
+  );
+
   return (
     <div
       className="draft-progress-section"
       style={{ background: section.state === "active" ? "var(--lift)" : "transparent" }}
     >
-      <div className="draft-progress-section-head">
-        <div className="draft-progress-section-icon">
-          {section.state === "done"    && <Check size={12} color="var(--rl, #3B6D11)" strokeWidth={2.5} />}
-          {section.state === "active"  && <Loader2 size={12} color="var(--fg3)" className="spin" />}
-          {section.state === "pending" && <Clock size={11} color="var(--fg4, #c8c0b8)" />}
+      {isDone && hasClauses ? (
+        <button
+          type="button"
+          className="draft-progress-section-head draft-progress-section-head--clickable"
+          onClick={() => setOpen(v => !v)}
+          aria-expanded={open}
+        >
+          {head}
+        </button>
+      ) : (
+        <div className="draft-progress-section-head">
+          {head}
         </div>
-        <span className="draft-progress-section-number">{section.number}.</span>
-        <span className={`draft-progress-section-title draft-progress-section-title--${section.state}`}>
-          {section.title}
-        </span>
-        <span className="draft-progress-section-meta">
-          {section.state === "done"
-            ? `${section.clauses?.length ?? section.clause_count} clauses`
-            : section.state === "active"
-            ? "drafting..."
-            : `~${section.clause_count} clauses`}
-        </span>
-      </div>
+      )}
 
-      {section.state === "done" && section.clauses && section.clauses.length > 0 && (
+      {isDone && open && hasClauses && (
         <div className="draft-progress-clauses">
-          {section.clauses.map(clause => (
+          {section.clauses!.map(clause => (
             <div key={clause.number} className="draft-progress-clause">
               <span className="draft-progress-clause-number">{clause.number}</span>
               <div className="draft-progress-clause-body">
                 <div className="draft-progress-clause-title">{clause.title}</div>
-                <p className="draft-progress-clause-text">{clause.text}</p>
+                <p className="draft-progress-clause-text draft-progress-clause-text--expanded">{clause.text}</p>
               </div>
             </div>
           ))}
@@ -167,6 +196,7 @@ export default function DraftProgress({
                 <span className="contract-review-activity-icon" aria-hidden="true">
                   {step.state === "done"   && <Check size={11} strokeWidth={2.5} />}
                   {step.state === "active" && <Loader2 size={11} className="spin" />}
+                  {step.state === "error"  && <XCircle size={11} strokeWidth={2.5} />}
                 </span>
                 <span>{step.text}</span>
               </li>

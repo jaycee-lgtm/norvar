@@ -471,7 +471,7 @@ input, textarea, select, button {
   .home-hero-row {
     gap: 0;
     margin-bottom: 32px;
-    transform: translateY(-12px);
+    transform: translate(-22px, 10px);
   }
 
   .home-hero-row .home-hero-serif {
@@ -1253,6 +1253,20 @@ input, textarea, select, button {
   margin-left: auto;
 }
 
+.agent-composer--typing .agent-composer-prompt {
+  display: none !important;
+}
+
+.agent-composer--typing .agent-composer-toolbar-start:empty {
+  display: none;
+}
+
+.agent-composer--typing .agent-composer-toolbar-end {
+  margin-left: auto;
+  width: 100%;
+  justify-content: flex-end;
+}
+
 .agent-composer-shell .redline-model-trigger,
 .agent-composer-shell .attach-plus-btn {
   height: 32px;
@@ -1274,6 +1288,11 @@ input, textarea, select, button {
   width: 32px;
   height: 32px;
   border-radius: 999px;
+}
+
+.agent-composer-send-wrap {
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 .agent-composer-shell .send-btn {
@@ -1319,6 +1338,64 @@ input, textarea, select, button {
 .agent-composer--attach-end .agent-composer-shell .send-btn svg {
   width: 22px;
   height: 22px;
+}
+
+@media (min-width: 769px) {
+  .agent-composer-toolbar {
+    min-height: 28px;
+  }
+
+  .agent-composer-shell .redline-model-trigger,
+  .agent-composer-shell .attach-plus-btn {
+    height: 28px;
+    min-height: 28px;
+  }
+
+  .agent-composer-shell .redline-model-trigger {
+    padding: 0 9px;
+    font-size: 10px;
+  }
+
+  .agent-composer-shell .send-btn,
+  .agent-composer-shell .voice-input-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .agent-composer-shell .mode-selector--embedded .mode-selector-trigger {
+    min-height: 28px;
+    padding: 3px 8px;
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .agent-composer-shell .mode-selector--embedded .mode-selector-trigger span {
+    font-size: 11px !important;
+  }
+
+  .agent-composer-shell .send-btn svg,
+  .agent-composer-shell .voice-input-btn svg,
+  .agent-composer-shell .attach-plus-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .agent-composer--hide-input .agent-composer-shell .attach-plus-btn,
+  .agent-composer--attach-end .agent-composer-shell .attach-plus-btn,
+  .agent-composer--attach-end .agent-composer-shell .voice-input-btn,
+  .agent-composer--attach-end .agent-composer-shell .send-btn {
+    width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  .agent-composer--hide-input .agent-composer-shell .attach-plus-btn svg,
+  .agent-composer--attach-end .agent-composer-shell .attach-plus-btn svg,
+  .agent-composer--attach-end .agent-composer-shell .voice-input-btn svg,
+  .agent-composer--attach-end .agent-composer-shell .send-btn svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .home-composer-input-stack:not(.home-composer-input-stack--active):not(:focus-within) .mobile-composer-input-row {
@@ -4925,6 +5002,17 @@ input, textarea, select, button {
   padding: 14px 16px 14px;
 }
 
+.inbox-page--mobile .inbox-thread-title-row {
+  align-items: center;
+  gap: 10px;
+}
+
+.inbox-page--mobile .inbox-thread-title-row .inbox-open-gap {
+  padding: 6px 10px;
+  font-size: 10px;
+  gap: 4px;
+}
+
 .inbox-page--mobile .inbox-thread-toolbar {
   padding-left: 12px;
   padding-right: 12px;
@@ -5975,12 +6063,15 @@ input, textarea, select, button {
   font-size: 13px;
   font-family: 'Sora', sans-serif;
   color: var(--fg);
-  line-height: 1.5;
-  padding: 0 0 10px 2px;
+  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
+}
+
+.contracts-selected-bar .contracts-selected-label {
+  padding: 0;
 }
 
 .contracts-selected-bar {
@@ -5989,6 +6080,8 @@ input, textarea, select, button {
   gap: 10px;
   padding: 0 2px 8px;
   min-height: 22px;
+  width: 100%;
+  min-width: 0;
 }
 
 .contracts-selected-bar--empty .contracts-selected-label {
@@ -6792,6 +6885,30 @@ input, textarea, select, button {
 ══════════════════════════════════════════════════════════════════ */
 
 .page-body { padding: 36px 32px; flex: 1; overflow-y: auto; max-width: 760px; width: 100%; }
+
+.history-page-title-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.history-page-title {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-family: 'Sora', sans-serif;
+  margin: 0;
+  color: var(--fg);
+}
+
+.history-page-count {
+  font-size: 12px;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+  flex-shrink: 0;
+}
 
 .history-item-row {
   display: flex;
@@ -7978,7 +8095,23 @@ input, textarea, select, button {
   }
 
   .mobile-thread-layout .main-scroll {
-    padding-bottom: min(320px, 42dvh);
+    padding-bottom: max(300px, calc(200px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .mobile-thread-layout--guided-options .main-scroll {
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 16px));
+  }
+
+  .mobile-thread-layout--guided-options .chat-input-row {
+    display: none;
+  }
+
+  .mobile-thread-layout .assess-guided-options {
+    padding-bottom: 4px;
+  }
+
+  .mobile-thread-layout .chat-scroll > .msg-ai:last-child .msg-ai-card {
+    scroll-margin-bottom: 16px;
   }
 
   .mobile-thread-layout .agent-composer-input-row {
@@ -8238,7 +8371,7 @@ input, textarea, select, button {
     max-width: none;
   }
 
-  .landing-hero-title-mobile {
+  .landing-hero-title {
     display: block;
     font-size: clamp(28px, 7.5vw, 34px) !important;
     letter-spacing: -0.04em;
@@ -9166,6 +9299,30 @@ input, textarea, select, button {
   align-items: center;
   gap: 10px;
   padding: 9px 16px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
+
+.draft-progress-section-head--clickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.draft-progress-section-head--clickable:hover {
+  background: var(--lift);
+}
+
+.draft-progress-section-chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.draft-progress-section-chevron.open {
+  transform: rotate(180deg);
 }
 
 .draft-progress-section-icon {
@@ -9239,11 +9396,11 @@ input, textarea, select, button {
   color: var(--fg3);
   line-height: 1.6;
   margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   font-family: 'Sora', sans-serif;
+}
+
+.draft-progress-clause-text--expanded {
+  white-space: pre-wrap;
 }
 
 .draft-section-followup-wrap {

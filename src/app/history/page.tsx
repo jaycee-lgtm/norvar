@@ -76,15 +76,15 @@ export default function HistoryPage() {
 
           <div className="page-heading-row" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28, gap: 12, flexWrap: "wrap" }}>
             <div>
-              <p className="stag" style={{ marginBottom: 8 }}>Assessment history</p>
-              <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.04em", fontFamily: "'Sora', sans-serif" }}>
-                Your assessments
-              </h1>
-              {!loading && items.length > 0 && (
-                <p style={{ fontSize: 12, color: "var(--fg3)", marginTop: 6, fontFamily: "'Sora', sans-serif" }}>
-                  {items.length} assessment{items.length === 1 ? "" : "s"}
-                </p>
-              )}
+              <p className="stag" style={{ marginBottom: 6 }}>Assessment history</p>
+              <div className="history-page-title-line">
+                <h1 className="history-page-title">Your assessments</h1>
+                {!loading && items.length > 0 && (
+                  <span className="history-page-count">
+                    {items.length} assessment{items.length === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
             </div>
             <Link href="/assess" className="btn-primary" style={{ fontSize: 12, padding: "8px 14px", gap: 6 }}>
               <Plus size={13} strokeWidth={2} />

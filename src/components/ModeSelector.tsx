@@ -96,6 +96,12 @@ export default function ModeSelector({
     width:     compact ? 0 : 260,
   });
 
+  const triggerTitle = homePrompt
+    ? `Switch agent — ${active.label} (${active.tagline})`
+    : embedded
+    ? `Switch agent — ${active.label} (${active.tagline})`
+    : `Switch to ${active.label}`;
+
   return (
     <div
       ref={ref}
@@ -107,6 +113,8 @@ export default function ModeSelector({
         className="mode-selector-trigger"
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-label={triggerTitle}
+        title={triggerTitle}
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
         style={homePrompt ? {

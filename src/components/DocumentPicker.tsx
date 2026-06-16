@@ -255,8 +255,8 @@ export default function DocumentPicker({
             stopMenuEvent(e);
             toggle();
           }}
-          aria-label="Add document"
-          title="Add document"
+          aria-label="Attach a document or upload a file"
+          title="Attach a document or upload a file"
         >
           {uploading
             ? <Loader2 size={22} className="spin" strokeWidth={2} />

@@ -32,6 +32,8 @@ type ThreadDetail = {
   gap_title:           string;
   gap_severity:        string;
   project_title:       string | null;
+  assessment_number:   string | null;
+  created_at:          string | null;
   recipient_name:      string | null;
   recipient_email:     string | null;
   escalation_question: string | null;
@@ -51,6 +53,13 @@ function fmtDate(iso: string | null | undefined) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("en-GB", {
     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function fmtIdentifiedDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
   });
 }
 
@@ -770,30 +779,19 @@ function InboxContent() {
                       <ArrowLeft size={18} strokeWidth={2} />
                     </Link>
                     {isMobile && (
-                      <>
-                        <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
-                        <Link href={threadGapHref} className="inbox-open-gap">
-                          View gap
-                          <ExternalLink size={12} strokeWidth={2} />
-                        </Link>
-                      </>
+                      <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
                     )}
                   </div>
 
                   <div className="inbox-thread-head-body">
                     <div className="inbox-thread-title-row">
                       <h1 className="inbox-thread-title">{thread.gap_title}</h1>
-                      {!isMobile && (
-                        <Link href={threadGapHref} className="inbox-open-gap">
-                          View gap
-                          <ExternalLink size={12} strokeWidth={2} />
-                        </Link>
-                      )}
+                      <Link href={threadGapHref} className="inbox-open-gap">
+                        View gap
+                        <ExternalLink size={12} strokeWidth={2} />
+                      </Link>
                     </div>
                     <div className="inbox-thread-meta-row">
-                      {thread.project_title && (
-                        <span className="inbox-project-pill">{thread.project_title}</span>
-                      )}
                       <span className="inbox-thread-meta-recipient">
                         {thread.recipient_name ?? thread.recipient_email ?? "Recipient"}
                         {thread.recipient_email && thread.recipient_name && (
@@ -805,22 +803,42 @@ function InboxContent() {
                 </header>
 
                 <div className="inbox-messages">
-                  {(thread.escalation_question || thread.escalation_note) && (
-                    <div className="inbox-thread-context">
-                      {thread.escalation_question && (
-                        <div className="inbox-context-item">
-                          <span className="inbox-context-label">Question</span>
-                          <p>{thread.escalation_question}</p>
-                        </div>
-                      )}
-                      {thread.escalation_note && (
-                        <div className="inbox-context-item">
-                          <span className="inbox-context-label">Context</span>
-                          <p>{thread.escalation_note}</p>
-                        </div>
-                      )}
+                  <div className="inbox-thread-context">
+                    {thread.project_title && (
+                      <div className="inbox-context-item">
+                        <span className="inbox-context-label">Assessment</span>
+                        <p>{thread.project_title}</p>
+                      </div>
+                    )}
+                    {thread.assessment_number && (
+                      <div className="inbox-context-item">
+                        <span className="inbox-context-label">Number</span>
+                        <p>{thread.assessment_number}</p>
+                      </div>
+                    )}
+                    <div className="inbox-context-item">
+                      <span className="inbox-context-label">Gap</span>
+                      <p>{thread.gap_title}</p>
                     </div>
-                  )}
+                    {thread.created_at && (
+                      <div className="inbox-context-item">
+                        <span className="inbox-context-label">Identified</span>
+                        <p>{fmtIdentifiedDate(thread.created_at)}</p>
+                      </div>
+                    )}
+                    {thread.escalation_question && (
+                      <div className="inbox-context-item">
+                        <span className="inbox-context-label">Question</span>
+                        <p>{thread.escalation_question}</p>
+                      </div>
+                    )}
+                    {thread.escalation_note && (
+                      <div className="inbox-context-item">
+                        <span className="inbox-context-label">Context</span>
+                        <p>{thread.escalation_note}</p>
+                      </div>
+                    )}
+                  </div>
 
                   {thread.messages.length === 0 && (
                     <p className="inbox-messages-empty">No messages in this folder for this thread.</p>

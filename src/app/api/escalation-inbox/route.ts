@@ -36,6 +36,7 @@ type ItemRow = {
   gap_domain: string;
   project_title: string | null;
   assessment_number: string | null;
+  created_at: string;
   escalation_email: string | null;
   escalation_recipient_name: string | null;
   escalation_token: string | null;
@@ -142,6 +143,7 @@ function serializeThread(
     gap_domain:          item.gap_domain,
     project_title:       item.project_title,
     assessment_number:   item.assessment_number,
+    created_at:          item.created_at,
     recipient_name:      item.escalation_recipient_name,
     recipient_email:     item.escalation_email,
     escalation_status:   item.escalation_status,
@@ -158,7 +160,7 @@ async function loadAccessibleItems(userId: string, activeOrgId: string | null) {
   const { data, error } = await supabase
     .from("remediation_items")
     .select(`
-      id, assessment_id, gap_title, gap_severity, gap_domain, project_title, assessment_number,
+      id, assessment_id, gap_title, gap_severity, gap_domain, project_title, assessment_number, created_at,
       escalation_email, escalation_recipient_name, escalation_token, escalation_status,
       escalation_question, escalation_note, escalated_at,
       created_by, assigned_to, remediation_activity(*)

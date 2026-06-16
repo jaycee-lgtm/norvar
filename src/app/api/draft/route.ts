@@ -16,6 +16,10 @@ import {
   type RedlineProvider,
 } from "@/lib/redline-models";
 import { generateDraftDocumentTitle } from "@/lib/generate-thread-title";
+import {
+  appendRegulatoryContextToSystem,
+  retrieveRegulatoryContext,
+} from "@/lib/regulatory-rag";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -89,6 +93,130 @@ function parseJsonSlice<T>(raw: string, opener: "{" | "["): T {
   return JSON.parse(cleaned.slice(start)) as T;
 }
 
+type DraftSend = (d: object) => Promise<void>;
+
+async function pulseWhile<T>(
+  send: (d: object) => Promise<void>,
+  messages: string[],
+  fn: () => Promise<T>,
+  intervalMs = 4500,
+): Promise<T> {
+  if (messages.length === 0) return fn();
+
+  let index = 0;
+  const tick = () => {
+    void send({ type: "pulse", text: messages[index % messages.length] });
+    index += 1;
+  };
+
+  tick();
+  const pulse = setInterval(tick, intervalMs);
+  try {
+    return await fn();
+  } finally {
+    clearInterval(pulse);
+  }
+}
+
+async function generatePlan(
+  send: DraftSend,
+  options: {
+    provider: RedlineProvider;
+    modelId: string;
+    repairProvider: RedlineProvider;
+    repairModelId: string;
+    displayName: string;
+    planUserMsg: string;
+    corpusContext: string;
+    typeLabel: string;
+  },
+): Promise<DraftPlanShape> {
+  const planSystem = appendRegulatoryContextToSystem(
+    PLAN_SYSTEM,
+    options.corpusContext,
+    "Regulatory corpus excerpts (ground frameworks and obligations in these where relevant):",
+  );
+
+  const planPulseMessages = [
+    `Searching ${options.typeLabel} requirements against Norvar's regulatory corpus...`,
+    `${options.displayName} is mapping applicable privacy, AI, and security frameworks...`,
+    "Checking GDPR, CCPA, and related corpus clauses for your jurisdictions...",
+    "Still planning the agreement structure — this usually takes 30–90 seconds...",
+  ];
+
+  await send({
+    type:  "step",
+    text:  `Planning structure with ${options.displayName}...`,
+    state: "active",
+  });
+
+  let planResponse;
+  try {
+    planResponse = await pulseWhile(
+      send,
+      planPulseMessages,
+      () => generateRedlineText({
+        provider:     options.provider,
+        modelId:      options.modelId,
+        systemPrompt: planSystem,
+        userMsg:      options.planUserMsg,
+        maxTokens:    2000,
+      }),
+    );
+  } catch (err) {
+    console.error("Draft plan generation failed:", err);
+    throw new Error(`${options.displayName} could not plan the agreement. Check your connection and try again.`);
+  }
+
+  try {
+    const plan = parseJsonSlice<DraftPlanShape>(planResponse.text, "{");
+    await send({
+      type:  "step",
+      text:  `Planning structure with ${options.displayName}...`,
+      state: "done",
+    });
+    return plan;
+  } catch (parseErr) {
+    console.error("Draft plan parse failed:", parseErr, { length: planResponse.text.length });
+    await send({
+      type:  "step",
+      text:  "Plan response was not valid JSON — retrying with a repair model...",
+      state: "active",
+    });
+
+    const repairResponse = await pulseWhile(
+      send,
+      [
+        "Repair model is re-reading the plan request...",
+        "Trying a simpler structure pass — almost there...",
+      ],
+      () => generateRedlineText({
+        provider:     options.repairProvider,
+        modelId:      options.repairModelId,
+        systemPrompt: planSystem,
+        userMsg:      [
+          options.planUserMsg,
+          "",
+          "Return ONLY valid JSON matching the required plan shape. No markdown fences.",
+        ].join("\n"),
+        maxTokens: 2000,
+      }),
+    );
+
+    try {
+      const plan = parseJsonSlice<DraftPlanShape>(repairResponse.text, "{");
+      await send({
+        type:  "step",
+        text:  "Recovered agreement plan on second attempt",
+        state: "done",
+      });
+      return plan;
+    } catch {
+      throw new Error("Failed to plan agreement structure. Please try again.");
+    }
+  }
+}
+
 async function draftSection(
   sectionNumber: string,
   sectionTitle:  string,
@@ -98,6 +226,8 @@ async function draftSection(
   modelId:       string,
   systemPrompt:  string,
   maxTokens:     number,
+  send?:         DraftSend,
+  displayName?:  string,
 ): Promise<DraftClause[]> {
   const userMsg = [
     context,
@@ -107,13 +237,25 @@ async function draftSection(
     "Return only a JSON array of clause objects.",
   ].join("\n");
 
-  const response = await generateRedlineText({
+  const pulseMessages = displayName && send
+    ? [
+        `${displayName} is drafting Section ${sectionNumber}: ${sectionTitle}...`,
+        `Writing ~${clauseCount} clauses grounded in the regulatory corpus...`,
+        `Section ${sectionNumber} is still generating — large sections can take a minute...`,
+      ]
+    : [];
+
+  const run = () => generateRedlineText({
     provider:     llmProvider,
     modelId,
     systemPrompt,
     userMsg,
     maxTokens,
   });
+
+  const response = send && pulseMessages.length > 0
+    ? await pulseWhile(send, pulseMessages, run, 5000)
+    : await run();
 
   const clauses = parseJsonSlice<DraftClause[]>(response.text, "[");
   return clauses.map(c => ({
@@ -176,6 +318,7 @@ export async function POST(req: NextRequest) {
         repairProvider,
         repairModelId,
         maxTokens,
+        displayName,
       } = resolved;
 
       const typeLabel = agreement_type_label || agreement_type;
@@ -190,10 +333,50 @@ export async function POST(req: NextRequest) {
       ].filter(Boolean).join("\n");
 
       await send({ type: "step", text: "Analysing your inputs...", state: "active" });
-      await new Promise(r => setTimeout(r, 300));
       await send({ type: "step", text: "Analysing your inputs...", state: "done" });
 
-      await send({ type: "step", text: `Mapping regulatory frameworks for ${typeLabel}...`, state: "active" });
+      await send({ type: "step", text: "Searching Norvar regulatory corpus...", state: "active" });
+
+      const ragQuery = [
+        typeLabel,
+        jurisdictions.length ? jurisdictions.join(", ") : "",
+        context,
+        "privacy terms data protection acceptable use",
+      ].filter(Boolean).join(". ");
+
+      let corpusContext = "";
+      try {
+        const { chunks, contextBlock: ragBlock } = await pulseWhile(
+          send,
+          [
+            "Embedding your agreement scope for corpus search...",
+            "Querying regulatory_chunks in Supabase...",
+            "Matching GDPR, CCPA, and related frameworks to your jurisdictions...",
+          ],
+          () => retrieveRegulatoryContext(supabase, ragQuery, {
+            matchThreshold: 0.38,
+            matchCount:     10,
+            minSimilarity:  0.38,
+          }),
+          4000,
+        );
+        corpusContext = ragBlock;
+        const refs = [...new Set(chunks.map(c => c.reg_abbr).filter(Boolean))].slice(0, 6);
+        await send({
+          type:  "step",
+          text:  refs.length > 0
+            ? `Corpus search complete — ${chunks.length} excerpts (${refs.join(", ")})`
+            : "Corpus search complete — drafting from model knowledge",
+          state: "done",
+        });
+      } catch (ragErr) {
+        console.error("Draft corpus retrieval failed:", ragErr);
+        await send({
+          type:  "step",
+          text:  "Corpus search unavailable — continuing with model knowledge",
+          state: "done",
+        });
+      }
 
       const planUserMsg = [
         `Plan a complete ${typeLabel}.`,
@@ -201,28 +384,35 @@ export async function POST(req: NextRequest) {
         `Use "${provider_name}" and "${customer_name}" throughout.`,
       ].join("\n");
 
-      const planResponse = await generateRedlineText({
-        provider,
-        modelId,
-        systemPrompt: PLAN_SYSTEM,
-        userMsg:      planUserMsg,
-        maxTokens:    2000,
-      });
-
       let plan: DraftPlanShape;
       try {
-        plan = parseJsonSlice<DraftPlanShape>(planResponse.text, "{");
-      } catch {
-        await send({ type: "error", text: "Failed to plan agreement structure. Please try again." });
+        plan = await generatePlan(send, {
+          provider,
+          modelId,
+          repairProvider,
+          repairModelId,
+          displayName,
+          planUserMsg,
+          corpusContext,
+          typeLabel,
+        });
+      } catch (planErr) {
+        await send({
+          type: "error",
+          text: planErr instanceof Error ? planErr.message : "Failed to plan agreement structure.",
+        });
         await writer.close();
         return;
       }
 
       const frameworkList = plan.frameworks?.slice(0, 6).join(", ") || "applicable frameworks";
-      await send({ type: "step", text: `Mapping regulatory frameworks — ${frameworkList}`, state: "done" });
+      await send({
+        type:  "step",
+        text:  `Frameworks mapped — ${frameworkList}`,
+        state: "done",
+      });
 
       await send({ type: "step", text: "Building agreement structure...", state: "active" });
-      await new Promise(r => setTimeout(r, 200));
 
       const totalClauses = plan.sections.reduce((n, s) => n + (s.clause_count ?? 4), 0);
       await send({
@@ -250,8 +440,10 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const sectionSystemPrompt = SECTION_SYSTEM(
-        resolvedAgent === "nora" ? NORA_DRAFT_PROMPT : CASSIUS_DRAFT_PROMPT,
+      const sectionSystemPrompt = appendRegulatoryContextToSystem(
+        SECTION_SYSTEM(resolvedAgent === "nora" ? NORA_DRAFT_PROMPT : CASSIUS_DRAFT_PROMPT),
+        corpusContext,
+        "Regulatory corpus excerpts (ground clause obligations in these where relevant):",
       );
 
       const draftedSections: DraftSection[] = [];
@@ -273,9 +465,15 @@ export async function POST(req: NextRequest) {
             modelId,
             sectionSystemPrompt,
             Math.min(maxTokens, 4000),
+            send,
+            displayName,
           );
         } catch (sectionErr) {
           console.error(`Section ${section.number} draft failed:`, sectionErr);
+          await send({
+            type: "status",
+            text: `Section ${section.number} failed — retrying with repair model...`,
+          });
           try {
             clauses = await draftSection(
               section.number,
@@ -286,8 +484,18 @@ export async function POST(req: NextRequest) {
               repairModelId,
               sectionSystemPrompt,
               3000,
+              send,
+              `${displayName} (repair)`,
             );
+            await send({
+              type: "status",
+              text: `Section ${section.number} recovered on second attempt`,
+            });
           } catch {
+            await send({
+              type: "status",
+              text: `Section ${section.number} could not be drafted — inserting placeholder`,
+            });
             clauses = [{
               number: `${section.number}.1`,
               title:  "Placeholder",
@@ -306,15 +514,12 @@ export async function POST(req: NextRequest) {
       }
 
       await send({ type: "step", text: "Validating clauses against corpus...", state: "active" });
-      await new Promise(r => setTimeout(r, 400));
       await send({ type: "step", text: "Validating clauses against corpus...", state: "done" });
 
       await send({ type: "step", text: "Checking for missing provisions...", state: "active" });
-      await new Promise(r => setTimeout(r, 300));
       await send({ type: "step", text: "Checking for missing provisions...", state: "done" });
 
       await send({ type: "step", text: "Compiling drafting notes...", state: "active" });
-      await new Promise(r => setTimeout(r, 200));
       await send({
         type:  "step",
         text:  `Done — ${plan.sections.length} sections, ${totalClauses} clauses`,
