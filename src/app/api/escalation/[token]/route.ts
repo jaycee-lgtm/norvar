@@ -3,7 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveUserProfiles } from "@/lib/clerk-users";
 import { escalationStepIndex, ESCALATION_EMAIL_REPLY_ACTION, parseEscalationInboxThread, type EscalationStatus } from "@/lib/escalation";
-import { gapKeyFromTitle } from "@/lib/gap-chat";
+import { enrichRemediationGapIds, lookupGapChat, resolveGapKey } from "@/lib/gap-id";
+import { loadEscalationById, notifyAssigneesOfRecipientReply } from "@/lib/escalation-thread-server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,7 +31,7 @@ export async function GET(
     .from("remediation_items")
     .select(`
       id, assessment_id, project_title, assessment_number,
-      gap_key, gap_title, gap_severity, gap_domain, gap_detail,
+      gap_key, gap_number, gap_title, gap_severity, gap_domain, gap_detail,
       gap_frameworks, remediation_steps, messages, status,
       escalation_email, escalation_recipient_name, escalation_role,
       escalation_question, escalation_note, escalated_at, escalation_status,
@@ -47,11 +48,19 @@ export async function GET(
     .eq("id", item.assessment_id)
     .single();
 
-  const gapKey = item.gap_key ?? gapKeyFromTitle(item.gap_title, item.gap_severity);
+  const [enriched] = enrichRemediationGapIds([item]);
+  const gapKey = resolveGapKey(
+    enriched.gap_key,
+    enriched.gap_number,
+    enriched.assessment_number,
+    enriched.gap_domain,
+    enriched.gap_severity,
+    enriched.gap_title,
+  );
   const gapChats = (assessment?.gap_chats && typeof assessment.gap_chats === "object")
     ? assessment.gap_chats as Record<string, unknown[]>
     : {};
-  const assessmentGapChat = Array.isArray(gapChats[gapKey]) ? gapChats[gapKey] : [];
+  const assessmentGapChat = lookupGapChat(gapChats, gapKey);
 
   const userIds = [...(item.assigned_to ?? []), ...(assessment ? [] : [])];
   const users   = await resolveUserProfiles(userIds);
@@ -79,7 +88,7 @@ export async function GET(
   }
 
   return Response.json({
-    item:     { ...item, escalation_status: item.escalation_status, gap_key: gapKey },
+    item:     { ...enriched, escalation_status: item.escalation_status, gap_key: gapKey, gap_id: enriched.gap_id },
     assessment,
     assessment_gap_chat: assessmentGapChat,
     inbox_thread:        parseEscalationInboxThread(activity ?? []),
@@ -170,6 +179,22 @@ export async function PATCH(
   }
 
   await supabase.from("remediation_activity").insert(activityRows);
+
+  if (response_note?.trim()) {
+    const threadItem = await loadEscalationById(supabase, item.id);
+    if (threadItem) {
+      try {
+        await notifyAssigneesOfRecipientReply(threadItem, {
+          fromName:  item.escalation_recipient_name ?? null,
+          fromEmail: item.escalation_email?.trim() || actorId,
+          body:      response_note.trim(),
+          source:    "form",
+        });
+      } catch (err) {
+        console.warn("[escalation] assignee notification failed", err);
+      }
+    }
+  }
 
   return Response.json({ escalation_status: data.escalation_status });
 }

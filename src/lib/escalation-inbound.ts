@@ -10,6 +10,13 @@ import {
   type EscalationStatus,
 } from "@/lib/escalation";
 import { stripInboxMessageBody } from "@/lib/inbox";
+import {
+  isEscalationRecipientSender,
+  loadEscalationByToken,
+  notifyAssigneesOfRecipientReply,
+  resolveTeamSender,
+  sendTeamEscalationReply,
+} from "@/lib/escalation-thread-server";
 
 type ReceivedEmail = {
   id:      string;
@@ -275,13 +282,7 @@ export async function recordEscalationEmailReply(
     bodyHtml?:       string | null;
   },
 ): Promise<{ ok: boolean; error?: string; duplicate?: boolean }> {
-  const { data: item, error } = await supabase
-    .from("remediation_items")
-    .select("id, escalation_status, escalation_email")
-    .eq("escalation_token", input.token)
-    .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
+  const item = await loadEscalationByToken(supabase, input.token);
   if (!item) return { ok: false, error: "Escalation not found" };
 
   const { data: existing } = await supabase
@@ -328,6 +329,17 @@ export async function recordEscalationEmailReply(
 
   if (insertError) return { ok: false, error: insertError.message };
 
+  try {
+    await notifyAssigneesOfRecipientReply(item, {
+      fromName:  sender.name,
+      fromEmail: sender.email,
+      body,
+      source:    "email",
+    });
+  } catch (err) {
+    console.warn("[escalation-inbound] assignee notification failed", err);
+  }
+
   return { ok: true };
 }
 
@@ -361,6 +373,35 @@ export async function processInboundEscalationEmail(
   }
 
   const bodyText = extractEmailBody(email);
+  const sender   = parseSender(email.from ?? event.data?.from ?? "unknown");
+  const item     = await loadEscalationByToken(supabase, token);
+
+  if (!item) {
+    return { ok: false, error: "Escalation not found", retriable: false };
+  }
+
+  const teamSender = await resolveTeamSender(item, sender.email);
+  if (teamSender && !isEscalationRecipientSender(item, sender.email)) {
+    const teamResult = await sendTeamEscalationReply(supabase, item, {
+      userId:          teamSender.userId,
+      senderName:      teamSender.name,
+      senderEmail:     teamSender.email,
+      body:            stripEmailQuote(bodyText) || bodyText.trim(),
+      inboundEmailId:  emailId,
+    });
+
+    if (!teamResult.ok && !teamResult.duplicate) {
+      console.warn("[escalation-inbound] failed to record team reply", {
+        email_id: emailId,
+        token,
+        error:    teamResult.error,
+      });
+      return { ok: false, error: teamResult.error ?? "Failed to record team reply", retriable: false };
+    }
+
+    return { ok: true };
+  }
+
   const result = await recordEscalationEmailReply(supabase, {
     token,
     inboundEmailId: emailId,

@@ -53,6 +53,7 @@ import {
 import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 import { normalizeGapSeverity, normalizeRiskTier, compareGapSeverity } from "@/lib/risk-tiers";
+import { assignGapIds, lookupGapChat } from "@/lib/gap-id";
 import {
   FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
@@ -101,6 +102,7 @@ const SECTOR_OPTIONS = [
 
 type Gap = {
   severity:     "high" | "medium" | "low";
+  domain?:      string;
   title:        string;
   detail?:      string;
   description?: string;
@@ -411,6 +413,10 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
   const ordered     = [...gaps].sort(
     (x, y) => compareGapSeverity(x.severity, y.severity),
   );
+  const gapIdMap    = assignGapIds(
+    ordered.map(g => ({ domain: g.domain ?? "privacy" })),
+    a.assessment_number ?? null,
+  );
 
   const [queued,    setQueued]    = useState<Set<number>>(new Set());
   const [queueing,  setQueueing]  = useState<number | null>(null);
@@ -432,10 +438,14 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
           assessment_id:     a.id,
           assessment_number: a.assessment_number ?? null,
           project_title:     a.title,
-          gaps:              indices.map(i => ({
-            ...ordered[i],
-            gap_key: String(i),
-          })),
+          gaps:              indices.map(i => {
+            const info = gapIdMap.get(i)!;
+            return {
+              ...ordered[i],
+              gap_key:    info.gap_key,
+              gap_number: info.gap_number,
+            };
+          }),
         }),
       });
       setQueued(prev => { const next = new Set(prev); indices.forEach(i => next.add(i)); return next; });
@@ -568,12 +578,14 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
           ordered.map((gap, i) => {
             const steps = gap.remediation ? splitRemediationSteps(gap.remediation) : [];
             const sev = normalizeGapSeverity(gap.severity);
+            const idInfo = gapIdMap.get(i)!;
+            const gapLabel = idInfo.gap_id ?? idInfo.gap_number;
             return (
             <div key={i} className="gap-item gap-item-card">
               <div className="gap-item-header">
                 <div className="gap-item-head-main">
                   <div className="gap-item-meta">
-                    <span className="gap-item-index">Gap {i + 1}</span>
+                    <span className="gap-item-index">{gapLabel}</span>
                     <span className={`gap-sev ${sev}`}>
                       <SevIcon sev={sev} />
                       {sev.charAt(0).toUpperCase() + sev.slice(1)}
@@ -619,9 +631,9 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
                     remediation_steps:  gap.remediation,
                   }}
                   assessmentId={assessmentId}
-                  gapKey={String(i)}
-                  initialMessages={gapChats?.[String(i)] ?? []}
-                  onMessagesChange={msgs => onGapChatsUpdate?.(String(i), msgs)}
+                  gapKey={idInfo.gap_key}
+                  initialMessages={lookupGapChat(gapChats, idInfo.gap_key, [String(i)])}
+                  onMessagesChange={msgs => onGapChatsUpdate?.(idInfo.gap_key, msgs)}
                 />
               </div>
             </div>

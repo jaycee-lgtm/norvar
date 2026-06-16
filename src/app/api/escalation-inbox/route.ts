@@ -4,11 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 import { resolveUserProfiles } from "@/lib/clerk-users";
 import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
 import {
-  ESCALATION_INBOX_SENT_ACTION,
   type EscalationInboxMessage,
   type EscalationStatus,
 } from "@/lib/escalation";
-import { sendEscalationInboxReply } from "@/lib/email";
+import { loadEscalationById, sendTeamEscalationReply } from "@/lib/escalation-thread-server";
 import {
   type InboxFolder,
   type InboxActivityRow,
@@ -22,6 +21,7 @@ import {
   INBOX_MESSAGE_ACTIONS,
   isInboxMessageAction,
 } from "@/lib/inbox";
+import { enrichRemediationGapIds } from "@/lib/gap-id";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,6 +34,8 @@ type ItemRow = {
   gap_title: string;
   gap_severity: string;
   gap_domain: string;
+  gap_key: string | null;
+  gap_number: string | null;
   project_title: string | null;
   assessment_number: string | null;
   created_at: string;
@@ -134,11 +136,14 @@ function serializeThread(
     : filterMessagesForFolder(withRead, folder);
   const allCounts = folderCounts(withRead, readIds);
 
+  const [enriched] = enrichRemediationGapIds([item]);
+
   return {
     remediation_id:      item.id,
     assessment_id:       item.assessment_id,
     escalation_token:    item.escalation_token,
     gap_title:           item.gap_title,
+    gap_id:              enriched.gap_id,
     gap_severity:        item.gap_severity,
     gap_domain:          item.gap_domain,
     project_title:       item.project_title,
@@ -160,7 +165,8 @@ async function loadAccessibleItems(userId: string, activeOrgId: string | null) {
   const { data, error } = await supabase
     .from("remediation_items")
     .select(`
-      id, assessment_id, gap_title, gap_severity, gap_domain, project_title, assessment_number, created_at,
+      id, assessment_id, gap_title, gap_severity, gap_domain, gap_key, gap_number,
+      project_title, assessment_number, created_at,
       escalation_email, escalation_recipient_name, escalation_token, escalation_status,
       escalation_question, escalation_note, escalated_at,
       created_by, assigned_to, remediation_activity(*)
@@ -277,54 +283,31 @@ export async function POST(req: NextRequest) {
   const senderName = profiles[userId]?.name ?? "Norvar user";
   const senderEmail = profiles[userId]?.email ?? userId;
 
-  const emailResult = await sendEscalationInboxReply({
-    token:             row.escalation_token,
-    assessmentNumber:  row.assessment_number,
-    recipientEmail:    row.escalation_email,
-    recipientName:     row.escalation_recipient_name,
-    gapTitle:          row.gap_title,
-    projectTitle:      row.project_title,
-    body,
+  const threadItem = await loadEscalationById(supabase, remediation_id);
+  if (!threadItem) {
+    return Response.json({ error: "Thread not found" }, { status: 404 });
+  }
+
+  const sendResult = await sendTeamEscalationReply(supabase, threadItem, {
+    userId,
     senderName,
-  });
-
-  const detail = JSON.stringify({
-    from_email: senderEmail,
-    from_name:  senderName,
-    to_email:   row.escalation_email,
-    subject:    null,
+    senderEmail,
     body,
   });
 
-  const { data: activity, error: insertError } = await supabase
-    .from("remediation_activity")
-    .insert({
-      remediation_id: remediation_id,
-      user_id:        userId,
-      action:         ESCALATION_INBOX_SENT_ACTION,
-      detail,
-    })
-    .select("id, action, detail, created_at, user_id, archived_at, deleted_at")
-    .single();
-
-  if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
-
-  if (row.escalation_status !== "closed") {
-    await supabase
-      .from("remediation_items")
-      .update({ last_notified_at: new Date().toISOString() })
-      .eq("id", remediation_id);
+  if (!sendResult.ok && !sendResult.duplicate) {
+    return Response.json({ error: sendResult.error ?? "Send failed" }, { status: 500 });
   }
 
   const outbound: EscalationInboxMessage = {
-    id:          activity.id,
+    id:          sendResult.activityId ?? remediation_id,
     direction:   "outbound",
     from_email:  senderEmail,
     from_name:   senderName,
     to_email:    row.escalation_email,
     subject:     null,
     body,
-    created_at:  activity.created_at,
+    created_at:  sendResult.createdAt ?? new Date().toISOString(),
     archived_at: null,
     deleted_at:  null,
     is_read:     true,
@@ -332,8 +315,8 @@ export async function POST(req: NextRequest) {
 
   return Response.json({
     message:     outbound,
-    email_sent:  emailResult.ok,
-    email_error: emailResult.error,
+    email_sent:  sendResult.ok,
+    email_error: sendResult.error,
   });
 }
 

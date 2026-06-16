@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
-import { syncGapChatToAssessment, gapKeyFromTitle } from "@/lib/gap-chat";
+import { syncGapChatToAssessment } from "@/lib/gap-chat";
+import { resolveGapKey } from "@/lib/gap-id";
 import { getActiveOrganizationId, isOrgMember } from "@/lib/clerk-org";
 import {
   appendRegulatoryContextToSystem,
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
       if (remediation_id) {
         const { data: item } = await supabase
           .from("remediation_items")
-          .select("created_by, assigned_to, assessment_id, gap_key, gap_title, gap_severity")
+          .select("created_by, assigned_to, assessment_id, gap_key, gap_number, gap_domain, gap_title, gap_severity, assessment_number")
           .eq("id", remediation_id)
           .single();
 
@@ -178,8 +179,14 @@ export async function POST(req: NextRequest) {
         }
 
         linkedAssessmentId = item.assessment_id;
-        linkedGapKey = item.gap_key
-          ?? gapKeyFromTitle(item.gap_title, item.gap_severity);
+        linkedGapKey = resolveGapKey(
+          item.gap_key,
+          item.gap_number,
+          item.assessment_number,
+          item.gap_domain,
+          item.gap_severity,
+          item.gap_title,
+        );
 
         const { error } = await supabase
           .from("remediation_items")

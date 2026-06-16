@@ -31,6 +31,12 @@ export function compareGapSeverity(a: string, b: string): number {
 const RISK_DOMAIN_KEYS = ["privacy", "ai_governance", "cybersecurity"] as const;
 export type RiskDomainKey = typeof RISK_DOMAIN_KEYS[number];
 
+export const GAP_DOMAIN_CODES: Record<RiskDomainKey, string> = {
+  privacy:       "PRIV",
+  ai_governance: "AI",
+  cybersecurity: "CYBER",
+};
+
 /** Normalize questionnaire / API domain ids to risk_by_domain keys. */
 export function normalizeRiskDomainKey(domain: string): RiskDomainKey {
   const d = domain.toLowerCase();

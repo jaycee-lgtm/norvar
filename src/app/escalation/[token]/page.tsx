@@ -27,6 +27,7 @@ type EscalationData = {
     assessment_id: string;
     project_title: string | null;
     assessment_number: string | null;
+    gap_id: string | null;
     gap_title: string;
     gap_severity: string;
     gap_domain: string;
@@ -263,6 +264,9 @@ export default function EscalationViewPage() {
             )}
           </div>
           <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 8px", lineHeight: 1.35, fontFamily: "'Sora', sans-serif" }}>{item.gap_title}</h1>
+          {item.gap_id && (
+            <p style={{ fontSize: 11, color: "var(--fg3)", margin: "0 0 8px", fontFamily: "monospace" }}>{item.gap_id}</p>
+          )}
           {item.gap_detail && (
             <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.6, margin: 0 }}>{item.gap_detail}</p>
           )}

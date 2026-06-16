@@ -288,7 +288,7 @@ export default function ProjectDetailPage() {
                   key={g.id}
                   href="/remediation"
                   title={g.gap_title}
-                  meta={`${normalizeGapSeverity(g.gap_severity)} · ${g.status.replace("_", " ")}${g.assessment_number ? ` · ${g.assessment_number}` : ""}`}
+                  meta={`${normalizeGapSeverity(g.gap_severity)} · ${g.status.replace("_", " ")}${(g as { gap_id?: string | null }).gap_id ? ` · ${(g as { gap_id?: string | null }).gap_id}` : g.assessment_number ? ` · ${g.assessment_number}` : ""}`}
                 />
               ))}
             </ProjectSection>

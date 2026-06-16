@@ -43,6 +43,8 @@ interface RemediationItem {
   assessment_number:    string | null;
   project_title:        string | null;
   gap_key:              string | null;
+  gap_number:           string | null;
+  gap_id?:              string | null;
   gap_title:            string;
   gap_severity:         "high" | "medium" | "low";
   gap_domain:           string;
@@ -247,7 +249,10 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
                   {item.project_title && (
                     <span className="remediation-item-meta-project">{item.project_title}</span>
                   )}
-                  {item.assessment_number && (
+                  {item.gap_id && (
+                    <span className="remediation-item-meta-num">{item.gap_id}</span>
+                  )}
+                  {!item.gap_id && item.assessment_number && (
                     <span className="remediation-item-meta-num">{item.assessment_number}</span>
                   )}
                   <span>{DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain}</span>

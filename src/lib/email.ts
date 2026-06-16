@@ -3,6 +3,7 @@ import { escalationReplyToAddress, escalationViewUrl, formatEscalationRef } from
 export type EscalationEmailPayload = {
   token:             string;
   assessmentNumber?: string | null;
+  gapId?:            string | null;
   recipientEmail:    string;
   recipientName?:  string | null;
   gapTitle:        string;
@@ -44,6 +45,7 @@ export function buildEscalationEmailText(payload: EscalationEmailPayload) {
     `${payload.escalatedByName} escalated a compliance gap to you on Norvar.`,
     "",
     `Gap: ${payload.gapTitle}`,
+    payload.gapId ? `ID: ${payload.gapId}` : "",
     `Severity: ${payload.gapSeverity} · Domain: ${payload.gapDomain}`,
     payload.projectTitle ? `Project: ${payload.projectTitle}` : "",
     payload.gapDetail ? payload.gapDetail : "",
@@ -77,6 +79,7 @@ function buildEscalationHtml(payload: EscalationEmailPayload) {
   <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; margin: 16px 0;">
     <p style="margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #737373;">Gap</p>
     <p style="margin: 0 0 6px; font-size: 15px; font-weight: 600;">${escapeHtml(payload.gapTitle)}</p>
+    ${payload.gapId ? `<p style="margin: 0 0 6px; font-size: 12px; color: #737373; font-family: monospace;">${escapeHtml(payload.gapId)}</p>` : ""}
     <p style="margin: 0; font-size: 13px; color: #525252;">
       Severity: ${escapeHtml(payload.gapSeverity)} · Domain: ${escapeHtml(payload.gapDomain)}
       ${payload.projectTitle ? `<br>Project: ${escapeHtml(payload.projectTitle)}` : ""}
@@ -197,6 +200,105 @@ export async function sendEscalationInboxReply(
       body: JSON.stringify({
         from,
         to:       [payload.recipientEmail],
+        reply_to: replyTo,
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.message ?? `Resend error ${res.status}` };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Send failed" };
+  }
+}
+
+export type EscalationAssigneeNotifyPayload = {
+  toEmails:          string[];
+  token:             string;
+  assessmentNumber?: string | null;
+  gapTitle:          string;
+  projectTitle?:     string | null;
+  recipientName?:    string | null;
+  recipientEmail:    string;
+  replyBody:         string;
+  replySource:       "email" | "form";
+  inboxUrl:          string;
+};
+
+export async function sendEscalationAssigneeReplyNotification(
+  payload: EscalationAssigneeNotifyPayload,
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to     = [...new Set(payload.toEmails.map(e => e.trim().toLowerCase()).filter(Boolean))];
+
+  if (!to.length) return { ok: true };
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY not set — assignee reply notification not sent");
+    return { ok: false, error: "Email not configured" };
+  }
+
+  const ref     = formatEscalationRef(payload.assessmentNumber, payload.token);
+  const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
+  const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
+  const sender  = payload.recipientName?.trim() || payload.recipientEmail;
+  const source  = payload.replySource === "form" ? "the escalation page" : "email";
+  const preview = payload.replyBody.trim().slice(0, 1200);
+  const subject = `[ref:${ref}] New reply: ${payload.gapTitle}`;
+
+  const text = [
+    "A recipient replied to your Norvar escalation.",
+    "",
+    `Gap: ${payload.gapTitle}`,
+    payload.projectTitle ? `Assessment: ${payload.projectTitle}` : "",
+    `From: ${sender} (${payload.recipientEmail})`,
+    `Via: ${source}`,
+    "",
+    preview,
+    preview.length < payload.replyBody.trim().length ? "\n[Message truncated]" : "",
+    "",
+    `Open in Norvar: ${payload.inboxUrl}`,
+    "",
+    "Reply to this email to send your response to the recipient. It will appear in the Norvar thread.",
+  ].filter(Boolean).join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; line-height: 1.55; max-width: 560px;">
+  <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #737373; margin: 0 0 8px;">New escalation reply</p>
+  <p style="font-size: 14px; margin: 0 0 16px;"><strong>${escapeHtml(sender)}</strong> replied via ${escapeHtml(source)}.</p>
+  <div style="background: #f5f5f4; border-radius: 8px; padding: 14px 16px; margin: 0 0 16px;">
+    <p style="margin: 0 0 6px; font-size: 13px; font-weight: 600;">${escapeHtml(payload.gapTitle)}</p>
+    ${payload.projectTitle ? `<p style="margin: 0; font-size: 12px; color: #525252;">${escapeHtml(payload.projectTitle)}</p>` : ""}
+  </div>
+  <p style="font-size: 14px; white-space: pre-wrap; margin: 0 0 20px;">${escapeHtml(preview)}</p>
+  <p style="margin: 0 0 20px;">
+    <a href="${payload.inboxUrl}" style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 500;">
+      Open in Norvar
+    </a>
+  </p>
+  <p style="font-size: 12px; color: #737373; margin: 0; padding-top: 16px; border-top: 1px solid #e5e5e5;">
+    <strong>Reply to this email</strong> to respond to ${escapeHtml(sender)}. Your message will appear in the Norvar thread and be emailed to them.
+  </p>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method:  "POST",
+      headers: {
+        Authorization:  `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to,
         reply_to: replyTo,
         subject,
         html,

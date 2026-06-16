@@ -30,6 +30,7 @@ type ThreadDetail = {
   assessment_id:       string;
   escalation_token:    string | null;
   gap_title:           string;
+  gap_id:              string | null;
   gap_severity:        string;
   project_title:       string | null;
   assessment_number:   string | null;
@@ -823,6 +824,12 @@ function InboxContent() {
                       <div className="inbox-context-item">
                         <span className="inbox-context-label">Number</span>
                         <p>{thread.assessment_number}</p>
+                      </div>
+                    )}
+                    {thread.gap_id && (
+                      <div className="inbox-context-item">
+                        <span className="inbox-context-label">Gap ID</span>
+                        <p style={{ fontFamily: "monospace", fontSize: 12 }}>{thread.gap_id}</p>
                       </div>
                     )}
                     <div className="inbox-context-item">

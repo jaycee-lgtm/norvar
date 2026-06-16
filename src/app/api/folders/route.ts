@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
+import { enrichRemediationGapIds } from "@/lib/gap-id";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -90,10 +91,10 @@ async function loadProjectDetail(folderId: string, userId: string) {
   if (assessmentIds.length) {
     const { data } = await supabase
       .from("remediation_items")
-      .select("id, gap_title, gap_severity, gap_domain, status, assessment_id, assessment_number, project_title, created_at")
+      .select("id, gap_title, gap_severity, gap_domain, gap_key, gap_number, status, assessment_id, assessment_number, project_title, created_at")
       .in("assessment_id", assessmentIds)
       .order("created_at", { ascending: false });
-    gaps = data ?? [];
+    gaps = enrichRemediationGapIds((data ?? []) as Parameters<typeof enrichRemediationGapIds>[0]);
   }
 
   let chats: Record<string, unknown>[] = [];

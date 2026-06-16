@@ -11,6 +11,11 @@ import {
   type RemediationAccessRow,
 } from "@/lib/remediation-access";
 import { gapKeyFromTitle } from "@/lib/gap-chat";
+import {
+  assignNextGapIds,
+  enrichRemediationGapIds,
+  existingDomainCounters,
+} from "@/lib/gap-id";
 import { sortBySeverity } from "@/lib/remediation";
 import { touchAssigneeMeta, type AssigneeMeta, ESCALATION_INBOX_SENT_ACTION, escalationInboxSentDetail } from "@/lib/escalation";
 import { buildEscalationEmailText, escalationEmailSubject, sendEscalationEmail, type EscalationEmailPayload } from "@/lib/email";
@@ -33,6 +38,8 @@ type ItemRow = {
   assessment_number: string | null;
   project_title: string | null;
   gap_key: string | null;
+  gap_number: string | null;
+  gap_id?: string | null;
   gap_title: string;
   gap_severity: string;
   gap_domain?: string;
@@ -90,6 +97,7 @@ async function buildEscalationEmailPayload(
     gap_severity: string;
     gap_domain: string;
     gap_detail?: string | null;
+    gap_id?: string | null;
     project_title?: string | null;
     assessment_number?: string | null;
     assigned_to?: string[] | null;
@@ -109,6 +117,7 @@ async function buildEscalationEmailPayload(
   return {
     token:             item.escalation_token,
     assessmentNumber:  item.assessment_number,
+    gapId:             item.gap_id ?? null,
     recipientEmail:    item.escalation_email,
     recipientName:   item.escalation_recipient_name,
     gapTitle:        item.gap_title,
@@ -149,12 +158,20 @@ function enrichItem(row: ItemRow) {
   const title = row.project_title ?? row.assessments?.title ?? null;
   const number = row.assessment_number ?? row.assessments?.assessment_number ?? null;
   const { assessments: _a, ...rest } = row;
-  return {
+  const [enriched] = enrichRemediationGapIds([{
     ...rest,
-    project_title:     title,
     assessment_number: number,
-    gap_key:           rest.gap_key ?? gapKeyFromTitle(rest.gap_title, rest.gap_severity),
-  } as ItemRow & { project_title: string | null; assessment_number: string | null; gap_key: string };
+  }]);
+  return {
+    ...enriched,
+    project_title: title,
+    assessment_number: number,
+  } as ItemRow & {
+    project_title: string | null;
+    assessment_number: string | null;
+    gap_key: string;
+    gap_id: string | null;
+  };
 }
 
 // GET — list remediation items
@@ -188,16 +205,27 @@ export async function GET(req: NextRequest) {
     return canViewRemediationItem(item, userId, orgMemberIds);
   });
 
-  const items = sortBySeverity(visible.map(r => {
-    const row = enrichItem(r as ItemRow) as ItemRow & {
+  const enriched = enrichRemediationGapIds(
+    visible.map(r => {
+      const row = r as ItemRow;
+      return {
+        ...row,
+        project_title:     row.project_title ?? row.assessments?.title ?? null,
+        assessment_number: row.assessment_number ?? row.assessments?.assessment_number ?? null,
+      };
+    }),
+  );
+
+  const items = sortBySeverity(enriched.map(row => {
+    const withActivity = row as ItemRow & {
       remediation_activity?: Array<{ created_at: string }>;
     };
-    if (Array.isArray(row.remediation_activity)) {
-      row.remediation_activity = [...row.remediation_activity].sort(
+    if (Array.isArray(withActivity.remediation_activity)) {
+      withActivity.remediation_activity = [...withActivity.remediation_activity].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
     }
-    return row;
+    return withActivity;
   }));
   const userIds = items.flatMap(i => [...(i.assigned_to ?? []), i.created_by]);
   const users   = await resolveUserProfiles(userIds);
@@ -242,21 +270,41 @@ export async function POST(req: NextRequest) {
   const resolvedTitle  = project_title ?? assessment?.title ?? null;
   const resolvedNumber = assessment_number ?? assessment?.assessment_number ?? null;
 
+  const { data: existingItems } = await supabase
+    .from("remediation_items")
+    .select("gap_number, gap_domain, gap_key, assessment_number")
+    .eq("assessment_id", assessment_id);
+
+  const counters = existingDomainCounters(existingItems ?? []);
+  const gapIdList = assignNextGapIds(
+    gaps.map((gap: Record<string, unknown>) => ({
+      domain: String(gap.domain ?? "privacy"),
+    })),
+    resolvedNumber,
+    counters,
+  );
+
   const assigneeIds = assigned_to?.length
     ? Array.from(new Set([userId, ...assigned_to]))
     : [userId];
   const defaultRoles = await rolesForAssignees(activeOrgId, assigneeIds);
 
-  const items = gaps.map((gap: Record<string, unknown>) => {
-    const gapKey = (gap.gap_key as string)
+  const items = gaps.map((gap: Record<string, unknown>, index: number) => {
+    const { gap_number, gap_key } = gapIdList[index];
+    const legacyKey = (gap.gap_key as string)
       ?? gapKeyFromTitle(String(gap.title), String(gap.severity));
-    const priorMessages = Array.isArray(gapChats[gapKey]) ? gapChats[gapKey] : [];
+    const priorMessages = Array.isArray(gapChats[gap_key])
+      ? gapChats[gap_key]
+      : Array.isArray(gapChats[legacyKey])
+        ? gapChats[legacyKey]
+        : [];
 
     return {
       assessment_id,
       assessment_number: resolvedNumber,
       project_title:     resolvedTitle,
-      gap_key:           gapKey,
+      gap_key,
+      gap_number,
       gap_title:         gap.title,
       gap_severity:      normalizeGapSeverity(String(gap.severity ?? "")),
       gap_domain:        gap.domain,
@@ -392,6 +440,7 @@ export async function PATCH(req: NextRequest) {
     return Response.json({ error: loadError ?? "Remediation item not found" }, { status: loadError === "Remediation item not found" ? 404 : 500 });
   }
   const current = loaded as {
+    assessment_id: string;
     assigned_to: string[] | null;
     status: string;
     created_by: string;
@@ -425,12 +474,20 @@ export async function PATCH(req: NextRequest) {
 
     const profiles = await resolveUserProfiles([userId]);
     const escalatedByName = profiles[userId]?.name ?? "A colleague";
+    const [enrichedCurrent] = enrichRemediationGapIds([{
+      ...current,
+      assessment_id: current.assessment_id,
+      gap_key:       (current as { gap_key?: string | null }).gap_key ?? null,
+      gap_number:    (current as { gap_number?: string | null }).gap_number ?? null,
+      created_at:    (current as { created_at?: string }).created_at ?? new Date().toISOString(),
+    }]);
     const emailPayload = await buildEscalationEmailPayload(
       {
         gap_title:        current.gap_title,
         gap_severity:     current.gap_severity,
         gap_domain:       current.gap_domain,
         gap_detail:       current.gap_detail,
+        gap_id:           enrichedCurrent.gap_id,
         project_title:    current.project_title,
         assessment_number: current.assessment_number,
         assigned_to:      current.assigned_to,
@@ -617,12 +674,20 @@ export async function PATCH(req: NextRequest) {
     activityDetail = `Escalated to ${recipient?.name ?? email}${escalation_role ? ` (${escalation_role})` : ""}`;
 
     const escalatedByName = profiles[userId]?.name ?? "A colleague";
+    const [enrichedCurrent] = enrichRemediationGapIds([{
+      ...current,
+      assessment_id: current.assessment_id,
+      gap_key:       (current as { gap_key?: string | null }).gap_key ?? null,
+      gap_number:    (current as { gap_number?: string | null }).gap_number ?? null,
+      created_at:    (current as { created_at?: string }).created_at ?? new Date().toISOString(),
+    }]);
     const emailPayload = await buildEscalationEmailPayload(
       {
         gap_title:        current.gap_title,
         gap_severity:     current.gap_severity,
         gap_domain:       current.gap_domain,
         gap_detail:       current.gap_detail,
+        gap_id:           enrichedCurrent.gap_id,
         project_title:    current.project_title,
         assessment_number: current.assessment_number,
         assigned_to:      current.assigned_to,
