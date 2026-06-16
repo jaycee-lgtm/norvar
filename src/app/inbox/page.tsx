@@ -524,11 +524,9 @@ function InboxContent() {
     </nav>
   );
 
-  const threadGapHref = thread?.escalation_token
-    ? `/escalation/${thread.escalation_token}`
-    : threadId
-      ? `/remediation?gap=${threadId}`
-      : "/remediation";
+  const threadGapHref = threadId
+    ? `/remediation?gap=${threadId}`
+    : "/remediation";
 
   const listToolbar = !isMobile ? (
     <div className="inbox-list-toolbar">
