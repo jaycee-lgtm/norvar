@@ -445,6 +445,7 @@ function Chat() {
 
   const examplesControl = (
     <SampleQuestionsDropdown
+      context="chat"
       variant="icon"
       menuPlacement="top"
       onSelect={q => sendWithVoice(q)}

@@ -1,26 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Lightbulb } from "lucide-react";
-import { SAMPLE_QUESTIONS } from "@/lib/sample-questions";
+import { ChevronDown, Lightbulb, Loader2 } from "lucide-react";
+import { useSampleQuestions } from "@/hooks/useSampleQuestions";
+import type { SampleQuestionsContext } from "@/lib/sample-questions";
 
 type SampleQuestionsDropdownProps = {
+  context: SampleQuestionsContext;
   onSelect: (question: string) => void;
   disabled?: boolean;
   align?: "left" | "center";
   variant?: "chip" | "icon";
   menuPlacement?: "top" | "bottom";
+  enabled?: boolean;
 };
 
 export default function SampleQuestionsDropdown({
+  context,
   onSelect,
   disabled,
   align = "center",
   variant = "chip",
   menuPlacement = "bottom",
+  enabled = true,
 }: SampleQuestionsDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref   = useRef<HTMLDivElement>(null);
+  const { questions, refreshing } = useSampleQuestions(context, { enabled });
 
   useEffect(() => {
     if (!open) return;
@@ -36,7 +42,7 @@ export default function SampleQuestionsDropdown({
   return (
     <div
       ref={ref}
-      className={`sample-questions-wrap${isIcon ? " sample-questions-wrap--icon" : ""}`}
+      className={`sample-questions-wrap${isIcon ? " sample-questions-wrap--icon" : ""}${refreshing ? " sample-questions-wrap--refreshing" : ""}`}
       style={!isIcon && align === "center" ? { margin: "0 auto" } : undefined}
     >
       <button
@@ -50,7 +56,9 @@ export default function SampleQuestionsDropdown({
         title="Example questions"
       >
         {isIcon ? (
-          <Lightbulb size={16} strokeWidth={2} />
+          refreshing
+            ? <Loader2 size={22} className="spin" strokeWidth={2} />
+            : <Lightbulb size={22} strokeWidth={2} />
         ) : (
           <>
             Sample questions
@@ -72,9 +80,9 @@ export default function SampleQuestionsDropdown({
           role="listbox"
           aria-label="Example questions"
         >
-          {SAMPLE_QUESTIONS.map(q => (
+          {questions.map((q, i) => (
             <button
-              key={q}
+              key={`${i}-${q.slice(0, 24)}`}
               type="button"
               role="option"
               className="sample-questions-item"
@@ -86,6 +94,9 @@ export default function SampleQuestionsDropdown({
               {q}
             </button>
           ))}
+          {refreshing && (
+            <p className="sample-questions-refresh-note">Refreshing suggestions…</p>
+          )}
         </div>
       )}
     </div>

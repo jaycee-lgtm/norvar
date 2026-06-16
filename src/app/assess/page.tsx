@@ -30,7 +30,8 @@ import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
-import { pickNoraFollowUps } from "@/lib/agent-prompts";
+import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
+import AssessmentFollowUpChips from "@/components/AssessmentFollowUpChips";
 import {
   ASSESSMENT_CONFIRM_NOT_YET,
   ASSESSMENT_CONFIRM_OPTIONS,
@@ -836,7 +837,6 @@ function Home() {
   const latestAssessment = [...messages].reverse().find(
     (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
   )?.assessment;
-  const noraFollowUps = latestAssessment ? pickNoraFollowUps(latestAssessment.gaps ?? []) : [];
   const firstDisclaimerIndex = messages.findIndex(m =>
     m.role === "nora"
     || m.role === "chat"
@@ -1060,21 +1060,24 @@ function Home() {
     disabled: loading,
   });
 
-  const noraFollowUpChips = hasAssessment && noraFollowUps.length > 0 ? (
-    <div className="nora-follow-ups">
-      {noraFollowUps.map(q => (
-        <button
-          key={q}
-          type="button"
-          className="chip nora-follow-up-chip"
-          disabled={loading}
-          onClick={() => { void sendWithVoice(q); }}
-        >
-          {q}
-        </button>
-      ))}
-    </div>
+  const noraFollowUpChips = hasAssessment && latestAssessment ? (
+    <AssessmentFollowUpChips
+      assessmentTitle={latestAssessment.title}
+      gaps={latestAssessment.gaps ?? []}
+      disabled={loading}
+      onSelect={q => { void sendWithVoice(q); }}
+    />
   ) : null;
+
+  const examplesControl = (
+    <SampleQuestionsDropdown
+      context="assess"
+      variant="icon"
+      menuPlacement="top"
+      onSelect={q => { void sendWithVoice(q); }}
+      disabled={loading}
+    />
+  );
 
   const presentGuidedQuestion = (question: AssessmentQuestion, intro?: string) => {
     setActiveGuidedQuestionId(question.id);
@@ -1685,6 +1688,7 @@ function Home() {
         showSendButton={showSendButton}
         attachControl={attachControl}
         voiceControl={voiceControl}
+        extraToolbarStart={examplesControl}
         header={attachedDocsHeader}
       />
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
@@ -1920,6 +1924,7 @@ function Home() {
                       showSendButton={showSendButton}
                       attachControl={attachControl}
                       voiceControl={threadVoiceControl}
+                      extraToolbarStart={examplesControl}
                     />
                     {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />

@@ -3650,6 +3650,18 @@ input, textarea, select, button {
   color: var(--fg);
 }
 
+.sample-questions-wrap--refreshing .sample-questions-icon-btn {
+  opacity: 0.85;
+}
+
+.sample-questions-refresh-note {
+  margin: 4px 8px 2px;
+  font-size: 10px;
+  color: var(--fg4);
+  font-family: 'Sora', sans-serif;
+  letter-spacing: -0.01em;
+}
+
 .assignee-picker {
   padding: 10px 12px; border-radius: 8px;
   border: 0.5px solid var(--bdr2); background: var(--card2);
