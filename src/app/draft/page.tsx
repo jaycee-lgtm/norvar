@@ -108,7 +108,7 @@ function DraftPageInner() {
   }, [activeDraft?.id, activeDraft?.followups]);
 
   const isHome    = !loading && !draftId && !showDrafts;
-  const showSplit = !loading && drafts.length > 0 && (draftId || showDrafts);
+  const showSplit = !loading && (draftId || showDrafts);
   const showList  = !isMobileView || !draftId;
   const showDetail = !isMobileView || !!draftId;
 
@@ -150,6 +150,9 @@ function DraftPageInner() {
                 </div>
 
                 <div className="contracts-history-scroll">
+                  {drafts.length === 0 && (
+                    <div className="contracts-empty-inline">No drafts yet</div>
+                  )}
                   {drafts.map(record => (
                     <HistoryRow
                       key={record.id}
@@ -168,7 +171,16 @@ function DraftPageInner() {
                 {!activeDraft ? (
                   <div className="contracts-detail-empty">
                     <FileText size={32} color="var(--fg4)" />
-                    <p>Select a draft from the list</p>
+                    <p>{drafts.length === 0 ? "No drafts yet" : "Select a draft from the list"}</p>
+                    {drafts.length === 0 && (
+                      <button
+                        type="button"
+                        className="contracts-new-btn"
+                        onClick={() => router.replace("/draft")}
+                      >
+                        <Plus size={11} /> New draft
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="contracts-detail-inner">

@@ -190,7 +190,7 @@ function ContractsPageInner() {
   }, [reviewId]);
 
   const isHome = !loading && !reviewId && !showReviews;
-  const showSplit = !loading && records.length > 0 && (reviewId || showReviews);
+  const showSplit = !loading && (reviewId || showReviews);
   const showList = !isMobileView || !reviewId;
   const showDetail = !isMobileView || !!reviewId;
 
