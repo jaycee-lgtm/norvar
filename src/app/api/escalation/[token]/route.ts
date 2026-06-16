@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveUserProfiles } from "@/lib/clerk-users";
-import { escalationStepIndex, parseEscalationInboxThread, type EscalationStatus } from "@/lib/escalation";
+import { escalationStepIndex, ESCALATION_EMAIL_REPLY_ACTION, parseEscalationInboxThread, type EscalationStatus } from "@/lib/escalation";
 import { gapKeyFromTitle } from "@/lib/gap-chat";
 
 const supabase = createClient(
@@ -103,7 +103,7 @@ export async function PATCH(
 
   const { data: item } = await supabase
     .from("remediation_items")
-    .select("id, escalation_status, escalation_email, escalation_recipient_user_id")
+    .select("id, escalation_status, escalation_email, escalation_recipient_name, escalation_recipient_user_id")
     .eq("escalation_token", token)
     .single();
 
@@ -141,12 +141,35 @@ export async function PATCH(
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  await supabase.from("remediation_activity").insert({
+  const activityRows: Array<{
+    remediation_id: string;
+    user_id:        string;
+    action:         string;
+    detail:         string;
+  }> = [{
     remediation_id: item.id,
     user_id:        actorId,
     action:         "escalation_update",
     detail:         activityDetail,
-  });
+  }];
+
+  if (response_note?.trim()) {
+    const fromEmail = item.escalation_email?.trim() || actorId;
+    activityRows.push({
+      remediation_id: item.id,
+      user_id:        fromEmail,
+      action:         ESCALATION_EMAIL_REPLY_ACTION,
+      detail:         JSON.stringify({
+        source:     "escalation_form",
+        from_email: fromEmail,
+        from_name:  item.escalation_recipient_name ?? null,
+        subject:    null,
+        body:       response_note.trim(),
+      }),
+    });
+  }
+
+  await supabase.from("remediation_activity").insert(activityRows);
 
   return Response.json({ escalation_status: data.escalation_status });
 }
