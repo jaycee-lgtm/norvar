@@ -571,9 +571,9 @@ function Chat() {
                     <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
                       <div className="composer-toolbar-start">
                         {attachControl}
+                        <ModeSelector current="chat" embedded menuPlacement="top" />
                       </div>
                       <div className="home-composer-end">
-                        <ModeSelector current="chat" embedded menuPlacement="top" />
                         {voiceIcon}
                         <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                           {loading

@@ -456,10 +456,11 @@ export default function DraftForm({
             />
           </div>
           <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-            <div className="composer-toolbar-start" />
+            <div className="composer-toolbar-start">
+              <ModeSelector current="draft" embedded menuPlacement="top" />
+            </div>
             <div className="home-composer-end">
               {modelSelector}
-              <ModeSelector current="draft" embedded menuPlacement="top" />
               {sendButton}
             </div>
           </div>

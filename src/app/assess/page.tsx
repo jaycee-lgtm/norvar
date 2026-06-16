@@ -1659,9 +1659,9 @@ function Home() {
           <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
             <div className="composer-toolbar-start">
               {attachControl}
+              <ModeSelector current="assess" embedded menuPlacement="top" />
             </div>
             <div className="home-composer-end">
-              <ModeSelector current="assess" embedded menuPlacement="top" />
               <VoiceInputIcon
                 isListening={voice.isListening}
                 isTranscribing={voice.isTranscribing}

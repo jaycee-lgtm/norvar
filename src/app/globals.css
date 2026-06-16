@@ -5602,17 +5602,33 @@ input, textarea, select, button {
     overflow: visible;
   }
 
+  .home-composer-block .mobile-composer,
+  .mobile-home-layout .mobile-composer {
+    padding: 18px 17px 13px;
+  }
+
   .home-composer-block .mobile-composer-field,
-  .home-body .mobile-composer-field {
-    font-size: 15px !important;
-    min-height: 28px;
-    padding: 0 2px 8px;
+  .mobile-home-layout .mobile-composer-field {
+    font-size: 16px !important;
+    min-height: 34px;
+    padding: 0 2px 10px;
   }
 
   .home-composer-block .mobile-composer-field::placeholder,
-  .home-body .mobile-composer-field::placeholder {
-    font-size: 15px;
+  .mobile-home-layout .mobile-composer-field::placeholder {
+    font-size: 16px;
     color: var(--fg3);
+  }
+
+  .home-composer-block .home-composer-placeholder,
+  .mobile-home-layout .home-composer-placeholder {
+    font-size: 16px;
+    min-height: 34px;
+    padding: 0 2px 10px;
+  }
+
+  .home-composer-tools .composer-toolbar-start {
+    gap: 6px;
   }
 
   .mobile-home-error {
@@ -5696,14 +5712,6 @@ input, textarea, select, button {
     gap: 4px;
     margin-left: auto;
     flex-shrink: 0;
-  }
-
-  .mobile-home-layout .mobile-composer-tools .mode-selector--embedded:not(.redline-model-picker) {
-    display: none;
-  }
-
-  .mobile-home-layout .home-composer-end .mode-selector--embedded:not(.redline-model-picker) {
-    display: inline-block;
   }
 
   .mobile-home-layout .redline-model-picker {

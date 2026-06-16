@@ -339,10 +339,10 @@ export default function ContractReviewForm({
         <div className="composer-toolbar-start">
           {attachControl}
           {pasteToggle}
+          <ModeSelector current="contracts" embedded menuPlacement="top" />
         </div>
         <div className="home-composer-end">
           {modelSelector}
-          <ModeSelector current="contracts" embedded menuPlacement="top" />
           {sendButton}
         </div>
       </div>
