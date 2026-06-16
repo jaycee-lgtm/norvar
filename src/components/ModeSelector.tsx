@@ -209,6 +209,7 @@ export default function ModeSelector({
               <button
                 key={mode.id}
                 type="button"
+                className={`mode-selector-option${isActive ? " is-active" : ""}`}
                 onClick={() => {
                   setOpen(false);
                   if (isActive) return;
@@ -218,79 +219,23 @@ export default function ModeSelector({
                   }
                   if (navigate) router.push(mode.href);
                 }}
-                style={{
-                  width:         "100%",
-                  display:       "flex",
-                  alignItems:    "flex-start",
-                  gap:           12,
-                  padding:       "10px 14px",
-                  background:    "transparent",
-                  border:        "none",
-                  cursor:        isActive ? "default" : "pointer",
-                  textAlign:     "left" as const,
-                  transition:    "background 0.1s",
-                }}
-                onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.background = "var(--lift)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = "transparent";
-                }}
               >
-                <div style={{
-                  width:          32,
-                  height:         32,
-                  borderRadius:   7,
-                  background:     isActive ? "var(--lift)" : "var(--card2)",
-                  border:         `0.5px solid ${isActive ? "var(--bdr3)" : "var(--bdr)"}`,
-                  display:        "flex",
-                  alignItems:     "center",
-                  justifyContent: "center",
-                  color:          isActive ? "var(--fg)" : "var(--fg2)",
-                  flexShrink:     0,
-                }}>
-                  {mode.icon}
+                <div className="mode-selector-option-row">
+                  <div className="mode-selector-option-icon">
+                    {mode.icon}
+                  </div>
+
+                  <div className="mode-selector-option-head">
+                    <span className="mode-selector-option-name">{mode.label}</span>
+                    <span className="mode-selector-option-version">{mode.version}</span>
+                  </div>
+
+                  {isActive && (
+                    <Check size={14} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
+                  )}
                 </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
-                    <span style={{
-                      fontSize:      13,
-                      fontWeight:    isActive ? 500 : 400,
-                      color:         "var(--fg)",
-                      fontFamily:    "'Sora', sans-serif",
-                      letterSpacing: "-0.02em",
-                    }}>
-                      {mode.label}
-                    </span>
-                    <span style={{
-                      fontSize:   10,
-                      color:      "var(--fg3)",
-                      background: "var(--card2)",
-                      padding:    "1px 5px",
-                      borderRadius: 4,
-                      border:     "0.5px solid var(--bdr)",
-                    }}>
-                      {mode.version}
-                    </span>
-                  </div>
-                  <div style={{
-                    fontSize:      11,
-                    color:         "var(--fg3)",
-                    fontFamily:    "'Sora', sans-serif",
-                    letterSpacing: "-0.01em",
-                    whiteSpace:    "normal",
-                    wordBreak:     "break-word",
-                    overflowWrap:  "break-word",
-                    lineHeight:    1.35,
-                  }}>
-                    {mode.tagline}
-                  </div>
-                </div>
-
-                {isActive && (
-                  <Check size={14} strokeWidth={2.5} color="var(--fg3)" style={{ flexShrink: 0, marginTop: 2 }} />
-                )}
+                <div className="mode-selector-option-tagline">{mode.tagline}</div>
               </button>
             );
           })}
