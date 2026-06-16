@@ -446,10 +446,10 @@ export default function DraftForm({
     >
       {isMobileView ? (
         <div
-          className="mobile-composer"
+          className="mobile-composer mobile-composer--home"
           onMouseDown={e => focusHomeComposerInput(e, homeInputRef.current)}
         >
-          <div className="home-composer-input-stack">
+          <div className={`home-composer-input-stack${input.trim() ? " home-composer-input-stack--active" : ""}`}>
             <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
             <div className="mobile-composer-input-row">
               <textarea
@@ -474,7 +474,7 @@ export default function DraftForm({
         </div>
       ) : (
         <div
-          className="input-bar"
+          className={`input-bar home-input-bar--claude${input.trim() ? " home-input-bar--active" : ""}`}
           onMouseDown={e => focusHomeComposerInput(e, homeInputRef.current)}
         >
           <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />

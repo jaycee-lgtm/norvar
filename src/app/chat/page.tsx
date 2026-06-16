@@ -559,10 +559,10 @@ function Chat() {
                 )}
                 {isMobileView ? (
                   <div
-                    className="mobile-composer"
+                    className="mobile-composer mobile-composer--home"
                     onMouseDown={e => focusHomeComposerInput(e, inputRef.current)}
                   >
-                    <div className="home-composer-input-stack">
+                    <div className={`home-composer-input-stack${input.trim() ? " home-composer-input-stack--active" : ""}`}>
                       <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
                       <div className="mobile-composer-input-row">
                         <textarea
@@ -595,7 +595,7 @@ function Chat() {
                 ) : (
                   <>
                     <div
-                      className="input-bar"
+                      className={`input-bar home-input-bar--claude${input.trim() ? " home-input-bar--active" : ""}`}
                       onMouseDown={e => focusHomeComposerInput(e, inputRef.current)}
                     >
                       <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />

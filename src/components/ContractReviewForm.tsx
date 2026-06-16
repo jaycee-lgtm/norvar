@@ -307,7 +307,7 @@ export default function ContractReviewForm({
   );
 
   const homeComposer = isMobileView ? (
-    <div className="mobile-composer">
+    <div className="mobile-composer mobile-composer--home">
       {(selectedDocId || uploadName) && (
         <div style={{ padding: "0 12px 8px" }}>
           <SelectedDocumentChips
@@ -350,9 +350,9 @@ export default function ContractReviewForm({
       </div>
     </div>
   ) : (
-    <div className="input-bar">
+    <div className="input-bar home-input-bar--claude">
       {sourceLabel ? (
-        <div className="contracts-selected-bar">
+        <div className="contracts-selected-bar contracts-selected-bar--home">
           <span className="contracts-selected-label">{sourceLabel}</span>
           <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
             Change
@@ -361,12 +361,12 @@ export default function ContractReviewForm({
       ) : (
         <ModeSelector current="contracts" embedded askPrefix homePrompt menuPlacement="top" />
       )}
-      <div className="composer-toolbar">
+      <div className="composer-toolbar home-composer-tools">
         <div className="composer-toolbar-start">
           {attachControl}
+          {modelSelector}
         </div>
         <div className="composer-toolbar-end home-composer-end">
-          {modelSelector}
           {sendButton}
         </div>
       </div>

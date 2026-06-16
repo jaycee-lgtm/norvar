@@ -1648,10 +1648,10 @@ function Home() {
 
       {isMobileView ? (
         <div
-          className="mobile-composer"
+          className="mobile-composer mobile-composer--home"
           onMouseDown={e => focusHomeComposerInput(e, textareaRef.current)}
         >
-          <div className="home-composer-input-stack">
+          <div className={`home-composer-input-stack${input.trim() ? " home-composer-input-stack--active" : ""}`}>
             <ModeSelector current="assess" embedded askPrefix homePrompt menuPlacement="top" />
             <div className="mobile-composer-input-row">
               <textarea
@@ -1692,7 +1692,7 @@ function Home() {
         </div>
       ) : (
         <div
-          className="input-bar"
+          className={`input-bar home-input-bar--claude${input.trim() ? " home-input-bar--active" : ""}`}
           onMouseDown={e => focusHomeComposerInput(e, textareaRef.current)}
         >
             <ModeSelector current="assess" embedded askPrefix homePrompt menuPlacement="top" />
