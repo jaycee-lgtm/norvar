@@ -453,8 +453,8 @@ function InboxContent() {
     }
   };
 
-  const showList  = !isMobile || !threadId;
-  const showPanel = !isMobile || !!threadId;
+  const showList  = !threadId;
+  const showPanel = !!threadId;
   const canCompose = folder === "received" || folder === "sent";
   const listHref = inboxHref(folder, null);
   const activeFolderLabel = INBOX_FOLDERS.find(f => f.id === folder)?.label ?? "Inbox";
@@ -642,7 +642,7 @@ function InboxContent() {
 
   return (
     <main className={`main-area inbox-page${isMobile ? " inbox-page--mobile" : ""}`}>
-      <div className="inbox-layout">
+      <div className={`inbox-layout${!isMobile && threadId ? " inbox-layout--thread-open" : ""}`}>
         {showList && isMobile && (
           <aside className="inbox-list-pane">
             <div className="inbox-list-head">
@@ -669,18 +669,20 @@ function InboxContent() {
           </aside>
         )}
 
+        {!isMobile && (
+          <aside className="inbox-sidebar">
+            <div className="inbox-sidebar-head">
+              <h1 className="inbox-sidebar-title">Escalation inbox</h1>
+            </div>
+            {folderNav}
+            {folder === "trash" && (
+              <p className="inbox-trash-note">Deleted messages are kept for 90 days, then removed permanently.</p>
+            )}
+          </aside>
+        )}
+
         {showList && !isMobile && (
-          <>
-            <aside className="inbox-sidebar">
-              <div className="inbox-sidebar-head">
-                <h1 className="inbox-sidebar-title">Escalation inbox</h1>
-              </div>
-              {folderNav}
-              {folder === "trash" && (
-                <p className="inbox-trash-note">Deleted messages are kept for 90 days, then removed permanently.</p>
-              )}
-            </aside>
-            <section className={`inbox-list-main${threadId ? " inbox-list-main--split" : ""}`}>
+            <section className="inbox-list-main">
               {listToolbar}
               <div className="inbox-list-scroll">{listScroll}</div>
               {selectMode && selectedIds.size > 0 && (
@@ -722,18 +724,10 @@ function InboxContent() {
                 </div>
               )}
             </section>
-          </>
         )}
 
         {showPanel && (
           <section className="inbox-thread-pane">
-            {!threadId && (
-              <div className="inbox-thread-placeholder">
-                <InboxIcon size={28} color="var(--fg4)" />
-                <p>Select a message to read and manage</p>
-              </div>
-            )}
-
             {threadId && loadingThread && (
               <div className="inbox-thread-placeholder">
                 <Loader2 size={20} className="spin" />
@@ -743,26 +737,28 @@ function InboxContent() {
             {threadId && !loadingThread && thread ? (
               <>
                 <header className="inbox-thread-head">
-                  {isMobile && (
-                    <div className="inbox-thread-toolbar">
-                      <Link
-                        href={listHref}
-                        className="inbox-back-btn"
-                        aria-label="Back to inbox"
-                        onClick={e => {
-                          e.preventDefault();
-                          closeThread();
-                        }}
-                      >
-                        <ArrowLeft size={18} strokeWidth={2} />
-                      </Link>
-                      <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
-                      <Link href="/remediation" className="inbox-open-gap">
-                        View gap
-                        <ExternalLink size={12} strokeWidth={2} />
-                      </Link>
-                    </div>
-                  )}
+                  <div className={`inbox-thread-nav${!isMobile ? " inbox-thread-nav--desktop" : ""}`}>
+                    <Link
+                      href={listHref}
+                      className="inbox-back-btn"
+                      aria-label="Back to inbox"
+                      onClick={e => {
+                        e.preventDefault();
+                        closeThread();
+                      }}
+                    >
+                      <ArrowLeft size={18} strokeWidth={2} />
+                    </Link>
+                    {isMobile && (
+                      <>
+                        <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
+                        <Link href="/remediation" className="inbox-open-gap">
+                          View gap
+                          <ExternalLink size={12} strokeWidth={2} />
+                        </Link>
+                      </>
+                    )}
+                  </div>
 
                   <div className="inbox-thread-head-body">
                     <div className="inbox-thread-title-row">
