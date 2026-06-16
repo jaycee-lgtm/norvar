@@ -24,16 +24,20 @@ export default function RedlineModelSelector({
   onChange,
   disabled = false,
   menuPlacement = "top",
+  variant = "default",
 }: {
   value?:          RedlineReviewModelChoice;
   onChange?:       (value: RedlineReviewModelChoice) => void;
   disabled?:       boolean;
   menuPlacement?:  "bottom" | "top";
+  variant?:        "default" | "inline" | "icon";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const active = REDLINE_REVIEW_MODELS.find(m => m.id === value) ?? REDLINE_REVIEW_MODELS[0];
   const menuUp = menuPlacement === "top";
+  const isInline = variant === "inline";
+  const isIcon = variant === "icon";
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -46,46 +50,65 @@ export default function RedlineModelSelector({
   return (
     <div
       ref={ref}
-      className="mode-selector mode-selector--embedded mode-selector--menu-up redline-model-picker"
+      className={`mode-selector mode-selector--embedded mode-selector--menu-up redline-model-picker${isInline ? " redline-model-picker--inline" : ""}${isIcon ? " redline-model-picker--icon" : ""}`}
       style={{ position: "relative", display: "inline-block" }}
     >
       <button
         type="button"
-        className="mode-selector-trigger"
+        className="mode-selector-trigger redline-model-trigger"
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-label={`Review model: ${active.label}`}
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
         style={{
           display:       "inline-flex",
           alignItems:    "center",
-          gap:           5,
-          padding:       "4px 8px",
-          borderRadius:  7,
-          border:        "none",
-          background:    open ? "var(--card2)" : "transparent",
+          gap:           isIcon ? 0 : isInline ? 6 : 5,
+          padding:       isIcon ? 6 : isInline ? "2px 0" : "4px 8px",
+          borderRadius:  isIcon ? 999 : isInline ? 0 : 7,
+          border:        isInline ? "none" : "none",
+          background:    isInline ? "transparent" : open ? "var(--card2)" : "transparent",
           cursor:        disabled ? "not-allowed" : "pointer",
           fontFamily:    "'Sora', sans-serif",
           letterSpacing: "-0.01em",
-          transition:    "background 0.15s",
+          transition:    "background 0.15s, color 0.15s",
           opacity:       disabled ? 0.5 : 1,
+          color:         isInline ? "var(--fg3)" : undefined,
         }}
         onMouseEnter={e => {
-          if (!open && !disabled) e.currentTarget.style.background = "var(--card2)";
+          if (!open && !disabled && !isInline) e.currentTarget.style.background = "var(--card2)";
+          if (!open && !disabled && isInline) e.currentTarget.style.color = "var(--fg2)";
         }}
         onMouseLeave={e => {
-          if (!open) e.currentTarget.style.background = "transparent";
+          if (!open && !isInline) e.currentTarget.style.background = "transparent";
+          if (!open && isInline) e.currentTarget.style.color = "var(--fg3)";
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--fg2)", letterSpacing: "-0.02em" }}>
-          {active.label} {active.badge}
-        </span>
-        <ChevronDown
-          size={12}
-          strokeWidth={2}
-          color="var(--fg3)"
-          style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-        />
+        {(isInline || isIcon) && (
+          <span style={{ color: "var(--fg3)", display: "flex", alignItems: "center" }}>
+            {ICONS[active.id]}
+          </span>
+        )}
+        {!isIcon && (
+          <span style={{
+            fontSize:      isInline ? 12 : 12,
+            fontWeight:    isInline ? 400 : 500,
+            color:         isInline ? "inherit" : "var(--fg2)",
+            letterSpacing: "-0.02em",
+          }}
+          >
+            {active.label}
+          </span>
+        )}
+        {!isInline && !isIcon && (
+          <ChevronDown
+            size={12}
+            strokeWidth={2}
+            color="var(--fg3)"
+            style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+          />
+        )}
       </button>
 
       {open && (
@@ -96,7 +119,8 @@ export default function RedlineModelSelector({
             position:     "absolute",
             top:          menuUp ? undefined : "calc(100% + 6px)",
             bottom:       menuUp ? "calc(100% + 6px)" : undefined,
-            left:         0,
+            left:         isInline ? undefined : 0,
+            right:        isInline ? 0 : undefined,
             minWidth:     280,
             maxHeight:    420,
             overflowY:    "auto",
@@ -197,17 +221,19 @@ export default function RedlineModelSelector({
                           >
                             {model.label}
                           </span>
-                          <span style={{
-                            fontSize:     10,
-                            color:        "var(--fg3)",
-                            background:   "var(--card2)",
-                            padding:      "1px 5px",
-                            borderRadius: 4,
-                            border:       "0.5px solid var(--bdr)",
-                          }}
-                          >
-                            {model.badge}
-                          </span>
+                          {model.badge && (
+                            <span style={{
+                              fontSize:     10,
+                              color:        "var(--fg3)",
+                              background:   "var(--card2)",
+                              padding:      "1px 5px",
+                              borderRadius: 4,
+                              border:       "0.5px solid var(--bdr)",
+                            }}
+                            >
+                              {model.badge}
+                            </span>
+                          )}
                         </div>
                         <div style={{
                           fontSize:     11,

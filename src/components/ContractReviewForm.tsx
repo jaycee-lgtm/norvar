@@ -34,12 +34,16 @@ export default function ContractReviewForm({
   variant = "home",
   isMobileView = false,
   onCancel,
+  reviewModel: reviewModelProp,
+  onReviewModelChange,
 }: {
   initialDocumentId?: string | null;
   onDone:             () => void;
   variant?:           "home" | "modal";
   isMobileView?:      boolean;
   onCancel?:          () => void;
+  reviewModel?:       RedlineReviewModelChoice;
+  onReviewModelChange?: (value: RedlineReviewModelChoice) => void;
 }) {
   const fileRef                     = useRef<HTMLInputElement>(null);
   const [inputMode, setInputMode]   = useState<InputMode>("document");
@@ -48,7 +52,9 @@ export default function ContractReviewForm({
   const [uploadName, setUploadName] = useState("");
   const [contractText, setContractText] = useState("");
   const [pastedText, setPastedText] = useState("");
-  const [reviewModel, setReviewModel] = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
+  const [reviewModelInternal, setReviewModelInternal] = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
+  const reviewModel = reviewModelProp ?? reviewModelInternal;
+  const setReviewModel = onReviewModelChange ?? setReviewModelInternal;
   const [jurisdictions, setJurisdictions] = useState("");
   const [activitySteps, setActivitySteps] = useState<ReviewActivityStep[]>([]);
   const [working, setWorking]       = useState(false);
@@ -320,16 +326,7 @@ export default function ContractReviewForm({
         </div>
       )}
       <div className="mobile-composer-input-row">
-        {inputMode === "paste" ? (
-          <textarea
-            className="input-textarea mobile-composer-field"
-            placeholder="Paste contract text..."
-            value={pastedText}
-            onChange={e => setPastedText(e.target.value)}
-            disabled={working || fileExtracting}
-            rows={2}
-          />
-        ) : sourceLabel ? (
+        {sourceLabel ? (
           <span className="contracts-selected-label">{sourceLabel}</span>
         ) : (
           <span className="home-composer-placeholder">What can I help review?</span>
@@ -338,27 +335,16 @@ export default function ContractReviewForm({
       <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
         <div className="composer-toolbar-start">
           {attachControl}
-          {pasteToggle}
           <ModeSelector current="contracts" embedded menuPlacement="top" />
         </div>
         <div className="home-composer-end">
-          {modelSelector}
           {sendButton}
         </div>
       </div>
     </div>
   ) : (
     <div className="input-bar">
-      {inputMode === "paste" ? (
-        <textarea
-          className="input-textarea"
-          placeholder="Paste the contract text to review..."
-          value={pastedText}
-          onChange={e => setPastedText(e.target.value)}
-          disabled={working || fileExtracting}
-          rows={3}
-        />
-      ) : sourceLabel ? (
+      {sourceLabel ? (
         <div className="contracts-selected-bar">
           <span className="contracts-selected-label">{sourceLabel}</span>
           <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
@@ -373,10 +359,8 @@ export default function ContractReviewForm({
       <div className="composer-toolbar">
         <div className="composer-toolbar-start">
           {attachControl}
-          {pasteToggle}
         </div>
         <div className="composer-toolbar-end home-composer-end">
-          {modelSelector}
           <ModeSelector current="contracts" embedded menuPlacement="top" />
           {sendButton}
         </div>

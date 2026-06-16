@@ -26,7 +26,7 @@ export const REDLINE_REVIEW_MODELS: {
   {
     id:      "auto",
     label:   "Auto",
-    badge:   "Balanced",
+    badge:   "",
     tagline: "Picks speed or depth based on document size",
     group:   "balanced",
   },

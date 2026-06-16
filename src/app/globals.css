@@ -536,6 +536,22 @@ input, textarea, select, button {
   overflow: visible;
 }
 
+.home-hero-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.home-hero-meta--mobile {
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.redline-model-picker--inline .redline-model-trigger:hover {
+  color: var(--fg2);
+}
+
 .home-hero-title {
   font-family: 'Sora', sans-serif;
   font-size: clamp(28px, 3.2vw, 36px);

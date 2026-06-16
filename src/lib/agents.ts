@@ -14,9 +14,12 @@ export const VARRO_AGENT = {
 } as const;
 
 /** Agreement drafting agent. */
-export const PERTA_AGENT = {
-  name: "Perta",
+export const PETRA_AGENT = {
+  name: "Petra",
 } as const;
 
-/** @deprecated Use PERTA_AGENT */
-export const SCRIBE_AGENT = PERTA_AGENT;
+/** @deprecated Use PETRA_AGENT */
+export const PERTA_AGENT = PETRA_AGENT;
+
+/** @deprecated Use PETRA_AGENT */
+export const SCRIBE_AGENT = PETRA_AGENT;

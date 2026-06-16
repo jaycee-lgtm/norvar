@@ -14,7 +14,7 @@ import DraftProgress, {
 import { friendlyReviewError } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import { createTypewriterDrain } from "@/lib/typewriter-drain";
-import { PERTA_AGENT } from "@/lib/agents";
+import { PETRA_AGENT } from "@/lib/agents";
 import {
   DRAFT_QUESTIONS,
   buildDraftScopingIntroText,
@@ -61,16 +61,12 @@ export default function DraftForm({
   onCancel,
   variant = "home",
   isMobileView = false,
-  pastDraftsCount = 0,
-  onPastDrafts,
   onThreadActive,
 }: {
   onDone:            () => void;
   onCancel?:         () => void;
   variant?:          "home" | "modal";
   isMobileView?:     boolean;
-  pastDraftsCount?:  number;
-  onPastDrafts?:     () => void;
   onThreadActive?:   (active: boolean) => void;
 }) {
   const scrollRef      = useRef<HTMLDivElement>(null);
@@ -333,7 +329,7 @@ export default function DraftForm({
       : activeQuestion.sub ?? "Type your answer..."
     : guidedActive
     ? "Select an option above..."
-    : `Draft with ${PERTA_AGENT.name}...`;
+    : `Draft with ${PETRA_AGENT.name}...`;
 
   const modelSelector = (
     <RedlineModelSelector
@@ -382,7 +378,7 @@ export default function DraftForm({
         <div className="msg-ai-card">
           <div className="msg-ai-label">
             <FileText size={11} color="var(--fg3)" />
-            {PERTA_AGENT.name}
+            {PETRA_AGENT.name}
           </div>
           {msg.text ? (
             <p style={{ fontSize: 12.5, color: "var(--fg2)", lineHeight: 1.7, letterSpacing: "-0.01em", whiteSpace: "pre-wrap", margin: 0 }}>
@@ -556,7 +552,7 @@ export default function DraftForm({
             <>
               <Logo size={40} animated />
               <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                Draft with {PERTA_AGENT.name}.
+                Draft with {PETRA_AGENT.name}
               </h1>
             </>
           ) : (
@@ -564,10 +560,10 @@ export default function DraftForm({
               <Logo variant="hero" className="home-hero-logo" size={46} animated />
               <div className="home-hero-heading-wrap">
                 <h1 className="home-hero-serif home-hero-serif--enter">
-                  Draft with {PERTA_AGENT.name}.
+                  Draft with {PETRA_AGENT.name}
                 </h1>
                 <InfoTip
-                  text={`Describe the agreement you need. ${PERTA_AGENT.name} will ask a few scoping questions, then draft a first version aligned to Norvar's regulatory corpus.`}
+                  text={`Describe the agreement you need. ${PETRA_AGENT.name} will ask a few scoping questions, then draft a first version aligned to Norvar's regulatory corpus.`}
                 />
               </div>
             </div>
@@ -578,13 +574,6 @@ export default function DraftForm({
           <p style={{ marginTop: 14, fontSize: 12, color: "var(--rh)", textAlign: isMobileView ? "center" : undefined }}>
             {error}
           </p>
-        )}
-        {pastDraftsCount > 0 && onPastDrafts && (
-          <div className="contracts-past-links">
-            <button type="button" className="contracts-past-reviews-link" onClick={onPastDrafts}>
-              Past drafts ({pastDraftsCount})
-            </button>
-          </div>
         )}
       </div>
     );

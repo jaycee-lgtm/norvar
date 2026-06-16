@@ -63,7 +63,7 @@ export function buildDraftFollowUpSystemPrompt(
     ? `one section of a drafted agreement.\n\nSECTION CONTEXT:\n${buildSectionContext(section)}`
     : `their drafted agreement as a whole.\n\nDRAFT CONTEXT:\n${buildDraftSummary(draft)}`;
 
-  return `You are ${agentName}, Norvar's ${agent === "nora" ? "compliance chat assistant" : "regulatory assessment agent"}. The user completed an agreement draft with Perta and is asking a follow-up about ${scope}
+  return `You are ${agentName}, Norvar's ${agent === "nora" ? "compliance chat assistant" : "regulatory assessment agent"}. The user completed an agreement draft with Petra and is asking a follow-up about ${scope}
 
 Rules:
 - Answer only what was asked. Be direct and concise.

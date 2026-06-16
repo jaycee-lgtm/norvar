@@ -9,6 +9,7 @@ import InfoTip from "@/components/InfoTip";
 import RedlineCard from "@/components/RedlineCard";
 import AiDisclaimer from "@/components/AiDisclaimer";
 import ContractReviewForm from "@/components/ContractReviewForm";
+import RedlineModelSelector from "@/components/RedlineModelSelector";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { RedlineOutput } from "@/lib/redline";
 import RedlineApplyBar from "@/components/RedlineApplyBar";
@@ -16,6 +17,7 @@ import type { AppliedMeta } from "@/lib/redline-apply";
 import { defaultDecisions, type ChangeDecisions } from "@/lib/redline-inline";
 import type { RedlineFollowUps } from "@/lib/redline-followup";
 import { VARRO_AGENT } from "@/lib/agents";
+import { DEFAULT_REDLINE_REVIEW_MODEL, type RedlineReviewModelChoice } from "@/lib/redline-models";
 
 type RedlineRecord = {
   id:             string;
@@ -84,6 +86,7 @@ function ContractsPageInner() {
   const [appliedMeta, setAppliedMeta] = useState<AppliedMeta | null>(null);
   const [sourceText, setSourceText]   = useState<string | null>(null);
   const [changeDecisions, setChangeDecisions] = useState<ChangeDecisions>({});
+  const [reviewModel, setReviewModel] = useState<RedlineReviewModelChoice>(DEFAULT_REDLINE_REVIEW_MODEL);
   const decisionsSaveRef              = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reviewId    = searchParams.get("id");
@@ -108,6 +111,7 @@ function ContractsPageInner() {
     const { redlines } = await recsRes.json().catch(() => ({ redlines: [] }));
     setRecords((redlines ?? []) as RedlineRecord[]);
     setLoading(false);
+    window.dispatchEvent(new Event("norvar:reviews-updated"));
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -229,19 +233,35 @@ function ContractsPageInner() {
                 <>
                   <Logo size={40} animated />
                   <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                    Review with {VARRO_AGENT.name}.
+                    Document review and redline
                   </h1>
+                  <div className="home-hero-meta home-hero-meta--mobile">
+                    <RedlineModelSelector
+                      variant="inline"
+                      value={reviewModel}
+                      onChange={setReviewModel}
+                      menuPlacement="top"
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="home-hero-row home-hero-enter">
                   <Logo variant="hero" className="home-hero-logo" size={46} animated />
                   <div className="home-hero-heading-wrap">
                     <h1 className="home-hero-serif home-hero-serif--enter">
-                      Review with {VARRO_AGENT.name}.
+                      Document review and redline
                     </h1>
-                    <InfoTip
-                      text={`Pull a contract from Documents, upload a file, or paste text. ${VARRO_AGENT.name} will redline it against Norvar's regulatory corpus.`}
-                    />
+                    <div className="home-hero-meta">
+                      <InfoTip
+                        text={`Pull a contract from Documents or upload a file. ${VARRO_AGENT.name} will redline it against Norvar's regulatory corpus.`}
+                      />
+                      <RedlineModelSelector
+                        variant="inline"
+                        value={reviewModel}
+                        onChange={setReviewModel}
+                        menuPlacement="top"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -256,20 +276,10 @@ function ContractsPageInner() {
                 isMobileView={isMobileView}
                 initialDocumentId={reviewDocId}
                 onDone={handleReviewDone}
+                reviewModel={reviewModel}
+                onReviewModelChange={setReviewModel}
               />
             </div>
-
-            {records.length > 0 && (
-              <div className="contracts-past-links">
-                <button
-                  type="button"
-                  className="contracts-past-reviews-link"
-                  onClick={() => router.push("/contracts?reviews=1")}
-                >
-                  Past reviews ({records.length})
-                </button>
-              </div>
-            )}
           </div>
         )}
 

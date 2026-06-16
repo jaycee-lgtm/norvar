@@ -40,7 +40,7 @@ export const MODES: {
   },
   {
     id:      "draft",
-    label:   "Perta",
+    label:   "Petra",
     version: "1.0",
     tagline: "Agreement drafting",
     icon:    <FileText size={13} strokeWidth={1.75} />,

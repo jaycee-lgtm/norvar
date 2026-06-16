@@ -122,7 +122,7 @@ export async function saveDraftToProject(
       file_type:   fileType,
       file_size:   buffer.length,
       folder_id:   folderId,
-      tags:        ["draft", "perta"],
+      tags:        ["draft", "petra"],
       file_path:   "",
       status:      "active",
     })

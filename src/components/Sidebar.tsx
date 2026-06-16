@@ -29,6 +29,19 @@ type RecentProject = {
   color: string;
 };
 
+type RecentReview = {
+  id:             string;
+  agreement_type: string;
+  created_at:     string;
+};
+
+type RecentDraft = {
+  id:             string;
+  agreement_type: string;
+  created_at:     string;
+  result?:        { document_name?: string; title?: string };
+};
+
 const TIER = {
   high:   { dot: "var(--rh)", badge: "var(--rh)", bg: "var(--rh-bg)", bdr: "var(--rh-bdr)" },
   medium: { dot: "var(--rm)", badge: "var(--rm)", bg: "var(--rm-bg)", bdr: "var(--rm-bdr)" },
@@ -58,17 +71,25 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     ? "assess" as const
     : "chat" as const;
   const activeId     = searchParams.get("id");
+  const activeDraftId = isDraft ? (searchParams.get("draft") ?? searchParams.get("id")) : null;
+  const activeReviewId = isContracts ? searchParams.get("id") : null;
   const activeProjectId = path.startsWith("/projects/") ? path.split("/")[2] : null;
 
   const [assessments,   setAssessments]   = useState<RecentAssessment[]>([]);
   const [conversations, setConversations] = useState<RecentConversation[]>([]);
+  const [reviews,       setReviews]       = useState<RecentReview[]>([]);
+  const [drafts,        setDrafts]        = useState<RecentDraft[]>([]);
   const [projects,      setProjects]      = useState<RecentProject[]>([]);
   const [deletingId,    setDeletingId]    = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
   const [chatNavOpen, setChatNavOpen]     = useState(path === "/chat/history");
+  const [contractsNavOpen, setContractsNavOpen] = useState(isContracts);
+  const [draftNavOpen, setDraftNavOpen] = useState(isDraft);
   const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(isAssess);
   const [recentChatsOpen, setRecentChatsOpen] = useState(false);
+  const [recentReviewsOpen, setRecentReviewsOpen] = useState(isContracts);
+  const [recentDraftsOpen, setRecentDraftsOpen] = useState(isDraft);
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -84,12 +105,32 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       .catch(() => {});
   };
 
+  const loadReviews = () => {
+    fetch("/api/redlines?limit=5")
+      .then(r => r.json())
+      .then(d => setReviews(d.redlines || []))
+      .catch(() => {});
+  };
+
+  const loadDrafts = () => {
+    fetch("/api/drafts?limit=5")
+      .then(r => r.json())
+      .then(d => setDrafts(d.drafts || []))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (isMobileView || isChat) {
       loadConversations();
     }
     if (isMobileView || isAssess) {
       loadAssessments();
+    }
+    if (isMobileView || isContracts) {
+      loadReviews();
+    }
+    if (isMobileView || isDraft) {
+      loadDrafts();
     }
     if (isProjects) {
       fetch("/api/folders")
@@ -100,7 +141,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         })
         .catch(() => {});
     }
-  }, [path, searchParams.toString(), isChat, isAssess, isProjects, isMobileView]);
+  }, [path, searchParams.toString(), isChat, isAssess, isContracts, isDraft, isProjects, isMobileView]);
 
   useEffect(() => {
     const handler = () => loadAssessments();
@@ -115,10 +156,30 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   }, []);
 
   useEffect(() => {
+    const handler = () => loadReviews();
+    window.addEventListener("norvar:reviews-updated", handler);
+    return () => window.removeEventListener("norvar:reviews-updated", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => loadDrafts();
+    window.addEventListener("norvar:drafts-updated", handler);
+    return () => window.removeEventListener("norvar:drafts-updated", handler);
+  }, []);
+
+  useEffect(() => {
     if (isAssess) setAssessNavOpen(true);
     if (isAssess) setRecentAssessmentsOpen(true);
+    if (isContracts) {
+      setContractsNavOpen(true);
+      setRecentReviewsOpen(true);
+    }
+    if (isDraft) {
+      setDraftNavOpen(true);
+      setRecentDraftsOpen(true);
+    }
     if (path === "/chat/history") setChatNavOpen(true);
-  }, [path, isAssess]);
+  }, [path, isAssess, isContracts, isDraft]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -368,25 +429,75 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
           {mainNav.map(({ href, label, icon: Icon, active }) => (
             label === "Review" ? (
-              <Link
-                key={label}
-                href={href}
-                className={`sidebar-nav-item ${active ? "active" : ""}`}
-                onClick={goToContractsHome}
-              >
-                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                {label}
-              </Link>
+              <div key={label} className="sidebar-nav-group">
+                <div className="sidebar-nav-group-row">
+                  <Link
+                    href={href}
+                    className={`sidebar-nav-item sidebar-nav-group-main${active ? " active" : ""}`}
+                    onClick={goToContractsHome}
+                  >
+                    <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                    {label}
+                  </Link>
+                  <button
+                    type="button"
+                    className="sidebar-nav-toggle"
+                    aria-expanded={contractsNavOpen}
+                    aria-label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}
+                    onClick={() => setContractsNavOpen(v => !v)}
+                  >
+                    <ChevronDown
+                      size={12}
+                      strokeWidth={2}
+                      style={{ transform: contractsNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                    />
+                  </button>
+                </div>
+                {contractsNavOpen && (
+                  <Link
+                    href="/contracts?reviews=1"
+                    className={`sidebar-nav-subitem${path === "/contracts" && searchParams.get("reviews") === "1" ? " active" : ""}`}
+                  >
+                    <LayoutDashboard size={12} strokeWidth={path === "/contracts" && searchParams.get("reviews") === "1" ? 2 : 1.75} />
+                    History
+                  </Link>
+                )}
+              </div>
             ) : label === "Draft" ? (
-              <Link
-                key={label}
-                href={href}
-                className={`sidebar-nav-item ${active ? "active" : ""}`}
-                onClick={goToDraftHome}
-              >
-                <Icon size={14} strokeWidth={active ? 2 : 1.75} />
-                {label}
-              </Link>
+              <div key={label} className="sidebar-nav-group">
+                <div className="sidebar-nav-group-row">
+                  <Link
+                    href={href}
+                    className={`sidebar-nav-item sidebar-nav-group-main${active ? " active" : ""}`}
+                    onClick={goToDraftHome}
+                  >
+                    <Icon size={14} strokeWidth={active ? 2 : 1.75} />
+                    {label}
+                  </Link>
+                  <button
+                    type="button"
+                    className="sidebar-nav-toggle"
+                    aria-expanded={draftNavOpen}
+                    aria-label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}
+                    onClick={() => setDraftNavOpen(v => !v)}
+                  >
+                    <ChevronDown
+                      size={12}
+                      strokeWidth={2}
+                      style={{ transform: draftNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                    />
+                  </button>
+                </div>
+                {draftNavOpen && (
+                  <Link
+                    href="/draft?drafts=1"
+                    className={`sidebar-nav-subitem${path === "/draft" && searchParams.get("drafts") === "1" ? " active" : ""}`}
+                  >
+                    <LayoutDashboard size={12} strokeWidth={path === "/draft" && searchParams.get("drafts") === "1" ? 2 : 1.75} />
+                    History
+                  </Link>
+                )}
+              </div>
             ) : (
               <Link key={label} href={href} className={`sidebar-nav-item ${active ? "active" : ""}`}>
                 <Icon size={14} strokeWidth={active ? 2 : 1.75} />
@@ -540,6 +651,95 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 })}
                 <Link href="/chat/history" className="sidebar-all-link">
                   All chats
+                  <ChevronRight size={14} strokeWidth={2} />
+                </Link>
+              </div>
+            )}
+          </>
+        )}
+
+        {reviews.length > 0 && (isMobileView ? sidebarMode === "contracts" : isContracts) && (
+          <>
+            <div className="sidebar-divider" />
+            <button
+              type="button"
+              className="sidebar-recents-toggle"
+              aria-expanded={recentReviewsOpen}
+              aria-label={recentReviewsOpen ? "Collapse recent reviews" : "Expand recent reviews"}
+              onClick={() => setRecentReviewsOpen(v => !v)}
+            >
+              <span>Recent reviews</span>
+              <ChevronDown
+                size={isMobileView ? 14 : 12}
+                strokeWidth={2}
+                style={{ transform: recentReviewsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              />
+            </button>
+            {recentReviewsOpen && (
+              <div className="sidebar-recents-panel">
+                {reviews.map(item => {
+                  const isActive = activeReviewId === item.id;
+                  return (
+                    <div key={item.id} className="recent-item-row">
+                      <Link
+                        href={`/contracts?id=${item.id}`}
+                        className={`recent-item${isActive ? " active" : ""}`}
+                      >
+                        <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                        <span className={`recent-text${isActive ? " active-text" : ""}`}>
+                          {item.agreement_type || "Agreement"}
+                        </span>
+                      </Link>
+                    </div>
+                  );
+                })}
+                <Link href="/contracts?reviews=1" className="sidebar-all-link">
+                  All reviews
+                  <ChevronRight size={14} strokeWidth={2} />
+                </Link>
+              </div>
+            )}
+          </>
+        )}
+
+        {drafts.length > 0 && (isMobileView ? sidebarMode === "draft" : isDraft) && (
+          <>
+            <div className="sidebar-divider" />
+            <button
+              type="button"
+              className="sidebar-recents-toggle"
+              aria-expanded={recentDraftsOpen}
+              aria-label={recentDraftsOpen ? "Collapse recent drafts" : "Expand recent drafts"}
+              onClick={() => setRecentDraftsOpen(v => !v)}
+            >
+              <span>Recent drafts</span>
+              <ChevronDown
+                size={isMobileView ? 14 : 12}
+                strokeWidth={2}
+                style={{ transform: recentDraftsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              />
+            </button>
+            {recentDraftsOpen && (
+              <div className="sidebar-recents-panel">
+                {drafts.map(item => {
+                  const isActive = activeDraftId === item.id;
+                  const title = item.result?.document_name || item.result?.title || item.agreement_type;
+                  return (
+                    <div key={item.id} className="recent-item-row">
+                      <Link
+                        href={`/draft?draft=${item.id}`}
+                        className={`recent-item${isActive ? " active" : ""}`}
+                      >
+                        <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                        <span className={`recent-text${isActive ? " active-text" : ""}`}>
+                          {title || "Agreement"}
+                        </span>
+                      </Link>
+                    </div>
+                  );
+                })}
+                <Link href="/draft?drafts=1" className="sidebar-all-link">
+                  All drafts
                   <ChevronRight size={14} strokeWidth={2} />
                 </Link>
               </div>

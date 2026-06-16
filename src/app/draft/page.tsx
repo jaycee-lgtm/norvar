@@ -10,7 +10,7 @@ import AiDisclaimer from "@/components/AiDisclaimer";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { DraftOutput } from "@/lib/draft";
 import type { DraftFollowUps } from "@/lib/draft-followup";
-import { PERTA_AGENT } from "@/lib/agents";
+import { PETRA_AGENT } from "@/lib/agents";
 
 type DraftRecord = {
   id:             string;
@@ -52,7 +52,7 @@ function HistoryRow({
       <div className="contracts-history-row-main">
         <div className="contracts-history-row-title">{title || "Agreement"}</div>
         <div className="contracts-history-row-meta">
-          <span>{PERTA_AGENT.name}</span>
+          <span>{PETRA_AGENT.name}</span>
           <span>{fmt_date(createdAt)}</span>
         </div>
       </div>
@@ -78,6 +78,7 @@ function DraftPageInner() {
     const { drafts: draftRows } = await draftsRes.json().catch(() => ({ drafts: [] }));
     setDrafts((draftRows ?? []) as DraftRecord[]);
     setLoading(false);
+    window.dispatchEvent(new Event("norvar:drafts-updated"));
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -129,8 +130,6 @@ function DraftPageInner() {
             variant="home"
             isMobileView={isMobileView}
             onDone={handleDraftDone}
-            pastDraftsCount={drafts.length}
-            onPastDrafts={() => router.push("/draft?drafts=1")}
             onThreadActive={setDraftThreadActive}
           />
         )}
@@ -185,7 +184,7 @@ function DraftPageInner() {
                     )}
                     <div className="contracts-detail-head">
                       <p>
-                        {PERTA_AGENT.name}
+                        {PETRA_AGENT.name}
                         {" · "}{fmt_date(activeDraft.created_at)} at {fmt_time(activeDraft.created_at)}
                       </p>
                       <button
@@ -227,7 +226,7 @@ function DraftPageInner() {
                         ));
                       }}
                     />
-                    <AiDisclaimer agentName={PERTA_AGENT.name} />
+                    <AiDisclaimer agentName={PETRA_AGENT.name} />
                   </div>
                 )}
               </div>
