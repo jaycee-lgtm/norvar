@@ -433,22 +433,6 @@ export default function DraftForm({
     />
   );
 
-  const threadVoiceControl = (
-    <VoiceInputIcon
-      isListening={voice.isListening}
-      isTranscribing={voice.isTranscribing}
-      isSpeaking={voice.isSpeaking}
-      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-      configured={voice.support.configured}
-      disabled={working}
-      onStartListening={voice.startListening}
-      onStopListening={voice.stopListening}
-      onStopSpeaking={voice.stopSpeak}
-      size="sm"
-      agentName={PETRA_AGENT.name}
-    />
-  );
-
   const hasAttachedDocs = selectedDocumentIds.length > 0 || !!attachedDocName;
 
   const attachedDocsHeader = hasAttachedDocs ? (
@@ -575,6 +559,7 @@ export default function DraftForm({
         attachControl={attachControl}
         voiceControl={voiceControl}
         modelControl={modelSelector}
+        attachPlacement="end"
         header={attachedDocsHeader}
       />
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
@@ -606,8 +591,9 @@ export default function DraftForm({
             onSend={() => { sendWithVoice(); }}
             showSendButton={showSendButton}
             attachControl={attachControl}
-            voiceControl={threadVoiceControl}
+            voiceControl={voiceControl}
             modelControl={modelSelector}
+            attachPlacement="end"
           />
           <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
           {fileError && isMobileView && (
@@ -697,8 +683,9 @@ export default function DraftForm({
         onSend={() => { sendWithVoice(); }}
         showSendButton={showSendButton}
         attachControl={attachControl}
-        voiceControl={threadVoiceControl}
+        voiceControl={voiceControl}
         modelControl={modelSelector}
+        attachPlacement="end"
       />
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       {fileError && (

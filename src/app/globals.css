@@ -1050,23 +1050,30 @@ input, textarea, select, button {
   border-radius: 999px;
 }
 
-.agent-composer--hide-input .agent-composer-toolbar-start {
+.agent-composer--hide-input .agent-composer-toolbar-start,
+.agent-composer--attach-end .agent-composer-toolbar-start {
   flex: 1;
   justify-content: center;
 }
 
-.agent-composer--hide-input .agent-composer-toolbar-end {
+.agent-composer--hide-input .agent-composer-toolbar-end,
+.agent-composer--attach-end .agent-composer-toolbar-end {
   margin-left: 0;
   align-items: center;
 }
 
-.agent-composer--hide-input .agent-composer-shell .attach-plus-btn {
+.agent-composer--hide-input .agent-composer-shell .attach-plus-btn,
+.agent-composer--attach-end .agent-composer-shell .attach-plus-btn,
+.agent-composer--attach-end .agent-composer-shell .voice-input-btn {
   width: 36px !important;
   height: 36px !important;
+  min-height: 36px !important;
   border-radius: 999px !important;
 }
 
-.agent-composer--hide-input .agent-composer-shell .attach-plus-btn svg {
+.agent-composer--hide-input .agent-composer-shell .attach-plus-btn svg,
+.agent-composer--attach-end .agent-composer-shell .attach-plus-btn svg,
+.agent-composer--attach-end .agent-composer-shell .voice-input-btn svg {
   width: 20px;
   height: 20px;
 }

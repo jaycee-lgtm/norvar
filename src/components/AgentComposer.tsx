@@ -90,6 +90,7 @@ export default function AgentComposer({
     "agent-composer",
     `agent-composer--${variant}`,
     hideInput ? "agent-composer--hide-input" : "",
+    attachPlacement === "end" ? "agent-composer--attach-end" : "",
     isActive ? "agent-composer--active" : "",
     className ?? "",
   ].filter(Boolean).join(" ");
