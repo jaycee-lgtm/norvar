@@ -85,13 +85,19 @@ function parseFolder(value: string | null): InboxFolder {
   return "received";
 }
 
+function inboxHref(folder: InboxFolder, threadId: string | null) {
+  const params = new URLSearchParams();
+  params.set("folder", folder);
+  if (threadId) params.set("thread", threadId);
+  return `/inbox?${params.toString()}`;
+}
+
 function InboxThreadRow({
   item,
   folder,
   active,
   selected,
   selectMode,
-  onSelect,
   onToggleSelect,
 }: {
   item:           InboxListItem;
@@ -99,7 +105,6 @@ function InboxThreadRow({
   active:         boolean;
   selected:       boolean;
   selectMode:     boolean;
-  onSelect:       () => void;
   onToggleSelect: () => void;
 }) {
   const sev = normalizeGapSeverity(item.gap_severity);
@@ -111,8 +116,44 @@ function InboxThreadRow({
 
   const handleRowClick = () => {
     if (selectMode) onToggleSelect();
-    else onSelect();
   };
+
+  const rowClassName = `inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`;
+  const rowBody = (
+    <>
+      <div
+        className="inbox-thread-avatar"
+        style={{ background: `${avatar.color}22`, color: avatar.color }}
+        aria-hidden
+      >
+        {avatar.initial}
+      </div>
+
+      <div className="inbox-thread-content">
+        <div className="inbox-thread-line1">
+          <span className="inbox-thread-sender">{senderName}</span>
+          <span className="inbox-thread-date">{fmtListDate(item.created_at)}</span>
+        </div>
+        <div className="inbox-thread-subject">{item.gap_title}</div>
+        <div className="inbox-thread-snippet">
+          {item.body_preview}
+          {item.project_title ? ` · ${item.project_title}` : ""}
+        </div>
+        {folder === "trash" && item.days_until_purge !== null && (
+          <div className="inbox-purge-hint">
+            Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
+          </div>
+        )}
+      </div>
+
+      <span
+        className="inbox-thread-severity"
+        style={{ background: SEV_COLORS[sev] ?? "var(--fg3)" }}
+        title={`${sev} severity`}
+        aria-hidden
+      />
+    </>
+  );
 
   return (
     <li className={`inbox-thread-item${selected ? " selected" : ""}`}>
@@ -130,43 +171,19 @@ function InboxThreadRow({
             />
           </label>
         )}
-        <button
-          type="button"
-          className={`inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`}
-          onClick={handleRowClick}
-        >
-          <div
-            className="inbox-thread-avatar"
-            style={{ background: `${avatar.color}22`, color: avatar.color }}
-            aria-hidden
+        {selectMode ? (
+          <button
+            type="button"
+            className={rowClassName}
+            onClick={handleRowClick}
           >
-            {avatar.initial}
-          </div>
-
-          <div className="inbox-thread-content">
-            <div className="inbox-thread-line1">
-              <span className="inbox-thread-sender">{senderName}</span>
-              <span className="inbox-thread-date">{fmtListDate(item.created_at)}</span>
-            </div>
-            <div className="inbox-thread-subject">{item.gap_title}</div>
-            <div className="inbox-thread-snippet">
-              {item.body_preview}
-              {item.project_title ? ` · ${item.project_title}` : ""}
-            </div>
-            {folder === "trash" && item.days_until_purge !== null && (
-              <div className="inbox-purge-hint">
-                Permanently removed in {item.days_until_purge} day{item.days_until_purge === 1 ? "" : "s"}
-              </div>
-            )}
-          </div>
-
-          <span
-            className="inbox-thread-severity"
-            style={{ background: SEV_COLORS[sev] ?? "var(--fg3)" }}
-            title={`${sev} severity`}
-            aria-hidden
-          />
-        </button>
+            {rowBody}
+          </button>
+        ) : (
+          <Link href={inboxHref(folder, item.remediation_id)} className={rowClassName}>
+            {rowBody}
+          </Link>
+        )}
       </div>
     </li>
   );
@@ -180,7 +197,6 @@ function InboxListSection({
   threadId,
   open,
   onToggle,
-  onSelectThread,
   selectMode,
   selectedIds,
   onToggleSelect,
@@ -193,7 +209,6 @@ function InboxListSection({
   threadId:       string | null;
   open:           boolean;
   onToggle:       () => void;
-  onSelectThread: (id: string) => void;
   selectMode:     boolean;
   selectedIds:    Set<string>;
   onToggleSelect: (messageId: string) => void;
@@ -227,7 +242,6 @@ function InboxListSection({
                 active={item.remediation_id === threadId}
                 selected={selectedIds.has(item.message_id)}
                 selectMode={selectMode}
-                onSelect={() => onSelectThread(item.remediation_id)}
                 onToggleSelect={() => onToggleSelect(item.message_id)}
               />
             ))}
@@ -323,18 +337,6 @@ function InboxContent() {
     if (threadId) void loadThread(threadId, folder);
     else setThread(null);
   }, [threadId, folder, loadThread]);
-
-  const setFolder = (next: InboxFolder) => {
-    const params = new URLSearchParams();
-    params.set("folder", next);
-    if (threadId) params.set("thread", threadId);
-    router.push(`/inbox?${params.toString()}`);
-  };
-
-  const selectThread = (id: string) => {
-    if (selectMode) return;
-    router.push(`/inbox?folder=${folder}&thread=${id}`);
-  };
 
   const toggleMessageSelect = (messageId: string) => {
     setSelectedIds(prev => {
@@ -454,7 +456,7 @@ function InboxContent() {
   const showList  = !isMobile || !threadId;
   const showPanel = !isMobile || !!threadId;
   const canCompose = folder === "received" || folder === "sent";
-  const listHref = `/inbox?folder=${folder}`;
+  const listHref = inboxHref(folder, null);
   const activeFolderLabel = INBOX_FOLDERS.find(f => f.id === folder)?.label ?? "Inbox";
 
   const closeThread = () => {
@@ -479,11 +481,10 @@ function InboxContent() {
       {INBOX_FOLDERS.map(f => {
         const FolderIcon = FOLDER_ICONS[f.icon];
         return (
-          <button
+          <Link
             key={f.id}
-            type="button"
+            href={inboxHref(f.id, threadId)}
             className={`inbox-folder-tab${folder === f.id ? " active" : ""}`}
-            onClick={() => setFolder(f.id)}
           >
             <FolderIcon size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
             <span>{f.label}</span>
@@ -494,7 +495,7 @@ function InboxContent() {
             ) : counts[f.id] > 0 ? (
               <span className="inbox-folder-count">{counts[f.id]}</span>
             ) : null}
-          </button>
+          </Link>
         );
       })}
     </nav>
@@ -556,7 +557,6 @@ function InboxContent() {
             threadId={threadId}
             open={unreadOpen}
             onToggle={() => setUnreadOpen(v => !v)}
-            onSelectThread={selectThread}
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={toggleMessageSelect}
@@ -570,7 +570,6 @@ function InboxContent() {
             threadId={threadId}
             open={readOpen}
             onToggle={() => setReadOpen(v => !v)}
-            onSelectThread={selectThread}
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={toggleMessageSelect}
@@ -589,7 +588,6 @@ function InboxContent() {
               active={item.remediation_id === threadId}
               selected={selectedIds.has(item.message_id)}
               selectMode={selectMode}
-              onSelect={() => selectThread(item.remediation_id)}
               onToggleSelect={() => toggleMessageSelect(item.message_id)}
             />
           ))}
@@ -676,10 +674,6 @@ function InboxContent() {
             <aside className="inbox-sidebar">
               <div className="inbox-sidebar-head">
                 <h1 className="inbox-sidebar-title">Escalation inbox</h1>
-                <Link href="/remediation" className="inbox-compose-btn">
-                  <Send size={14} strokeWidth={2} />
-                  View queue
-                </Link>
               </div>
               {folderNav}
               {folder === "trash" && (

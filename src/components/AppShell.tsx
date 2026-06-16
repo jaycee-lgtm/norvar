@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import MobileProfileMenu from "@/components/MobileProfileMenu";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 function AppShellInner({
   children,
@@ -14,6 +15,7 @@ function AppShellInner({
   sidebarExtra?: ReactNode;
 }) {
   const pathname   = usePathname();
+  const isMobile   = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -21,9 +23,13 @@ function AppShellInner({
   }, [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    if (!isMobile) setMobileOpen(false);
+  }, [isMobile]);
+
+  useEffect(() => {
+    document.body.style.overflow = isMobile && mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
+  }, [mobileOpen, isMobile]);
 
   return (
     <div className={`app-shell${mobileOpen ? " sidebar-mobile-open" : ""}`}>
@@ -41,13 +47,15 @@ function AppShellInner({
         <MobileProfileMenu />
       </header>
 
-      <button
-        type="button"
-        className="sidebar-backdrop"
-        aria-label="Close navigation menu"
-        tabIndex={mobileOpen ? 0 : -1}
-        onClick={() => setMobileOpen(false)}
-      />
+      {isMobile && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          tabIndex={mobileOpen ? 0 : -1}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
       <Sidebar extra={sidebarExtra} onNavigate={() => setMobileOpen(false)} />
 

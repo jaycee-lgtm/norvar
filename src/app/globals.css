@@ -145,6 +145,9 @@ input, textarea, select, button {
   background: var(--bg);
   min-width: 0;
   min-height: 0;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -2900,13 +2903,18 @@ input, textarea, select, button {
 /* ── Escalation inbox ── */
 .inbox-page {
   min-height: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .inbox-layout {
   display: flex;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
+  position: relative;
+  isolation: isolate;
 }
 
 /* Desktop — Gmail-style sidebar + list + reading pane */
@@ -2928,8 +2936,12 @@ input, textarea, select, button {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   border-right: 0.5px solid var(--bdr);
   background: var(--card);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .inbox-sidebar-head {
@@ -3003,6 +3015,9 @@ input, textarea, select, button {
   min-height: 0;
   background: var(--bg);
   border-right: 0.5px solid var(--bdr);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .inbox-list-main--split {
@@ -3285,9 +3300,9 @@ input, textarea, select, button {
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-message-actions {
-  position: absolute;
-  top: 8px;
-  right: 0;
+  position: static;
+  margin-left: auto;
+  flex-shrink: 0;
   background: var(--card);
   border: 0.5px solid var(--bdr2);
   border-radius: 999px;
@@ -3423,6 +3438,7 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
 }
 
 .inbox-folder-tab > .inbox-folder-tab-icon + span {
@@ -3697,6 +3713,8 @@ input, textarea, select, button {
   cursor: pointer;
   font-family: 'Sora', sans-serif;
   transition: background 0.12s;
+  text-decoration: none;
+  color: inherit;
 }
 
 .inbox-thread-row:hover {
@@ -3844,6 +3862,9 @@ input, textarea, select, button {
   color: var(--fg3);
   font-size: 12px;
   flex: 1;
+  min-height: 0;
+  max-width: 100%;
+  align-self: stretch;
 }
 
 .inbox-empty-sub {
@@ -3860,6 +3881,9 @@ input, textarea, select, button {
   min-width: 0;
   min-height: 0;
   background: var(--bg);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .inbox-thread-head {
@@ -6952,6 +6976,11 @@ input, textarea, select, button {
 .mobile-only { display: none; }
 
 @media (min-width: 769px) {
+  .sidebar-backdrop {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
   .mobile-home-layout .mobile-mode-pill,
   .assess-composer-actions {
     display: none !important;
