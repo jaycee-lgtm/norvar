@@ -55,7 +55,7 @@ function InlineChangeBlock({
           <span>{clause.clause_number}</span>
           <span>{clause.clause_title}</span>
           {showingRewrite && (
-            <span className="redline-inline-change-rewrite-badge">Updated from chat</span>
+            <span className="redline-inline-change-rewrite-badge">Proposed revision</span>
           )}
           {!change.matched && <span className="redline-inline-change-flag">Could not locate in text</span>}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Shield, Copy, Check, ChevronDown, AlertCircle } from "lucide-react";
 import { buildFullDraftText, type DraftOutput, type DraftSection } from "@/lib/draft";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
@@ -13,6 +13,10 @@ import {
   type DraftFollowUpMessage,
   type DraftFollowUps,
 } from "@/lib/draft-followup";
+import {
+  getSectionClauseRevisions,
+  type ClauseRevision,
+} from "@/lib/draft-inline";
 
 const SECTION_QUICK_ACTIONS = [
   {
@@ -50,6 +54,28 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
+function InlineDraftClauseText({
+  text,
+  revision,
+}: {
+  text:      string;
+  revision?: ClauseRevision | null;
+}) {
+  if (!revision) {
+    return <p className="draft-clause-item-text">{text}</p>;
+  }
+
+  return (
+    <div className="draft-clause-inline-revision">
+      <span className="redline-inline-change-rewrite-badge">Proposed revision</span>
+      <p className="redline-inline-del">{revision.originalText}</p>
+      <div className="redline-inline-ins-wrap">
+        <p className="redline-inline-ins">{revision.proposedText}</p>
+      </div>
+    </div>
+  );
+}
+
 function SectionBlock({
   section,
   draftId,
@@ -65,6 +91,11 @@ function SectionBlock({
 }) {
   const [open, setOpen] = useState(true);
   const thread = draftSectionThreadKey(section.number);
+
+  const clauseRevisions = useMemo(
+    () => getSectionClauseRevisions(section, followups),
+    [section, followups],
+  );
 
   const fullText = section.clauses.map(c =>
     `${c.number}  ${c.title}\n${c.text}`,
@@ -118,7 +149,10 @@ function SectionBlock({
                 <span className="draft-clause-item-title">{clause.title}</span>
                 <CopyButton text={`${clause.number}  ${clause.title}\n${clause.text}`} />
               </div>
-              <p className="draft-clause-item-text">{clause.text}</p>
+              <InlineDraftClauseText
+                text={clause.text}
+                revision={clauseRevisions.get(clause.number)}
+              />
             </div>
           ))}
         </div>

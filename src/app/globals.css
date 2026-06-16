@@ -6813,6 +6813,24 @@ input, textarea, select, button {
   font-size: 12px;
 }
 
+.redline-clause-inline-revision {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.redline-clause-inline-revision .redline-inline-change-rewrite-badge {
+  align-self: flex-start;
+}
+
+.redline-clause-inline-revision .redline-inline-del,
+.redline-clause-inline-revision .redline-inline-ins {
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
 /* ══════════════════════════════════════════════════════════════════
    CHAT INPUT ROW (bottom)
 ══════════════════════════════════════════════════════════════════ */
@@ -7337,6 +7355,119 @@ input, textarea, select, button {
   width: 100%;
 }
 
+html:has(.public-shell--document),
+html:has(.public-shell--document) body {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.public-shell--document {
+  min-height: 100dvh;
+  height: auto;
+}
+
+.public-shell--document .public-document-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.public-shell--document .public-document-body {
+  flex: 1 0 auto;
+  padding-bottom: 88px;
+}
+
+.public-document-intro {
+  max-width: 560px;
+  margin-bottom: 40px;
+}
+
+.public-document-intro .public-page-meta {
+  margin-bottom: 0;
+}
+
+.public-document-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.public-section {
+  padding: 28px 0;
+  border-top: 0.5px solid var(--bdr);
+}
+
+.public-section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.public-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 560px;
+}
+
+.public-contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.public-contact-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg2);
+  letter-spacing: -0.01em;
+  font-family: 'Sora', sans-serif;
+}
+
+.public-contact-note {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--fg3);
+  line-height: 1.6;
+  font-family: 'Sora', sans-serif;
+}
+
+.public-contact-note a {
+  color: var(--fg2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.public-contact-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 560px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  border: 0.5px solid var(--rl-bdr, var(--bdr2));
+  background: var(--rl-bg, var(--card2));
+}
+
+.public-contact-success p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg2);
+  line-height: 1.6;
+  font-family: 'Sora', sans-serif;
+}
+
+.public-contact-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--rh);
+  font-family: 'Sora', sans-serif;
+}
+
 .public-page-kicker {
   font-size: 10px;
   font-weight: 500;
@@ -7363,10 +7494,6 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
 }
 
-.public-section + .public-section {
-  margin-top: 36px;
-}
-
 .public-section-title {
   font-size: 15px;
   font-weight: 500;
@@ -7381,6 +7508,16 @@ input, textarea, select, button {
   line-height: 1.8;
   font-family: 'Sora', sans-serif;
   letter-spacing: -0.01em;
+}
+
+.public-section-body a {
+  color: var(--fg2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.public-section-body a:hover {
+  color: var(--fg);
 }
 
 .public-form-card {
@@ -8462,7 +8599,41 @@ input, textarea, select, button {
     gap: 8px !important;
   }
 
-  /* ── Public pages (contact, privacy, terms) ── */
+  /* ── Public document pages (contact, privacy, terms) ── */
+  html:has(.public-shell--document),
+  html:has(.public-shell--document) body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .public-shell--document .public-document-header {
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px !important;
+  }
+
+  .public-shell--document .public-document-body {
+    padding: 28px 20px calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    max-width: none !important;
+  }
+
+  .public-shell--document .public-page-title {
+    font-size: 28px !important;
+  }
+
+  .public-document-intro {
+    margin-bottom: 28px;
+  }
+
+  .public-section {
+    padding: 22px 0;
+  }
+
+  .public-shell--document .public-shell-footer {
+    padding-top: 16px !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
   .public-page-header {
     padding: 14px 16px !important;
   }
@@ -9601,4 +9772,23 @@ input, textarea, select, button {
   margin: 0;
   padding-left: 24px;
   white-space: pre-wrap;
+}
+
+.draft-clause-inline-revision {
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.draft-clause-inline-revision .redline-inline-change-rewrite-badge {
+  align-self: flex-start;
+}
+
+.draft-clause-inline-revision .redline-inline-del,
+.draft-clause-inline-revision .redline-inline-ins {
+  font-size: 12px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  margin: 0;
 }

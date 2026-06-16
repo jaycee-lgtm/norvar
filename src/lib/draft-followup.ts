@@ -72,7 +72,8 @@ Rules:
 - Explain regulatory requirements in plain language; cite frameworks when helpful.
 ${GRC_PLAIN_LANGUAGE_RULES}
 - If the user asks for changes, revisions, or alternative language, provide the full updated section or clause text under a heading **Revised language:** followed by ready-to-paste text.
-- If they ask to update a single clause, still use **Revised language:** with the complete revised clause.
+- Format each revised clause as: clause number, title on the first line, then the full clause body on following lines (e.g. "16.4 Effective Date\\nThis Privacy Policy is effective...").
+- If they ask to update a single clause, still use **Revised language:** with the complete revised clause including its number and title.
 ${GRC_FORMATTING_RULES}
 - Stay focused on this draft — do not drift into unrelated topics.
 - If already answered in the thread, say so briefly and add anything new.`;

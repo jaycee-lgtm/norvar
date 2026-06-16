@@ -214,3 +214,69 @@ export async function sendEscalationInboxReply(
     return { ok: false, error: err instanceof Error ? err.message : "Send failed" };
   }
 }
+
+export type ContactEmailPayload = {
+  name:    string;
+  email:   string;
+  message: string;
+};
+
+export async function sendContactEmail(
+  payload: ContactEmailPayload,
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY not set — contact form submission not sent");
+    return { ok: false, error: "Email not configured" };
+  }
+
+  const to   = process.env.CONTACT_TO?.trim() || "hello@norvar.io";
+  const from = process.env.CONTACT_FROM?.trim()
+    || process.env.ESCALATION_FROM?.trim()
+    || "Norvar <onboarding@resend.dev>";
+  const subject = `Norvar contact from ${payload.name}`;
+  const text = [
+    `Name: ${payload.name}`,
+    `Email: ${payload.email}`,
+    "",
+    payload.message.trim(),
+  ].join("\n");
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; line-height: 1.55; max-width: 560px;">
+  <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #737373; margin: 0 0 8px;">New contact message</p>
+  <p style="font-size: 14px; margin: 0 0 4px;"><strong>Name:</strong> ${escapeHtml(payload.name)}</p>
+  <p style="font-size: 14px; margin: 0 0 16px;"><strong>Email:</strong> ${escapeHtml(payload.email)}</p>
+  <p style="font-size: 14px; white-space: pre-wrap; margin: 0;">${escapeHtml(payload.message.trim())}</p>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method:  "POST",
+      headers: {
+        Authorization:  `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to:       [to],
+        reply_to: payload.email.trim(),
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.message ?? `Resend error ${res.status}` };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Send failed" };
+  }
+}

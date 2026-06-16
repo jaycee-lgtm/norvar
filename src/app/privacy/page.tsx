@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PublicPageLayout from "@/components/PublicPageLayout";
 
 const SECTIONS = [
@@ -19,27 +20,42 @@ const SECTIONS = [
   },
   {
     title: "Your rights",
-    body: `Depending on where you are located, you may have rights to access, correct, delete, or export your personal data. To exercise any of these rights, contact us at the address below. We will respond within 30 days.`,
+    body: `Depending on where you are located, you may have rights to access, correct, delete, or export your personal data. To exercise any of these rights, contact us using the form below. We will respond within 30 days.`,
   },
   {
     title: "Contact",
-    body: `For privacy questions or requests, contact us at privacy@norvar.io.`,
+    body: `For privacy questions or requests, email privacy@norvar.io or use our contact form.`,
   },
 ];
 
 export default function PrivacyPage() {
   return (
     <PublicPageLayout>
-      <p className="public-page-kicker">Legal</p>
-      <h1 className="public-page-title">Privacy Policy</h1>
-      <p className="public-page-meta">Last updated: June 2026</p>
+      <div className="public-document-intro">
+        <p className="public-page-kicker">Legal</p>
+        <h1 className="public-page-title">Privacy Policy</h1>
+        <p className="public-page-meta">Last updated: June 2026</p>
+      </div>
 
-      {SECTIONS.map(s => (
-        <section key={s.title} className="public-section">
-          <h2 className="public-section-title">{s.title}</h2>
-          <p className="public-section-body">{s.body}</p>
-        </section>
-      ))}
+      <div className="public-document-sections">
+        {SECTIONS.map(s => (
+          <section key={s.title} className="public-section">
+            <h2 className="public-section-title">{s.title}</h2>
+            <p className="public-section-body">
+              {s.title === "Contact" ? (
+                <>
+                  For privacy questions or requests, email{" "}
+                  <a href="mailto:privacy@norvar.io">privacy@norvar.io</a>
+                  {" "}or use our{" "}
+                  <Link href="/contact">contact form</Link>.
+                </>
+              ) : (
+                s.body
+              )}
+            </p>
+          </section>
+        ))}
+      </div>
     </PublicPageLayout>
   );
 }

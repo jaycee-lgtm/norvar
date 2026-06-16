@@ -8,8 +8,8 @@ type PublicPageLayoutProps = {
 
 export default function PublicPageLayout({ children, footer }: PublicPageLayoutProps) {
   return (
-    <div className="public-shell">
-      <header className="public-shell-header">
+    <div className="public-shell public-shell--document">
+      <header className="public-shell-header public-document-header">
         <Link href="/" className="public-brand-row" style={{ textDecoration: "none" }}>
           <Logo size={26} />
           <span className="public-brand-name">Norvar</span>
@@ -17,7 +17,7 @@ export default function PublicPageLayout({ children, footer }: PublicPageLayoutP
         <Link href="/" className="public-link-muted">Back to home</Link>
       </header>
 
-      <main className="public-page-body">{children}</main>
+      <main className="public-page-body public-document-body">{children}</main>
 
       <footer className="public-shell-footer">
         {footer ?? (

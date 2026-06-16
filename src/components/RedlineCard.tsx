@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Shield, Copy, Check } from "lucide-react";
 import type { RedlineClause, RedlineOutput, RedlineStatus } from "@/lib/redline";
 import FrameworkRef from "@/components/FrameworkRef";
 import RedlineFollowUp from "@/components/RedlineFollowUp";
 import RedlineDocumentView from "@/components/RedlineDocumentView";
-import type { ChangeDecisions } from "@/lib/redline-inline";
+import {
+  getClauseInlineProposal,
+  type ChangeDecisions,
+} from "@/lib/redline-inline";
 import {
   getThreadMessages,
   redlineClauseThreadKey,
@@ -50,6 +53,59 @@ function CopyButton({ text }: { text: string }) {
       {copied ? <Check size={10} /> : <Copy size={10} />}
       {copied ? "Copied" : "Copy"}
     </button>
+  );
+}
+
+function InlineRedlineClauseLanguage({
+  clause,
+  index,
+  followups,
+}: {
+  clause:     RedlineClause;
+  index:      number;
+  followups?: RedlineFollowUps;
+}) {
+  const proposal = useMemo(
+    () => getClauseInlineProposal(clause, index, followups),
+    [clause, index, followups],
+  );
+
+  if (!proposal?.proposedText && !proposal?.originalText) return null;
+
+  const { originalText, baseSuggested, proposedText, showingRewrite } = proposal;
+
+  if (!originalText && proposedText) {
+    return (
+      <div className="redline-clause-inline-revision">
+        <span className="redline-inline-change-rewrite-badge">Proposed addition</span>
+        <div className="redline-inline-ins-wrap">
+          <p className="redline-inline-ins">{proposedText}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!proposedText) {
+    return (
+      <div className="redline-clause-inline-revision">
+        <p className="redline-inline-del">{originalText}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="redline-clause-inline-revision">
+      <span className="redline-inline-change-rewrite-badge">
+        {showingRewrite ? "Proposed revision" : "Suggested language"}
+      </span>
+      {originalText && <p className="redline-inline-del">{originalText}</p>}
+      <div className="redline-inline-ins-wrap">
+        {showingRewrite && baseSuggested && (
+          <p className="redline-inline-del redline-inline-del--compact">{baseSuggested}</p>
+        )}
+        <p className="redline-inline-ins">{proposedText}</p>
+      </div>
+    </div>
   );
 }
 
@@ -105,21 +161,6 @@ function ClauseCard({
 
       {open && (
         <div style={{ borderTop: "0.5px solid var(--bdr)", padding: "14px 16px" }}>
-          {clause.original_text && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 6 }}>
-                Current language
-              </div>
-              <div style={{
-                fontSize: 12, color: "var(--fg2)", lineHeight: 1.6,
-                padding: "10px 12px", background: "var(--card2)",
-                border: "0.5px solid var(--bdr)", borderRadius: 6, fontStyle: "italic",
-              }}>
-                &ldquo;{clause.original_text}&rdquo;
-              </div>
-            </div>
-          )}
-
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 6 }}>
               Issue
@@ -127,23 +168,17 @@ function ClauseCard({
             <div style={{ fontSize: 13, color: "var(--fg)", lineHeight: 1.6 }}>{clause.issue}</div>
           </div>
 
-          {clause.suggested_text && (
+          {(clause.original_text || clause.suggested_text) && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-                  Suggested language
+                  Language
                 </div>
-                <CopyButton text={clause.suggested_text} />
+                {clause.suggested_text && (
+                  <CopyButton text={getClauseInlineProposal(clause, index, followups)?.proposedText ?? clause.suggested_text} />
+                )}
               </div>
-              <div style={{
-                fontSize: 12, color: "var(--fg)", lineHeight: 1.7,
-                padding: "10px 12px",
-                background: "rgba(59, 109, 17, 0.05)",
-                border: "0.5px solid rgba(59, 109, 17, 0.2)",
-                borderRadius: 6,
-              }}>
-                {clause.suggested_text}
-              </div>
+              <InlineRedlineClauseLanguage clause={clause} index={index} followups={followups} />
             </div>
           )}
 

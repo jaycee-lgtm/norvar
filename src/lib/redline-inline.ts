@@ -48,12 +48,12 @@ export function extractRewriteFromAssistant(content: string): string | null {
 
   const normalized = trimmed.replace(/\*\*/g, "");
   const labeled = normalized.match(
-    /(?:Suggested language|Replace with|Revised clause|Updated language|Use this instead)\s*:?\s*\n+([\s\S]+?)(?:\n\n|$)/i,
+    /(?:Suggested language|Revised language|Replace with|Revised clause|Updated language|Use this instead)\s*:?\s*\n+([\s\S]+?)(?:\n\n|$)/i,
   );
-  if (labeled?.[1]?.trim() && labeled[1].trim().length >= 40) return labeled[1].trim();
+  if (labeled?.[1]?.trim() && labeled[1].trim().length >= 15) return labeled[1].trim();
 
   const inlineLabeled = normalized.match(
-    /(?:Suggested language|Replace with|Revised clause|Updated language|Use this instead)\s*:\s*([\s\S]{40,})/i,
+    /(?:Suggested language|Revised language|Replace with|Revised clause|Updated language|Use this instead)\s*:\s*([\s\S]{15,})/i,
   );
   if (inlineLabeled?.[1]?.trim()) return inlineLabeled[1].trim();
 
@@ -71,6 +71,33 @@ export function followupRewriteForClause(followups: RedlineFollowUps | undefined
     if (rewrite) return rewrite;
   }
   return null;
+}
+
+export type ClauseInlineProposal = {
+  originalText:    string;
+  baseSuggested:   string;
+  proposedText:    string;
+  showingRewrite:  boolean;
+};
+
+export function getClauseInlineProposal(
+  clause: RedlineClause,
+  index: number,
+  followups?: RedlineFollowUps,
+): ClauseInlineProposal | null {
+  const baseSuggested = clause.suggested_text?.trim() ?? "";
+  const chatRewrite   = followupRewriteForClause(followups, index);
+  const proposedText  = (chatRewrite || baseSuggested).trim();
+  const originalText  = clause.original_text?.trim() ?? "";
+
+  if (!proposedText && !originalText) return null;
+
+  return {
+    originalText,
+    baseSuggested,
+    proposedText,
+    showingRewrite: !!(chatRewrite && chatRewrite.trim() !== baseSuggested),
+  };
 }
 
 export function suggestedTextForClause(

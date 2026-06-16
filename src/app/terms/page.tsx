@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PublicPageLayout from "@/components/PublicPageLayout";
 
 const SECTIONS = [
@@ -35,23 +36,38 @@ const SECTIONS = [
   },
   {
     title: "Contact",
-    body: `For questions about these terms, contact us at legal@norvar.io.`,
+    body: `For questions about these terms, contact legal@norvar.io or use our contact form.`,
   },
 ];
 
 export default function TermsPage() {
   return (
     <PublicPageLayout>
-      <p className="public-page-kicker">Legal</p>
-      <h1 className="public-page-title">Terms of Service</h1>
-      <p className="public-page-meta">Last updated: June 2026</p>
+      <div className="public-document-intro">
+        <p className="public-page-kicker">Legal</p>
+        <h1 className="public-page-title">Terms of Service</h1>
+        <p className="public-page-meta">Last updated: June 2026</p>
+      </div>
 
-      {SECTIONS.map(s => (
-        <section key={s.title} className="public-section">
-          <h2 className="public-section-title">{s.title}</h2>
-          <p className="public-section-body">{s.body}</p>
-        </section>
-      ))}
+      <div className="public-document-sections">
+        {SECTIONS.map(s => (
+          <section key={s.title} className="public-section">
+            <h2 className="public-section-title">{s.title}</h2>
+            <p className="public-section-body">
+              {s.title === "Contact" ? (
+                <>
+                  For questions about these terms, email{" "}
+                  <a href="mailto:legal@norvar.io">legal@norvar.io</a>
+                  {" "}or use our{" "}
+                  <Link href="/contact">contact form</Link>.
+                </>
+              ) : (
+                s.body
+              )}
+            </p>
+          </section>
+        ))}
+      </div>
     </PublicPageLayout>
   );
 }
