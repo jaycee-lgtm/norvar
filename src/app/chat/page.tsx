@@ -207,6 +207,7 @@ function Chat() {
   }, [input]);
 
   const canSend = input.trim().length > 2 && !fileExtracting;
+  const showSendButton = input.trim().length > 0 || loading;
 
   const firstAssistantIndex = messages.findIndex(m => m.role === "assistant");
 
@@ -577,11 +578,13 @@ function Chat() {
                       </div>
                       <div className="home-composer-end">
                         {voiceIcon}
+                        {showSendButton && (
                         <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                           {loading
                             ? <Loader2 size={16} className="spin" />
                             : <ArrowUp size={16} strokeWidth={2.5} />}
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -605,11 +608,13 @@ function Chat() {
                         </div>
                         <div className="composer-toolbar-end home-composer-end">
                           {voiceIcon}
+                          {showSendButton && (
                           <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                             {loading
                               ? <Loader2 size={16} className="spin" />
                               : <ArrowUp size={16} strokeWidth={2.5} />}
                           </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -806,9 +811,11 @@ function Chat() {
                           size="sm"
                           agentName={CHAT_AGENT.name}
                         />
+                        {showSendButton && (
                         <button type="button" className="chat-send-btn send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                           <ArrowUp size={14} strokeWidth={2.5} />
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -842,9 +849,11 @@ function Chat() {
                           size="sm"
                           agentName={CHAT_AGENT.name}
                         />
+                        {showSendButton && (
                         <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                           <ArrowUp size={14} strokeWidth={2.5} />
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>

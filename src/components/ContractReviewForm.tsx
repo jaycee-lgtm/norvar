@@ -151,6 +151,8 @@ export default function ContractReviewForm({
     ? pastedText.trim().length >= 100
     : contractText.trim().length >= 100;
 
+  const showSendButton = canSend || working;
+
   const submit = async () => {
     setError("");
     setWorking(true);
@@ -278,7 +280,7 @@ export default function ContractReviewForm({
     </button>
   );
 
-  const sendButton = (
+  const sendButton = showSendButton ? (
     <button
       type="button"
       className="send-btn"
@@ -288,7 +290,7 @@ export default function ContractReviewForm({
     >
       {working ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
     </button>
-  );
+  ) : null;
 
   const sourceLabel = inputMode === "document" && selectedDocId
     ? docCatalog[selectedDocId] ?? "Selected document"
@@ -325,9 +327,14 @@ export default function ContractReviewForm({
           )}
         </div>
       )}
-      <div className="mobile-composer-input-row">
+      <div className="home-composer-input-stack">
         {sourceLabel ? (
-          <span className="contracts-selected-label">{sourceLabel}</span>
+          <div className="contracts-selected-bar contracts-selected-bar--home">
+            <span className="contracts-selected-label">{sourceLabel}</span>
+            <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
+              Change
+            </button>
+          </div>
         ) : (
           <ModeSelector current="contracts" embedded askPrefix homePrompt menuPlacement="top" />
         )}
@@ -335,9 +342,9 @@ export default function ContractReviewForm({
       <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
         <div className="composer-toolbar-start">
           {attachControl}
+          {modelSelector}
         </div>
         <div className="home-composer-end">
-          {modelSelector}
           {sendButton}
         </div>
       </div>

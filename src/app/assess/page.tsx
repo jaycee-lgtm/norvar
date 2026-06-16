@@ -923,6 +923,8 @@ function Home() {
     ? input.trim().length > 0 && !loading
     : input.trim().length > 0 && !loading;
 
+  const showSendButton = input.trim().length > 0 || loading;
+
   const isMobileView = useIsMobile();
 
   const presentAssessmentConfirmation = () => {
@@ -1676,9 +1678,11 @@ function Home() {
                 onStopSpeaking={voice.stopSpeak}
                 agentName={ASSESS_AGENT.name}
               />
+              {showSendButton && (
               <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
                 {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -1711,9 +1715,11 @@ function Home() {
                 onStopSpeaking={voice.stopSpeak}
                 agentName={ASSESS_AGENT.name}
               />
+              {showSendButton && (
               <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
                 {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -1993,9 +1999,11 @@ function Home() {
                               size="sm"
                               agentName={ASSESS_AGENT.name}
                             />
+                            {showSendButton && (
                             <button type="button" className="chat-send-btn send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
                               {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                             </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2027,9 +2035,11 @@ function Home() {
                             size="sm"
                             agentName={ASSESS_AGENT.name}
                           />
+                          {showSendButton && (
                           <button type="button" className="chat-send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
                             {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                           </button>
+                          )}
                         </div>
                       </div>
                     </div>

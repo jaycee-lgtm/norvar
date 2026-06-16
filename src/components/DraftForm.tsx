@@ -318,6 +318,9 @@ export default function DraftForm({
   );
 
   const canSend = isHome ? canSendHome : canSendThread;
+  const showSendButton = isHome
+    ? input.trim().length > 0 || working
+    : canSend || working;
 
   const composerPlaceholder = isHome
     ? ""
@@ -340,7 +343,7 @@ export default function DraftForm({
     />
   );
 
-  const sendButton = (
+  const sendButton = showSendButton ? (
     <button
       type="button"
       className="send-btn"
@@ -350,7 +353,7 @@ export default function DraftForm({
     >
       {working ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
     </button>
-  );
+  ) : null;
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -455,9 +458,10 @@ export default function DraftForm({
             </div>
           </div>
           <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-            <div className="composer-toolbar-start" />
-            <div className="home-composer-end">
+            <div className="composer-toolbar-start">
               {modelSelector}
+            </div>
+            <div className="home-composer-end">
               {sendButton}
             </div>
           </div>
