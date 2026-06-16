@@ -205,8 +205,8 @@ export default function DocumentPicker({
           title="Add document"
         >
           {uploading
-            ? <Loader2 size={16} className="spin" strokeWidth={2} />
-            : <Plus size={18} strokeWidth={2} />}
+            ? <Loader2 size={22} className="spin" strokeWidth={2} />
+            : <Plus size={22} strokeWidth={2} />}
           {attachmentCount > 0 && (
             <span className="attach-icon-badge">{attachmentCount}</span>
           )}

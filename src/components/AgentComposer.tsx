@@ -164,8 +164,8 @@ export default function AgentComposer({
           </div>
           <div className="agent-composer-toolbar-end">
             {extraToolbarEnd}
-            {attachInEnd && attachControl}
             {voiceControl}
+            {attachInEnd && attachControl}
             {sendVisible && (
               <button
                 type="button"

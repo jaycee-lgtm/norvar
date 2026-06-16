@@ -29,7 +29,7 @@ export function VoiceInputIcon({
   agentName = "Nora",
   size = "md",
 }: VoiceInputIconProps) {
-  const iconSize = size === "sm" ? 14 : 16;
+  const iconSize = size === "sm" ? 14 : 22;
   const btnClass = size === "sm" ? "voice-input-btn voice-input-btn-sm" : "voice-input-btn";
   const isBusy = isListening || isTranscribing || isSpeaking;
   const isActive = isBusy || voiceActive;
