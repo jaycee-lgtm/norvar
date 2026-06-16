@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import GapChat, { type GapChatMessage } from "@/components/GapChat";
@@ -145,21 +146,26 @@ function SevBadge({ sev }: { sev: string }) {
   );
 }
 
-function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessagesChange }: {
+function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessagesChange, initialExpanded = false }: {
   item:     RemediationItem;
   profiles: Record<string, UserProfile>;
   isMobile: boolean;
   onUpdate: () => void;
   onStatusChange: (id: string, status: RemediationStatus) => void;
   onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
+  initialExpanded?: boolean;
 }) {
-  const [expanded, setExpanded]     = useState(false);
+  const [expanded, setExpanded]     = useState(initialExpanded);
   const [escalating, setEscalating] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [localStatus, setLocalStatus] = useState(item.status);
   const [statusError, setStatusError] = useState("");
   const [detailExpanded, setDetailExpanded] = useState(false);
   const [activityOpen, setActivityOpen]     = useState(false);
+
+  useEffect(() => {
+    setExpanded(initialExpanded);
+  }, [initialExpanded, item.id]);
 
   useEffect(() => {
     setLocalStatus(item.status);
@@ -445,6 +451,24 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
 }
 
 export default function RemediationPage() {
+  return (
+    <Suspense fallback={
+      <AppShell>
+        <main className="main-area">
+          <div style={{ textAlign: "center", color: "var(--fg3)", fontSize: 12, padding: "40px 0" }}>
+            Loading...
+          </div>
+        </main>
+      </AppShell>
+    }>
+      <RemediationContent />
+    </Suspense>
+  );
+}
+
+function RemediationContent() {
+  const searchParams = useSearchParams();
+  const focusGapId = searchParams.get("gap");
   const isMobileView = useIsMobile();
   const [items, setItems]               = useState<RemediationItem[]>([]);
   const [profiles, setProfiles]         = useState<Record<string, UserProfile>>({});
@@ -749,6 +773,7 @@ export default function RemediationPage() {
               item={item}
               profiles={profiles}
               isMobile={isMobileView}
+              initialExpanded={item.id === focusGapId}
               onUpdate={() => load({ silent: true })}
               onStatusChange={handleStatusChange}
               onMessagesChange={updateItemMessages}

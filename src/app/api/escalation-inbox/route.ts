@@ -30,6 +30,7 @@ const supabase = createClient(
 
 type ItemRow = {
   id: string;
+  assessment_id: string;
   gap_title: string;
   gap_severity: string;
   gap_domain: string;
@@ -134,6 +135,8 @@ function serializeThread(
 
   return {
     remediation_id:      item.id,
+    assessment_id:       item.assessment_id,
+    escalation_token:    item.escalation_token,
     gap_title:           item.gap_title,
     gap_severity:        item.gap_severity,
     gap_domain:          item.gap_domain,
@@ -155,7 +158,7 @@ async function loadAccessibleItems(userId: string, activeOrgId: string | null) {
   const { data, error } = await supabase
     .from("remediation_items")
     .select(`
-      id, gap_title, gap_severity, gap_domain, project_title, assessment_number,
+      id, assessment_id, gap_title, gap_severity, gap_domain, project_title, assessment_number,
       escalation_email, escalation_recipient_name, escalation_token, escalation_status,
       escalation_question, escalation_note, escalated_at,
       created_by, assigned_to, remediation_activity(*)

@@ -17,3 +17,14 @@ export const NEW_ACTIONS: Record<SidebarMode, { href: string; label: string }> =
 export function getNewAction(pathname: string) {
   return NEW_ACTIONS[getSidebarMode(pathname)];
 }
+
+export function draftHistoryHref(draftId?: string | null) {
+  const params = new URLSearchParams({ drafts: "1" });
+  if (draftId) params.set("draft", draftId);
+  return `/draft?${params.toString()}`;
+}
+
+export function isDraftHistoryPath(pathname: string, searchParams: URLSearchParams) {
+  return pathname === "/draft"
+    && (searchParams.get("drafts") === "1" || !!searchParams.get("draft") || !!searchParams.get("id"));
+}

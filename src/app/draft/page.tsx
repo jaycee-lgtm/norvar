@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, FileText } from "lucide-react";
 import AppShell from "@/components/AppShell";
@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import type { DraftOutput } from "@/lib/draft";
 import type { DraftFollowUps } from "@/lib/draft-followup";
 import { PETRA_AGENT } from "@/lib/agents";
+import { draftHistoryHref } from "@/lib/mobile-nav";
 
 type DraftRecord = {
   id:             string;
@@ -68,27 +69,53 @@ function DraftPageInner() {
   const [loading, setLoading] = useState(true);
   const [draftFollowups, setDraftFollowups] = useState<DraftFollowUps>({});
   const [draftThreadActive, setDraftThreadActive] = useState(false);
+  const historyParamsSeen = useRef(false);
 
   const draftId    = searchParams.get("draft") ?? searchParams.get("id");
   const showDrafts = searchParams.get("drafts") === "1";
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     const draftsRes = await fetch("/api/drafts");
     const { drafts: draftRows } = await draftsRes.json().catch(() => ({ drafts: [] }));
     setDrafts((draftRows ?? []) as DraftRecord[]);
-    setLoading(false);
+    if (!opts?.silent) setLoading(false);
     window.dispatchEvent(new Event("norvar:drafts-updated"));
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (!historyParamsSeen.current) {
+      historyParamsSeen.current = true;
+      return;
+    }
+    void load({ silent: true });
+  }, [load, draftId, showDrafts]);
+
+  useEffect(() => {
+    if (!draftId || loading || drafts.some(r => r.id === draftId)) return;
+
+    let cancelled = false;
+    void fetch(`/api/drafts?id=${draftId}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: { draft?: DraftRecord } | null) => {
+        if (cancelled || !data?.draft) return;
+        setDrafts(prev => (
+          prev.some(r => r.id === data.draft!.id) ? prev : [data.draft!, ...prev]
+        ));
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [draftId, loading, drafts]);
 
   const handleDraftDone = () => {
     void load().then(() => {
       fetch("/api/drafts?limit=1")
         .then(r => r.json())
         .then(({ drafts: d }: { drafts?: DraftRecord[] }) => {
-          if (d?.[0]) router.replace(`/draft?draft=${d[0].id}`);
+          if (d?.[0]) router.replace(draftHistoryHref(d[0].id));
           else router.replace("/draft");
         })
         .catch(() => router.replace("/draft"));
@@ -159,7 +186,7 @@ function DraftPageInner() {
                       title={record.result?.document_name || record.result?.title || record.agreement_type}
                       createdAt={record.created_at}
                       active={draftId === record.id}
-                      onClick={() => router.push(`/draft?draft=${record.id}`)}
+                      onClick={() => router.push(draftHistoryHref(record.id))}
                     />
                   ))}
                 </div>
@@ -185,7 +212,7 @@ function DraftPageInner() {
                 ) : (
                   <div className="contracts-detail-inner">
                     {isMobileView && (
-                      <button type="button" className="contracts-back-btn" onClick={() => router.replace("/draft?drafts=1")}>
+                      <button type="button" className="contracts-back-btn" onClick={() => router.replace(draftHistoryHref())}>
                         <ArrowLeft size={14} /> All drafts
                       </button>
                     )}
@@ -210,7 +237,7 @@ function DraftPageInner() {
                             body:    JSON.stringify({ id: activeDraft.id }),
                           });
                           const remaining = drafts.filter(r => r.id !== activeDraft.id);
-                          router.replace(remaining.length ? "/draft?drafts=1" : "/draft");
+                          router.replace(remaining.length ? draftHistoryHref() : "/draft");
                           void load();
                         }}
                       >

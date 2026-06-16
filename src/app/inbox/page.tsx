@@ -27,6 +27,8 @@ const FOLDER_ICONS: Record<(typeof INBOX_FOLDERS)[number]["icon"], LucideIcon> =
 
 type ThreadDetail = {
   remediation_id:      string;
+  assessment_id:       string;
+  escalation_token:    string | null;
   gap_title:           string;
   gap_severity:        string;
   project_title:       string | null;
@@ -501,6 +503,12 @@ function InboxContent() {
     </nav>
   );
 
+  const threadGapHref = thread?.escalation_token
+    ? `/escalation/${thread.escalation_token}`
+    : threadId
+      ? `/remediation?gap=${threadId}`
+      : "/remediation";
+
   const listToolbar = !isMobile ? (
     <div className="inbox-list-toolbar">
       <button
@@ -647,7 +655,7 @@ function InboxContent() {
           <aside className="inbox-list-pane">
             <div className="inbox-list-head">
               <Inbox size={14} color="var(--fg3)" />
-              <h1 className="inbox-list-title">Escalation inbox</h1>
+              <h1 className="inbox-list-title">Inbox</h1>
               {!loadingList && items.length > 0 && (
                 <button
                   type="button"
@@ -672,7 +680,7 @@ function InboxContent() {
         {!isMobile && (
           <aside className="inbox-sidebar">
             <div className="inbox-sidebar-head">
-              <h1 className="inbox-sidebar-title">Escalation inbox</h1>
+              <h1 className="inbox-sidebar-title">Inbox</h1>
             </div>
             {folderNav}
             {folder === "trash" && (
@@ -752,7 +760,7 @@ function InboxContent() {
                     {isMobile && (
                       <>
                         <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
-                        <Link href="/remediation" className="inbox-open-gap">
+                        <Link href={threadGapHref} className="inbox-open-gap">
                           View gap
                           <ExternalLink size={12} strokeWidth={2} />
                         </Link>
@@ -764,7 +772,7 @@ function InboxContent() {
                     <div className="inbox-thread-title-row">
                       <h1 className="inbox-thread-title">{thread.gap_title}</h1>
                       {!isMobile && (
-                        <Link href="/remediation" className="inbox-open-gap">
+                        <Link href={threadGapHref} className="inbox-open-gap">
                           View gap
                           <ExternalLink size={12} strokeWidth={2} />
                         </Link>

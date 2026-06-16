@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CheckCircle, Loader2, MessageSquare, Shield } from "lucide-react";
-import { ESCALATION_EMAIL_REPLY_ACTION, ESCALATION_STEPS, escalationStepIndex, formatDuration, parseEscalationEmailReplies } from "@/lib/escalation";
-import EscalationEmailReplies from "@/components/EscalationEmailReplies";
+import { useParams } from "next/navigation";
+import { AlertTriangle, ArrowLeft, CheckCircle, ExternalLink, Loader2, MessageSquare, Shield } from "lucide-react";
+import { ESCALATION_EMAIL_REPLY_ACTION, ESCALATION_STEPS, escalationStepIndex, formatDuration, type EscalationInboxMessage } from "@/lib/escalation";
 import type { GapChatMessage } from "@/components/GapChat";
 import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
 
@@ -54,12 +54,31 @@ type EscalationData = {
   } | null;
   users: Record<string, { id: string; name: string; email: string }>;
   activity: Array<{ id: string; action: string; detail: string | null; created_at: string; user_id?: string }>;
+  assessment_gap_chat?: GapChatMessage[];
+  inbox_thread?: EscalationInboxMessage[];
 };
 
 const DOMAIN_LABELS: Record<string, string> = {
   privacy:       "Privacy",
   ai_governance: "AI Governance",
   cybersecurity: "Cybersecurity",
+};
+
+const sectionStyle: React.CSSProperties = {
+  padding: "14px 16px", background: "var(--card)",
+  border: "0.5px solid var(--bdr2)", borderRadius: 8,
+};
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 600, color: "var(--fg2)",
+  textTransform: "uppercase", letterSpacing: "0.06em",
+  margin: "0 0 10px",
+};
+
+const btnStyle: React.CSSProperties = {
+  padding: "7px 14px", borderRadius: 6, fontSize: 12,
+  border: "0.5px solid var(--bdr2)", background: "transparent",
+  color: "var(--fg2)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
 };
 
 function SevBadge({ sev }: { sev: string }) {
@@ -77,7 +96,76 @@ function SevBadge({ sev }: { sev: string }) {
   );
 }
 
-export default function EscalationViewPage({ token }: { token: string }) {
+
+function ChatBubble({
+  label,
+  body,
+  align = "left",
+  tone = "neutral",
+}: {
+  label:   string;
+  body:    string;
+  align?:  "left" | "right";
+  tone?:   "neutral" | "team" | "you";
+}) {
+  return (
+    <div className={`escalation-chat-msg ${align === "right" ? "outbound" : "inbound"} ${tone}`}>
+      <div className="escalation-chat-meta">
+        <span className="escalation-chat-sender">{label}</span>
+      </div>
+      <div className="escalation-chat-bubble">
+        <p className="escalation-chat-text">{body}</p>
+      </div>
+    </div>
+  );
+}
+
+function GapChatHistory({ title, messages }: { title: string; messages: GapChatMessage[] }) {
+  if (!messages.length) return null;
+  return (
+    <div style={{ ...sectionStyle, marginBottom: 16 }}>
+      <h2 style={sectionTitleStyle}>{title}</h2>
+      <div className="escalation-chat-thread">
+        {messages.map((m, i) => (
+          <ChatBubble
+            key={i}
+            label={m.role === "user" ? "Team" : "Norvar"}
+            body={m.content}
+            align={m.role === "user" ? "right" : "left"}
+            tone={m.role === "user" ? "team" : "neutral"}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmailThread({ messages }: { messages: EscalationInboxMessage[] }) {
+  if (!messages.length) return null;
+  return (
+    <div style={{ ...sectionStyle, marginBottom: 16 }}>
+      <h2 style={sectionTitleStyle}>Email thread</h2>
+      <div className="escalation-chat-thread">
+        {messages.map(msg => {
+          const sender = msg.from_name ?? msg.from_email;
+          return (
+            <ChatBubble
+              key={msg.id}
+              label={sender}
+              body={msg.body}
+              align={msg.direction === "outbound" ? "right" : "left"}
+              tone={msg.direction === "outbound" ? "you" : "neutral"}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function EscalationViewPage() {
+  const params = useParams<{ token: string }>();
+  const token = typeof params?.token === "string" ? params.token : "";
   const [data, setData]       = useState<EscalationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState("");
@@ -85,6 +173,7 @@ export default function EscalationViewPage({ token }: { token: string }) {
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
+    if (!token) return;
     setLoading(true);
     try {
       const res  = await fetch(`/api/escalation/${token}`);
@@ -98,7 +187,14 @@ export default function EscalationViewPage({ token }: { token: string }) {
     }
   };
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    if (!token) {
+      setError("Invalid escalation link");
+      setLoading(false);
+      return;
+    }
+    void load();
+  }, [token]);
 
   const patch = async (body: Record<string, unknown>) => {
     setSubmitting(true);
@@ -134,8 +230,11 @@ export default function EscalationViewPage({ token }: { token: string }) {
     );
   }
 
-  const { item, assessment, users, activity } = data;
-  const emailReplies = parseEscalationEmailReplies(activity);
+  const { item, assessment, users, activity, assessment_gap_chat = [], inbox_thread = [] } = data;
+  const assessmentGapChat = assessment_gap_chat;
+  const remediationMessages = item.messages ?? [];
+  const norvarLink = `/remediation?gap=${item.id}`;
+  const assessLink = assessment ? `/assess?id=${assessment.id}` : null;
   const stepIdx = escalationStepIndex(item.escalation_status as typeof ESCALATION_STEPS[number]["value"]);
   const result  = assessment?.result;
 
@@ -147,7 +246,7 @@ export default function EscalationViewPage({ token }: { token: string }) {
       }}>
         <Shield size={16} color="var(--fg3)" />
         <span style={{ fontSize: 13, fontWeight: 500 }}>Norvar escalation</span>
-        <Link href="/remediation" style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+        <Link href={norvarLink} style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
           <ArrowLeft size={11} /> Open in Norvar
         </Link>
       </header>
@@ -163,7 +262,7 @@ export default function EscalationViewPage({ token }: { token: string }) {
               <span style={{ fontSize: 10, color: "var(--fg2)" }}>{item.project_title}</span>
             )}
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 500, margin: "0 0 8px", lineHeight: 1.3 }}>{item.gap_title}</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 8px", lineHeight: 1.35, fontFamily: "'Sora', sans-serif" }}>{item.gap_title}</h1>
           {item.gap_detail && (
             <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.6, margin: 0 }}>{item.gap_detail}</p>
           )}
@@ -232,27 +331,33 @@ export default function EscalationViewPage({ token }: { token: string }) {
           </div>
         )}
 
+        {/* Assessment chat from discovery */}
+        <GapChatHistory title="Assessment chat" messages={assessmentGapChat} />
+
         {/* Remediation chat */}
         <div style={{ ...sectionStyle, marginBottom: 16 }}>
           <h2 style={sectionTitleStyle}>
             <MessageSquare size={12} style={{ display: "inline", marginRight: 6 }} />
             Remediation chat
           </h2>
-          {item.messages?.length ? item.messages.map((m, i) => (
-            <div key={i} style={{
-              marginBottom: 10, padding: "8px 10px", borderRadius: 6,
-              background: m.role === "user" ? "var(--lift)" : "var(--card2)",
-              border: "0.5px solid var(--bdr)",
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", marginBottom: 4 }}>
-                {m.role === "user" ? "Team" : "Norvar"}
-              </div>
-              <p style={{ fontSize: 12, color: "var(--fg2)", margin: 0, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{m.content}</p>
+          {remediationMessages.length ? (
+            <div className="escalation-chat-thread">
+              {remediationMessages.map((m, i) => (
+                <ChatBubble
+                  key={i}
+                  label={m.role === "user" ? "Team" : "Norvar"}
+                  body={m.content}
+                  align={m.role === "user" ? "right" : "left"}
+                  tone={m.role === "user" ? "team" : "neutral"}
+                />
+              ))}
             </div>
-          )) : (
-            <p style={{ fontSize: 12, color: "var(--fg3)", margin: 0 }}>No chat messages yet.</p>
+          ) : (
+            <p style={{ fontSize: 12, color: "var(--fg3)", margin: 0 }}>No remediation chat yet.</p>
           )}
         </div>
+
+        <EmailThread messages={inbox_thread} />
 
         {/* Remediation steps */}
         {item.remediation_steps && (
@@ -265,7 +370,20 @@ export default function EscalationViewPage({ token }: { token: string }) {
         {/* Assessment */}
         {assessment && (
           <div style={{ ...sectionStyle, marginBottom: 16 }}>
-            <h2 style={sectionTitleStyle}>Parent assessment</h2>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+              <h2 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Parent assessment</h2>
+              {assessLink && (
+                <Link href={assessLink} style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  fontSize: 11, color: "var(--fg2)", textDecoration: "none",
+                  padding: "5px 10px", borderRadius: 999,
+                  border: "0.5px solid var(--bdr2)", flexShrink: 0,
+                }}>
+                  <ExternalLink size={11} />
+                  Full assessment
+                </Link>
+              )}
+            </div>
             <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px" }}>{assessment.title}</p>
             {assessment.risk_tier && (
               <p style={{ fontSize: 11, color: "var(--fg3)", margin: "0 0 8px" }}>
@@ -315,12 +433,7 @@ export default function EscalationViewPage({ token }: { token: string }) {
           </div>
         )}
 
-        {/* Email responses */}
-        <div style={{ marginBottom: 16 }}>
-          <EscalationEmailReplies replies={emailReplies} />
-        </div>
-
-        {/* Recipient actions */}
+        {/* Your response */}
         <div style={{ ...sectionStyle }}>
           <h2 style={sectionTitleStyle}>Your response</h2>
           <p style={{ fontSize: 12, color: "var(--fg3)", margin: "0 0 10px", lineHeight: 1.5 }}>
@@ -357,19 +470,3 @@ export default function EscalationViewPage({ token }: { token: string }) {
   );
 }
 
-const sectionStyle: React.CSSProperties = {
-  padding: "14px 16px", background: "var(--card)",
-  border: "0.5px solid var(--bdr2)", borderRadius: 8,
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 600, color: "var(--fg2)",
-  textTransform: "uppercase", letterSpacing: "0.06em",
-  margin: "0 0 10px",
-};
-
-const btnStyle: React.CSSProperties = {
-  padding: "7px 14px", borderRadius: 6, fontSize: 12,
-  border: "0.5px solid var(--bdr2)", background: "transparent",
-  color: "var(--fg2)", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-};

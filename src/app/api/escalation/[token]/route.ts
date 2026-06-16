@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveUserProfiles } from "@/lib/clerk-users";
-import { escalationStepIndex, type EscalationStatus } from "@/lib/escalation";
+import { escalationStepIndex, parseEscalationInboxThread, type EscalationStatus } from "@/lib/escalation";
+import { gapKeyFromTitle } from "@/lib/gap-chat";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +34,7 @@ export async function GET(
       gap_frameworks, remediation_steps, messages, status,
       escalation_email, escalation_recipient_name, escalation_role,
       escalation_question, escalation_note, escalated_at, escalation_status,
-      last_notified_at, assignee_meta, assigned_to, created_at
+      last_notified_at, assignee_meta, assigned_to, created_at, escalation_token
     `)
     .eq("escalation_token", token)
     .single();
@@ -42,9 +43,15 @@ export async function GET(
 
   const { data: assessment } = await supabase
     .from("assessments")
-    .select("id, title, description, risk_tier, risk_score, result, created_at, domains, jurisdictions")
+    .select("id, title, description, risk_tier, risk_score, result, created_at, domains, jurisdictions, gap_chats, messages")
     .eq("id", item.assessment_id)
     .single();
+
+  const gapKey = item.gap_key ?? gapKeyFromTitle(item.gap_title, item.gap_severity);
+  const gapChats = (assessment?.gap_chats && typeof assessment.gap_chats === "object")
+    ? assessment.gap_chats as Record<string, unknown[]>
+    : {};
+  const assessmentGapChat = Array.isArray(gapChats[gapKey]) ? gapChats[gapKey] : [];
 
   const userIds = [...(item.assigned_to ?? []), ...(assessment ? [] : [])];
   const users   = await resolveUserProfiles(userIds);
@@ -54,7 +61,7 @@ export async function GET(
     .select("id, action, detail, created_at, user_id")
     .eq("remediation_id", item.id)
     .order("created_at", { ascending: false })
-    .limit(30);
+    .limit(100);
 
   // Mark as viewed on first open
   if (item.escalation_status === "sent") {
@@ -72,8 +79,10 @@ export async function GET(
   }
 
   return Response.json({
-    item:     { ...item, escalation_status: item.escalation_status },
+    item:     { ...item, escalation_status: item.escalation_status, gap_key: gapKey },
     assessment,
+    assessment_gap_chat: assessmentGapChat,
+    inbox_thread:        parseEscalationInboxThread(activity ?? []),
     users,
     activity: activity ?? [],
   });

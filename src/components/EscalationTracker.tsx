@@ -123,7 +123,7 @@ export default function EscalationTracker({
 
       <Link href={`/inbox?thread=${itemId}`} className="remediation-inbox-link">
         <Inbox size={10} />
-        Open escalation inbox
+        Open inbox
         {replyCount > 0 && (
           <span className="remediation-inbox-link-count">
             {replyCount} response{replyCount === 1 ? "" : "s"}

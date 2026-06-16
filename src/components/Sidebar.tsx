@@ -9,7 +9,7 @@ import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { normalizeRiskTier } from "@/lib/risk-tiers";
-import { getNewAction, getSidebarMode } from "@/lib/mobile-nav";
+import { getNewAction, getSidebarMode, draftHistoryHref, isDraftHistoryPath } from "@/lib/mobile-nav";
 
 type RecentAssessment = {
   id:         string;
@@ -71,6 +71,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const newAction = getNewAction(path);
   const activeId     = searchParams.get("id");
   const activeDraftId = isDraft ? (searchParams.get("draft") ?? searchParams.get("id")) : null;
+  const isDraftHistory = isDraftHistoryPath(path, searchParams);
   const activeReviewId = isContracts ? searchParams.get("id") : null;
   const activeProjectId = path.startsWith("/projects/") ? path.split("/")[2] : null;
   const isProjects  = path.startsWith("/projects");
@@ -232,7 +233,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       (sidebarMode === "chat" && path === "/chat" && !activeId) ||
       (sidebarMode === "assess" && path === "/assess" && !activeId) ||
       (sidebarMode === "contracts" && path === "/contracts" && !activeReviewId && searchParams.get("reviews") !== "1") ||
-      (sidebarMode === "draft" && path === "/draft" && !activeDraftId && searchParams.get("drafts") !== "1");
+      (sidebarMode === "draft" && path === "/draft" && !activeDraftId && !isDraftHistory);
     if (onHome) {
       e.preventDefault();
       router.refresh();
@@ -243,7 +244,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       (sidebarMode === "chat" && activeId) ||
       (sidebarMode === "assess" && activeId) ||
       (sidebarMode === "contracts" && (activeReviewId || searchParams.get("reviews") === "1")) ||
-      (sidebarMode === "draft" && (activeDraftId || searchParams.get("drafts") === "1"));
+      (sidebarMode === "draft" && (activeDraftId || isDraftHistory));
     if (hasActiveSession) {
       e.preventDefault();
       router.replace(newAction.href);
@@ -577,10 +578,10 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             </div>
             {draftNavOpen && (
               <Link
-                href="/draft?drafts=1"
-                className={`sidebar-nav-subitem${path === "/draft" && searchParams.get("drafts") === "1" ? " active" : ""}`}
+                href={draftHistoryHref()}
+                className={`sidebar-nav-subitem${isDraftHistory ? " active" : ""}`}
               >
-                <LayoutDashboard size={12} strokeWidth={path === "/draft" && searchParams.get("drafts") === "1" ? 2 : 1.75} />
+                <LayoutDashboard size={12} strokeWidth={isDraftHistory ? 2 : 1.75} />
                 History
               </Link>
             )}
@@ -768,7 +769,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                   return (
                     <div key={item.id} className="recent-item-row">
                       <Link
-                        href={`/draft?draft=${item.id}`}
+                        href={draftHistoryHref(item.id)}
                         className={`recent-item${isActive ? " active" : ""}`}
                       >
                         <div className="recent-dot" style={{ background: "var(--fg3)" }} />
@@ -779,7 +780,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                     </div>
                   );
                 })}
-                <Link href="/draft?drafts=1" className="sidebar-all-link">
+                <Link href={draftHistoryHref()} className="sidebar-all-link">
                   All drafts
                   <ChevronRight size={14} strokeWidth={2} />
                 </Link>
