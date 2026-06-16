@@ -654,9 +654,11 @@ function RemediationContent() {
         {isMobileView ? (
           <div className="remediation-mobile-head">
             <div className="remediation-mobile-title-row">
-              <div>
+              <div className="remediation-mobile-title-line">
                 <h1 className="remediation-mobile-title">Remediation</h1>
-                <p className="remediation-mobile-subtitle">{filtered.length} item{filtered.length === 1 ? "" : "s"} in queue</p>
+                <span className="remediation-mobile-subtitle">
+                  {filtered.length} item{filtered.length === 1 ? "" : "s"} in queue
+                </span>
               </div>
             </div>
             <div className="remediation-status-scroll">

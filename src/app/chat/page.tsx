@@ -731,7 +731,7 @@ function Chat() {
                     onChange={setInput}
                     onKeyDown={handleKey}
                     inputRef={inputRef}
-                    placeholder="Ask a follow-up question..."
+                    placeholder="Follow-up question?"
                     loading={loading}
                     canSend={canSend}
                     onSend={() => { void sendWithVoice(); }}

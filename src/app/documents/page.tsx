@@ -413,9 +413,11 @@ function DocumentsPageInner() {
           <div className="documents-mobile-head">
             <div className="documents-mobile-title-row">
               <FolderOpen size={16} color="var(--fg3)" />
-              <div>
-                <h1 className="documents-mobile-title">Documents</h1>
-                <p className="documents-mobile-subtitle">{filtered.length} file{filtered.length === 1 ? "" : "s"}</p>
+              <div className="documents-mobile-title-block">
+                <div className="documents-mobile-title-line">
+                  <h1 className="documents-mobile-title">Documents</h1>
+                  <span className="documents-mobile-subtitle">{filtered.length} file{filtered.length === 1 ? "" : "s"}</span>
+                </div>
               </div>
               <button type="button" className="documents-upload-btn" onClick={() => setShowUpload(true)}>
                 <Upload size={14} strokeWidth={1.75} />

@@ -140,11 +140,8 @@ export default function ProjectsPage() {
           <div className="page-body" style={{ margin: "0 auto" }}>
             <div className="page-heading-row" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24, gap: 12, flexWrap: "wrap" }}>
               <div>
-                <p className="stag" style={{ marginBottom: 8 }}>Projects</p>
-                <h1 style={{ fontSize: 22, fontWeight: 500, letterSpacing: "-0.04em" }}>
-                  Your compliance projects
-                </h1>
-                <p style={{ fontSize: 12, color: "var(--fg3)", marginTop: 6, maxWidth: 480 }}>
+                <p className="stag" style={{ marginBottom: 6 }}>Projects</p>
+                <p style={{ fontSize: 12, color: "var(--fg3)", marginTop: 0, maxWidth: 480 }}>
                   Group assessments, remediation gaps, documents, and GRC chats into project folders.
                 </p>
               </div>

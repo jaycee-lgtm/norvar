@@ -7,7 +7,7 @@ import AppShell from "@/components/AppShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
 import type { InboxFolder, InboxFolderCounts, InboxListItem } from "@/lib/inbox";
-import { INBOX_FOLDERS } from "@/lib/inbox";
+import { INBOX_FOLDERS, stripInboxMessageBody } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
   Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail, MailOpen,
@@ -100,6 +100,7 @@ function InboxThreadRow({
   active,
   selected,
   selectMode,
+  isMobile,
   onToggleSelect,
 }: {
   item:           InboxListItem;
@@ -107,6 +108,7 @@ function InboxThreadRow({
   active:         boolean;
   selected:       boolean;
   selectMode:     boolean;
+  isMobile:       boolean;
   onToggleSelect: () => void;
 }) {
   const sev = normalizeGapSeverity(item.gap_severity);
@@ -116,12 +118,17 @@ function InboxThreadRow({
   const senderEmail = item.direction === "inbound" ? item.from_email : (item.recipient_email ?? "");
   const avatar = avatarMeta(senderName, senderEmail);
 
+  const showCheckbox = isMobile || selectMode;
+  const checkboxAtEnd = isMobile;
+  const useLink = isMobile || !selectMode;
+
   const handleRowClick = () => {
-    if (selectMode) onToggleSelect();
+    if (selectMode && !isMobile) onToggleSelect();
   };
 
   const rowClassName = `inbox-thread-row${active ? " active" : ""}${item.is_read ? "" : " unread"}`;
-  const rowBody = (
+
+  const rowMain = (
     <>
       <div
         className="inbox-thread-avatar"
@@ -148,19 +155,32 @@ function InboxThreadRow({
         )}
       </div>
 
-      <span
-        className="inbox-thread-severity"
-        style={{ background: SEV_COLORS[sev] ?? "var(--fg3)" }}
-        title={`${sev} severity`}
-        aria-hidden
-      />
+      {!showCheckbox ? (
+        <span
+          className="inbox-thread-severity"
+          style={{ background: SEV_COLORS[sev] ?? "var(--fg3)" }}
+          title={`${sev} severity`}
+          aria-hidden
+        />
+      ) : null}
     </>
   );
 
+  const endCheckbox = showCheckbox && checkboxAtEnd ? (
+    <label className="inbox-row-check inbox-row-check--end">
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={onToggleSelect}
+        aria-label={`Select message from ${senderName}`}
+      />
+    </label>
+  ) : null;
+
   return (
     <li className={`inbox-thread-item${selected ? " selected" : ""}`}>
-      <div className="inbox-thread-row-inner">
-        {selectMode && (
+      <div className={`inbox-thread-row-inner${checkboxAtEnd ? " inbox-thread-row-inner--check-end" : ""}`}>
+        {showCheckbox && !checkboxAtEnd && (
           <label
             className="inbox-row-check"
             onClick={e => e.stopPropagation()}
@@ -173,19 +193,20 @@ function InboxThreadRow({
             />
           </label>
         )}
-        {selectMode ? (
+        {useLink ? (
+          <Link href={inboxHref(folder, item.remediation_id)} className={rowClassName}>
+            {rowMain}
+          </Link>
+        ) : (
           <button
             type="button"
             className={rowClassName}
             onClick={handleRowClick}
           >
-            {rowBody}
+            {rowMain}
           </button>
-        ) : (
-          <Link href={inboxHref(folder, item.remediation_id)} className={rowClassName}>
-            {rowBody}
-          </Link>
         )}
+        {endCheckbox}
       </div>
     </li>
   );
@@ -200,6 +221,7 @@ function InboxListSection({
   open,
   onToggle,
   selectMode,
+  isMobile,
   selectedIds,
   onToggleSelect,
   emptyLabel,
@@ -212,6 +234,7 @@ function InboxListSection({
   open:           boolean;
   onToggle:       () => void;
   selectMode:     boolean;
+  isMobile:       boolean;
   selectedIds:    Set<string>;
   onToggleSelect: (messageId: string) => void;
   emptyLabel?:    string;
@@ -244,6 +267,7 @@ function InboxListSection({
                 active={item.remediation_id === threadId}
                 selected={selectedIds.has(item.message_id)}
                 selectMode={selectMode}
+                isMobile={isMobile}
                 onToggleSelect={() => onToggleSelect(item.message_id)}
               />
             ))}
@@ -475,9 +499,6 @@ function InboxContent() {
     trash:    { title: "Recycle bin is empty", sub: "Deleted messages stay here for 90 days." },
   };
 
-  const threadSev = thread ? normalizeGapSeverity(thread.gap_severity) : "low";
-  const threadSevColor = SEV_COLORS[threadSev] ?? "var(--fg3)";
-
   const folderNav = (
     <nav className="inbox-folder-nav" aria-label="Inbox folders">
       {INBOX_FOLDERS.map(f => {
@@ -566,6 +587,7 @@ function InboxContent() {
             open={unreadOpen}
             onToggle={() => setUnreadOpen(v => !v)}
             selectMode={selectMode}
+            isMobile={isMobile}
             selectedIds={selectedIds}
             onToggleSelect={toggleMessageSelect}
             emptyLabel="No unread messages"
@@ -579,6 +601,7 @@ function InboxContent() {
             open={readOpen}
             onToggle={() => setReadOpen(v => !v)}
             selectMode={selectMode}
+            isMobile={isMobile}
             selectedIds={selectedIds}
             onToggleSelect={toggleMessageSelect}
             emptyLabel="No other messages"
@@ -596,6 +619,7 @@ function InboxContent() {
               active={item.remediation_id === threadId}
               selected={selectedIds.has(item.message_id)}
               selectMode={selectMode}
+              isMobile={isMobile}
               onToggleSelect={() => toggleMessageSelect(item.message_id)}
             />
           ))}
@@ -607,7 +631,7 @@ function InboxContent() {
   const listBody = (
     <>
       {listScroll}
-      {selectMode && selectedIds.size > 0 && (
+      {selectedIds.size > 0 && (
         <div className="inbox-bulk-bar">
           <button
             type="button"
@@ -656,18 +680,6 @@ function InboxContent() {
             <div className="inbox-list-head">
               <Inbox size={14} color="var(--fg3)" />
               <h1 className="inbox-list-title">Inbox</h1>
-              {!loadingList && items.length > 0 && (
-                <button
-                  type="button"
-                  className={`inbox-select-toggle${selectMode ? " active" : ""}`}
-                  onClick={() => {
-                    if (selectMode) exitSelectMode();
-                    else setSelectMode(true);
-                  }}
-                >
-                  {selectMode ? "Done" : "Select"}
-                </button>
-              )}
             </div>
             {folderNav}
             {folder === "trash" && (
@@ -779,16 +791,6 @@ function InboxContent() {
                       )}
                     </div>
                     <div className="inbox-thread-meta-row">
-                      <span
-                        className="inbox-severity-pill"
-                        style={{
-                          color:       threadSevColor,
-                          borderColor: `${threadSevColor}44`,
-                          background:  `${threadSevColor}14`,
-                        }}
-                      >
-                        {threadSev} severity
-                      </span>
                       {thread.project_title && (
                         <span className="inbox-project-pill">{thread.project_title}</span>
                       )}
@@ -830,34 +832,22 @@ function InboxContent() {
                       : (msg.from_name ?? msg.from_email);
                     const senderEmail = msg.from_email;
                     const avatar = avatarMeta(senderName, senderEmail);
+                    const messageText = stripInboxMessageBody(msg.body);
 
                     return (
                       <article
                         key={msg.id}
                         className={`inbox-chat-msg${isOutbound ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
                       >
-                        <div className="inbox-chat-row">
-                          {!isOutbound && (
-                            <div
-                              className="inbox-chat-avatar"
-                              style={{ background: `${avatar.color}22`, color: avatar.color }}
-                              aria-hidden
-                            >
-                              {avatar.initial}
-                            </div>
-                          )}
-                          <div className="inbox-chat-col">
-                            <div className="inbox-chat-meta">
-                              <span className="inbox-chat-sender">
-                                {msg.is_read === false && !isOutbound && (
-                                  <span className="inbox-unread-dot" aria-hidden />
-                                )}
-                                {senderName}
-                              </span>
-                              <time className="inbox-chat-time" dateTime={msg.created_at}>
-                                {fmtDate(msg.created_at)}
-                              </time>
-                              <div className="inbox-chat-actions">
+                        <div className="inbox-chat-col">
+                          <div className="inbox-chat-meta">
+                            {msg.is_read === false && !isOutbound && (
+                              <span className="inbox-unread-dot" aria-hidden />
+                            )}
+                            <time className="inbox-chat-time" dateTime={msg.created_at}>
+                              {fmtDate(msg.created_at)}
+                            </time>
+                            <div className="inbox-chat-actions">
                                 {folder === "trash" && (
                                   <>
                                     <button
@@ -926,25 +916,25 @@ function InboxContent() {
                                 )}
                               </div>
                             </div>
-                            <div className="inbox-chat-bubble">
-                              <p className="inbox-chat-text">{msg.body}</p>
+                          <div className="inbox-chat-row">
+                            <div
+                              className="inbox-chat-avatar"
+                              style={{ background: `${avatar.color}22`, color: avatar.color }}
+                              aria-label={senderName}
+                              title={senderName}
+                            >
+                              {avatar.initial}
                             </div>
+                            <div className="inbox-chat-bubble">
+                              <p className="inbox-chat-text">{messageText}</p>
+                            </div>
+                          </div>
                             {msg.deleted_at && folder === "trash" && (
                               <p className="inbox-chat-purge">
                                 Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
                               </p>
                             )}
                           </div>
-                          {isOutbound && (
-                            <div
-                              className="inbox-chat-avatar inbox-chat-avatar--you"
-                              style={{ background: `${avatar.color}22`, color: avatar.color }}
-                              aria-hidden
-                            >
-                              {avatar.initial}
-                            </div>
-                          )}
-                        </div>
                       </article>
                     );
                   })}

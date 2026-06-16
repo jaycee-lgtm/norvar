@@ -107,6 +107,9 @@ export default function AgentComposer({
   ].filter(Boolean).join(" ");
 
   const attachInEnd = attachPlacement === "end";
+  const hideAccessoryControls = hasText;
+  const showVoice = voiceControl && !hideAccessoryControls;
+  const showAttach = attachControl && !hideAccessoryControls;
 
   return (
     <div className={rootClass}>
@@ -158,7 +161,7 @@ export default function AgentComposer({
 
         <div className="agent-composer-toolbar">
           <div className="agent-composer-toolbar-start">
-            {!attachInEnd && attachControl}
+            {!attachInEnd && showAttach && attachControl}
             {modelControl}
             {extraToolbarStart}
             {!isHome && (
@@ -167,8 +170,8 @@ export default function AgentComposer({
           </div>
           <div className="agent-composer-toolbar-end">
             {extraToolbarEnd}
-            {voiceControl}
-            {attachInEnd && attachControl}
+            {showVoice && voiceControl}
+            {attachInEnd && showAttach && attachControl}
             {sendVisible && (
               <button
                 type="button"

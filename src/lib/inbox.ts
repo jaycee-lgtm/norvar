@@ -92,6 +92,30 @@ export function isInboxMessageAction(action: string): boolean {
   return action === ESCALATION_EMAIL_REPLY_ACTION || action === ESCALATION_INBOX_SENT_ACTION;
 }
 
+export function stripInboxMessageBody(text: string): string {
+  const lines = text.split("\n");
+  const result: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^on .+ wrote:$/i.test(trimmed)) break;
+    if (/^-{2,}\s*original message\s*-{2,}/i.test(trimmed)) break;
+    if (/^from:\s/i.test(trimmed) && result.length > 2) break;
+    if (/^_{3,}$/.test(trimmed)) break;
+    if (trimmed.startsWith(">")) continue;
+    result.push(line);
+  }
+
+  const stripped = result.join("\n").trim();
+  if (stripped) return stripped;
+
+  return text
+    .split("\n")
+    .filter(line => !line.trim().startsWith(">"))
+    .join("\n")
+    .trim();
+}
+
 export function messageMatchesFolder(
   msg: EscalationInboxMessage,
   folder: InboxFolder,
@@ -129,7 +153,7 @@ export function parseInboxMessages(activity: InboxActivityRow[]): EscalationInbo
 }
 
 function bodyPreview(text: string, max = 100): string {
-  const one = text.replace(/\s+/g, " ").trim();
+  const one = stripInboxMessageBody(text).replace(/\s+/g, " ").trim();
   return one.length > max ? `${one.slice(0, max)}…` : one;
 }
 

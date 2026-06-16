@@ -48,7 +48,7 @@ export default function ChatHistoryPage() {
   return (
     <AppShell>
       <div className="main-area" style={{ overflowY: "auto" }}>
-        <div className="page-body" style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div className="page-body chat-history-page" style={{ margin: "0 auto" }}>
 
           <div className="page-heading-row" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28, gap: 12, flexWrap: "wrap" }}>
             <div>
@@ -97,7 +97,7 @@ export default function ChatHistoryPage() {
               return (
                 <div key={item.id} className="chat-history-row">
                   <Link href={`/chat?id=${item.id}`} className="chat-history-link">
-                    <MessageSquare size={13} strokeWidth={1.75} className="chat-history-icon" />
+                    <MessageSquare size={14} strokeWidth={1.75} className="chat-history-icon" />
                     <span className="chat-history-title">{title}</span>
                     <span className="chat-history-date">{dateLabel}</span>
                     <ChevronRight size={13} strokeWidth={1.75} className="chat-history-chevron" />

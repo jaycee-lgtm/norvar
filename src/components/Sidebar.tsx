@@ -434,12 +434,21 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             </Link>
             <Link
               href="/draft"
-              className={`sidebar-nav-item${isDraft ? " active" : ""}`}
+              className={`sidebar-nav-item${isDraft && !isDraftHistory ? " active" : ""}`}
               onClick={goToDraftHome}
             >
-              <FileText size={14} strokeWidth={isDraft ? 2 : 1.75} />
+              <FileText size={14} strokeWidth={isDraft && !isDraftHistory ? 2 : 1.75} />
               Draft
             </Link>
+            {isDraft && (
+              <Link
+                href={draftHistoryHref()}
+                className={`sidebar-nav-subitem${isDraftHistory ? " active" : ""}`}
+              >
+                <LayoutDashboard size={12} strokeWidth={isDraftHistory ? 2 : 1.75} />
+                History
+              </Link>
+            )}
           </div>
         ) : (
         <>
@@ -674,7 +683,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                         href={`/chat?id=${item.id}`}
                         className={`recent-item${isActive ? " active" : ""}`}
                       >
-                        <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                        <span className="recent-dot" aria-hidden="true" />
                         <span className={`recent-text${isActive ? " active-text" : ""}`}>
                           {item.title || "Untitled chat"}
                         </span>
@@ -727,7 +736,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                         href={`/contracts?id=${item.id}`}
                         className={`recent-item${isActive ? " active" : ""}`}
                       >
-                        <div className="recent-dot" style={{ background: "var(--fg3)" }} />
+                        <span className="recent-dot" aria-hidden="true" />
                         <span className={`recent-text${isActive ? " active-text" : ""}`}>
                           {item.agreement_type || "Agreement"}
                         </span>
@@ -744,7 +753,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </>
         )}
 
-        {drafts.length > 0 && (isMobileView ? sidebarMode === "draft" : isDraft) && (
+        {(isMobileView ? sidebarMode === "draft" : isDraft) && (
           <>
             <div className="sidebar-divider" />
             <button
@@ -763,23 +772,27 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             </button>
             {recentDraftsOpen && (
               <div className="sidebar-recents-panel">
-                {drafts.map(item => {
-                  const isActive = activeDraftId === item.id;
-                  const title = item.result?.document_name || item.result?.title || item.agreement_type;
-                  return (
-                    <div key={item.id} className="recent-item-row">
-                      <Link
-                        href={draftHistoryHref(item.id)}
-                        className={`recent-item${isActive ? " active" : ""}`}
-                      >
-                        <div className="recent-dot" style={{ background: "var(--fg3)" }} />
-                        <span className={`recent-text${isActive ? " active-text" : ""}`}>
-                          {title || "Agreement"}
-                        </span>
-                      </Link>
-                    </div>
-                  );
-                })}
+                {drafts.length === 0 ? (
+                  <p className="sidebar-recents-empty">No drafts yet</p>
+                ) : (
+                  drafts.map(item => {
+                    const isActive = activeDraftId === item.id;
+                    const title = item.result?.document_name || item.result?.title || item.agreement_type;
+                    return (
+                      <div key={item.id} className="recent-item-row">
+                        <Link
+                          href={draftHistoryHref(item.id)}
+                          className={`recent-item${isActive ? " active" : ""}`}
+                        >
+                          <span className="recent-dot" aria-hidden="true" />
+                          <span className={`recent-text${isActive ? " active-text" : ""}`}>
+                            {title || "Agreement"}
+                          </span>
+                        </Link>
+                      </div>
+                    );
+                  })
+                )}
                 <Link href={draftHistoryHref()} className="sidebar-all-link">
                   All drafts
                   <ChevronRight size={14} strokeWidth={2} />

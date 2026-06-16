@@ -9,6 +9,7 @@ import {
   isEscalationUuid,
   type EscalationStatus,
 } from "@/lib/escalation";
+import { stripInboxMessageBody } from "@/lib/inbox";
 
 type ReceivedEmail = {
   id:      string;
@@ -35,28 +36,7 @@ export type InboundWebhookEvent = {
 };
 
 export function stripEmailQuote(text: string): string {
-  const lines = text.split("\n");
-  const result: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^on .+ wrote:$/i.test(trimmed)) break;
-    if (/^-{2,}\s*original message\s*-{2,}/i.test(trimmed)) break;
-    if (/^from:\s/i.test(trimmed) && result.length > 2) break;
-    if (/^_{3,}$/.test(trimmed)) break;
-    if (trimmed.startsWith(">")) continue;
-    result.push(line);
-  }
-
-  const stripped = result.join("\n").trim();
-  if (stripped) return stripped;
-
-  const withoutQuotes = text
-    .split("\n")
-    .filter(line => !line.trim().startsWith(">"))
-    .join("\n")
-    .trim();
-  return withoutQuotes;
+  return stripInboxMessageBody(text);
 }
 
 function htmlToText(html: string): string {

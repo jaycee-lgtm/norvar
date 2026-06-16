@@ -1634,14 +1634,14 @@ function Home() {
   const hasAttachedDocs = !!contractName || selectedDocumentIds.length > 0;
 
   const guidedComposerPlaceholder = hasAssessment
-    ? "Ask a follow-up question about this assessment..."
+    ? "Follow-up question?"
     : guidedActive && activeGuidedQuestion?.type === "text"
     ? "Type your answer..."
     : guidedActive
     ? "Select an option above..."
     : preScopePhase === "confirm"
     ? "Reply yes or no, or use the buttons above..."
-    : "Tell Cassius what you're working on...";
+    : "Follow-up question?";
 
   const attachControl = (
     <DocumentPicker

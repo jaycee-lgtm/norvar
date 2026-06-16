@@ -146,7 +146,11 @@ export default function ContractReviewForm({
     ? pastedText.trim().length >= 100
     : contractText.trim().length >= 100;
 
-  const showSendButton = canSend || working;
+  const showSendButton = canSend
+    || working
+    || fileExtracting
+    || pastedText.trim().length > 0
+    || contractText.trim().length > 0;
 
   const submit = async () => {
     setError("");
