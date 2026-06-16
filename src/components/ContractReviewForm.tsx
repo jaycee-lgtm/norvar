@@ -326,14 +326,15 @@ export default function ContractReviewForm({
         </div>
       )}
       <div className="mobile-composer-input-row">
-        {sourceLabel && (
+        {sourceLabel ? (
           <span className="contracts-selected-label">{sourceLabel}</span>
+        ) : (
+          <ModeSelector current="contracts" embedded askPrefix homePrompt menuPlacement="top" />
         )}
       </div>
       <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
         <div className="composer-toolbar-start">
           {attachControl}
-          <ModeSelector current="contracts" embedded menuPlacement="top" askPrefix />
         </div>
         <div className="home-composer-end">
           {modelSelector}
@@ -350,11 +351,12 @@ export default function ContractReviewForm({
             Change
           </button>
         </div>
-      ) : null}
+      ) : (
+        <ModeSelector current="contracts" embedded askPrefix homePrompt menuPlacement="top" />
+      )}
       <div className="composer-toolbar">
         <div className="composer-toolbar-start">
           {attachControl}
-          <ModeSelector current="contracts" embedded menuPlacement="top" askPrefix />
         </div>
         <div className="composer-toolbar-end home-composer-end">
           {modelSelector}

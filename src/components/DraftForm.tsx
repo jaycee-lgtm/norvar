@@ -441,20 +441,21 @@ export default function DraftForm({
     >
       {isMobileView ? (
         <div className="mobile-composer">
-          <div className="mobile-composer-input-row">
-            <textarea
-              className="input-textarea mobile-composer-field"
-              placeholder=""
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-            />
+          <div className="home-composer-input-stack">
+            <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
+            <div className="mobile-composer-input-row">
+              <textarea
+                className="input-textarea mobile-composer-field"
+                placeholder=""
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                rows={1}
+              />
+            </div>
           </div>
           <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-            <div className="composer-toolbar-start">
-              <ModeSelector current="draft" embedded menuPlacement="top" askPrefix />
-            </div>
+            <div className="composer-toolbar-start" />
             <div className="home-composer-end">
               {modelSelector}
               {sendButton}
@@ -463,6 +464,7 @@ export default function DraftForm({
         </div>
       ) : (
         <div className="input-bar">
+          <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
           <textarea
             className="input-textarea"
             placeholder=""
@@ -475,7 +477,6 @@ export default function DraftForm({
             <div className="composer-toolbar-start" />
             <div className="composer-toolbar-end home-composer-end">
               {modelSelector}
-              <ModeSelector current="draft" embedded menuPlacement="top" askPrefix />
               {sendButton}
             </div>
           </div>
@@ -488,14 +489,6 @@ export default function DraftForm({
     <div className="chat-input-row">
       <div className="chat-input-inner">
         <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-          {isMobileView && (
-            <div className="mobile-thread-toolbar mobile-only">
-              <button type="button" className="mobile-thread-action" onClick={startNew}>
-                <SquarePen size={13} strokeWidth={2} />
-                New draft
-              </button>
-            </div>
-          )}
           {isMobileView ? (
             <div className="mobile-composer thread-composer">
               <div className="mobile-composer-input-row">

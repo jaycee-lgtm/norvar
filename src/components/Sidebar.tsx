@@ -9,6 +9,7 @@ import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { normalizeRiskTier } from "@/lib/risk-tiers";
+import { getNewAction, getSidebarMode } from "@/lib/mobile-nav";
 
 type RecentAssessment = {
   id:         string;
@@ -63,13 +64,8 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const isContracts = path === "/contracts";
   const isDraft     = path === "/draft";
   const isProjects  = path.startsWith("/projects");
-  const sidebarMode = isDraft
-    ? "draft" as const
-    : isContracts
-    ? "contracts" as const
-    : isAssess
-    ? "assess" as const
-    : "chat" as const;
+  const sidebarMode = getSidebarMode(path);
+  const newAction = getNewAction(path);
   const activeId     = searchParams.get("id");
   const activeDraftId = isDraft ? (searchParams.get("draft") ?? searchParams.get("id")) : null;
   const activeReviewId = isContracts ? searchParams.get("id") : null;
@@ -120,17 +116,16 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   };
 
   useEffect(() => {
-    if (isMobileView || isChat) {
-      loadConversations();
-    }
-    if (isMobileView || isAssess) {
-      loadAssessments();
-    }
-    if (isMobileView || isContracts) {
-      loadReviews();
-    }
-    if (isMobileView || isDraft) {
-      loadDrafts();
+    if (isMobileView) {
+      if (sidebarMode === "chat") loadConversations();
+      else if (sidebarMode === "assess") loadAssessments();
+      else if (sidebarMode === "contracts") loadReviews();
+      else if (sidebarMode === "draft") loadDrafts();
+    } else {
+      if (isChat) loadConversations();
+      if (isAssess) loadAssessments();
+      if (isContracts) loadReviews();
+      if (isDraft) loadDrafts();
     }
     if (isProjects) {
       fetch("/api/folders")
@@ -141,7 +136,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         })
         .catch(() => {});
     }
-  }, [path, searchParams.toString(), isChat, isAssess, isContracts, isDraft, isProjects, isMobileView]);
+  }, [path, searchParams.toString(), isChat, isAssess, isContracts, isDraft, isProjects, isMobileView, sidebarMode]);
 
   useEffect(() => {
     const handler = () => loadAssessments();
@@ -179,7 +174,13 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       setRecentDraftsOpen(true);
     }
     if (path === "/chat/history") setChatNavOpen(true);
-  }, [path, isAssess, isContracts, isDraft]);
+    if (isMobileView) {
+      setRecentChatsOpen(sidebarMode === "chat");
+      setRecentAssessmentsOpen(sidebarMode === "assess");
+      setRecentReviewsOpen(sidebarMode === "contracts");
+      setRecentDraftsOpen(sidebarMode === "draft");
+    }
+  }, [path, isAssess, isContracts, isDraft, isMobileView, sidebarMode]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -225,10 +226,28 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "N"
     : "N";
 
-  const openFreshChat = (e: MouseEvent) => {
-    if (isAssess || !isChat || !activeId) return;
-    e.preventDefault();
-    router.replace("/chat");
+  const openFreshSession = (e: MouseEvent) => {
+    const onHome =
+      (sidebarMode === "chat" && path === "/chat" && !activeId) ||
+      (sidebarMode === "assess" && path === "/assess" && !activeId) ||
+      (sidebarMode === "contracts" && path === "/contracts" && !activeReviewId && searchParams.get("reviews") !== "1") ||
+      (sidebarMode === "draft" && path === "/draft" && !activeDraftId && searchParams.get("drafts") !== "1");
+    if (onHome) {
+      e.preventDefault();
+      router.refresh();
+      onNavigate?.();
+      return;
+    }
+    const hasActiveSession =
+      (sidebarMode === "chat" && activeId) ||
+      (sidebarMode === "assess" && activeId) ||
+      (sidebarMode === "contracts" && (activeReviewId || searchParams.get("reviews") === "1")) ||
+      (sidebarMode === "draft" && (activeDraftId || searchParams.get("drafts") === "1"));
+    if (hasActiveSession) {
+      e.preventDefault();
+      router.replace(newAction.href);
+    }
+    onNavigate?.();
   };
 
   const goToChatHome = () => {
@@ -291,8 +310,8 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             Norvar
           </span>
         </button>
-        <Link href={isAssess ? "/assess" : "/chat"} className="new-assess-btn" onClick={openFreshChat}>
-          <span className="new-assess-label">{isAssess ? "New assessment" : "New chat"}</span>
+        <Link href={newAction.href} className="new-assess-btn" onClick={openFreshSession}>
+          <span className="new-assess-label">{newAction.label}</span>
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
       </div>
@@ -755,9 +774,9 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         )}
       </div>
 
-      <Link href={isAssess ? "/assess" : "/chat"} className="sidebar-mobile-fab" onClick={openFreshChat}>
+      <Link href={newAction.href} className="sidebar-mobile-fab" onClick={openFreshSession}>
         <SquarePen size={14} strokeWidth={1.75} />
-        {isAssess ? "New assessment" : "New chat"}
+        {newAction.label}
       </Link>
 
       <div className="sidebar-footer">

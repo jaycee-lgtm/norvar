@@ -722,6 +722,45 @@ input, textarea, select, button {
   padding: 0 2px 8px;
 }
 
+.mode-selector--home-prompt {
+  width: 100%;
+  min-width: 0;
+}
+
+.mode-selector--home-prompt .mode-selector-trigger {
+  gap: 4px;
+  padding: 0 2px 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--fg3);
+  letter-spacing: -0.015em;
+  line-height: 1.5;
+  text-align: left;
+  width: auto;
+  max-width: 100%;
+}
+
+.mode-selector--home-prompt .mode-selector-trigger:hover,
+.mode-selector--home-prompt .mode-selector-trigger[aria-expanded="true"] {
+  background: transparent;
+  color: var(--fg2);
+}
+
+.mode-selector--home-prompt .mode-selector-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home-composer-input-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+
 .home-body .contracts-selected-bar,
 .home-composer-block .contracts-selected-bar {
   min-height: 28px;
@@ -5317,7 +5356,15 @@ input, textarea, select, button {
 
   .mobile-header-spacer { flex: 1; }
 
-  .mobile-menu-btn {
+  .mobile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .mobile-menu-btn,
+  .mobile-header-compose-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5542,6 +5589,10 @@ input, textarea, select, button {
   }
 
   .sidebar-mobile-fab {
+    display: none;
+  }
+
+  .sidebar-mobile-open .sidebar-mobile-fab {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -5637,7 +5688,9 @@ input, textarea, select, button {
   }
 
   .home-composer-block .home-composer-placeholder,
-  .mobile-home-layout .home-composer-placeholder {
+  .mobile-home-layout .home-composer-placeholder,
+  .home-composer-block .mode-selector--home-prompt .mode-selector-trigger,
+  .mobile-home-layout .mode-selector--home-prompt .mode-selector-trigger {
     font-size: 16px;
     min-height: 34px;
     padding: 0 2px 10px;
@@ -6093,41 +6146,6 @@ input, textarea, select, button {
     max-height: min(90vh, calc(100dvh - 32px)) !important;
   }
 
-  /* ── Mobile thread toolbar ── */
-  .mobile-thread-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-    padding-top: 4px;
-    flex-wrap: wrap;
-  }
-
-  .mobile-thread-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 36px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 0.5px solid var(--bdr2);
-    background: var(--card);
-    color: var(--fg2);
-    font-size: 11px;
-    font-family: 'Sora', sans-serif;
-    cursor: pointer;
-  }
-
-  .mobile-thread-action--danger {
-    color: var(--rh);
-    border-color: var(--rl-bdr, var(--bdr2));
-  }
-
-  .mobile-thread-action:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   /* ── Assessment gaps ── */
   .gap-item-card {
     padding: 14px;
@@ -6487,40 +6505,37 @@ input, textarea, select, button {
   }
 
   .remediation-mobile-head {
-    padding: 12px 14px 0;
-    border-bottom: 0.5px solid var(--bdr);
+    padding: 14px 16px 0;
+    border-bottom: none;
     background: var(--bg);
     flex-shrink: 0;
   }
 
   .remediation-mobile-title-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .remediation-mobile-title {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 500;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.04em;
     color: var(--fg);
     margin: 0;
     font-family: 'Sora', sans-serif;
   }
 
   .remediation-mobile-subtitle {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--fg3);
-    margin: 2px 0 0;
+    margin: 4px 0 0;
     font-family: 'Sora', sans-serif;
   }
 
   .remediation-status-scroll {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     overflow-x: auto;
-    padding-bottom: 12px;
+    padding-bottom: 14px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -6532,12 +6547,12 @@ input, textarea, select, button {
   .remediation-status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
-    padding: 7px 12px;
+    padding: 6px 11px;
     border-radius: 999px;
     border: 0.5px solid var(--bdr2);
-    background: var(--card);
+    background: transparent;
     color: var(--fg2);
     font-size: 12px;
     font-family: 'Sora', sans-serif;
@@ -6553,34 +6568,41 @@ input, textarea, select, button {
 
   .remediation-status-pill-count {
     font-size: 10px;
-    opacity: 0.75;
+    opacity: 0.7;
   }
 
   .remediation-filters-toggle {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 0 12px;
+    gap: 6px;
+    width: auto;
+    padding: 0 0 14px;
     border: none;
-    border-top: 0.5px solid var(--bdr);
     background: transparent;
-    color: var(--fg2);
+    color: var(--fg3);
     font-size: 12px;
     font-family: 'Sora', sans-serif;
     cursor: pointer;
   }
 
   .remediation-filters-toggle span {
-    flex: 1;
+    flex: none;
     text-align: left;
+  }
+
+  .remediation-filters-chevron {
+    transition: transform 0.15s;
+  }
+
+  .remediation-filters-chevron.open {
+    transform: rotate(180deg);
   }
 
   .remediation-mobile-filters {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding-bottom: 12px;
+    padding-bottom: 14px;
   }
 
   .remediation-mobile-filters .remediation-filter-select,
@@ -6588,43 +6610,80 @@ input, textarea, select, button {
     width: 100%;
     font-size: 13px !important;
     padding: 10px 12px !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
   }
 
   .remediation-list--mobile {
-    padding: 12px 14px 24px !important;
-    gap: 10px !important;
+    padding: 0 16px 24px !important;
+    gap: 8px !important;
   }
 
   .remediation-item-card {
-    border-radius: 12px !important;
+    border-radius: 14px !important;
+    border-color: var(--bdr) !important;
+    box-shadow: none !important;
   }
 
-  .remediation-item-summary {
-    padding: 14px !important;
-    gap: 8px !important;
+  .remediation-item-summary--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px !important;
   }
 
-  .remediation-item-meta {
-    display: none !important;
+  .remediation-item-stack-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
 
-  .remediation-item-side {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
+  .remediation-item-stack-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
-  .remediation-item-title {
-    font-size: 14px !important;
+  .remediation-item-summary--stacked .remediation-item-title {
+    margin-bottom: 0;
+    font-size: 15px !important;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+    word-break: break-word;
   }
 
-  .remediation-item-card.expanded .remediation-item-side .remediation-status-badge {
+  .remediation-item-stack-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    font-size: 11px;
+    color: var(--fg3);
+  }
+
+  .remediation-item-summary--stacked .remediation-item-meta-owner {
+    max-width: none;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--fg3);
+  }
+
+  .remediation-item-summary--stacked .remediation-item-due {
+    font-size: 11px;
+  }
+
+  .remediation-item-summary--stacked .remediation-item-chevron {
+    margin-top: 0;
+  }
+
+  .remediation-item-card.expanded .remediation-item-summary--stacked .remediation-item-stack-actions .remediation-status-badge {
     display: none;
   }
 
   .remediation-detail-panel {
-    padding: 0 14px 14px !important;
+    padding: 0 16px 16px !important;
   }
 
   .remediation-detail-toolbar {
@@ -6672,16 +6731,6 @@ input, textarea, select, button {
     flex: 1 1 calc(50% - 3px);
     justify-content: center;
     min-height: 40px;
-  }
-
-  .remediation-mobile-head {
-    padding: 12px 14px 0;
-  }
-
-  .remediation-status-scroll {
-    padding-left: 0;
-    padding-right: 0;
-    margin: 0 -2px;
   }
 }
 

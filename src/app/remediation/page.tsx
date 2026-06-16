@@ -199,48 +199,72 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
       <div className={`remediation-item-card${expanded ? " expanded" : ""}`}>
         <button
           type="button"
-          className="remediation-item-summary"
+          className={`remediation-item-summary${isMobile ? " remediation-item-summary--stacked" : ""}`}
           aria-expanded={expanded}
           onClick={() => setExpanded(!expanded)}
         >
-          <SevBadge sev={item.gap_severity} />
+          {isMobile ? (
+            <>
+              <div className="remediation-item-stack-head">
+                <SevBadge sev={item.gap_severity} />
+                <div className="remediation-item-stack-actions">
+                  <StatusBadge status={localStatus} />
+                  <ChevronDown size={14} color="var(--fg3)" className="remediation-item-chevron" />
+                </div>
+              </div>
+              <div className="remediation-item-title">{item.gap_title}</div>
+              {(ownerLabel || item.due_date) && (
+                <div className="remediation-item-stack-meta">
+                  {ownerLabel && (
+                    <span className="remediation-item-meta-owner">{ownerLabel}</span>
+                  )}
+                  {item.due_date && (
+                    <span className={`remediation-item-due${overdue ? " overdue" : ""}`}>
+                      {overdue && <AlertTriangle size={10} />}
+                      <Calendar size={10} />
+                      {fmt_date(item.due_date)}
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <SevBadge sev={item.gap_severity} />
 
-          <div className="remediation-item-main">
-            <div className="remediation-item-title">{item.gap_title}</div>
-            {!isMobile && (
-              <div className="remediation-item-meta">
-                {ownerLabel && (
-                  <span className="remediation-item-meta-owner">{ownerLabel}</span>
-                )}
-                {item.project_title && (
-                  <span className="remediation-item-meta-project">{item.project_title}</span>
-                )}
-                {item.assessment_number && (
-                  <span className="remediation-item-meta-num">{item.assessment_number}</span>
-                )}
-                <span>{DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain}</span>
-                {item.gap_frameworks.length > 0 && (
-                  <span>{item.gap_frameworks.slice(0, 2).join(", ")}</span>
+              <div className="remediation-item-main">
+                <div className="remediation-item-title">{item.gap_title}</div>
+                <div className="remediation-item-meta">
+                  {ownerLabel && (
+                    <span className="remediation-item-meta-owner">{ownerLabel}</span>
+                  )}
+                  {item.project_title && (
+                    <span className="remediation-item-meta-project">{item.project_title}</span>
+                  )}
+                  {item.assessment_number && (
+                    <span className="remediation-item-meta-num">{item.assessment_number}</span>
+                  )}
+                  <span>{DOMAIN_LABELS[item.gap_domain] ?? item.gap_domain}</span>
+                  {item.gap_frameworks.length > 0 && (
+                    <span>{item.gap_frameworks.slice(0, 2).join(", ")}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="remediation-item-side">
+                <StatusBadge status={localStatus} />
+                {item.due_date && (
+                  <span className={`remediation-item-due${overdue ? " overdue" : ""}`}>
+                    {overdue && <AlertTriangle size={9} />}
+                    <Calendar size={9} />
+                    {fmt_date(item.due_date)}
+                  </span>
                 )}
               </div>
-            )}
-          </div>
 
-          <div className="remediation-item-side">
-            {isMobile && ownerLabel && (
-              <span className="remediation-item-meta-owner remediation-item-meta-owner--mobile">{ownerLabel}</span>
-            )}
-            <StatusBadge status={localStatus} />
-            {item.due_date && (
-              <span className={`remediation-item-due${overdue ? " overdue" : ""}`}>
-                {overdue && <AlertTriangle size={9} />}
-                <Calendar size={9} />
-                {fmt_date(item.due_date)}
-              </span>
-            )}
-          </div>
-
-          <ChevronDown size={14} color="var(--fg3)" className="remediation-item-chevron" />
+              <ChevronDown size={14} color="var(--fg3)" className="remediation-item-chevron" />
+            </>
+          )}
         </button>
 
         {expanded && (
@@ -606,7 +630,6 @@ export default function RemediationPage() {
         {isMobileView ? (
           <div className="remediation-mobile-head">
             <div className="remediation-mobile-title-row">
-              <ShieldAlert size={16} color="var(--fg3)" />
               <div>
                 <h1 className="remediation-mobile-title">Remediation</h1>
                 <p className="remediation-mobile-subtitle">{filtered.length} item{filtered.length === 1 ? "" : "s"} in queue</p>
@@ -633,12 +656,12 @@ export default function RemediationPage() {
               aria-expanded={showMobileFilters}
               onClick={() => setShowMobileFilters(v => !v)}
             >
-              <SlidersHorizontal size={14} strokeWidth={1.75} />
-              <span>More filters</span>
+              <SlidersHorizontal size={13} strokeWidth={1.75} />
+              <span>{showMobileFilters ? "Hide filters" : "Filters"}</span>
               <ChevronDown
-                size={14}
+                size={13}
                 strokeWidth={2}
-                style={{ transform: showMobileFilters ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                className={`remediation-filters-chevron${showMobileFilters ? " open" : ""}`}
               />
             </button>
             {showMobileFilters && (

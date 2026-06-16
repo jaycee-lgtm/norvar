@@ -57,6 +57,7 @@ export default function ModeSelector({
   menuPlacement = "bottom",
   menuAlign = "start",
   askPrefix = false,
+  homePrompt = false,
   onSelect,
   navigate = true,
   disabled = false,
@@ -67,6 +68,7 @@ export default function ModeSelector({
   menuPlacement?: "bottom" | "top";
   menuAlign?:     "start" | "end";
   askPrefix?:     boolean;
+  homePrompt?:    boolean;
   onSelect?: (mode: Mode) => void;
   navigate?: boolean;
   disabled?: boolean;
@@ -96,8 +98,8 @@ export default function ModeSelector({
   return (
     <div
       ref={ref}
-      className={`mode-selector${compact ? " mode-selector--compact" : ""}${embedded ? " mode-selector--embedded" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
-      style={{ position: "relative", display: (compact && !embedded) ? "block" : "inline-block", width: (compact && !embedded) ? "100%" : undefined }}
+      className={`mode-selector${compact ? " mode-selector--compact" : ""}${embedded ? " mode-selector--embedded" : ""}${homePrompt ? " mode-selector--home-prompt" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
+      style={{ position: "relative", display: (compact && !embedded) ? "block" : homePrompt ? "block" : "inline-block", width: (compact && !embedded) || homePrompt ? "100%" : undefined }}
     >
       <button
         type="button"
@@ -106,7 +108,12 @@ export default function ModeSelector({
         aria-haspopup="listbox"
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
-        style={{
+        style={homePrompt ? {
+          display:    "inline-flex",
+          alignItems: "center",
+          cursor:     disabled ? "not-allowed" : "pointer",
+          fontFamily: "'Sora', sans-serif",
+        } : {
           display:        "inline-flex",
           alignItems:     "center",
           gap:            embedded ? 5 : 7,
@@ -120,10 +127,10 @@ export default function ModeSelector({
           transition:     "background 0.15s, border-color 0.15s",
           width:          (compact && !embedded) ? "100%" : "auto",
         }}
-        onMouseEnter={e => {
+        onMouseEnter={homePrompt ? undefined : e => {
           if (!open) e.currentTarget.style.background = embedded ? "var(--card2)" : "var(--card2)";
         }}
-        onMouseLeave={e => {
+        onMouseLeave={homePrompt ? undefined : e => {
           if (!open) e.currentTarget.style.background = embedded ? "transparent" : "var(--card)";
         }}
       >
@@ -132,7 +139,7 @@ export default function ModeSelector({
             {active.icon}
           </span>
         )}
-        <span style={{ fontSize: 12, fontWeight: 500, color: embedded ? "var(--fg2)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
+        <span style={homePrompt ? undefined : { fontSize: 12, fontWeight: 500, color: embedded ? "var(--fg2)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
           {embedded
             ? askPrefix
               ? `Ask ${active.label} ${active.version}`

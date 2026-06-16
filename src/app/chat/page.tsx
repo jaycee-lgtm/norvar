@@ -557,21 +557,23 @@ function Chat() {
                 )}
                 {isMobileView ? (
                   <div className="mobile-composer">
-                    <div className="mobile-composer-input-row">
-                      <textarea
-                        ref={inputRef}
-                        className="input-textarea mobile-composer-field"
-                        placeholder=""
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={handleKey}
-                        rows={1}
-                      />
+                    <div className="home-composer-input-stack">
+                      <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
+                      <div className="mobile-composer-input-row">
+                        <textarea
+                          ref={inputRef}
+                          className="input-textarea mobile-composer-field"
+                          placeholder=""
+                          value={input}
+                          onChange={e => setInput(e.target.value)}
+                          onKeyDown={handleKey}
+                          rows={1}
+                        />
+                      </div>
                     </div>
                     <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
                       <div className="composer-toolbar-start">
                         {attachControl}
-                        <ModeSelector current="chat" embedded menuPlacement="top" askPrefix />
                       </div>
                       <div className="home-composer-end">
                         {voiceIcon}
@@ -586,6 +588,7 @@ function Chat() {
                 ) : (
                   <>
                     <div className="input-bar">
+                      <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
                       <textarea
                         ref={inputRef}
                         className="input-textarea"
@@ -601,7 +604,6 @@ function Chat() {
                           {examplesControl}
                         </div>
                         <div className="composer-toolbar-end home-composer-end">
-                          <ModeSelector current="chat" embedded menuPlacement="top" askPrefix />
                           {voiceIcon}
                           <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                             {loading
@@ -772,30 +774,6 @@ function Chat() {
                       </button>
                     </div>
                   </div>
-                  )}
-                  {isMobileView && (
-                    <div className="mobile-thread-toolbar mobile-only">
-                      {queuedCount > 0 && (
-                        <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
-                          {queuedCount} queued
-                        </span>
-                      )}
-                      <button type="button" className="mobile-thread-action" onClick={startNew}>
-                        <SquarePen size={13} strokeWidth={2} />
-                        New chat
-                      </button>
-                      {conversationId && (
-                        <button
-                          type="button"
-                          className="mobile-thread-action mobile-thread-action--danger"
-                          onClick={() => { void deleteChat(); }}
-                          disabled={deleting || loading}
-                        >
-                          <Trash2 size={13} strokeWidth={2} />
-                          Delete
-                        </button>
-                      )}
-                    </div>
                   )}
                   {isMobileView ? (
                   <div className="mobile-composer thread-composer">
