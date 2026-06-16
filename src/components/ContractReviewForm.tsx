@@ -304,7 +304,6 @@ export default function ContractReviewForm({
         value={inputMode === "paste" ? pastedText : ""}
         onChange={handleComposerChange}
         inputRef={composerRef}
-        placeholder="Paste contract text to review..."
         hideInput={hideComposerInput}
         loading={working || fileExtracting}
         canSend={canSend}

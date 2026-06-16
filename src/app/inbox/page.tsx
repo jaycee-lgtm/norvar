@@ -80,16 +80,6 @@ function avatarMeta(name: string | null | undefined, email: string) {
   return { initial, color: AVATAR_COLORS[hash] ?? AVATAR_COLORS[0] };
 }
 
-function formatEmailParty(name: string | null | undefined, email: string | null | undefined): string {
-  const address = email?.trim();
-  if (!address) return name?.trim() || "Unknown";
-  const displayName = name?.trim();
-  if (displayName && displayName.toLowerCase() !== address.toLowerCase()) {
-    return `${displayName} <${address}>`;
-  }
-  return address;
-}
-
 function parseFolder(value: string | null): InboxFolder {
   if (value === "sent" || value === "archived" || value === "trash") return value;
   return "received";
@@ -832,135 +822,120 @@ function InboxContent() {
                       : (msg.from_name ?? msg.from_email);
                     const senderEmail = msg.from_email;
                     const avatar = avatarMeta(senderName, senderEmail);
-                    const toAddress = msg.to_email ?? thread.recipient_email;
-                    const toParty = formatEmailParty(thread.recipient_name, toAddress);
-                    const fromParty = formatEmailParty(msg.from_name, senderEmail);
 
                     return (
                       <article
                         key={msg.id}
-                        className={`inbox-msg-card${isOutbound ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
+                        className={`inbox-chat-msg${isOutbound ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
                       >
-                        <header className="inbox-msg-card-head">
-                          <div className="inbox-msg-card-identity">
+                        <div className="inbox-chat-row">
+                          {!isOutbound && (
                             <div
-                              className="inbox-msg-card-avatar"
+                              className="inbox-chat-avatar"
                               style={{ background: `${avatar.color}22`, color: avatar.color }}
                               aria-hidden
                             >
                               {avatar.initial}
                             </div>
-                            <div className="inbox-msg-card-who">
-                              <div className="inbox-msg-card-name-row">
+                          )}
+                          <div className="inbox-chat-col">
+                            <div className="inbox-chat-meta">
+                              <span className="inbox-chat-sender">
                                 {msg.is_read === false && !isOutbound && (
                                   <span className="inbox-unread-dot" aria-hidden />
                                 )}
-                                <span className="inbox-msg-card-from">{senderName}</span>
-                                <span className="inbox-msg-card-badge">
-                                  {isOutbound ? "Sent" : "Reply"}
-                                </span>
-                              </div>
-                              <div className="inbox-msg-card-addresses">
-                                <div className="inbox-msg-address-line">
-                                  <span className="inbox-msg-address-label">From</span>
-                                  <span className="inbox-msg-address-value">{fromParty}</span>
-                                </div>
-                                {isOutbound && toAddress && (
-                                  <div className="inbox-msg-address-line">
-                                    <span className="inbox-msg-address-label">To</span>
-                                    <span className="inbox-msg-address-value">{toParty}</span>
-                                  </div>
+                                {senderName}
+                              </span>
+                              <time className="inbox-chat-time" dateTime={msg.created_at}>
+                                {fmtDate(msg.created_at)}
+                              </time>
+                              <div className="inbox-chat-actions">
+                                {folder === "trash" && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="inbox-msg-action"
+                                      disabled={actionBusy === msg.id}
+                                      title="Restore"
+                                      onClick={() => void patchMessage(msg.id, "restore")}
+                                    >
+                                      <RotateCcw size={11} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inbox-msg-action danger"
+                                      disabled={actionBusy === msg.id}
+                                      title="Delete permanently"
+                                      onClick={() => void patchMessage(msg.id, "purge")}
+                                    >
+                                      <Trash2 size={11} />
+                                    </button>
+                                  </>
                                 )}
-                                {msg.subject && (
-                                  <div className="inbox-msg-address-line inbox-msg-subject">
-                                    <span className="inbox-msg-address-label">Subject</span>
-                                    <span className="inbox-msg-address-value">{msg.subject}</span>
-                                  </div>
+                                {folder === "archived" && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="inbox-msg-action"
+                                      disabled={actionBusy === msg.id}
+                                      title="Move back to inbox"
+                                      onClick={() => void patchMessage(msg.id, "unarchive")}
+                                    >
+                                      <InboxIcon size={11} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inbox-msg-action danger"
+                                      disabled={actionBusy === msg.id}
+                                      title="Delete"
+                                      onClick={() => void patchMessage(msg.id, "delete")}
+                                    >
+                                      <Trash2 size={11} />
+                                    </button>
+                                  </>
+                                )}
+                                {(folder === "received" || folder === "sent") && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="inbox-msg-action"
+                                      disabled={actionBusy === msg.id}
+                                      title="Archive"
+                                      onClick={() => void patchMessage(msg.id, "archive")}
+                                    >
+                                      <Archive size={11} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inbox-msg-action danger"
+                                      disabled={actionBusy === msg.id}
+                                      title="Delete"
+                                      onClick={() => void patchMessage(msg.id, "delete")}
+                                    >
+                                      <Trash2 size={11} />
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </div>
-                          </div>
-                          <div className="inbox-msg-card-head-end">
-                            <time className="inbox-msg-card-date" dateTime={msg.created_at}>
-                              {fmtDate(msg.created_at)}
-                            </time>
-                            <div className="inbox-message-actions">
-                              {folder === "trash" && (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="inbox-msg-action"
-                                    disabled={actionBusy === msg.id}
-                                    title="Restore"
-                                    onClick={() => void patchMessage(msg.id, "restore")}
-                                  >
-                                    <RotateCcw size={11} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inbox-msg-action danger"
-                                    disabled={actionBusy === msg.id}
-                                    title="Delete permanently"
-                                    onClick={() => void patchMessage(msg.id, "purge")}
-                                  >
-                                    <Trash2 size={11} />
-                                  </button>
-                                </>
-                              )}
-                              {folder === "archived" && (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="inbox-msg-action"
-                                    disabled={actionBusy === msg.id}
-                                    title="Move back to inbox"
-                                    onClick={() => void patchMessage(msg.id, "unarchive")}
-                                  >
-                                    <InboxIcon size={11} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inbox-msg-action danger"
-                                    disabled={actionBusy === msg.id}
-                                    title="Delete"
-                                    onClick={() => void patchMessage(msg.id, "delete")}
-                                  >
-                                    <Trash2 size={11} />
-                                  </button>
-                                </>
-                              )}
-                              {(folder === "received" || folder === "sent") && (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="inbox-msg-action"
-                                    disabled={actionBusy === msg.id}
-                                    title="Archive"
-                                    onClick={() => void patchMessage(msg.id, "archive")}
-                                  >
-                                    <Archive size={11} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inbox-msg-action danger"
-                                    disabled={actionBusy === msg.id}
-                                    title="Delete"
-                                    onClick={() => void patchMessage(msg.id, "delete")}
-                                  >
-                                    <Trash2 size={11} />
-                                  </button>
-                                </>
-                              )}
+                            <div className="inbox-chat-bubble">
+                              <p className="inbox-chat-text">{msg.body}</p>
                             </div>
+                            {msg.deleted_at && folder === "trash" && (
+                              <p className="inbox-chat-purge">
+                                Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
+                              </p>
+                            )}
                           </div>
-                        </header>
-                        {msg.deleted_at && folder === "trash" && (
-                          <div className="inbox-msg-card-purge">
-                            Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
-                          </div>
-                        )}
-                        <div className="inbox-msg-card-body">
-                          <p className="inbox-message-body">{msg.body}</p>
+                          {isOutbound && (
+                            <div
+                              className="inbox-chat-avatar inbox-chat-avatar--you"
+                              style={{ background: `${avatar.color}22`, color: avatar.color }}
+                              aria-hidden
+                            >
+                              {avatar.initial}
+                            </div>
+                          )}
                         </div>
                       </article>
                     );

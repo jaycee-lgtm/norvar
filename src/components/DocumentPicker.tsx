@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, FileText, FolderOpen, Loader2, Plus, Search, Upload, X } from "lucide-react";
 import type { UserDocument } from "@/lib/documents";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
@@ -66,10 +67,14 @@ export default function DocumentPicker({
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setView("menu");
+      const target = e.target;
+      if (!(target instanceof Node)) return;
+      if (ref.current?.contains(target)) return;
+      if (target instanceof Element && target.closest(".doc-picker-menu--floating, .doc-picker-popover--floating")) {
+        return;
       }
+      setOpen(false);
+      setView("menu");
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -79,6 +84,10 @@ export default function DocumentPicker({
     setOpen(false);
     setView("menu");
     setQuery("");
+  };
+
+  const stopMenuEvent = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
   };
 
   const toggle = () => {
@@ -202,6 +211,38 @@ export default function DocumentPicker({
     </div>
   );
 
+  const floatingSurfaceStyle = {
+    ...floatingMenuStyle,
+    background:   "var(--card)",
+    border:       "0.5px solid var(--bdr2)",
+    borderRadius: 10,
+    boxShadow:    "var(--shadow-md)",
+  } as const;
+
+  const attachMenu = open && isIcon && view === "menu" ? (
+    <div className="doc-picker-menu doc-picker-menu--floating" style={floatingSurfaceStyle}>
+      <button type="button" className="doc-picker-menu-item" onClick={openLibrary}>
+        <FolderOpen size={14} strokeWidth={1.75} />
+        From documents
+      </button>
+      {onUpload && (
+        <button type="button" className="doc-picker-menu-item" onClick={handleUpload} disabled={uploading}>
+          <Upload size={14} strokeWidth={1.75} />
+          {uploading ? "Reading file…" : "Upload file"}
+        </button>
+      )}
+    </div>
+  ) : null;
+
+  const libraryPopover = open && (!isIcon || view === "library") ? (
+    <div
+      className={`doc-picker-popover${isIcon ? " doc-picker-popover--wide doc-picker-popover--floating" : ""}`}
+      style={isIcon ? floatingSurfaceStyle : undefined}
+    >
+      {libraryPanel}
+    </div>
+  ) : null;
+
   return (
     <div ref={ref} className="doc-picker-wrap">
       {isIcon ? (
@@ -209,7 +250,11 @@ export default function DocumentPicker({
           type="button"
           className="attach-icon-btn attach-plus-btn"
           disabled={disabled || uploading}
-          onClick={toggle}
+          onPointerDown={stopMenuEvent}
+          onClick={(e) => {
+            stopMenuEvent(e);
+            toggle();
+          }}
           aria-label="Add document"
           title="Add document"
         >
@@ -240,44 +285,16 @@ export default function DocumentPicker({
         </button>
       )}
 
-      {open && isIcon && view === "menu" && (
-        <div
-          className="doc-picker-menu doc-picker-menu--floating"
-          style={{
-            ...floatingMenuStyle,
-            background:   "var(--card)",
-            border:       "0.5px solid var(--bdr2)",
-            borderRadius: 10,
-            boxShadow:    "var(--shadow-md)",
-          }}
-        >
-          <button type="button" className="doc-picker-menu-item" onClick={openLibrary}>
-            <FolderOpen size={14} strokeWidth={1.75} />
-            From documents
-          </button>
-          {onUpload && (
-            <button type="button" className="doc-picker-menu-item" onClick={handleUpload} disabled={uploading}>
-              <Upload size={14} strokeWidth={1.75} />
-              {uploading ? "Reading file…" : "Upload file"}
-            </button>
-          )}
-        </div>
+      {isIcon && typeof document !== "undefined" && createPortal(
+        <>
+          {attachMenu}
+          {libraryPopover}
+        </>,
+        document.body,
       )}
 
-      {open && (!isIcon || view === "library") && (
-        <div
-          className={`doc-picker-popover${isIcon ? " doc-picker-popover--wide doc-picker-popover--floating" : ""}`}
-          style={isIcon ? {
-            ...floatingMenuStyle,
-            background:   "var(--card)",
-            border:       "0.5px solid var(--bdr2)",
-            borderRadius: 10,
-            boxShadow:    "var(--shadow-md)",
-          } : undefined}
-        >
-          {libraryPanel}
-        </div>
-      )}
+      {!isIcon && attachMenu}
+      {!isIcon && libraryPopover}
     </div>
   );
 }
