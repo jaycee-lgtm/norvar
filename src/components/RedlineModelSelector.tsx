@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Brain, Check, ChevronDown, Feather, Gauge, Gem, ScanSearch, Sun } from "lucide-react";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 import {
   DEFAULT_REDLINE_REVIEW_MODEL,
@@ -38,7 +37,6 @@ export default function RedlineModelSelector({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const isMobileView = useIsMobile();
   const active = REDLINE_REVIEW_MODELS.find(m => m.id === value) ?? REDLINE_REVIEW_MODELS[0];
   const menuUp = menuPlacement === "top";
   const isInline = variant === "inline";
@@ -52,7 +50,7 @@ export default function RedlineModelSelector({
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const floatingMenuStyle = useFloatingMenuStyles(open && isMobileView, ref, {
+  const floatingMenuStyle = useFloatingMenuStyles(open, ref, {
     placement: menuUp ? "top" : "bottom",
     align:     menuAlign,
     width:     280,
@@ -124,27 +122,13 @@ export default function RedlineModelSelector({
 
       {open && (
         <div
-          className="mode-selector-menu"
+          className="mode-selector-menu mode-selector-menu--floating"
           role="listbox"
-          style={isMobileView ? {
+          style={{
             ...floatingMenuStyle,
             background:   "var(--card)",
             border:       "0.5px solid var(--bdr2)",
             borderRadius: 9,
-            boxShadow:    "var(--shadow-md)",
-          } : {
-            position:     "absolute",
-            top:          menuUp ? undefined : "calc(100% + 6px)",
-            bottom:       menuUp ? "calc(100% + 6px)" : undefined,
-            left:         menuAlign === "end" || isInline ? undefined : 0,
-            right:        menuAlign === "end" || isInline ? 0 : undefined,
-            minWidth:     280,
-            maxHeight:    420,
-            overflowY:    "auto",
-            background:   "var(--card)",
-            border:       "0.5px solid var(--bdr2)",
-            borderRadius: 9,
-            zIndex:       300,
             boxShadow:    "var(--shadow-md)",
           }}
         >

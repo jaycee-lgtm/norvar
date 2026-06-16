@@ -1416,8 +1416,23 @@ input, textarea, select, button {
   overflow: hidden;
 }
 
+.doc-picker-menu--floating,
+.doc-picker-popover--floating,
+.sample-questions-menu--floating,
+.mode-selector-menu--floating {
+  position: fixed;
+  z-index: 400;
+}
+
+.agent-composer-toolbar-end .doc-picker-menu:not(.doc-picker-menu--floating),
+.agent-composer-toolbar-end .doc-picker-popover:not(.doc-picker-popover--floating) {
+  left: auto;
+  right: 0;
+}
+
 .doc-picker-menu {
   min-width: 180px;
+  max-width: min(240px, calc(100vw - 24px));
   padding: 4px;
 }
 

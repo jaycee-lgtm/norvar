@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Lightbulb, Loader2 } from "lucide-react";
 import { useSampleQuestions } from "@/hooks/useSampleQuestions";
+import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 import type { SampleQuestionsContext } from "@/lib/sample-questions";
 
 type SampleQuestionsDropdownProps = {
@@ -27,6 +28,11 @@ export default function SampleQuestionsDropdown({
   const [open, setOpen] = useState(false);
   const ref   = useRef<HTMLDivElement>(null);
   const { questions, refreshing } = useSampleQuestions(context, { enabled });
+  const floatingMenuStyle = useFloatingMenuStyles(open && variant === "icon", ref, {
+    placement: menuPlacement === "top" ? "top" : "bottom",
+    align:     "start",
+    width:     420,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -76,9 +82,17 @@ export default function SampleQuestionsDropdown({
 
       {open && (
         <div
-          className={`sample-questions-menu${menuPlacement === "top" ? " sample-questions-menu--top" : ""}`}
+          className={`sample-questions-menu${menuPlacement === "top" ? " sample-questions-menu--top" : ""}${isIcon ? " sample-questions-menu--floating" : ""}`}
           role="listbox"
           aria-label="Example questions"
+          style={isIcon ? {
+            ...floatingMenuStyle,
+            background:   "var(--card)",
+            border:       "0.5px solid var(--bdr2)",
+            borderRadius: 10,
+            boxShadow:    "var(--shadow-lg)",
+            padding:      6,
+          } : undefined}
         >
           {questions.map((q, i) => (
             <button
