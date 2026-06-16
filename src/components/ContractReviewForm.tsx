@@ -30,17 +30,13 @@ function formatCount(n: number) {
 export default function ContractReviewForm({
   initialDocumentId,
   onDone,
-  variant = "home",
   isMobileView = false,
-  onCancel,
   reviewModel: reviewModelProp,
   onReviewModelChange,
 }: {
   initialDocumentId?: string | null;
   onDone:             () => void;
-  variant?:           "home" | "modal";
   isMobileView?:      boolean;
-  onCancel?:          () => void;
   reviewModel?:       RedlineReviewModelChoice;
   onReviewModelChange?: (value: RedlineReviewModelChoice) => void;
 }) {
@@ -60,7 +56,6 @@ export default function ContractReviewForm({
   const [fileExtracting, setFileExtracting] = useState(false);
   const [error, setError]           = useState("");
 
-  const isHome = variant === "home";
   const modelLabel = redlineModelLabel(reviewModel);
   const showActivity = activitySteps.length > 0;
 
@@ -261,24 +256,6 @@ export default function ContractReviewForm({
     />
   );
 
-  const pasteToggle = (
-    <button
-      type="button"
-      className={`contracts-paste-toggle${inputMode === "paste" ? " active" : ""}`}
-      disabled={working || fileExtracting}
-      onClick={() => {
-        setInputMode("paste");
-        setSelectedDocId(null);
-        setContractText("");
-        setUploadName("");
-        setActivitySteps([]);
-        setError("");
-      }}
-    >
-      Paste
-    </button>
-  );
-
   const sourceLabel = inputMode === "document" && selectedDocId
     ? docCatalog[selectedDocId] ?? "Selected document"
     : inputMode === "upload" && uploadName
@@ -302,111 +279,46 @@ export default function ContractReviewForm({
     </div>
   ) : undefined;
 
-  const homeComposer = (
-    <AgentComposer
-      variant="home"
-      mode="contracts"
-      value=""
-      onChange={() => {}}
-      hideInput
-      loading={working || fileExtracting}
-      canSend={canSend}
-      onSend={() => { void submit(); }}
-      showSendButton={showSendButton}
-      attachControl={attachControl}
-      modelControl={modelSelector}
-      attachPlacement="end"
-      promptOverride={sourcePrompt}
-      sendAriaLabel="Start review"
-      header={(selectedDocId || uploadName) ? (
-        <div style={{ padding: isMobileView ? "0 0 8px" : "0 2px 8px" }}>
-          <SelectedDocumentChips
-            documents={selectedDocId ? [{ id: selectedDocId, name: docCatalog[selectedDocId] ?? "Document" }] : []}
-            onRemove={() => clearSource()}
-          />
-          {uploadName && !selectedDocId && (
-            <span style={{
-              fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
-              padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
-              display: "inline-flex", alignItems: "center", gap: 5,
-              fontFamily: "'Sora', sans-serif",
-            }}>
-              {uploadName}
-              <button type="button" onClick={clearSource} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, color: "var(--fg3)" }}>×</button>
-            </span>
-          )}
-        </div>
-      ) : undefined}
-    />
-  );
-
-  if (isHome) {
-    return (
-      <div className="contracts-review-home">
-        {homeComposer}
-        <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: "none" }} onChange={handleFileUpload} />
-        {activityPanel}
-        {error && <p className="contract-review-error contracts-home-error">{error}</p>}
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div className="contract-review-field">
-        <span className="contract-review-label">Model</span>
-        {modelSelector}
-      </div>
-
-      <div className="contract-review-field">
-        <span className="contract-review-label">Contract</span>
-        <div className="contracts-modal-source">
-          {attachControl}
-          {pasteToggle}
-          {(selectedDocId || uploadName) && (
-            <span className="contracts-modal-source-name">
-              {selectedDocId ? docCatalog[selectedDocId] : uploadName}
-              <button type="button" onClick={clearSource} disabled={working || fileExtracting}>Clear</button>
-            </span>
-          )}
-        </div>
-        {inputMode === "paste" && (
-          <textarea
-            className="contract-review-textarea"
-            value={pastedText}
-            onChange={e => setPastedText(e.target.value)}
-            placeholder="Paste contract text..."
-            disabled={working || fileExtracting}
-            rows={5}
-          />
-        )}
-        <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: "none" }} onChange={handleFileUpload} />
-      </div>
-
-      <div className="contract-review-field">
-        <span className="contract-review-label">Jurisdiction hints (optional)</span>
-        <input
-          className="contract-review-input"
-          value={jurisdictions}
-          onChange={e => setJurisdictions(e.target.value)}
-          disabled={working || fileExtracting}
-          placeholder="e.g. EU, UK, US"
-        />
-      </div>
-
+    <div className="contracts-review-home">
+      <AgentComposer
+        variant="home"
+        mode="contracts"
+        value=""
+        onChange={() => {}}
+        hideInput
+        loading={working || fileExtracting}
+        canSend={canSend}
+        onSend={() => { void submit(); }}
+        showSendButton={showSendButton}
+        attachControl={attachControl}
+        modelControl={modelSelector}
+        attachPlacement="end"
+        promptOverride={sourcePrompt}
+        sendAriaLabel="Start review"
+        header={(selectedDocId || uploadName) ? (
+          <div style={{ padding: isMobileView ? "0 0 8px" : "0 2px 8px" }}>
+            <SelectedDocumentChips
+              documents={selectedDocId ? [{ id: selectedDocId, name: docCatalog[selectedDocId] ?? "Document" }] : []}
+              onRemove={() => clearSource()}
+            />
+            {uploadName && !selectedDocId && (
+              <span style={{
+                fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+                padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontFamily: "'Sora', sans-serif",
+              }}>
+                {uploadName}
+                <button type="button" onClick={clearSource} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, color: "var(--fg3)" }}>×</button>
+              </span>
+            )}
+          </div>
+        ) : undefined}
+      />
+      <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: "none" }} onChange={handleFileUpload} />
       {activityPanel}
-      {error && <p className="contract-review-error">{error}</p>}
-
-      <div className="app-modal-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={working || fileExtracting} className="app-modal-btn app-modal-btn--ghost">
-            Cancel
-          </button>
-        )}
-        <button type="button" onClick={() => { void submit(); }} disabled={!canSend} className="app-modal-btn app-modal-btn--primary">
-          {working ? "Reviewing..." : "Start review"}
-        </button>
-      </div>
-    </>
+      {error && <p className="contract-review-error contracts-home-error">{error}</p>}
+    </div>
   );
 }

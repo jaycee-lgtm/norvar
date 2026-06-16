@@ -233,7 +233,6 @@ function ContractsPageInner() {
 
             <HomeComposerWrap isMobileView={isMobileView} fullWidth>
               <ContractReviewForm
-                variant="home"
                 isMobileView={isMobileView}
                 initialDocumentId={reviewDocId}
                 onDone={handleReviewDone}
