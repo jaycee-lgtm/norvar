@@ -74,19 +74,20 @@ export default function AgentComposer({
   };
 
   const handleShellPointerDown = (e: PointerEvent) => {
-    if (shouldIgnoreComposerFocusTap(e.target)) return;
-    focusComposerField(e, inputRef?.current ?? null);
+    if (hideInput || shouldIgnoreComposerFocusTap(e.target)) return;
     if (isHome) setFocused(true);
+    focusComposerField(e, inputRef?.current ?? null);
   };
 
   const handleShellClick = (e: MouseEvent) => {
-    if (shouldIgnoreComposerFocusTap(e.target)) return;
+    if (hideInput || shouldIgnoreComposerFocusTap(e.target)) return;
     focusField();
   };
 
   const rootClass = [
     "agent-composer",
     `agent-composer--${variant}`,
+    hideInput ? "agent-composer--hide-input" : "",
     isActive ? "agent-composer--active" : "",
     className ?? "",
   ].filter(Boolean).join(" ");
@@ -94,6 +95,7 @@ export default function AgentComposer({
   const shellClass = [
     "agent-composer-shell",
     isHome ? "agent-composer-shell--home" : "agent-composer-shell--thread",
+    hideInput ? "agent-composer-shell--hide-input" : "",
     isActive ? "agent-composer-shell--active" : "",
   ].filter(Boolean).join(" ");
 

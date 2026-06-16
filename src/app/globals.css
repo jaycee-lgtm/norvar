@@ -896,12 +896,14 @@ input, textarea, select, button {
 
 .agent-composer-shell--home {
   padding: 16px 16px 12px;
-  min-height: 96px;
 }
 
 .agent-composer-shell--thread {
   padding: 14px 16px 12px;
-  min-height: 72px;
+}
+
+.agent-composer-shell--hide-input {
+  cursor: default;
 }
 
 .agent-composer-shell .mode-selector-trigger,
@@ -929,12 +931,23 @@ input, textarea, select, button {
   margin-bottom: 6px;
 }
 
-.agent-composer--home .agent-composer-input-row,
+.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-input-row {
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.agent-composer--home.agent-composer--active .agent-composer-input-row,
+.agent-composer--home .agent-composer-shell:focus-within .agent-composer-input-row,
 .agent-composer--thread .agent-composer-input-row {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   width: 100%;
-  min-height: 28px;
+  min-height: 22px;
   max-height: 72px;
   margin: 0 0 8px;
   overflow: visible;
@@ -942,6 +955,10 @@ input, textarea, select, button {
   pointer-events: auto;
   cursor: text;
   align-items: stretch;
+}
+
+.agent-composer--hide-input .agent-composer-input-row {
+  display: none !important;
 }
 
 .agent-composer--thread .agent-composer-prompt {
@@ -959,7 +976,7 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
   color: var(--fg);
   line-height: 1.35;
-  min-height: 28px;
+  min-height: 22px;
   max-height: 72px;
   padding: 0;
   margin: 0;
@@ -967,10 +984,8 @@ input, textarea, select, button {
   cursor: text;
 }
 
-.agent-composer--home.agent-composer--active .agent-composer-field,
-.agent-composer--home .agent-composer-shell:focus-within .agent-composer-field,
-.agent-composer--thread .agent-composer-field {
-  min-height: 22px;
+.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-field {
+  min-height: 0;
 }
 
 .agent-composer-field::placeholder {
