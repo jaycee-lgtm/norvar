@@ -14,11 +14,11 @@ export type DraftedAgreementRow = {
   followups?:     Record<string, unknown>;
 };
 
-export function normalizeDraftRow<T extends Record<string, unknown>>(row: T): DraftedAgreementRow {
+export function normalizeDraftRow(row: DraftedAgreementRow): DraftedAgreementRow {
   const followups = row.followups;
   return {
-    ...(row as DraftedAgreementRow),
-    followups: followups && typeof followups === "object" ? followups as Record<string, unknown> : {},
+    ...row,
+    followups: followups && typeof followups === "object" ? followups : {},
   };
 }
 

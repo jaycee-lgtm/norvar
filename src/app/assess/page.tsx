@@ -972,10 +972,6 @@ function Home() {
     && !!activeGuidedQuestion
     && activeGuidedQuestion.type !== "text";
 
-  const threadLayoutClass = !isHome && !loadingSaved && isMobileView
-    ? ` mobile-thread-layout${hideMobileGuidedComposer ? " mobile-thread-layout--guided-options" : ""}`
-    : "";
-
   const presentAssessmentConfirmation = () => {
     const fullText = buildAssessmentConfirmationText();
     typewriterRef.current?.reset();
@@ -1639,6 +1635,10 @@ function Home() {
   };
 
   const isHome = messages.length === 0 && !loading && !loadingSaved;
+
+  const threadLayoutClass = !isHome && !loadingSaved && isMobileView
+    ? ` mobile-thread-layout${hideMobileGuidedComposer ? " mobile-thread-layout--guided-options" : ""}`
+    : "";
 
   const hasAttachedDocs = !!contractName || selectedDocumentIds.length > 0;
 
