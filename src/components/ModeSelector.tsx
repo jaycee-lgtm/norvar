@@ -21,7 +21,7 @@ export const MODES: {
     label:   "Nora",
     version: "1.0",
     tagline: "Free-form GRC conversation",
-    icon:    <MessageSquare size={11} strokeWidth={1.75} />,
+    icon:    <MessageSquare size={13} strokeWidth={1.75} />,
     href:    "/chat",
   },
   {
@@ -29,7 +29,7 @@ export const MODES: {
     label:   "Cassius",
     version: "1.0",
     tagline: "Formal compliance risk assessment",
-    icon:    <ShieldAlert size={11} strokeWidth={1.75} />,
+    icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
     href:    "/assess",
   },
   {
@@ -37,7 +37,7 @@ export const MODES: {
     label:   "Varro",
     version: "1.0",
     tagline: "Contract review and redline",
-    icon:    <FilePenLine size={11} strokeWidth={1.75} />,
+    icon:    <FilePenLine size={13} strokeWidth={1.75} />,
     href:    "/contracts",
   },
   {
@@ -45,7 +45,7 @@ export const MODES: {
     label:   "Petra",
     version: "1.0",
     tagline: "Agreement drafting",
-    icon:    <FileText size={11} strokeWidth={1.75} />,
+    icon:    <FileText size={13} strokeWidth={1.75} />,
     href:    "/draft",
   },
 ];
@@ -117,7 +117,7 @@ export default function ModeSelector({
           display:        "inline-flex",
           alignItems:     "center",
           gap:            embedded ? 5 : 7,
-          padding:        embedded ? "4px 8px" : compact ? "5px 10px" : "6px 12px",
+          padding:        embedded ? "4px 8px" : compact ? "7px 12px" : "6px 12px",
           borderRadius:   embedded ? 7 : 8,
           border:         embedded ? "none" : "0.5px solid var(--bdr2)",
           background:     embedded ? (open ? "var(--card2)" : "transparent") : open ? "var(--lift)" : "var(--card)",
@@ -139,7 +139,7 @@ export default function ModeSelector({
             {active.icon}
           </span>
         )}
-        <span style={homePrompt ? undefined : { fontSize: 12, fontWeight: 500, color: embedded ? "var(--fg2)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
+        <span style={homePrompt ? undefined : { fontSize: compact ? 13 : 12, fontWeight: 500, color: embedded ? "var(--fg2)" : compact ? "var(--fg)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
           {embedded
             ? askPrefix
               ? `Ask ${active.label} ${active.version}`
@@ -148,7 +148,7 @@ export default function ModeSelector({
         </span>
         {!embedded && (
         <span style={{
-          fontSize: 10, color: "var(--fg3)",
+          fontSize: compact ? 11 : 10, color: "var(--fg3)",
           background: "var(--card2)",
           padding: "1px 6px",
           borderRadius: 4,
@@ -159,7 +159,7 @@ export default function ModeSelector({
         </span>
         )}
         <ChevronDown
-          size={12} strokeWidth={2} color="var(--fg3)"
+          size={compact ? 14 : 12} strokeWidth={2} color="var(--fg3)"
           style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
         />
       </button>
@@ -222,7 +222,7 @@ export default function ModeSelector({
                   </div>
 
                   {isActive && (
-                    <Check size={12} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
+                    <Check size={compact ? 14 : 12} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
                   )}
                 </div>
 

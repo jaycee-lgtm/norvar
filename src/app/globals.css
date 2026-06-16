@@ -753,48 +753,49 @@ input, textarea, select, button {
 }
 
 .mode-selector--compact .mode-selector-option {
-  gap: 2px;
-  padding: 7px 10px;
+  gap: 3px;
+  padding: 9px 12px;
 }
 
 .mode-selector--compact .mode-selector-option-row {
-  gap: 8px;
+  gap: 10px;
 }
 
 .mode-selector--compact .mode-selector-option-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
 }
 
 .mode-selector--compact .mode-selector-option-head {
-  gap: 5px;
-  padding-top: 4px;
+  gap: 6px;
+  padding-top: 5px;
 }
 
 .mode-selector--compact .mode-selector-option-name {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .mode-selector--compact .mode-selector-option-version {
-  font-size: 9px;
-  padding: 1px 4px;
+  font-size: 10px;
+  padding: 1px 5px;
 }
 
 .mode-selector--compact .mode-selector-option-check {
-  margin-top: 5px;
+  margin-top: 7px;
 }
 
 .mode-selector--compact .mode-selector-option-tagline {
-  font-size: 9.5px;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
+  font-size: 11px;
+  color: var(--fg2);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   word-break: normal;
   overflow-wrap: normal;
-  padding-right: 2px;
+  padding-right: 4px;
 }
 
 .mode-selector-menu-header {
@@ -809,8 +810,8 @@ input, textarea, select, button {
 }
 
 .mode-selector--compact .mode-selector-menu-header {
-  padding: 6px 10px 5px;
-  font-size: 9px;
+  padding: 8px 12px 6px;
+  font-size: 10px;
 }
 
 .mode-selector--embedded {
