@@ -175,7 +175,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     }
     if (path === "/chat/history") setChatNavOpen(true);
     if (isMobileView) {
-      setRecentChatsOpen(sidebarMode === "chat");
       setRecentAssessmentsOpen(sidebarMode === "assess");
       setRecentReviewsOpen(sidebarMode === "contracts");
       setRecentDraftsOpen(sidebarMode === "draft");
