@@ -5,6 +5,7 @@ import {
   type MouseEvent,
   type ReactNode,
   type RefObject,
+  useState,
 } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import ModeSelector, { type Mode } from "@/components/ModeSelector";
@@ -61,24 +62,27 @@ export default function AgentComposer({
 }: AgentComposerProps) {
   const isHome = variant === "home";
   const hasText = value.trim().length > 0;
+  const [focused, setFocused] = useState(false);
+  const isActive = isHome && (hasText || focused);
   const sendVisible = showSendButton ?? (hasText || loading);
 
   const handleShellMouseDown = (e: MouseEvent) => {
     if (hideInput || !inputRef?.current) return;
     focusHomeComposerInput(e, inputRef.current);
+    if (isHome) setFocused(true);
   };
 
   const rootClass = [
     "agent-composer",
     `agent-composer--${variant}`,
-    isHome && hasText ? "agent-composer--active" : "",
+    isActive ? "agent-composer--active" : "",
     className ?? "",
   ].filter(Boolean).join(" ");
 
   const shellClass = [
     "agent-composer-shell",
     isHome ? "agent-composer-shell--home" : "agent-composer-shell--thread",
-    isHome && hasText ? "agent-composer-shell--active" : "",
+    isActive ? "agent-composer-shell--active" : "",
   ].filter(Boolean).join(" ");
 
   return (
@@ -108,6 +112,10 @@ export default function AgentComposer({
               value={value}
               onChange={e => onChange(e.target.value)}
               onKeyDown={onKeyDown}
+              onFocus={() => setFocused(true)}
+              onBlur={() => {
+                if (!value.trim()) setFocused(false);
+              }}
               disabled={disabled}
               rows={1}
             />
