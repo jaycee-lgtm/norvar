@@ -2,7 +2,12 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { resolveUserProfiles } from "@/lib/clerk-users";
-import { escalationStepIndex, parseEscalationInboxThread, type EscalationStatus } from "@/lib/escalation";
+import {
+  ESCALATION_INBOX_SENT_ACTION,
+  escalationStepIndex,
+  parseEscalationInboxThread,
+  type EscalationStatus,
+} from "@/lib/escalation";
 import { gapKeyFromTitle } from "@/lib/gap-chat";
 
 const supabase = createClient(
@@ -41,17 +46,28 @@ export async function GET(
 
   if (error || !item) return Response.json({ error: "Escalation not found" }, { status: 404 });
 
-  const { data: assessment } = await supabase
+  const { data: assessmentRow } = await supabase
     .from("assessments")
-    .select("id, title, description, risk_tier, risk_score, result, created_at, domains, jurisdictions, gap_chats, messages")
+    .select("id, title, description, risk_tier, risk_score, result, created_at, domains, jurisdictions, gap_chats")
     .eq("id", item.assessment_id)
     .single();
 
   const gapKey = item.gap_key ?? gapKeyFromTitle(item.gap_title, item.gap_severity);
-  const gapChats = (assessment?.gap_chats && typeof assessment.gap_chats === "object")
-    ? assessment.gap_chats as Record<string, unknown[]>
+  const gapChats = (assessmentRow?.gap_chats && typeof assessmentRow.gap_chats === "object")
+    ? assessmentRow.gap_chats as Record<string, unknown[]>
     : {};
   const assessmentGapChat = Array.isArray(gapChats[gapKey]) ? gapChats[gapKey] : [];
+  const assessment = assessmentRow ? {
+    id:            assessmentRow.id,
+    title:         assessmentRow.title,
+    description:   assessmentRow.description,
+    risk_tier:     assessmentRow.risk_tier,
+    risk_score:    assessmentRow.risk_score,
+    result:        assessmentRow.result,
+    created_at:    assessmentRow.created_at,
+    domains:       assessmentRow.domains,
+    jurisdictions: assessmentRow.jurisdictions,
+  } : null;
 
   const userIds = [...(item.assigned_to ?? []), ...(assessment ? [] : [])];
   const users   = await resolveUserProfiles(userIds);
@@ -62,6 +78,7 @@ export async function GET(
     .eq("remediation_id", item.id)
     .order("created_at", { ascending: false })
     .limit(100);
+  const publicActivity = (activity ?? []).filter(a => a.action !== ESCALATION_INBOX_SENT_ACTION);
 
   // Mark as viewed on first open
   if (item.escalation_status === "sent") {
@@ -82,9 +99,9 @@ export async function GET(
     item:     { ...item, escalation_status: item.escalation_status, gap_key: gapKey },
     assessment,
     assessment_gap_chat: assessmentGapChat,
-    inbox_thread:        parseEscalationInboxThread(activity ?? []),
+    inbox_thread:        parseEscalationInboxThread(publicActivity),
     users,
-    activity: activity ?? [],
+    activity: publicActivity,
   });
 }
 
