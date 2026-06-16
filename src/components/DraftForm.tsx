@@ -75,7 +75,7 @@ export default function DraftForm({
   const scrollRef      = useRef<HTMLDivElement>(null);
   const homeInputRef   = useRef<HTMLTextAreaElement>(null);
   const fileRef        = useRef<HTMLInputElement>(null);
-  const handleSendRef  = useRef<(text: string) => void>(() => {});
+  const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef  = useRef<ReturnType<typeof createTypewriterDrain> | null>(null);
 
   const [messages, setMessages]               = useState<DraftMessage[]>([]);
@@ -270,7 +270,10 @@ export default function DraftForm({
     }
   };
 
-  handleSendRef.current = (text: string) => handleSend(text);
+  handleSendRef.current = async (text: string) => {
+    handleSend(text);
+    return null;
+  };
 
   const voice = useVoice({
     onVoiceSend: text => handleSendRef.current(text),
