@@ -725,6 +725,8 @@ input, textarea, select, button {
 .mode-selector--home-prompt {
   width: 100%;
   min-width: 0;
+  text-align: left;
+  align-self: stretch;
 }
 
 .mode-selector--home-prompt .mode-selector-trigger {
@@ -739,8 +741,11 @@ input, textarea, select, button {
   letter-spacing: -0.015em;
   line-height: 1.5;
   text-align: left;
+  justify-content: flex-start;
+  align-self: flex-start;
   width: auto;
   max-width: 100%;
+  margin-right: auto;
 }
 
 .mode-selector--home-prompt .mode-selector-trigger:hover,
@@ -757,7 +762,17 @@ input, textarea, select, button {
 .home-composer-input-stack {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+}
+
+.home-body .input-bar,
+.home-composer-block .input-bar,
+.home-composer-block .mobile-composer,
+.mobile-home-layout .mobile-composer {
+  text-align: left;
+  align-self: stretch;
   width: 100%;
 }
 
@@ -783,6 +798,7 @@ input, textarea, select, button {
 .home-composer-block .mobile-composer-input-row {
   align-items: stretch;
   width: 100%;
+  text-align: left;
 }
 
 .send-btn {
@@ -5689,6 +5705,15 @@ input, textarea, select, button {
 
   .home-composer-block .home-composer-placeholder,
   .mobile-home-layout .home-composer-placeholder,
+  .home-composer-block .mode-selector--home-prompt,
+  .mobile-home-layout .mode-selector--home-prompt,
+  .home-composer-block .home-composer-input-stack,
+  .mobile-home-layout .home-composer-input-stack {
+    text-align: left;
+    align-self: stretch;
+    width: 100%;
+  }
+
   .home-composer-block .mode-selector--home-prompt .mode-selector-trigger,
   .mobile-home-layout .mode-selector--home-prompt .mode-selector-trigger {
     font-size: 16px;
