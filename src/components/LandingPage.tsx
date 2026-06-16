@@ -13,21 +13,21 @@ export default function LandingPage() {
           <Logo size={28} />
           <span className="public-brand-name">Norvar</span>
         </div>
-        <nav className="public-nav">
+        <nav className="public-nav landing-header-nav">
           <SignInButton>
             <button type="button" className="public-btn-ghost">Sign in</button>
           </SignInButton>
           <SignInButton>
-            <button type="button" className="btn-primary" style={{ fontSize: 12, padding: "7px 16px" }}>
+            <button type="button" className="btn-primary landing-header-cta" style={{ fontSize: 12, padding: "7px 16px" }}>
               Get started
             </button>
           </SignInButton>
         </nav>
       </header>
 
-      <section className="public-hero">
+      <section className="public-hero landing-hero-section">
         <div className="landing-hero public-hero-inner">
-          <div className="public-eyebrow">Early access, norvar.io</div>
+          <div className="public-eyebrow landing-eyebrow">Early access · norvar.io</div>
           <h1 className="public-hero-title">
             Know your regulatory<br />exposure before<br />you build
           </h1>
@@ -36,24 +36,24 @@ export default function LandingPage() {
           </p>
           <div className="landing-cta-row public-cta-row">
             <SignInButton>
-              <button type="button" className="btn-primary">Run first assessment</button>
+              <button type="button" className="btn-primary landing-cta-primary">Run first assessment</button>
             </SignInButton>
             <SignInButton>
-              <button type="button" className="public-btn-secondary">Sign in</button>
+              <button type="button" className="public-btn-secondary landing-cta-secondary">Sign in</button>
             </SignInButton>
           </div>
         </div>
       </section>
 
       <footer className="landing-footer public-shell-footer">
-        <div className="landing-brand-row public-brand-row">
-          <Logo size={20} />
-          <span className="public-footer-meta">Norvar - norvar.io</span>
-        </div>
-        <div className="landing-footer-links public-footer-links">
+        <nav className="landing-footer-links public-footer-links" aria-label="Legal and contact">
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/contact">Contact</Link>
+        </nav>
+        <div className="landing-footer-brand public-brand-row">
+          <Logo size={18} />
+          <span className="public-footer-meta">Norvar · norvar.io</span>
         </div>
       </footer>
 

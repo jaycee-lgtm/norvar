@@ -22,12 +22,12 @@ export default function PublicPageLayout({ children, footer }: PublicPageLayoutP
       <footer className="public-shell-footer">
         {footer ?? (
           <>
-            <span className="public-footer-meta">Norvar - norvar.io</span>
-            <div className="public-footer-links">
+            <nav className="public-footer-links" aria-label="Legal and contact">
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/contact">Contact</Link>
-            </div>
+            </nav>
+            <span className="public-footer-meta">Norvar · norvar.io</span>
           </>
         )}
       </footer>

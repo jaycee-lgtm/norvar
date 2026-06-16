@@ -749,33 +749,37 @@ function InboxContent() {
             {threadId && !loadingThread && thread ? (
               <>
                 <header className="inbox-thread-head">
-                  <div className="inbox-thread-toolbar">
-                    {isMobile ? (
-                      <>
-                        <Link
-                          href={listHref}
-                          className="inbox-back-btn"
-                          aria-label="Back to inbox"
-                          onClick={e => {
-                            e.preventDefault();
-                            closeThread();
-                          }}
-                        >
-                          <ArrowLeft size={18} strokeWidth={2} />
-                        </Link>
-                        <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
-                      </>
-                    ) : (
-                      <span className="inbox-thread-toolbar-spacer" aria-hidden />
-                    )}
-                    <Link href="/remediation" className="inbox-open-gap">
-                      View gap
-                      <ExternalLink size={12} strokeWidth={2} />
-                    </Link>
-                  </div>
+                  {isMobile && (
+                    <div className="inbox-thread-toolbar">
+                      <Link
+                        href={listHref}
+                        className="inbox-back-btn"
+                        aria-label="Back to inbox"
+                        onClick={e => {
+                          e.preventDefault();
+                          closeThread();
+                        }}
+                      >
+                        <ArrowLeft size={18} strokeWidth={2} />
+                      </Link>
+                      <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
+                      <Link href="/remediation" className="inbox-open-gap">
+                        View gap
+                        <ExternalLink size={12} strokeWidth={2} />
+                      </Link>
+                    </div>
+                  )}
 
                   <div className="inbox-thread-head-body">
-                    <h1 className="inbox-thread-title">{thread.gap_title}</h1>
+                    <div className="inbox-thread-title-row">
+                      <h1 className="inbox-thread-title">{thread.gap_title}</h1>
+                      {!isMobile && (
+                        <Link href="/remediation" className="inbox-open-gap">
+                          View gap
+                          <ExternalLink size={12} strokeWidth={2} />
+                        </Link>
+                      )}
+                    </div>
                     <div className="inbox-thread-meta-row">
                       <span
                         className="inbox-severity-pill"
@@ -790,9 +794,7 @@ function InboxContent() {
                       {thread.project_title && (
                         <span className="inbox-project-pill">{thread.project_title}</span>
                       )}
-                      <span className="inbox-thread-meta-divider" aria-hidden />
                       <span className="inbox-thread-meta-recipient">
-                        <Mail size={12} strokeWidth={1.75} />
                         {thread.recipient_name ?? thread.recipient_email ?? "Recipient"}
                         {thread.recipient_email && thread.recipient_name && (
                           <span className="inbox-thread-email">&lt;{thread.recipient_email}&gt;</span>
@@ -839,36 +841,33 @@ function InboxContent() {
                         className={`inbox-msg-card${msg.direction === "outbound" ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
                       >
                         <header className="inbox-msg-card-head">
-                          <div className="inbox-msg-card-identity">
-                            <div
-                              className="inbox-msg-card-avatar"
-                              style={{ background: `${avatar.color}22`, color: avatar.color }}
-                              aria-hidden
-                            >
-                              {avatar.initial}
-                            </div>
-                            <div className="inbox-msg-card-who">
-                              <div className="inbox-msg-card-name-row">
-                                {msg.is_read === false && msg.direction === "inbound" && (
-                                  <span className="inbox-unread-dot" aria-hidden />
-                                )}
-                                <span className="inbox-msg-card-from">{senderName}</span>
-                                {msg.direction === "outbound" && (
-                                  <span className="inbox-msg-card-badge">Sent</span>
-                                )}
-                              </div>
+                          <div
+                            className="inbox-msg-card-avatar"
+                            style={{ background: `${avatar.color}22`, color: avatar.color }}
+                            aria-hidden
+                          >
+                            {avatar.initial}
+                          </div>
+                          <div className="inbox-msg-card-main">
+                            <div className="inbox-msg-card-topline">
+                              {msg.is_read === false && msg.direction === "inbound" && (
+                                <span className="inbox-unread-dot" aria-hidden />
+                              )}
+                              <span className="inbox-msg-card-from">{senderName}</span>
+                              {msg.direction === "outbound" && (
+                                <span className="inbox-msg-card-badge">Sent</span>
+                              )}
                               {recipientLine && (
-                                <span className="inbox-msg-card-email">
-                                  {msg.direction === "outbound" ? `to ${recipientLine}` : recipientLine}
+                                <span className="inbox-msg-card-email-inline">
+                                  {msg.direction === "outbound" ? `to ${recipientLine}` : `<${recipientLine}>`}
                                 </span>
                               )}
+                              <time className="inbox-msg-card-date" dateTime={msg.created_at}>
+                                {fmtDate(msg.created_at)}
+                              </time>
                             </div>
                           </div>
-                          <div className="inbox-msg-card-head-end">
-                            <time className="inbox-msg-card-date" dateTime={msg.created_at}>
-                              {fmtDate(msg.created_at)}
-                            </time>
-                            <div className="inbox-message-actions">
+                          <div className="inbox-message-actions">
                               {folder === "trash" && (
                                 <>
                                   <button
@@ -936,7 +935,6 @@ function InboxContent() {
                                 </>
                               )}
                             </div>
-                          </div>
                         </header>
                         {msg.deleted_at && folder === "trash" && (
                           <div className="inbox-msg-card-purge">
@@ -953,31 +951,33 @@ function InboxContent() {
 
                 {canCompose && (
                   <div className="inbox-compose">
-                    <textarea
-                      className="inbox-compose-input"
-                      placeholder={`Reply to ${thread.recipient_name ?? thread.recipient_email}…`}
-                      value={reply}
-                      rows={4}
-                      disabled={sending}
-                      onChange={e => setReply(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                          e.preventDefault();
-                          void sendReply();
-                        }
-                      }}
-                    />
-                    <div className="inbox-compose-actions">
-                      <span className="inbox-compose-hint">⌘/Ctrl + Enter to send</span>
-                      <button
-                        type="button"
-                        className="inbox-compose-send"
-                        disabled={sending || !reply.trim()}
-                        onClick={() => void sendReply()}
-                      >
-                        {sending ? <Loader2 size={12} className="spin" /> : <Send size={12} />}
-                        Send reply
-                      </button>
+                    <div className="inbox-compose-box">
+                      <textarea
+                        className="inbox-compose-input"
+                        placeholder={`Reply to ${thread.recipient_name ?? thread.recipient_email}…`}
+                        value={reply}
+                        rows={isMobile ? 4 : 3}
+                        disabled={sending}
+                        onChange={e => setReply(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                            e.preventDefault();
+                            void sendReply();
+                          }
+                        }}
+                      />
+                      <div className="inbox-compose-actions">
+                        <span className="inbox-compose-hint">⌘/Ctrl + Enter to send</span>
+                        <button
+                          type="button"
+                          className="inbox-compose-send"
+                          disabled={sending || !reply.trim()}
+                          onClick={() => void sendReply()}
+                        >
+                          {sending ? <Loader2 size={12} className="spin" /> : <Send size={12} />}
+                          Send reply
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

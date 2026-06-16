@@ -3160,7 +3160,190 @@ input, textarea, select, button {
 .inbox-page:not(.inbox-page--mobile) .inbox-thread-pane {
   flex: 1;
   min-width: 0;
+  background: var(--bg);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-head {
   background: var(--card);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-head-body {
+  padding: 14px 20px 12px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-title {
+  margin: 0;
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+  color: var(--fg);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-meta-row {
+  gap: 6px 8px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-meta-recipient {
+  font-size: 11px;
+  color: var(--fg4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-open-gap {
+  padding: 5px 10px;
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-messages {
+  padding: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-thread-context {
+  margin: 12px 20px 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card {
+  padding: 0 20px;
+  border-bottom-color: var(--bdr);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card:first-of-type {
+  border-top: none;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card.unread {
+  background: transparent;
+  box-shadow: inset 3px 0 0 var(--rh);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-head {
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0 4px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-topline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-from {
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-email-inline {
+  font-size: 11px;
+  color: var(--fg4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-date {
+  font-size: 10px;
+  color: var(--fg4);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-body {
+  padding: 0 0 12px 38px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-message-body {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fg2);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-message-actions {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 999px;
+  padding: 2px;
+  box-shadow: var(--shadow-sm);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-head {
+  position: relative;
+  padding-right: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card:not(:hover):not(:focus-within) .inbox-message-actions {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose {
+  padding: 10px 20px 14px;
+  background: var(--card);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose-box {
+  border: 0.5px solid var(--bdr2);
+  border-radius: 10px;
+  background: var(--card2);
+  overflow: hidden;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose-input {
+  min-height: 56px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 12px 6px;
+  font-size: 12px;
+  resize: none;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose-input:focus {
+  outline: none;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose-box:focus-within {
+  border-color: var(--bdr3);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose-actions {
+  margin-top: 0;
+  padding: 4px 8px 8px;
+  gap: 8px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-compose-send {
+  padding: 6px 12px;
+  font-size: 11px;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-list-main .inbox-bulk-bar {
@@ -3768,6 +3951,13 @@ input, textarea, select, button {
   white-space: nowrap;
 }
 
+.inbox-thread-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .inbox-thread-title {
   margin: 0 0 12px;
   font-size: 22px;
@@ -3778,12 +3968,19 @@ input, textarea, select, button {
   letter-spacing: -0.02em;
 }
 
+.inbox-thread-title-row .inbox-thread-title {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .inbox-thread-toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 44px;
   padding: 8px 20px;
+  border-bottom: 0.5px solid var(--bdr);
 }
 
 .inbox-thread-toolbar-spacer {
@@ -3957,6 +4154,30 @@ input, textarea, select, button {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 0 10px;
+  position: relative;
+}
+
+.inbox-msg-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.inbox-msg-card-topline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.inbox-msg-card-email-inline {
+  font-size: 12px;
+  color: var(--fg3);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .inbox-msg-card-identity {
@@ -4168,6 +4389,11 @@ input, textarea, select, button {
   flex-shrink: 0;
 }
 
+.inbox-compose-box {
+  display: flex;
+  flex-direction: column;
+}
+
 .inbox-compose-input {
   width: 100%;
   padding: 12px 14px;
@@ -4336,6 +4562,31 @@ input, textarea, select, button {
 
 .inbox-page--mobile .inbox-msg-card-body {
   padding-left: 0;
+}
+
+.inbox-page--mobile .inbox-msg-card-head {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.inbox-page--mobile .inbox-msg-card-topline {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.inbox-page--mobile .inbox-msg-card-date {
+  margin-left: 0;
+}
+
+.inbox-page--mobile .inbox-message-actions {
+  position: static;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .inbox-page--mobile .inbox-msg-card-purge {
@@ -6545,6 +6796,25 @@ input, textarea, select, button {
   color: var(--fg2);
 }
 
+.landing-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-hero-section {
+  flex: 1;
+  min-height: 0;
+}
+
+.landing-cta-primary {
+  min-width: 0;
+}
+
+.landing-cta-secondary {
+  min-width: 0;
+}
+
 .public-page-body {
   flex: 1;
   padding: 56px 52px 72px;
@@ -7514,32 +7784,132 @@ input, textarea, select, button {
   }
 
   .landing-header,
-  .landing-footer {
+  .landing-footer,
+  .public-shell-header,
+  .public-shell-footer {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
 
-  .landing-hero { padding: 28px 16px !important; }
-
-  .landing-footer {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 14px !important;
+  .landing-header {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 12px !important;
   }
 
-  .landing-footer-links {
-    flex-wrap: wrap;
-    gap: 12px !important;
+  .landing-header-cta {
+    display: none !important;
+  }
+
+  .landing-header-nav {
+    gap: 0;
+  }
+
+  .landing-hero-section {
+    align-items: flex-start;
+    justify-content: center;
+    padding: 8px 0 24px;
+  }
+
+  .landing-hero {
+    padding: 12px 20px 20px !important;
+    max-width: none;
+  }
+
+  .landing-eyebrow {
+    display: none;
+  }
+
+  .landing-hero .public-hero-title {
+    font-size: clamp(30px, 8.5vw, 38px) !important;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+    margin-bottom: 14px;
+  }
+
+  .landing-hero .public-hero-copy {
+    font-size: 14px;
+    line-height: 1.55;
+    margin-bottom: 22px;
+    max-width: none;
+    padding: 0;
+    color: var(--fg3);
   }
 
   .landing-cta-row {
     flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
     width: 100%;
   }
 
-  .landing-cta-row button {
+  .landing-cta-row .landing-cta-primary {
     width: 100%;
     justify-content: center;
+    padding: 13px 18px;
+    font-size: 14px;
+  }
+
+  .landing-cta-row .landing-cta-secondary {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--fg3);
+  }
+
+  .landing-footer {
+    flex-direction: column;
+    align-items: center !important;
+    text-align: center;
+    gap: 14px !important;
+    padding-top: 18px !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .landing-footer-links {
+    order: 1;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 18px !important;
+    width: 100%;
+  }
+
+  .landing-footer-links a {
+    font-size: 12px;
+  }
+
+  .landing-footer-brand {
+    order: 2;
+    justify-content: center;
+  }
+
+  .landing-footer-brand .public-footer-meta {
+    font-size: 10px;
+    color: var(--fg4);
+  }
+
+  .public-shell-footer {
+    flex-direction: column;
+    align-items: center !important;
+    text-align: center;
+    gap: 14px !important;
+    padding-top: 18px !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .public-shell-footer .public-footer-links {
+    order: 1;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 18px !important;
+    width: 100%;
+  }
+
+  .public-shell-footer .public-footer-meta {
+    order: 2;
+    font-size: 10px;
+    color: var(--fg4);
   }
 
   .input-textarea,
@@ -7576,14 +7946,24 @@ input, textarea, select, button {
 
   .public-page-footer {
     flex-direction: column;
-    align-items: flex-start !important;
+    align-items: center !important;
+    text-align: center;
     gap: 14px !important;
-    padding: 16px !important;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .public-page-footer > div {
-    flex-wrap: wrap;
-    gap: 12px !important;
+    order: 1;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 18px !important;
+    width: 100%;
+  }
+
+  .public-page-footer .public-footer-meta {
+    order: 2;
+    font-size: 10px;
+    color: var(--fg4);
   }
 
   /* ── Modals ── */
