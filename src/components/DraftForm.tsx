@@ -444,7 +444,7 @@ export default function DraftForm({
           <div className="mobile-composer-input-row">
             <textarea
               className="input-textarea mobile-composer-field"
-              placeholder="What can I help draft?"
+              placeholder={`Ask ${PETRA_AGENT.name}`}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -465,7 +465,7 @@ export default function DraftForm({
         <div className="input-bar">
           <textarea
             className="input-textarea"
-            placeholder="What can I help draft?"
+            placeholder={`Ask ${PETRA_AGENT.name}`}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
@@ -552,7 +552,7 @@ export default function DraftForm({
             <>
               <Logo size={40} animated />
               <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
-                Draft with {PETRA_AGENT.name}
+                What can I help draft?
               </h1>
             </>
           ) : (
@@ -560,7 +560,7 @@ export default function DraftForm({
               <Logo variant="hero" className="home-hero-logo" size={46} animated />
               <div className="home-hero-heading-wrap">
                 <h1 className="home-hero-serif home-hero-serif--enter">
-                  Draft with {PETRA_AGENT.name}
+                  What can I help draft?
                 </h1>
                 <InfoTip
                   text={`Describe the agreement you need. ${PETRA_AGENT.name} will ask a few scoping questions, then draft a first version aligned to Norvar's regulatory corpus.`}

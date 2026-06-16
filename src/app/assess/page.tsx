@@ -1649,7 +1649,7 @@ function Home() {
             <textarea
               ref={textareaRef}
               className="input-textarea mobile-composer-field"
-              placeholder="Describe what you're building..."
+              placeholder={`Ask ${ASSESS_AGENT.name}`}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -1685,7 +1685,7 @@ function Home() {
             <textarea
               ref={textareaRef}
               className="input-textarea"
-              placeholder="Describe what you're building..."
+              placeholder={`Ask ${ASSESS_AGENT.name}`}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}

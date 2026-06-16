@@ -21,6 +21,7 @@ import {
   redlineModelLabel,
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
+import { VARRO_AGENT } from "@/lib/agents";
 
 type InputMode = "document" | "upload" | "paste";
 
@@ -329,7 +330,7 @@ export default function ContractReviewForm({
         {sourceLabel ? (
           <span className="contracts-selected-label">{sourceLabel}</span>
         ) : (
-          <span className="home-composer-placeholder">What can I help review?</span>
+          <span className="home-composer-placeholder">Ask {VARRO_AGENT.name}</span>
         )}
       </div>
       <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
@@ -338,6 +339,7 @@ export default function ContractReviewForm({
           <ModeSelector current="contracts" embedded menuPlacement="top" />
         </div>
         <div className="home-composer-end">
+          {modelSelector}
           {sendButton}
         </div>
       </div>
@@ -353,7 +355,7 @@ export default function ContractReviewForm({
         </div>
       ) : (
         <div className="contracts-selected-bar contracts-selected-bar--empty">
-          <span className="contracts-selected-label">What can I help review?</span>
+          <span className="contracts-selected-label">Ask {VARRO_AGENT.name}</span>
         </div>
       )}
       <div className="composer-toolbar">
@@ -361,6 +363,7 @@ export default function ContractReviewForm({
           {attachControl}
         </div>
         <div className="composer-toolbar-end home-composer-end">
+          {modelSelector}
           <ModeSelector current="contracts" embedded menuPlacement="top" />
           {sendButton}
         </div>

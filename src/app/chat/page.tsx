@@ -561,7 +561,7 @@ function Chat() {
                       <textarea
                         ref={inputRef}
                         className="input-textarea mobile-composer-field"
-                        placeholder="Ask a GRC question"
+                        placeholder={`Ask ${CHAT_AGENT.name}`}
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
@@ -589,7 +589,7 @@ function Chat() {
                       <textarea
                         ref={inputRef}
                         className="input-textarea"
-                        placeholder="Ask a GRC question"
+                        placeholder={`Ask ${CHAT_AGENT.name}`}
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
