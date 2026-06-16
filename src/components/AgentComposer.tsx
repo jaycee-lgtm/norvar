@@ -35,6 +35,7 @@ export type AgentComposerProps = {
   promptOverride?: ReactNode;
   sendAriaLabel?: string;
   className?: string;
+  attachPlacement?: "start" | "end";
 };
 
 export default function AgentComposer({
@@ -60,6 +61,7 @@ export default function AgentComposer({
   promptOverride,
   sendAriaLabel = "Send",
   className,
+  attachPlacement = "start",
 }: AgentComposerProps) {
   const isHome = variant === "home";
   const hasText = value.trim().length > 0;
@@ -98,6 +100,8 @@ export default function AgentComposer({
     hideInput ? "agent-composer-shell--hide-input" : "",
     isActive ? "agent-composer-shell--active" : "",
   ].filter(Boolean).join(" ");
+
+  const attachInEnd = attachPlacement === "end";
 
   return (
     <div className={rootClass}>
@@ -150,7 +154,7 @@ export default function AgentComposer({
 
         <div className="agent-composer-toolbar">
           <div className="agent-composer-toolbar-start">
-            {attachControl}
+            {!attachInEnd && attachControl}
             {modelControl}
             {extraToolbarStart}
             {!isHome && (
@@ -159,6 +163,7 @@ export default function AgentComposer({
           </div>
           <div className="agent-composer-toolbar-end">
             {extraToolbarEnd}
+            {attachInEnd && attachControl}
             {voiceControl}
             {sendVisible && (
               <button

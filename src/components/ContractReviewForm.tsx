@@ -315,6 +315,7 @@ export default function ContractReviewForm({
       showSendButton={showSendButton}
       attachControl={attachControl}
       modelControl={modelSelector}
+      attachPlacement="end"
       promptOverride={sourcePrompt}
       sendAriaLabel="Start review"
       header={(selectedDocId || uploadName) ? (
