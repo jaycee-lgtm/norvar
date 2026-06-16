@@ -5086,25 +5086,30 @@ input, textarea, select, button {
 .escalation-chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
 }
 
 .escalation-chat-msg {
   display: flex;
+  flex-direction: column;
   width: 100%;
+  max-width: min(92%, 520px);
 }
 
 .escalation-chat-msg.inbound {
-  justify-content: flex-start;
+  align-self: flex-start;
+  align-items: flex-start;
 }
 
 .escalation-chat-msg.outbound {
-  justify-content: flex-end;
+  align-self: flex-end;
+  align-items: flex-end;
 }
 
 .escalation-chat-meta {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   padding: 0 2px;
+  width: 100%;
 }
 
 .escalation-chat-msg.outbound .escalation-chat-meta {
@@ -5119,8 +5124,9 @@ input, textarea, select, button {
 }
 
 .escalation-chat-bubble {
-  max-width: min(92%, 520px);
-  padding: 9px 12px;
+  width: 100%;
+  max-width: 100%;
+  padding: 10px 13px;
   border-radius: 14px;
 }
 

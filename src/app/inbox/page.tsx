@@ -355,7 +355,16 @@ function InboxContent() {
       const res  = await fetch(`/api/escalation-inbox?thread=${id}&folder=${activeFolder}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load thread");
-      setThread(data.thread ?? null);
+      const nextThread = data.thread ?? null;
+      if (!nextThread?.messages?.length) {
+        setThread(null);
+        setReply("");
+        router.replace(inboxHref(activeFolder, null));
+        if (data.counts) setCounts(data.counts);
+        await loadList({ silent: true });
+        return;
+      }
+      setThread(nextThread);
       if (data.counts) setCounts(data.counts);
       await loadList({ silent: true });
     } catch (e: unknown) {
@@ -364,7 +373,7 @@ function InboxContent() {
     } finally {
       setLoadingThread(false);
     }
-  }, [loadList]);
+  }, [loadList, router]);
 
   useEffect(() => { void loadList(); }, [loadList]);
 
@@ -515,7 +524,7 @@ function InboxContent() {
         return (
           <Link
             key={f.id}
-            href={inboxHref(f.id, threadId)}
+            href={inboxHref(f.id, null)}
             className={`inbox-folder-tab${folder === f.id ? " active" : ""}`}
           >
             <FolderIcon size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
