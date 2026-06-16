@@ -749,6 +749,67 @@ input, textarea, select, button {
   padding-right: 28px;
 }
 
+.mode-selector--compact .mode-selector-option {
+  gap: 2px;
+  padding: 7px 10px;
+}
+
+.mode-selector--compact .mode-selector-option-row {
+  gap: 8px;
+}
+
+.mode-selector--compact .mode-selector-option-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.mode-selector--compact .mode-selector-option-head {
+  gap: 5px;
+  padding-top: 4px;
+}
+
+.mode-selector--compact .mode-selector-option-name {
+  font-size: 12px;
+}
+
+.mode-selector--compact .mode-selector-option-version {
+  font-size: 9px;
+  padding: 1px 4px;
+}
+
+.mode-selector--compact .mode-selector-option-check {
+  margin-top: 5px;
+}
+
+.mode-selector--compact .mode-selector-option-tagline {
+  font-size: 9.5px;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: normal;
+  padding-right: 2px;
+}
+
+.mode-selector-menu-header {
+  padding: 8px 12px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+  border-bottom: 0.5px solid var(--bdr);
+}
+
+.mode-selector--compact .mode-selector-menu-header {
+  padding: 6px 10px 5px;
+  font-size: 9px;
+}
+
 .mode-selector--embedded {
   flex-shrink: 0;
 }

@@ -21,7 +21,7 @@ export const MODES: {
     label:   "Nora",
     version: "1.0",
     tagline: "Free-form GRC conversation",
-    icon:    <MessageSquare size={13} strokeWidth={1.75} />,
+    icon:    <MessageSquare size={11} strokeWidth={1.75} />,
     href:    "/chat",
   },
   {
@@ -29,7 +29,7 @@ export const MODES: {
     label:   "Cassius",
     version: "1.0",
     tagline: "Formal compliance risk assessment",
-    icon:    <ShieldAlert size={13} strokeWidth={1.75} />,
+    icon:    <ShieldAlert size={11} strokeWidth={1.75} />,
     href:    "/assess",
   },
   {
@@ -37,7 +37,7 @@ export const MODES: {
     label:   "Varro",
     version: "1.0",
     tagline: "Contract review and redline",
-    icon:    <FilePenLine size={13} strokeWidth={1.75} />,
+    icon:    <FilePenLine size={11} strokeWidth={1.75} />,
     href:    "/contracts",
   },
   {
@@ -45,7 +45,7 @@ export const MODES: {
     label:   "Petra",
     version: "1.0",
     tagline: "Agreement drafting",
-    icon:    <FileText size={13} strokeWidth={1.75} />,
+    icon:    <FileText size={11} strokeWidth={1.75} />,
     href:    "/draft",
   },
 ];
@@ -190,16 +190,7 @@ export default function ModeSelector({
           zIndex:       300,
           boxShadow:    "var(--shadow-md)",
         }}>
-          <div style={{
-            padding:        "8px 12px 6px",
-            fontSize:       10,
-            fontWeight:     600,
-            letterSpacing:  ".08em",
-            textTransform:  "uppercase" as const,
-            color:          "var(--fg3)",
-            fontFamily:     "'Sora', sans-serif",
-            borderBottom:   "0.5px solid var(--bdr)",
-          }}>
+          <div className="mode-selector-menu-header">
             Mode
           </div>
 
@@ -231,7 +222,7 @@ export default function ModeSelector({
                   </div>
 
                   {isActive && (
-                    <Check size={14} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
+                    <Check size={12} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
                   )}
                 </div>
 
