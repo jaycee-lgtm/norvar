@@ -17,6 +17,7 @@ import type { MessageFeedbackRating } from "@/lib/message-feedback";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { CHAT_AGENT } from "@/lib/agents";
+import { focusHomeComposerInput } from "@/lib/focus-home-composer";
 import { shouldRedirectToCassius } from "@/lib/cassius-handoff";
 import { stashNoraCassiusHandoff } from "@/lib/nora-cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
@@ -557,7 +558,10 @@ function Chat() {
                   </div>
                 )}
                 {isMobileView ? (
-                  <div className="mobile-composer">
+                  <div
+                    className="mobile-composer"
+                    onMouseDown={e => focusHomeComposerInput(e, inputRef.current)}
+                  >
                     <div className="home-composer-input-stack">
                       <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
                       <div className="mobile-composer-input-row">
@@ -590,7 +594,10 @@ function Chat() {
                   </div>
                 ) : (
                   <>
-                    <div className="input-bar">
+                    <div
+                      className="input-bar"
+                      onMouseDown={e => focusHomeComposerInput(e, inputRef.current)}
+                    >
                       <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
                       <textarea
                         ref={inputRef}

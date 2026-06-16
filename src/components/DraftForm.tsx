@@ -15,6 +15,7 @@ import { friendlyReviewError } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import { createTypewriterDrain } from "@/lib/typewriter-drain";
 import { PETRA_AGENT } from "@/lib/agents";
+import { focusHomeComposerInput } from "@/lib/focus-home-composer";
 import {
   DRAFT_QUESTIONS,
   buildDraftScopingIntroText,
@@ -70,6 +71,7 @@ export default function DraftForm({
   onThreadActive?:   (active: boolean) => void;
 }) {
   const scrollRef      = useRef<HTMLDivElement>(null);
+  const homeInputRef   = useRef<HTMLTextAreaElement>(null);
   const typewriterRef  = useRef<ReturnType<typeof createTypewriterDrain> | null>(null);
 
   const [messages, setMessages]               = useState<DraftMessage[]>([]);
@@ -443,11 +445,15 @@ export default function DraftForm({
       style={isMobileView ? undefined : { marginBottom: 24 }}
     >
       {isMobileView ? (
-        <div className="mobile-composer">
+        <div
+          className="mobile-composer"
+          onMouseDown={e => focusHomeComposerInput(e, homeInputRef.current)}
+        >
           <div className="home-composer-input-stack">
             <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
             <div className="mobile-composer-input-row">
               <textarea
+                ref={homeInputRef}
                 className="input-textarea mobile-composer-field"
                 placeholder=""
                 value={input}
@@ -467,9 +473,13 @@ export default function DraftForm({
           </div>
         </div>
       ) : (
-        <div className="input-bar">
+        <div
+          className="input-bar"
+          onMouseDown={e => focusHomeComposerInput(e, homeInputRef.current)}
+        >
           <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
           <textarea
+            ref={homeInputRef}
             className="input-textarea"
             placeholder=""
             value={input}

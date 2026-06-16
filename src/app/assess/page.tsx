@@ -30,6 +30,7 @@ import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
+import { focusHomeComposerInput } from "@/lib/focus-home-composer";
 import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import {
   ASSESSMENT_CONFIRM_NOT_YET,
@@ -1646,7 +1647,10 @@ function Home() {
       )}
 
       {isMobileView ? (
-        <div className="mobile-composer">
+        <div
+          className="mobile-composer"
+          onMouseDown={e => focusHomeComposerInput(e, textareaRef.current)}
+        >
           <div className="home-composer-input-stack">
             <ModeSelector current="assess" embedded askPrefix homePrompt menuPlacement="top" />
             <div className="mobile-composer-input-row">
@@ -1687,7 +1691,10 @@ function Home() {
           </div>
         </div>
       ) : (
-        <div className="input-bar">
+        <div
+          className="input-bar"
+          onMouseDown={e => focusHomeComposerInput(e, textareaRef.current)}
+        >
             <ModeSelector current="assess" embedded askPrefix homePrompt menuPlacement="top" />
             <textarea
               ref={textareaRef}

@@ -682,16 +682,17 @@ input, textarea, select, button {
 .home-body .input-bar,
 .home-composer-block .input-bar {
   border-radius: 16px;
-  padding: 16px 16px 10px;
+  padding: 14px 14px 10px;
 }
 
 .home-body .input-bar .input-textarea,
 .home-composer-block .input-textarea {
   font-size: 15px;
   letter-spacing: -0.015em;
-  line-height: 1.5;
-  min-height: 28px;
-  padding: 0 2px 8px;
+  line-height: 1.45;
+  min-height: 0;
+  max-height: 112px;
+  padding: 0 2px 4px;
   text-align: left;
 }
 
@@ -763,7 +764,7 @@ input, textarea, select, button {
 
 .mode-selector--home-prompt .mode-selector-trigger {
   gap: 4px;
-  padding: 0 2px 8px;
+  padding: 0 2px 4px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -771,7 +772,7 @@ input, textarea, select, button {
   font-weight: 400;
   color: var(--fg3);
   letter-spacing: -0.015em;
-  line-height: 1.5;
+  line-height: 1.45;
   text-align: left;
   justify-content: flex-start;
   align-self: flex-start;
@@ -802,6 +803,45 @@ input, textarea, select, button {
   align-items: flex-start;
   width: 100%;
   text-align: left;
+  gap: 0;
+}
+
+.home-composer-input-stack:not(:focus-within) .mobile-composer-input-row,
+.home-composer-input-stack:not(:focus-within) .home-composer-input-row {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.home-composer-input-stack:focus-within .mobile-composer-input-row,
+.home-composer-input-stack:focus-within .home-composer-input-row,
+.home-composer-input-stack:has(.mobile-composer-field:not(:placeholder-shown)) .mobile-composer-input-row,
+.home-composer-input-stack:has(.input-textarea:not(:placeholder-shown)) .home-composer-input-row {
+  max-height: 120px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.home-body .input-bar:not(:focus-within) .input-textarea:placeholder-shown,
+.home-composer-block .input-bar:not(:focus-within) .input-textarea:placeholder-shown {
+  min-height: 0;
+  max-height: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.home-body .input-bar:focus-within .input-textarea,
+.home-composer-block .input-bar:focus-within .input-textarea,
+.home-body .input-bar .input-textarea:not(:placeholder-shown),
+.home-composer-block .input-textarea:not(:placeholder-shown) {
+  min-height: 22px;
+  max-height: 112px;
+  padding: 0 2px 4px;
+  opacity: 1;
+  overflow: visible;
 }
 
 .home-body .input-bar,
@@ -811,6 +851,24 @@ input, textarea, select, button {
   text-align: left;
   align-self: stretch;
   width: 100%;
+}
+
+.home-body .input-bar,
+.home-composer-block .input-bar,
+.home-composer-block .mobile-composer,
+.mobile-home-layout .mobile-composer {
+  cursor: text;
+}
+
+.home-body .input-bar .mode-selector-trigger,
+.home-body .input-bar button,
+.home-composer-block .input-bar .mode-selector-trigger,
+.home-composer-block .input-bar button,
+.home-composer-block .mobile-composer .mode-selector-trigger,
+.home-composer-block .mobile-composer button,
+.mobile-home-layout .mobile-composer .mode-selector-trigger,
+.mobile-home-layout .mobile-composer button {
+  cursor: pointer;
 }
 
 .home-composer-block .contracts-selected-bar--home,
@@ -5736,19 +5794,21 @@ input, textarea, select, button {
 
   .home-composer-block .mobile-composer,
   .mobile-home-layout .mobile-composer {
-    padding: 18px 17px 13px;
+    padding: 14px 15px 11px;
   }
 
   .home-composer-block .mobile-composer-field,
   .mobile-home-layout .mobile-composer-field {
-    font-size: 16px !important;
-    min-height: 34px;
-    padding: 0 2px 10px;
+    font-size: 15px !important;
+    line-height: 1.45;
+    min-height: 0;
+    max-height: 112px;
+    padding: 0 2px 4px;
   }
 
   .home-composer-block .mobile-composer-field::placeholder,
   .mobile-home-layout .mobile-composer-field::placeholder {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--fg3);
   }
 
@@ -5765,23 +5825,18 @@ input, textarea, select, button {
 
   .home-composer-block .mode-selector--home-prompt .mode-selector-trigger,
   .mobile-home-layout .mode-selector--home-prompt .mode-selector-trigger {
-    font-size: 16px;
+    font-size: 15px;
     min-height: 0;
-    padding: 0 2px 12px;
-  }
-
-  .home-composer-block .home-composer-input-stack:not(:focus-within) .mobile-composer-field,
-  .mobile-home-layout .home-composer-input-stack:not(:focus-within) .mobile-composer-field {
-    min-height: 8px !important;
-    padding: 0 2px 8px !important;
+    padding: 0 2px 4px;
   }
 
   .home-composer-block .home-composer-input-stack:focus-within .mobile-composer-field,
   .mobile-home-layout .home-composer-input-stack:focus-within .mobile-composer-field,
   .home-composer-block .home-composer-input-stack .mobile-composer-field:not(:placeholder-shown),
   .mobile-home-layout .home-composer-input-stack .mobile-composer-field:not(:placeholder-shown) {
-    min-height: 28px !important;
-    padding: 0 2px 10px !important;
+    min-height: 22px !important;
+    max-height: 112px !important;
+    padding: 0 2px 4px !important;
   }
 
   .home-composer-tools .composer-toolbar-start {
