@@ -56,6 +56,7 @@ export default function ModeSelector({
   embedded = false,
   menuPlacement = "bottom",
   menuAlign = "start",
+  askPrefix = false,
   onSelect,
   navigate = true,
   disabled = false,
@@ -65,6 +66,7 @@ export default function ModeSelector({
   embedded?: boolean;
   menuPlacement?: "bottom" | "top";
   menuAlign?:     "start" | "end";
+  askPrefix?:     boolean;
   onSelect?: (mode: Mode) => void;
   navigate?: boolean;
   disabled?: boolean;
@@ -131,7 +133,11 @@ export default function ModeSelector({
           </span>
         )}
         <span style={{ fontSize: 12, fontWeight: 500, color: embedded ? "var(--fg2)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
-          {embedded ? `${active.label} ${active.version}` : active.label}
+          {embedded
+            ? askPrefix
+              ? `Ask ${active.label} ${active.version}`
+              : `${active.label} ${active.version}`
+            : active.label}
         </span>
         {!embedded && (
         <span style={{

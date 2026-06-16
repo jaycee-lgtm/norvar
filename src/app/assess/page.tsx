@@ -1649,7 +1649,7 @@ function Home() {
             <textarea
               ref={textareaRef}
               className="input-textarea mobile-composer-field"
-              placeholder={`Ask ${ASSESS_AGENT.name}`}
+              placeholder=""
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -1659,7 +1659,7 @@ function Home() {
           <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
             <div className="composer-toolbar-start">
               {attachControl}
-              <ModeSelector current="assess" embedded menuPlacement="top" />
+              <ModeSelector current="assess" embedded menuPlacement="top" askPrefix />
             </div>
             <div className="home-composer-end">
               <VoiceInputIcon
@@ -1685,7 +1685,7 @@ function Home() {
             <textarea
               ref={textareaRef}
               className="input-textarea"
-              placeholder={`Ask ${ASSESS_AGENT.name}`}
+              placeholder=""
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -1696,7 +1696,7 @@ function Home() {
               {attachControl}
             </div>
             <div className="composer-toolbar-end home-composer-end">
-              <ModeSelector current="assess" embedded menuPlacement="top" />
+              <ModeSelector current="assess" embedded menuPlacement="top" askPrefix />
               <VoiceInputIcon
                 isListening={voice.isListening}
                 isTranscribing={voice.isTranscribing}

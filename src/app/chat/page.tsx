@@ -561,7 +561,7 @@ function Chat() {
                       <textarea
                         ref={inputRef}
                         className="input-textarea mobile-composer-field"
-                        placeholder={`Ask ${CHAT_AGENT.name}`}
+                        placeholder=""
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
@@ -571,7 +571,7 @@ function Chat() {
                     <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
                       <div className="composer-toolbar-start">
                         {attachControl}
-                        <ModeSelector current="chat" embedded menuPlacement="top" />
+                        <ModeSelector current="chat" embedded menuPlacement="top" askPrefix />
                       </div>
                       <div className="home-composer-end">
                         {voiceIcon}
@@ -589,7 +589,7 @@ function Chat() {
                       <textarea
                         ref={inputRef}
                         className="input-textarea"
-                        placeholder={`Ask ${CHAT_AGENT.name}`}
+                        placeholder=""
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
@@ -601,7 +601,7 @@ function Chat() {
                           {examplesControl}
                         </div>
                         <div className="composer-toolbar-end home-composer-end">
-                          <ModeSelector current="chat" embedded menuPlacement="top" />
+                          <ModeSelector current="chat" embedded menuPlacement="top" askPrefix />
                           {voiceIcon}
                           <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                             {loading

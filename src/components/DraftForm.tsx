@@ -444,7 +444,7 @@ export default function DraftForm({
           <div className="mobile-composer-input-row">
             <textarea
               className="input-textarea mobile-composer-field"
-              placeholder={`Ask ${PETRA_AGENT.name}`}
+              placeholder=""
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -453,7 +453,7 @@ export default function DraftForm({
           </div>
           <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
             <div className="composer-toolbar-start">
-              <ModeSelector current="draft" embedded menuPlacement="top" />
+              <ModeSelector current="draft" embedded menuPlacement="top" askPrefix />
             </div>
             <div className="home-composer-end">
               {modelSelector}
@@ -465,7 +465,7 @@ export default function DraftForm({
         <div className="input-bar">
           <textarea
             className="input-textarea"
-            placeholder={`Ask ${PETRA_AGENT.name}`}
+            placeholder=""
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
@@ -475,7 +475,7 @@ export default function DraftForm({
             <div className="composer-toolbar-start" />
             <div className="composer-toolbar-end home-composer-end">
               {modelSelector}
-              <ModeSelector current="draft" embedded menuPlacement="top" />
+              <ModeSelector current="draft" embedded menuPlacement="top" askPrefix />
               {sendButton}
             </div>
           </div>

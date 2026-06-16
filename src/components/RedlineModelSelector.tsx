@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Brain, Check, ChevronDown, Cpu, ScanSearch, Sparkles, Zap } from "lucide-react";
+import { Brain, Check, ChevronDown, Feather, Gauge, Gem, ScanSearch, Sun } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 import {
@@ -12,13 +12,13 @@ import {
 } from "@/lib/redline-models";
 
 const ICONS: Record<RedlineReviewModelChoice, ReactNode> = {
-  auto:         <Sparkles size={13} strokeWidth={1.75} />,
-  sonnet:       <Zap size={13} strokeWidth={1.75} />,
-  opus:         <ScanSearch size={13} strokeWidth={1.75} />,
-  "gpt-4.1":    <Brain size={13} strokeWidth={1.75} />,
-  o3:           <ScanSearch size={13} strokeWidth={1.75} />,
-  "gemini-flash": <Zap size={13} strokeWidth={1.75} />,
-  "gemini-pro": <Cpu size={13} strokeWidth={1.75} />,
+  auto:           <Gauge size={13} strokeWidth={1.75} />,
+  sonnet:         <Feather size={13} strokeWidth={1.75} />,
+  opus:           <ScanSearch size={13} strokeWidth={1.75} />,
+  "gpt-4.1":      <Brain size={13} strokeWidth={1.75} />,
+  o3:             <ScanSearch size={13} strokeWidth={1.75} />,
+  "gemini-flash": <Sun size={13} strokeWidth={1.75} />,
+  "gemini-pro":   <Gem size={13} strokeWidth={1.75} />,
 };
 
 export default function RedlineModelSelector({
