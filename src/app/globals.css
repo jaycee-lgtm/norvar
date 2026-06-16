@@ -454,12 +454,18 @@ input, textarea, select, button {
 
 @media (min-width: 769px) {
   .home-hero-row {
+    gap: 14px;
     margin-bottom: 32px;
     transform: translateY(-12px);
   }
 
   .home-hero-row .home-hero-serif {
     font-size: clamp(38px, 4.2vw, 52px);
+  }
+
+  .home-hero-logo {
+    transform: scale(1);
+    margin-right: 0;
   }
 }
 
@@ -470,12 +476,6 @@ input, textarea, select, button {
   filter:
     drop-shadow(0 0 10px rgba(139, 26, 26, 0.55))
     drop-shadow(0 0 4px rgba(226, 226, 224, 0.35));
-}
-
-@media (min-width: 769px) {
-  .home-hero-logo {
-    transform: scale(1);
-  }
 }
 
 .light .home-hero-logo,
