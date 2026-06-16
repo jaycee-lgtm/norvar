@@ -80,6 +80,16 @@ function avatarMeta(name: string | null | undefined, email: string) {
   return { initial, color: AVATAR_COLORS[hash] ?? AVATAR_COLORS[0] };
 }
 
+function formatEmailParty(name: string | null | undefined, email: string | null | undefined): string {
+  const address = email?.trim();
+  if (!address) return name?.trim() || "Unknown";
+  const displayName = name?.trim();
+  if (displayName && displayName.toLowerCase() !== address.toLowerCase()) {
+    return `${displayName} <${address}>`;
+  }
+  return address;
+}
+
 function parseFolder(value: string | null): InboxFolder {
   if (value === "sent" || value === "archived" || value === "trash") return value;
   return "received";
@@ -816,48 +826,65 @@ function InboxContent() {
                     <p className="inbox-messages-empty">No messages in this folder for this thread.</p>
                   )}
                   {thread.messages.map(msg => {
-                    const senderName = msg.direction === "outbound"
+                    const isOutbound = msg.direction === "outbound";
+                    const senderName = isOutbound
                       ? (msg.from_name ?? "You")
                       : (msg.from_name ?? msg.from_email);
                     const senderEmail = msg.from_email;
                     const avatar = avatarMeta(senderName, senderEmail);
-                    const recipientLine = msg.direction === "outbound"
-                      ? msg.to_email
-                      : senderEmail;
+                    const toAddress = msg.to_email ?? thread.recipient_email;
+                    const toParty = formatEmailParty(thread.recipient_name, toAddress);
+                    const fromParty = formatEmailParty(msg.from_name, senderEmail);
 
                     return (
                       <article
                         key={msg.id}
-                        className={`inbox-msg-card${msg.direction === "outbound" ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
+                        className={`inbox-msg-card${isOutbound ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
                       >
                         <header className="inbox-msg-card-head">
-                          <div
-                            className="inbox-msg-card-avatar"
-                            style={{ background: `${avatar.color}22`, color: avatar.color }}
-                            aria-hidden
-                          >
-                            {avatar.initial}
-                          </div>
-                          <div className="inbox-msg-card-main">
-                            <div className="inbox-msg-card-topline">
-                              {msg.is_read === false && msg.direction === "inbound" && (
-                                <span className="inbox-unread-dot" aria-hidden />
-                              )}
-                              <span className="inbox-msg-card-from">{senderName}</span>
-                              {msg.direction === "outbound" && (
-                                <span className="inbox-msg-card-badge">Sent</span>
-                              )}
-                              {recipientLine && (
-                                <span className="inbox-msg-card-email-inline">
-                                  {msg.direction === "outbound" ? `to ${recipientLine}` : `<${recipientLine}>`}
+                          <div className="inbox-msg-card-identity">
+                            <div
+                              className="inbox-msg-card-avatar"
+                              style={{ background: `${avatar.color}22`, color: avatar.color }}
+                              aria-hidden
+                            >
+                              {avatar.initial}
+                            </div>
+                            <div className="inbox-msg-card-who">
+                              <div className="inbox-msg-card-name-row">
+                                {msg.is_read === false && !isOutbound && (
+                                  <span className="inbox-unread-dot" aria-hidden />
+                                )}
+                                <span className="inbox-msg-card-from">{senderName}</span>
+                                <span className="inbox-msg-card-badge">
+                                  {isOutbound ? "Sent" : "Reply"}
                                 </span>
-                              )}
-                              <time className="inbox-msg-card-date" dateTime={msg.created_at}>
-                                {fmtDate(msg.created_at)}
-                              </time>
+                              </div>
+                              <div className="inbox-msg-card-addresses">
+                                <div className="inbox-msg-address-line">
+                                  <span className="inbox-msg-address-label">From</span>
+                                  <span className="inbox-msg-address-value">{fromParty}</span>
+                                </div>
+                                {isOutbound && toAddress && (
+                                  <div className="inbox-msg-address-line">
+                                    <span className="inbox-msg-address-label">To</span>
+                                    <span className="inbox-msg-address-value">{toParty}</span>
+                                  </div>
+                                )}
+                                {msg.subject && (
+                                  <div className="inbox-msg-address-line inbox-msg-subject">
+                                    <span className="inbox-msg-address-label">Subject</span>
+                                    <span className="inbox-msg-address-value">{msg.subject}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div className="inbox-message-actions">
+                          <div className="inbox-msg-card-head-end">
+                            <time className="inbox-msg-card-date" dateTime={msg.created_at}>
+                              {fmtDate(msg.created_at)}
+                            </time>
+                            <div className="inbox-message-actions">
                               {folder === "trash" && (
                                 <>
                                   <button
@@ -925,6 +952,7 @@ function InboxContent() {
                                 </>
                               )}
                             </div>
+                          </div>
                         </header>
                         {msg.deleted_at && folder === "trash" && (
                           <div className="inbox-msg-card-purge">

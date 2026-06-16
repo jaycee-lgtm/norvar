@@ -3253,10 +3253,46 @@ input, textarea, select, button {
   box-shadow: inset 3px 0 0 var(--rh);
 }
 
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card.outbound:not(.unread) {
+  box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.35);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card.inbound:not(.unread) {
+  box-shadow: inset 3px 0 0 rgba(22, 163, 74, 0.28);
+}
+
 .inbox-page:not(.inbox-page--mobile) .inbox-msg-card-head {
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0 6px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-identity {
   gap: 10px;
-  padding: 11px 0 4px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-head-end {
+  align-items: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-name-row {
+  margin-bottom: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-addresses {
+  margin-top: 4px;
+  gap: 2px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-address-line {
+  font-size: 11px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-msg-address-label {
+  width: 42px;
+  font-size: 9px;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-msg-card-avatar {
@@ -3275,26 +3311,15 @@ input, textarea, select, button {
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-msg-card-from {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
-}
-
-.inbox-page:not(.inbox-page--mobile) .inbox-msg-card-email-inline {
-  font-size: 11px;
-  color: var(--fg4);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  flex: 1;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-msg-card-date {
   font-size: 10px;
   color: var(--fg4);
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-msg-card-body {
@@ -3305,11 +3330,12 @@ input, textarea, select, button {
   font-size: 12px;
   line-height: 1.6;
   color: var(--fg2);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-message-actions {
   position: static;
-  margin-left: auto;
   flex-shrink: 0;
   background: var(--card);
   border: 0.5px solid var(--bdr2);
@@ -4195,6 +4221,14 @@ input, textarea, select, button {
   position: relative;
 }
 
+.inbox-msg-card-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
 .inbox-msg-card-main {
   flex: 1;
   min-width: 0;
@@ -4216,14 +4250,6 @@ input, textarea, select, button {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
-}
-
-.inbox-msg-card-identity {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-width: 0;
-  flex: 1;
 }
 
 .inbox-msg-card-avatar {
@@ -4270,6 +4296,56 @@ input, textarea, select, button {
   text-transform: uppercase;
   color: var(--fg3);
   font-family: 'Sora', sans-serif;
+}
+
+.inbox-msg-card.outbound .inbox-msg-card-badge {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.22);
+  color: #2563eb;
+}
+
+.inbox-msg-card.inbound .inbox-msg-card-badge {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.22);
+  color: #15803d;
+}
+
+.inbox-msg-card-addresses {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.inbox-msg-address-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fg3);
+}
+
+.inbox-msg-address-label {
+  flex-shrink: 0;
+  width: 46px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg4);
+  font-family: 'Sora', sans-serif;
+}
+
+.inbox-msg-address-value {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.inbox-msg-subject .inbox-msg-address-value {
+  font-weight: 500;
+  color: var(--fg2);
 }
 
 .inbox-msg-card-email {
@@ -4604,14 +4680,13 @@ input, textarea, select, button {
 }
 
 .inbox-page--mobile .inbox-msg-card-head {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
-.inbox-page--mobile .inbox-msg-card-topline {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+.inbox-page--mobile .inbox-msg-card-head-end {
+  align-items: flex-end;
+  gap: 6px;
 }
 
 .inbox-page--mobile .inbox-msg-card-date {
