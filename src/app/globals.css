@@ -875,6 +875,147 @@ input, textarea, select, button {
   border-radius: 999px;
 }
 
+/* ── Unified agent composer (all agents) ── */
+.agent-composer {
+  width: 100%;
+  text-align: left;
+}
+
+.agent-composer-shell {
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 28px;
+  box-shadow: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  cursor: text;
+}
+
+.agent-composer-shell--home {
+  padding: 16px 16px 12px;
+}
+
+.agent-composer-shell--thread {
+  padding: 14px 16px 12px;
+}
+
+.agent-composer-shell .mode-selector-trigger,
+.agent-composer-shell button:not(.agent-composer-field),
+.agent-composer-shell a {
+  cursor: pointer;
+}
+
+.agent-composer-prompt {
+  width: 100%;
+  text-align: left;
+}
+
+.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt,
+.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .contracts-selected-bar--home {
+  margin-bottom: 14px;
+}
+
+.agent-composer--home.agent-composer--active .agent-composer-prompt .mode-selector--home-prompt,
+.agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .mode-selector--home-prompt,
+.agent-composer--home.agent-composer--active .agent-composer-prompt .contracts-selected-bar--home,
+.agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .contracts-selected-bar--home {
+  margin-bottom: 6px;
+}
+
+.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-input-row {
+  display: none;
+}
+
+.agent-composer--home.agent-composer--active .agent-composer-input-row,
+.agent-composer--home .agent-composer-shell:focus-within .agent-composer-input-row,
+.agent-composer--thread .agent-composer-input-row {
+  display: flex;
+  width: 100%;
+  margin: 0 0 8px;
+}
+
+.agent-composer--thread .agent-composer-prompt {
+  display: none;
+}
+
+.agent-composer-field {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  font-size: 16px;
+  font-family: 'Sora', sans-serif;
+  color: var(--fg);
+  line-height: 1.35;
+  min-height: 0;
+  max-height: 72px;
+  padding: 0;
+  margin: 0;
+}
+
+.agent-composer--home.agent-composer--active .agent-composer-field,
+.agent-composer--home .agent-composer-shell:focus-within .agent-composer-field,
+.agent-composer--thread .agent-composer-field {
+  min-height: 22px;
+}
+
+.agent-composer-field::placeholder {
+  color: var(--fg3);
+}
+
+.agent-composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+}
+
+.agent-composer-toolbar-start,
+.agent-composer-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.agent-composer-toolbar-start {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+}
+
+.agent-composer-toolbar-end {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.agent-composer-shell .redline-model-trigger,
+.agent-composer-shell .attach-plus-btn {
+  height: 32px;
+  min-height: 32px;
+}
+
+.agent-composer-shell .redline-model-trigger {
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--lift);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg2);
+}
+
+.agent-composer-shell .send-btn,
+.agent-composer-shell .voice-input-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+}
+
 .home-composer-input-stack:not(.home-composer-input-stack--active):not(:focus-within) .mobile-composer-input-row {
   display: none;
 }
@@ -5487,7 +5628,6 @@ input, textarea, select, button {
 .mobile-only { display: none; }
 
 @media (min-width: 769px) {
-  .thread-composer,
   .mobile-home-layout .mobile-mode-pill,
   .assess-composer-actions {
     display: none !important;
@@ -6097,7 +6237,7 @@ input, textarea, select, button {
     padding-bottom: min(320px, 42dvh);
   }
 
-  .mobile-thread-layout .mobile-composer-input-row {
+  .mobile-thread-layout .agent-composer-input-row {
     flex-direction: column;
     align-items: stretch;
   }

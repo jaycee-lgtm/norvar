@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
 import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
-import ModeSelector from "@/components/ModeSelector";
+import AgentComposer from "@/components/AgentComposer";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import ContractReviewActivity, {
   appendActivityStep,
@@ -280,18 +279,6 @@ export default function ContractReviewForm({
     </button>
   );
 
-  const sendButton = showSendButton ? (
-    <button
-      type="button"
-      className="send-btn"
-      onClick={() => { void submit(); }}
-      disabled={!canSend}
-      aria-label="Start review"
-    >
-      {working ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-    </button>
-  ) : null;
-
   const sourceLabel = inputMode === "document" && selectedDocId
     ? docCatalog[selectedDocId] ?? "Selected document"
     : inputMode === "upload" && uploadName
@@ -306,10 +293,32 @@ export default function ContractReviewForm({
     />
   );
 
-  const homeComposer = isMobileView ? (
-    <div className="mobile-composer mobile-composer--home">
-      {(selectedDocId || uploadName) && (
-        <div style={{ padding: "0 12px 8px" }}>
+  const sourcePrompt = sourceLabel ? (
+    <div className="contracts-selected-bar contracts-selected-bar--home">
+      <span className="contracts-selected-label">{sourceLabel}</span>
+      <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
+        Change
+      </button>
+    </div>
+  ) : undefined;
+
+  const homeComposer = (
+    <AgentComposer
+      variant="home"
+      mode="contracts"
+      value=""
+      onChange={() => {}}
+      hideInput
+      loading={working || fileExtracting}
+      canSend={canSend}
+      onSend={() => { void submit(); }}
+      showSendButton={showSendButton}
+      attachControl={attachControl}
+      modelControl={modelSelector}
+      promptOverride={sourcePrompt}
+      sendAriaLabel="Start review"
+      header={(selectedDocId || uploadName) ? (
+        <div style={{ padding: isMobileView ? "0 0 8px" : "0 2px 8px" }}>
           <SelectedDocumentChips
             documents={selectedDocId ? [{ id: selectedDocId, name: docCatalog[selectedDocId] ?? "Document" }] : []}
             onRemove={() => clearSource()}
@@ -326,51 +335,8 @@ export default function ContractReviewForm({
             </span>
           )}
         </div>
-      )}
-      <div className="home-composer-input-stack">
-        {sourceLabel ? (
-          <div className="contracts-selected-bar contracts-selected-bar--home">
-            <span className="contracts-selected-label">{sourceLabel}</span>
-            <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
-              Change
-            </button>
-          </div>
-        ) : (
-          <ModeSelector current="contracts" embedded askPrefix homePrompt menuPlacement="top" />
-        )}
-      </div>
-      <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-        <div className="composer-toolbar-start">
-          {attachControl}
-          {modelSelector}
-        </div>
-        <div className="home-composer-end">
-          {sendButton}
-        </div>
-      </div>
-    </div>
-  ) : (
-    <div className="input-bar home-input-bar--claude">
-      {sourceLabel ? (
-        <div className="contracts-selected-bar contracts-selected-bar--home">
-          <span className="contracts-selected-label">{sourceLabel}</span>
-          <button type="button" className="contracts-clear-source" onClick={clearSource} disabled={working || fileExtracting}>
-            Change
-          </button>
-        </div>
-      ) : (
-        <ModeSelector current="contracts" embedded askPrefix homePrompt menuPlacement="top" />
-      )}
-      <div className="composer-toolbar home-composer-tools">
-        <div className="composer-toolbar-start">
-          {attachControl}
-          {modelSelector}
-        </div>
-        <div className="composer-toolbar-end home-composer-end">
-          {sendButton}
-        </div>
-      </div>
-    </div>
+      ) : undefined}
+    />
   );
 
   if (isHome) {

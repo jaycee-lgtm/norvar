@@ -4,7 +4,6 @@ import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Show, SignInButton } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
-import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import InfoTip from "@/components/InfoTip";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
@@ -16,13 +15,13 @@ import AiDisclaimer from "@/components/AiDisclaimer";
 import type { MessageFeedbackRating } from "@/lib/message-feedback";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import AgentComposer from "@/components/AgentComposer";
 import { CHAT_AGENT } from "@/lib/agents";
-import { focusHomeComposerInput } from "@/lib/focus-home-composer";
 import { shouldRedirectToCassius } from "@/lib/cassius-handoff";
 import { stashNoraCassiusHandoff } from "@/lib/nora-cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
-import { ArrowUp, Loader2, ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
+import { ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -535,98 +534,43 @@ function Chat() {
               </div>
 
               <div className={isMobileView ? "home-composer-block" : "input-wrap"} style={isMobileView ? undefined : { marginBottom: 24 }}>
-                {hasAttachedDocs && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
-                    <SelectedDocumentChips
-                      documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
-                      onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
-                    />
-                    {attachedDocName && (
-                      <span style={{
-                        fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
-                        padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        fontFamily: "'Sora', sans-serif",
-                      }}>
-                        <FileText size={10} strokeWidth={2} />
-                        {attachedDocName}
-                        <button type="button" onClick={clearAttachedDoc} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
-                          ×
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                )}
-                {isMobileView ? (
-                  <div
-                    className="mobile-composer mobile-composer--home"
-                    onMouseDown={e => focusHomeComposerInput(e, inputRef.current)}
-                  >
-                    <div className={`home-composer-input-stack${input.trim() ? " home-composer-input-stack--active" : ""}`}>
-                      <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
-                      <div className="mobile-composer-input-row">
-                        <textarea
-                          ref={inputRef}
-                          className="input-textarea mobile-composer-field"
-                          placeholder=""
-                          value={input}
-                          onChange={e => setInput(e.target.value)}
-                          onKeyDown={handleKey}
-                          rows={1}
-                        />
-                      </div>
-                    </div>
-                    <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-                      <div className="composer-toolbar-start">
-                        {attachControl}
-                      </div>
-                      <div className="home-composer-end">
-                        {voiceIcon}
-                        {showSendButton && (
-                        <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                          {loading
-                            ? <Loader2 size={16} className="spin" />
-                            : <ArrowUp size={16} strokeWidth={2.5} />}
-                        </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div
-                      className={`input-bar home-input-bar--claude${input.trim() ? " home-input-bar--active" : ""}`}
-                      onMouseDown={e => focusHomeComposerInput(e, inputRef.current)}
-                    >
-                      <ModeSelector current="chat" embedded askPrefix homePrompt menuPlacement="top" />
-                      <textarea
-                        ref={inputRef}
-                        className="input-textarea"
-                        placeholder=""
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={handleKey}
-                        rows={1}
+                <AgentComposer
+                  variant="home"
+                  mode="chat"
+                  value={input}
+                  onChange={setInput}
+                  onKeyDown={handleKey}
+                  inputRef={inputRef}
+                  loading={loading}
+                  canSend={canSend}
+                  onSend={() => { void sendWithVoice(); }}
+                  showSendButton={showSendButton}
+                  attachControl={attachControl}
+                  voiceControl={voiceIcon}
+                  extraToolbarStart={examplesControl}
+                  header={hasAttachedDocs ? (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
+                      <SelectedDocumentChips
+                        documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+                        onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
                       />
-                      <div className="composer-toolbar">
-                        <div className="composer-toolbar-start">
-                          {attachControl}
-                          {examplesControl}
-                        </div>
-                        <div className="composer-toolbar-end home-composer-end">
-                          {voiceIcon}
-                          {showSendButton && (
-                          <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                            {loading
-                              ? <Loader2 size={16} className="spin" />
-                              : <ArrowUp size={16} strokeWidth={2.5} />}
+                      {attachedDocName && (
+                        <span style={{
+                          fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+                          padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          fontFamily: "'Sora', sans-serif",
+                        }}>
+                          <FileText size={10} strokeWidth={2} />
+                          {attachedDocName}
+                          <button type="button" onClick={clearAttachedDoc} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+                            ×
                           </button>
-                          )}
-                        </div>
-                      </div>
+                        </span>
+                      )}
                     </div>
-                  </>
-                )}
+                  ) : undefined}
+                />
                 <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
                 {fileError && (
                   <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
@@ -787,87 +731,38 @@ function Chat() {
                     </div>
                   </div>
                   )}
-                  {isMobileView ? (
-                  <div className="mobile-composer thread-composer">
-                    <div className="mobile-composer-input-row">
-                      <input
-                        className="chat-input-field mobile-composer-field"
-                        placeholder="Ask a follow-up question..."
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={handleKey}
+                  <AgentComposer
+                    variant="thread"
+                    mode="chat"
+                    value={input}
+                    onChange={setInput}
+                    onKeyDown={handleKey}
+                    inputRef={inputRef}
+                    placeholder="Ask a follow-up question..."
+                    loading={loading}
+                    canSend={canSend}
+                    onSend={() => { void sendWithVoice(); }}
+                    showSendButton={showSendButton}
+                    attachControl={attachControl}
+                    voiceControl={
+                      <VoiceInputIcon
+                        isListening={voice.isListening}
+                        isTranscribing={voice.isTranscribing}
+                        isSpeaking={voice.isSpeaking}
+                        voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+                        configured={voice.support.configured}
+                        disabled={loading}
+                        onStartListening={voice.startListening}
+                        onStopListening={voice.stopListening}
+                        onStopSpeaking={voice.stopSpeak}
+                        size="sm"
+                        agentName={CHAT_AGENT.name}
                       />
-                    </div>
-                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                      <div className="composer-toolbar-start">
-                        {attachControl}
-                        {examplesControl}
-                      </div>
-                      <ModeSelector current="chat" embedded menuPlacement="top" />
-                      <div className="mobile-composer-actions">
-                        <VoiceInputIcon
-                          isListening={voice.isListening}
-                          isTranscribing={voice.isTranscribing}
-                          isSpeaking={voice.isSpeaking}
-                          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                          configured={voice.support.configured}
-                          disabled={loading}
-                          onStartListening={voice.startListening}
-                          onStopListening={voice.stopListening}
-                          onStopSpeaking={voice.stopSpeak}
-                          size="sm"
-                          agentName={CHAT_AGENT.name}
-                        />
-                        {showSendButton && (
-                        <button type="button" className="chat-send-btn send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                          <ArrowUp size={14} strokeWidth={2.5} />
-                        </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  ) : (
-                  <>
-                  <div className="chat-input-bar">
-                    <input
-                      className="chat-input-field"
-                      placeholder="Ask a follow-up question..."
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={handleKey}
-                    />
-                    <div className="composer-toolbar">
-                      <div className="composer-toolbar-start">
-                        {attachControl}
-                        {examplesControl}
-                      </div>
-                      <div className="composer-toolbar-end">
-                        <ModeSelector current="chat" embedded menuPlacement="top" />
-                        <VoiceInputIcon
-                          isListening={voice.isListening}
-                          isTranscribing={voice.isTranscribing}
-                          isSpeaking={voice.isSpeaking}
-                          voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                          configured={voice.support.configured}
-                          disabled={loading}
-                          onStartListening={voice.startListening}
-                          onStopListening={voice.stopListening}
-                          onStopSpeaking={voice.stopSpeak}
-                          size="sm"
-                          agentName={CHAT_AGENT.name}
-                        />
-                        {showSendButton && (
-                        <button type="button" className="chat-send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
-                          <ArrowUp size={14} strokeWidth={2.5} />
-                        </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    }
+                    extraToolbarStart={examplesControl}
+                  />
                   {voice.voiceError && (
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
-                  )}
-                  </>
                   )}
                   {fileError && isMobileView && (
                     <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>

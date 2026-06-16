@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, FileText, Loader2, SquarePen } from "lucide-react";
+import { FileText, SquarePen } from "lucide-react";
 import Logo from "@/components/Logo";
 import InfoTip from "@/components/InfoTip";
-import ModeSelector from "@/components/ModeSelector";
+import AgentComposer from "@/components/AgentComposer";
+import DocumentPicker, { SelectedDocumentChips } from "@/components/DocumentPicker";
+import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
+import { useVoice } from "@/hooks/useVoice";
 import RedlineModelSelector from "@/components/RedlineModelSelector";
 import DraftProgress, {
   handleDraftSSEEvent,
@@ -15,7 +18,6 @@ import { friendlyReviewError } from "@/components/ContractReviewActivity";
 import { readSSEStream } from "@/lib/sse";
 import { createTypewriterDrain } from "@/lib/typewriter-drain";
 import { PETRA_AGENT } from "@/lib/agents";
-import { focusHomeComposerInput } from "@/lib/focus-home-composer";
 import {
   DRAFT_QUESTIONS,
   buildDraftScopingIntroText,
@@ -72,6 +74,8 @@ export default function DraftForm({
 }) {
   const scrollRef      = useRef<HTMLDivElement>(null);
   const homeInputRef   = useRef<HTMLTextAreaElement>(null);
+  const fileRef        = useRef<HTMLInputElement>(null);
+  const handleSendRef  = useRef<(text: string) => void>(() => {});
   const typewriterRef  = useRef<ReturnType<typeof createTypewriterDrain> | null>(null);
 
   const [messages, setMessages]               = useState<DraftMessage[]>([]);
@@ -86,6 +90,11 @@ export default function DraftForm({
   const [draftPlan, setDraftPlan]             = useState<DraftPlan | null>(null);
   const [working, setWorking]                 = useState(false);
   const [error, setError]                     = useState("");
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [docCatalog, setDocCatalog]           = useState<Record<string, string>>({});
+  const [attachedDocName, setAttachedDocName]   = useState("");
+  const [fileExtracting, setFileExtracting]     = useState(false);
+  const [fileError, setFileError]               = useState("");
 
   const isPageHome   = variant === "home";
   const modelLabel   = redlineModelLabel(reviewModel);
@@ -94,6 +103,17 @@ export default function DraftForm({
   const activeQuestion = activeQuestionId
     ? DRAFT_QUESTIONS.find(q => q.id === activeQuestionId) ?? nextDraftQuestion(answers)
     : nextDraftQuestion(answers);
+
+  useEffect(() => {
+    fetch("/api/documents?status=active")
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, string> = {};
+        for (const doc of d.documents ?? []) map[doc.id] = doc.name;
+        setDocCatalog(map);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     onThreadActive?.(!isHome);
@@ -227,27 +247,65 @@ export default function DraftForm({
     commitAnswer(activeQuestion, opt?.value ?? optionLabel, optionLabel);
   };
 
-  const handleSend = () => {
+  const handleSend = (textOverride?: string) => {
     if (working || guidedTyping) return;
 
+    const raw = (textOverride ?? input).trim();
+
     if (isHome) {
-      const text = input.trim();
-      if (!text) return;
-      startGuidedDraft(text);
+      if (!raw) return;
+      startGuidedDraft(raw);
       return;
     }
 
     if (!activeQuestion) return;
 
     if (activeQuestion.type === "text") {
-      const text = input.trim();
-      if (activeQuestion.optional && (!text || text.toLowerCase() === "skip")) {
+      if (activeQuestion.optional && (!raw || raw.toLowerCase() === "skip")) {
         commitAnswer(activeQuestion, "", "Skipped");
         return;
       }
-      if (!text) return;
-      commitAnswer(activeQuestion, text, text);
+      if (!raw) return;
+      commitAnswer(activeQuestion, raw, raw);
     }
+  };
+
+  handleSendRef.current = (text: string) => handleSend(text);
+
+  const voice = useVoice({
+    onVoiceSend: text => handleSendRef.current(text),
+    disabled: working,
+  });
+
+  const sendWithVoice = (text?: string) => {
+    handleSend(text);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setFileExtracting(true);
+    setFileError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/documents/extract", { method: "POST", body: form });
+      const data = await res.json() as { text?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || "Could not read file");
+      setAttachedDocName(file.name);
+      setSelectedDocumentIds([]);
+    } catch (err: unknown) {
+      setAttachedDocName("");
+      setFileError(err instanceof Error ? err.message : "Could not read file");
+    } finally {
+      setFileExtracting(false);
+    }
+  };
+
+  const clearAttachedDoc = () => {
+    setAttachedDocName("");
+    setFileError("");
   };
 
   const submitDraft = async (finalAnswers: DraftAnswers) => {
@@ -345,22 +403,78 @@ export default function DraftForm({
     />
   );
 
-  const sendButton = showSendButton ? (
-    <button
-      type="button"
-      className="send-btn"
-      onClick={() => { void handleSend(); }}
-      disabled={!canSend}
-      aria-label="Send"
-    >
-      {working ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-    </button>
-  ) : null;
+  const attachControl = (
+    <DocumentPicker
+      selectedIds={selectedDocumentIds}
+      onChange={setSelectedDocumentIds}
+      disabled={working || fileExtracting}
+      variant="icon"
+      onUpload={() => fileRef.current?.click()}
+      uploading={fileExtracting}
+      uploadAttached={!!attachedDocName}
+    />
+  );
+
+  const voiceControl = (
+    <VoiceInputIcon
+      isListening={voice.isListening}
+      isTranscribing={voice.isTranscribing}
+      isSpeaking={voice.isSpeaking}
+      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+      configured={voice.support.configured}
+      disabled={working}
+      onStartListening={voice.startListening}
+      onStopListening={voice.stopListening}
+      onStopSpeaking={voice.stopSpeak}
+      agentName={PETRA_AGENT.name}
+    />
+  );
+
+  const threadVoiceControl = (
+    <VoiceInputIcon
+      isListening={voice.isListening}
+      isTranscribing={voice.isTranscribing}
+      isSpeaking={voice.isSpeaking}
+      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+      configured={voice.support.configured}
+      disabled={working}
+      onStartListening={voice.startListening}
+      onStopListening={voice.stopListening}
+      onStopSpeaking={voice.stopSpeak}
+      size="sm"
+      agentName={PETRA_AGENT.name}
+    />
+  );
+
+  const hasAttachedDocs = selectedDocumentIds.length > 0 || !!attachedDocName;
+
+  const attachedDocsHeader = hasAttachedDocs ? (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
+      <SelectedDocumentChips
+        documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+        onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+      />
+      {attachedDocName && (
+        <span style={{
+          fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
+          padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)",
+          display: "inline-flex", alignItems: "center", gap: 5,
+          fontFamily: "'Sora', sans-serif",
+        }}>
+          <FileText size={10} strokeWidth={2} />
+          {attachedDocName}
+          <button type="button" onClick={clearAttachedDoc} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+            ×
+          </button>
+        </span>
+      )}
+    </div>
+  ) : undefined;
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      sendWithVoice();
     }
   };
 
@@ -444,57 +558,28 @@ export default function DraftForm({
       className={isMobileView ? "home-composer-block" : "input-wrap"}
       style={isMobileView ? undefined : { marginBottom: 24 }}
     >
-      {isMobileView ? (
-        <div
-          className="mobile-composer mobile-composer--home"
-          onMouseDown={e => focusHomeComposerInput(e, homeInputRef.current)}
-        >
-          <div className={`home-composer-input-stack${input.trim() ? " home-composer-input-stack--active" : ""}`}>
-            <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
-            <div className="mobile-composer-input-row">
-              <textarea
-                ref={homeInputRef}
-                className="input-textarea mobile-composer-field"
-                placeholder=""
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                rows={1}
-              />
-            </div>
-          </div>
-          <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-            <div className="composer-toolbar-start">
-              {modelSelector}
-            </div>
-            <div className="home-composer-end">
-              {sendButton}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
-          className={`input-bar home-input-bar--claude${input.trim() ? " home-input-bar--active" : ""}`}
-          onMouseDown={e => focusHomeComposerInput(e, homeInputRef.current)}
-        >
-          <ModeSelector current="draft" embedded askPrefix homePrompt menuPlacement="top" />
-          <textarea
-            ref={homeInputRef}
-            className="input-textarea"
-            placeholder=""
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            rows={1}
-          />
-          <div className="composer-toolbar">
-            <div className="composer-toolbar-start" />
-            <div className="composer-toolbar-end home-composer-end">
-              {modelSelector}
-              {sendButton}
-            </div>
-          </div>
-        </div>
+      <AgentComposer
+        variant="home"
+        mode="draft"
+        value={input}
+        onChange={setInput}
+        onKeyDown={handleKey}
+        inputRef={homeInputRef}
+        loading={working}
+        canSend={canSend}
+        onSend={() => { sendWithVoice(); }}
+        showSendButton={showSendButton}
+        attachControl={attachControl}
+        voiceControl={voiceControl}
+        modelControl={modelSelector}
+        header={attachedDocsHeader}
+      />
+      <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+      {fileError && (
+        <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
+      )}
+      {voice.voiceError && (
+        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
       )}
     </div>
   );
@@ -503,43 +588,30 @@ export default function DraftForm({
     <div className="chat-input-row">
       <div className="chat-input-inner">
         <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-          {isMobileView ? (
-            <div className="mobile-composer thread-composer">
-              <div className="mobile-composer-input-row">
-                <input
-                  className="chat-input-field mobile-composer-field"
-                  placeholder={composerPlaceholder}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKey}
-                  disabled={working || guidedTyping || (guidedActive && activeQuestion?.type !== "text")}
-                />
-              </div>
-              <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                <ModeSelector current="draft" embedded menuPlacement="top" />
-                {modelSelector}
-                <div className="mobile-composer-actions">{sendButton}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="input-bar">
-              <input
-                className="chat-input-field"
-                placeholder={composerPlaceholder}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                disabled={working || guidedTyping || (guidedActive && activeQuestion?.type !== "text")}
-              />
-              <div className="composer-toolbar">
-                <div className="composer-toolbar-start" />
-                <div className="composer-toolbar-end">
-                  <ModeSelector current="draft" embedded menuPlacement="top" />
-                  {modelSelector}
-                  {sendButton}
-                </div>
-              </div>
-            </div>
+          {attachedDocsHeader}
+          <AgentComposer
+            variant="thread"
+            mode="draft"
+            value={input}
+            onChange={setInput}
+            onKeyDown={handleKey}
+            inputRef={homeInputRef}
+            placeholder={composerPlaceholder}
+            disabled={working || guidedTyping || (guidedActive && activeQuestion?.type !== "text")}
+            loading={working}
+            canSend={canSend}
+            onSend={() => { sendWithVoice(); }}
+            showSendButton={showSendButton}
+            attachControl={attachControl}
+            voiceControl={threadVoiceControl}
+            modelControl={modelSelector}
+          />
+          <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+          {fileError && isMobileView && (
+            <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
+          )}
+          {voice.voiceError && (
+            <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
           )}
         </div>
         {error && (

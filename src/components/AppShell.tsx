@@ -1,11 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState, type ReactNode } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Menu, SquarePen } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import MobileProfileMenu from "@/components/MobileProfileMenu";
-import { getNewAction } from "@/lib/mobile-nav";
 
 function AppShellInner({
   children,
@@ -15,25 +14,7 @@ function AppShellInner({
   sidebarExtra?: ReactNode;
 }) {
   const pathname   = usePathname();
-  const router     = useRouter();
-  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const newAction = getNewAction(pathname);
-
-  const startFreshSession = () => {
-    const activeId = searchParams.get("id");
-    const activeDraft = searchParams.get("draft") ?? (pathname === "/draft" ? activeId : null);
-    const onHome =
-      (newAction.href === "/chat" && pathname === "/chat" && !activeId) ||
-      (newAction.href === "/assess" && pathname === "/assess" && !activeId) ||
-      (newAction.href === "/contracts" && pathname === "/contracts" && !activeId && searchParams.get("reviews") !== "1") ||
-      (newAction.href === "/draft" && pathname === "/draft" && !activeDraft && searchParams.get("drafts") !== "1");
-    if (onHome) {
-      router.refresh();
-      return;
-    }
-    router.replace(newAction.href);
-  };
 
   useEffect(() => {
     setMobileOpen(false);
@@ -57,17 +38,7 @@ function AppShellInner({
           <Menu size={18} strokeWidth={1.75} />
         </button>
         <div className="mobile-header-spacer" />
-        <div className="mobile-header-actions">
-          <button
-            type="button"
-            className="mobile-header-compose-btn"
-            aria-label={newAction.label}
-            onClick={startFreshSession}
-          >
-            <SquarePen size={16} strokeWidth={1.75} />
-          </button>
-          <MobileProfileMenu />
-        </div>
+        <MobileProfileMenu />
       </header>
 
       <button

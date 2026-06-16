@@ -4,8 +4,8 @@ import { Suspense, useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Show } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
-import ModeSelector from "@/components/ModeSelector";
 import LandingPage from "@/components/LandingPage";
+import AgentComposer from "@/components/AgentComposer";
 import Logo from "@/components/Logo";
 import InfoTip from "@/components/InfoTip";
 import FormattedMessage from "@/components/FormattedMessage";
@@ -30,7 +30,6 @@ import { VoiceInputIcon, VoiceErrorBanner } from "@/components/VoiceControls";
 import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
-import { focusHomeComposerInput } from "@/lib/focus-home-composer";
 import { pickNoraFollowUps } from "@/lib/agent-prompts";
 import {
   ASSESSMENT_CONFIRM_NOT_YET,
@@ -55,7 +54,7 @@ import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 import { normalizeGapSeverity, normalizeRiskTier, compareGapSeverity } from "@/lib/risk-tiers";
 import {
-  ArrowUp, FileText,
+  FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
   ShieldAlert, X, Download,
   History, SquarePen,
@@ -1623,114 +1622,75 @@ function Home() {
     />
   );
 
+  const voiceControl = (
+    <VoiceInputIcon
+      isListening={voice.isListening}
+      isTranscribing={voice.isTranscribing}
+      isSpeaking={voice.isSpeaking}
+      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+      configured={voice.support.configured}
+      disabled={loading}
+      onStartListening={voice.startListening}
+      onStopListening={voice.stopListening}
+      onStopSpeaking={voice.stopSpeak}
+      agentName={ASSESS_AGENT.name}
+    />
+  );
+
+  const threadVoiceControl = (
+    <VoiceInputIcon
+      isListening={voice.isListening}
+      isTranscribing={voice.isTranscribing}
+      isSpeaking={voice.isSpeaking}
+      voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
+      configured={voice.support.configured}
+      disabled={loading}
+      onStartListening={voice.startListening}
+      onStopListening={voice.stopListening}
+      onStopSpeaking={voice.stopSpeak}
+      size="sm"
+      agentName={ASSESS_AGENT.name}
+    />
+  );
+
+  const attachedDocsHeader = hasAttachedDocs ? (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
+      <SelectedDocumentChips
+        documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
+        onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
+      />
+      {contractName && (
+        <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
+          <FileText size={10} strokeWidth={2} />
+          {contractName}
+          <button type="button" onClick={() => { setContractText(""); setContractName(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+            <X size={10} strokeWidth={2} color="var(--fg3)" />
+          </button>
+        </span>
+      )}
+    </div>
+  ) : undefined;
+
   const InputBar = (
     <div
       className={isMobileView ? "home-composer-block" : "input-wrap"}
       style={isMobileView ? undefined : { marginBottom: 24 }}
     >
-      {hasAttachedDocs && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, padding: isMobileView ? undefined : "0 2px" }}>
-          <SelectedDocumentChips
-            documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
-            onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
-          />
-          {contractName && (
-            <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
-              <FileText size={10} strokeWidth={2} />
-              {contractName}
-              <button type="button" onClick={() => { setContractText(""); setContractName(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-                <X size={10} strokeWidth={2} color="var(--fg3)" />
-              </button>
-            </span>
-          )}
-        </div>
-      )}
-
-      {isMobileView ? (
-        <div
-          className="mobile-composer mobile-composer--home"
-          onMouseDown={e => focusHomeComposerInput(e, textareaRef.current)}
-        >
-          <div className={`home-composer-input-stack${input.trim() ? " home-composer-input-stack--active" : ""}`}>
-            <ModeSelector current="assess" embedded askPrefix homePrompt menuPlacement="top" />
-            <div className="mobile-composer-input-row">
-              <textarea
-                ref={textareaRef}
-                className="input-textarea mobile-composer-field"
-                placeholder=""
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                rows={1}
-              />
-            </div>
-          </div>
-          <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
-            <div className="composer-toolbar-start">
-              {attachControl}
-            </div>
-            <div className="home-composer-end">
-              <VoiceInputIcon
-                isListening={voice.isListening}
-                isTranscribing={voice.isTranscribing}
-                isSpeaking={voice.isSpeaking}
-                voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                configured={voice.support.configured}
-                disabled={loading}
-                onStartListening={voice.startListening}
-                onStopListening={voice.stopListening}
-                onStopSpeaking={voice.stopSpeak}
-                agentName={ASSESS_AGENT.name}
-              />
-              {showSendButton && (
-              <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-                {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-              </button>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
-          className={`input-bar home-input-bar--claude${input.trim() ? " home-input-bar--active" : ""}`}
-          onMouseDown={e => focusHomeComposerInput(e, textareaRef.current)}
-        >
-            <ModeSelector current="assess" embedded askPrefix homePrompt menuPlacement="top" />
-            <textarea
-              ref={textareaRef}
-              className="input-textarea"
-              placeholder=""
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-            />
-          <div className="composer-toolbar">
-            <div className="composer-toolbar-start">
-              {attachControl}
-            </div>
-            <div className="composer-toolbar-end home-composer-end">
-              <VoiceInputIcon
-                isListening={voice.isListening}
-                isTranscribing={voice.isTranscribing}
-                isSpeaking={voice.isSpeaking}
-                voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                configured={voice.support.configured}
-                disabled={loading}
-                onStartListening={voice.startListening}
-                onStopListening={voice.stopListening}
-                onStopSpeaking={voice.stopSpeak}
-                agentName={ASSESS_AGENT.name}
-              />
-              {showSendButton && (
-              <button type="button" className="send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-                {loading ? <Loader2 size={16} className="spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
-              </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <AgentComposer
+        variant="home"
+        mode="assess"
+        value={input}
+        onChange={setInput}
+        onKeyDown={handleKey}
+        inputRef={textareaRef}
+        loading={loading}
+        canSend={canSend}
+        onSend={() => { void sendWithVoice(); }}
+        showSendButton={showSendButton}
+        attachControl={attachControl}
+        voiceControl={voiceControl}
+        header={attachedDocsHeader}
+      />
       <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
       {fileError && (
         <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
@@ -1959,98 +1919,22 @@ function Home() {
                 <div className="chat-input-row">
                   <div className="chat-input-inner">
                     <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
-                    {isMobileView ? (
-                      <div className="mobile-composer thread-composer">
-                        {hasAttachedDocs && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
-                            <SelectedDocumentChips
-                              documents={selectedDocumentIds.map(id => ({ id, name: docCatalog[id] ?? "Document" }))}
-                              onRemove={id => setSelectedDocumentIds(prev => prev.filter(x => x !== id))}
-                            />
-                            {contractName && (
-                              <span style={{ fontSize: 11, color: "var(--fg2)", background: "var(--card2)", padding: "2px 9px", borderRadius: 20, border: "0.5px solid var(--bdr2)", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'Sora', sans-serif" }}>
-                                <FileText size={10} strokeWidth={2} />
-                                {contractName}
-                                <button type="button" onClick={() => { setContractText(""); setContractName(""); }} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-                                  <X size={10} strokeWidth={2} color="var(--fg3)" />
-                                </button>
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        <div className="mobile-composer-input-row">
-                          <input
-                            className="chat-input-field mobile-composer-field"
-                            placeholder={guidedComposerPlaceholder}
-                            value={input}
-                            onChange={e => setInput(e.target.value)}
-                            onKeyDown={handleKey}
-                          />
-                        </div>
-                        <div className="mobile-composer-tools mobile-composer-tools--minimal">
-                          <div className="composer-toolbar-start">
-                            {attachControl}
-                          </div>
-                          <ModeSelector current="assess" embedded menuPlacement="top" />
-                          <div className="mobile-composer-actions">
-                            <VoiceInputIcon
-                              isListening={voice.isListening}
-                              isTranscribing={voice.isTranscribing}
-                              isSpeaking={voice.isSpeaking}
-                              voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                              configured={voice.support.configured}
-                              disabled={loading}
-                              onStartListening={voice.startListening}
-                              onStopListening={voice.stopListening}
-                              onStopSpeaking={voice.stopSpeak}
-                              size="sm"
-                              agentName={ASSESS_AGENT.name}
-                            />
-                            {showSendButton && (
-                            <button type="button" className="chat-send-btn send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-                              {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
-                            </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                    <div className="chat-input-bar">
-                      <input
-                        className="chat-input-field"
-                        placeholder={guidedComposerPlaceholder}
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={handleKey}
-                      />
-                      <div className="composer-toolbar">
-                        <div className="composer-toolbar-start">
-                          {attachControl}
-                        </div>
-                        <div className="composer-toolbar-end">
-                          <ModeSelector current="assess" embedded menuPlacement="top" />
-                          <VoiceInputIcon
-                            isListening={voice.isListening}
-                            isTranscribing={voice.isTranscribing}
-                            isSpeaking={voice.isSpeaking}
-                            voiceActive={voice.settings.speakResponses || voice.settings.voiceConversation}
-                            configured={voice.support.configured}
-                            disabled={loading}
-                            onStartListening={voice.startListening}
-                            onStopListening={voice.stopListening}
-                            onStopSpeaking={voice.stopSpeak}
-                            size="sm"
-                            agentName={ASSESS_AGENT.name}
-                          />
-                          {showSendButton && (
-                          <button type="button" className="chat-send-btn" onClick={() => { void sendWithVoice(); }} disabled={!canSend}>
-                            {loading ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} strokeWidth={2.5} />}
-                          </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    )}
+                    {attachedDocsHeader}
+                    <AgentComposer
+                      variant="thread"
+                      mode="assess"
+                      value={input}
+                      onChange={setInput}
+                      onKeyDown={handleKey}
+                      inputRef={textareaRef}
+                      placeholder={guidedComposerPlaceholder}
+                      loading={loading}
+                      canSend={canSend}
+                      onSend={() => { void sendWithVoice(); }}
+                      showSendButton={showSendButton}
+                      attachControl={attachControl}
+                      voiceControl={threadVoiceControl}
+                    />
                     {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                     )}
