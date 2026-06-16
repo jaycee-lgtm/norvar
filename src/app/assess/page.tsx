@@ -232,30 +232,25 @@ function GapFrameworkLinks({ frameworks }: { frameworks: string[] }) {
   if (!frameworks.length) return null;
 
   return (
-    <p className="gap-reg gap-reg-links">
+    <div className="gap-framework-chips">
       {frameworks.map((raw, i) => {
         const ref = raw.trim();
         const entry = resolveCatalogEntryForFrameworkRef(ref);
-        return (
-          <span key={`${ref}-${i}`}>
-            {i > 0 && <span className="gap-reg-sep"> · </span>}
-            {entry?.sourceUrl ? (
-              <a
-                href={entry.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="gap-reg-link"
-                title={entry.name}
-              >
-                {ref}
-              </a>
-            ) : (
-              <span>{ref}</span>
-            )}
-          </span>
+        return entry?.sourceUrl ? (
+          <a
+            key={`${ref}-${i}`}
+            href={entry.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="gap-framework-chip gap-framework-chip--link"
+          >
+            {ref}
+          </a>
+        ) : (
+          <span key={`${ref}-${i}`} className="gap-framework-chip">{ref}</span>
         );
       })}
-    </p>
+    </div>
   );
 }
 
@@ -534,12 +529,19 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
             return (
             <div key={i} className="gap-item gap-item-card">
               <div className="gap-item-header">
-                <span className="gap-item-number">{i + 1}</span>
-                <span className={`gap-sev ${sev}`}>
-                  <SevIcon sev={sev} />
-                  {sev.charAt(0).toUpperCase() + sev.slice(1)}
-                </span>
-                <p className="gap-title">{gap.title}</p>
+                <div className="gap-item-head-main">
+                  <div className="gap-item-meta">
+                    <span className="gap-item-index">Gap {i + 1}</span>
+                    <span className={`gap-sev ${sev}`}>
+                      <SevIcon sev={sev} />
+                      {sev.charAt(0).toUpperCase() + sev.slice(1)}
+                    </span>
+                  </div>
+                  <h3 className="gap-title">{gap.title}</h3>
+                  {gap.frameworks && gap.frameworks.length > 0 && (
+                    <GapFrameworkLinks frameworks={gap.frameworks} />
+                  )}
+                </div>
                 <button
                   type="button"
                   className="gap-queue-btn"
@@ -550,9 +552,6 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
                 </button>
               </div>
               <div className="gap-item-body">
-                {gap.frameworks && gap.frameworks.length > 0 && (
-                  <GapFrameworkLinks frameworks={gap.frameworks} />
-                )}
                 {(gap.detail || gap.description) && (
                   <section className="gap-section gap-section--issue">
                     <div className="gap-section-label">Gap</div>
