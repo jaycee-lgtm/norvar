@@ -38,6 +38,3 @@ export async function syncGapChatToAssessment(
     .eq("user_id", userId);
 }
 
-export function gapKeyFromTitle(title: string, severity: string) {
-  return `${severity}:${title}`.slice(0, 200);
-}

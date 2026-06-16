@@ -50,7 +50,7 @@ import {
   clearNoraCassiusHandoff,
   consumeNoraCassiusHandoff,
 } from "@/lib/nora-cassius-handoff";
-import { getCatalogEntryByAbbr, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
+import { aggregateAssessmentFrameworks, CATALOG_STATUS_LABELS, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 import { normalizeGapSeverity, normalizeRiskTier, compareGapSeverity } from "@/lib/risk-tiers";
 import { assignGapIds, lookupGapChat } from "@/lib/gap-id";
@@ -280,6 +280,7 @@ function SevIcon({ sev }: { sev: string }) {
 // ── Export ─────────────────────────────────────────────────────────────────────
 
 function exportAssessment(a: Assessment) {
+  const frameworks = aggregateAssessmentFrameworks(a.gaps ?? [], a.frameworks);
   const lines: string[] = [
     "NORVAR COMPLIANCE ASSESSMENT",
     "=".repeat(50),
@@ -293,7 +294,7 @@ function exportAssessment(a: Assessment) {
     "",
     "FRAMEWORKS",
     "-".repeat(30),
-    (a.frameworks ?? []).join(", ") || "None",
+    frameworks.join(", ") || "None",
     "",
     `GAPS (${a.gaps?.length ?? 0})`,
     "-".repeat(30),
@@ -399,6 +400,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
     ? scopedDomains
     : (Object.keys(byDomain ?? {}) as RiskDomainKey[]);
   const gaps        = a.gaps ?? [];
+  const frameworks  = aggregateAssessmentFrameworks(gaps, a.frameworks);
   const isProcessing = a.status === "processing";
   const streamParts  = streamingText ? splitAssessmentStream(streamingText) : { summary: "", gaps: "" };
   const showDomainTiers = Boolean(
@@ -468,7 +470,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
           {overallTier.charAt(0).toUpperCase() + overallTier.slice(1)} risk
         </span>
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)" }}>
-          {isProcessing ? "Analysing..." : `${gaps.length} gap${gaps.length !== 1 ? "s" : ""} · ${a.frameworks?.length ?? 0} frameworks`}
+          {isProcessing ? "Analysing..." : `${gaps.length} gap${gaps.length !== 1 ? "s" : ""} · ${frameworks.length} framework${frameworks.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
@@ -549,7 +551,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
                 )}
               </span>
             )}
-            {t === "frameworks" && `Frameworks (${a.frameworks?.length ?? 0})`}
+            {t === "frameworks" && `Frameworks (${frameworks.length})`}
           </button>
         ))}
       </div>
@@ -645,7 +647,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
 
       {tab === "frameworks" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {(a.frameworks ?? []).length === 0 && (
+          {frameworks.length === 0 && (
             isProcessing ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                 <span className="loading-dot" />
@@ -659,16 +661,37 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
               <p style={{ fontSize: 12, color: "var(--fg3)" }}>No frameworks listed.</p>
             )
           )}
-          {(a.frameworks ?? []).map(f => {
-            const entry = getCatalogEntryByAbbr(f);
+          {frameworks.map(f => {
+            const entry = resolveCatalogEntryForFrameworkRef(f);
+            const label = entry?.abbr ?? f;
             const content = (
-              <span style={{
-                fontSize: 11, color: "var(--fg2)", background: "var(--card2)",
-                padding: "4px 10px", borderRadius: 5, border: "0.5px solid var(--bdr)",
-                fontFamily: "'JetBrains Mono', monospace",
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                padding: "8px 12px",
+                borderRadius: 6,
+                border: "0.5px solid var(--bdr)",
+                background: "var(--card2)",
               }}>
-                {f}
-              </span>
+                <span style={{
+                  fontSize: 11,
+                  color: "var(--fg2)",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontWeight: 600,
+                }}>
+                  {label}
+                </span>
+                {entry && entry.name !== label && (
+                  <span style={{ fontSize: 12, color: "var(--fg)" }}>{entry.name}</span>
+                )}
+                {entry && (
+                  <span style={{ fontSize: 11, color: "var(--fg3)" }}>
+                    {entry.jurisdictionLabel}
+                    {entry.status ? ` · ${CATALOG_STATUS_LABELS[entry.status]}` : ""}
+                  </span>
+                )}
+              </div>
             );
             return entry?.sourceUrl ? (
               <a

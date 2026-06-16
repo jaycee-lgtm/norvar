@@ -10,7 +10,7 @@ import {
   isMineRemediationItem,
   type RemediationAccessRow,
 } from "@/lib/remediation-access";
-import { gapKeyFromTitle } from "@/lib/gap-chat";
+import { gapKeyFromTitle } from "@/lib/gap-id";
 import {
   assignNextGapIds,
   enrichRemediationGapIds,

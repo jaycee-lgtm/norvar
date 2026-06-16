@@ -14,6 +14,7 @@ import {
   type StreamGap,
 } from "@/lib/streaming-assessment";
 import { generateAssessmentTitle } from "@/lib/generate-thread-title";
+import { aggregateAssessmentFrameworks } from "@/lib/regulatory-catalog";
 import { sanitizeAssessmentUserMessage } from "@/lib/assessment-questionnaire";
 import { isAuditRequest } from "@/lib/audit";
 import { formatNoraChatForCassius, type NoraChatMessage } from "@/lib/nora-cassius-handoff";
@@ -413,6 +414,10 @@ export async function POST(req: NextRequest) {
         assessment.risk_tier       = risk.overall;
         assessment.risk_by_domain  = risk.byDomain;
         assessment.scoped_domains  = risk.scoped_domains;
+        assessment.frameworks      = aggregateAssessmentFrameworks(
+          gaps as Array<{ frameworks?: string[] }>,
+          Array.isArray(assessment.frameworks) ? assessment.frameworks as string[] : [],
+        );
         delete assessment.risk_score;
         assessment.summary = summaryText || (assessment.summary as string) || "";
         assessment.status  = "complete";

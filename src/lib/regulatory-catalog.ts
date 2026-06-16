@@ -75,6 +75,31 @@ export function getCatalogEntryByAbbr(abbr: string): RegulatoryCatalogEntry | un
   );
 }
 
+/** Merge top-level and per-gap framework refs into a stable deduped list. */
+export function aggregateAssessmentFrameworks(
+  gaps: Array<{ frameworks?: string[] | null }>,
+  topLevel?: string[] | null,
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  const add = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(trimmed);
+  };
+
+  for (const ref of topLevel ?? []) add(ref);
+  for (const gap of gaps) {
+    for (const ref of gap.frameworks ?? []) add(ref);
+  }
+
+  return out;
+}
+
 /** Best-effort catalog match for free-text framework references in gap output. */
 export function resolveCatalogEntryForFrameworkRef(ref: string): RegulatoryCatalogEntry | undefined {
   const trimmed = ref.trim();

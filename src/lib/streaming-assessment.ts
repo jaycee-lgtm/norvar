@@ -1,4 +1,5 @@
 import { GAP_SEV_RANK, normalizeGapSeverity, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
+import { aggregateAssessmentFrameworks } from "@/lib/regulatory-catalog";
 
 export type StreamGap = {
   severity:    string;
@@ -153,7 +154,7 @@ export function buildProcessingResult(
     status:          opts?.status ?? "processing",
     title:           opts?.title ?? "Compliance assessment",
     summary:         opts?.summary ?? "",
-    frameworks:      opts?.frameworks ?? [],
+    frameworks:      aggregateAssessmentFrameworks(gaps, opts?.frameworks),
     gaps,
     risk_tier:       risk.overall,
     risk_by_domain:  risk.byDomain,

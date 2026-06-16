@@ -1,5 +1,8 @@
-import { gapKeyFromTitle } from "@/lib/gap-chat";
 import { GAP_DOMAIN_CODES, normalizeRiskDomainKey, type RiskDomainKey } from "@/lib/risk-tiers";
+
+export function gapKeyFromTitle(title: string, severity: string): string {
+  return `${severity}:${title}`.slice(0, 200);
+}
 
 export { GAP_DOMAIN_CODES };
 
