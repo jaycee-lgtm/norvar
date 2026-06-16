@@ -329,27 +329,22 @@ export default function ContractReviewForm({
             disabled={working || fileExtracting}
             rows={2}
           />
+        ) : sourceLabel ? (
+          <span className="contracts-selected-label">{sourceLabel}</span>
         ) : (
-          <>
-            {!sourceLabel && (
-              <span className="mobile-composer-prompt-label">
-                What can I help review?
-              </span>
-            )}
-            {sourceLabel && (
-              <span className="contracts-selected-label">{sourceLabel}</span>
-            )}
-          </>
+          <span className="home-composer-placeholder">What can I help review?</span>
         )}
       </div>
-      <div className="mobile-composer-tools mobile-composer-tools--minimal">
+      <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
         <div className="composer-toolbar-start">
           {attachControl}
           {pasteToggle}
         </div>
-        <ModeSelector current="contracts" embedded menuPlacement="top" />
-        {modelSelector}
-        <div className="mobile-composer-actions">{sendButton}</div>
+        <div className="home-composer-end">
+          {modelSelector}
+          <ModeSelector current="contracts" embedded menuPlacement="top" />
+          {sendButton}
+        </div>
       </div>
     </div>
   ) : (
@@ -380,9 +375,9 @@ export default function ContractReviewForm({
           {attachControl}
           {pasteToggle}
         </div>
-        <div className="composer-toolbar-end">
-          <ModeSelector current="contracts" embedded menuPlacement="top" />
+        <div className="composer-toolbar-end home-composer-end">
           {modelSelector}
+          <ModeSelector current="contracts" embedded menuPlacement="top" />
           {sendButton}
         </div>
       </div>

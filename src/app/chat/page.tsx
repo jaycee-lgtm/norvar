@@ -518,12 +518,12 @@ function Chat() {
               <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
                 {isMobileView ? (
                   <>
-                    <Logo size={44} animated />
+                    <Logo size={40} animated />
                     <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">How can I help?</h1>
                   </>
                 ) : (
                   <div className="home-hero-row home-hero-enter">
-                    <Logo variant="hero" className="home-hero-logo" size={52} animated />
+                    <Logo variant="hero" className="home-hero-logo" size={46} animated />
                     <div className="home-hero-heading-wrap">
                       <h1 className="home-hero-serif home-hero-serif--enter">How can I help?</h1>
                       <InfoTip text="Ask about regulations, compliance requirements, audit preparation, or how specific laws apply to your work." />
@@ -558,27 +558,22 @@ function Chat() {
                 {isMobileView ? (
                   <div className="mobile-composer">
                     <div className="mobile-composer-input-row">
-                      {!input.trim() && (
-                        <span className="mobile-composer-prompt-label">
-                          How can I help you today?
-                        </span>
-                      )}
                       <textarea
                         ref={inputRef}
                         className="input-textarea mobile-composer-field"
-                        placeholder=""
+                        placeholder="Ask a GRC question"
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
                         rows={1}
                       />
                     </div>
-                    <div className="mobile-composer-tools mobile-composer-tools--minimal">
+                    <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
                       <div className="composer-toolbar-start">
                         {attachControl}
                       </div>
-                      <ModeSelector current="chat" embedded menuPlacement="top" />
-                      <div className="mobile-composer-actions">
+                      <div className="home-composer-end">
+                        <ModeSelector current="chat" embedded menuPlacement="top" />
                         {voiceIcon}
                         <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>
                           {loading
@@ -594,7 +589,7 @@ function Chat() {
                       <textarea
                         ref={inputRef}
                         className="input-textarea"
-                        placeholder="How can I help you today?"
+                        placeholder="Ask a GRC question"
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={handleKey}
@@ -605,7 +600,7 @@ function Chat() {
                           {attachControl}
                           {examplesControl}
                         </div>
-                        <div className="composer-toolbar-end">
+                        <div className="composer-toolbar-end home-composer-end">
                           <ModeSelector current="chat" embedded menuPlacement="top" />
                           {voiceIcon}
                           <button type="button" className="send-btn" onClick={() => sendWithVoice()} disabled={!canSend}>

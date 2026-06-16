@@ -1646,27 +1646,22 @@ function Home() {
       {isMobileView ? (
         <div className="mobile-composer">
           <div className="mobile-composer-input-row">
-            {!input.trim() && (
-              <span className="mobile-composer-prompt-label">
-                What are you building?
-              </span>
-            )}
             <textarea
               ref={textareaRef}
               className="input-textarea mobile-composer-field"
-              placeholder=""
+              placeholder="Describe what you're building..."
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
               rows={1}
             />
           </div>
-          <div className="mobile-composer-tools mobile-composer-tools--minimal">
+          <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
             <div className="composer-toolbar-start">
               {attachControl}
             </div>
-            <ModeSelector current="assess" embedded menuPlacement="top" />
-            <div className="mobile-composer-actions">
+            <div className="home-composer-end">
+              <ModeSelector current="assess" embedded menuPlacement="top" />
               <VoiceInputIcon
                 isListening={voice.isListening}
                 isTranscribing={voice.isTranscribing}
@@ -1690,7 +1685,7 @@ function Home() {
             <textarea
               ref={textareaRef}
               className="input-textarea"
-              placeholder="What are you building?"
+              placeholder="Describe what you're building..."
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -1700,7 +1695,7 @@ function Home() {
             <div className="composer-toolbar-start">
               {attachControl}
             </div>
-            <div className="composer-toolbar-end">
+            <div className="composer-toolbar-end home-composer-end">
               <ModeSelector current="assess" embedded menuPlacement="top" />
               <VoiceInputIcon
                 isListening={voice.isListening}
@@ -1759,12 +1754,12 @@ function Home() {
                 <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
                   {isMobileView ? (
                     <>
-                      <Logo size={44} animated />
+                      <Logo size={40} animated />
                       <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">What are you building?</h1>
                     </>
                   ) : (
                     <div className="home-hero-row home-hero-enter">
-                      <Logo variant="hero" className="home-hero-logo" size={52} animated />
+                      <Logo variant="hero" className="home-hero-logo" size={46} animated />
                       <div className="home-hero-heading-wrap">
                         <h1 className="home-hero-serif home-hero-serif--enter">What are you building?</h1>
                         <InfoTip text={`Chat with ${ASSESS_AGENT.name} about your project. When you're ready, he'll confirm and ask a few scoping questions before running your assessment.`} />

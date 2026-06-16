@@ -446,24 +446,22 @@ export default function DraftForm({
       {isMobileView ? (
         <div className="mobile-composer">
           <div className="mobile-composer-input-row">
-            {!input.trim() && (
-              <span className="mobile-composer-prompt-label">
-                What can I help draft?
-              </span>
-            )}
             <textarea
               className="input-textarea mobile-composer-field"
-              placeholder=""
+              placeholder="What can I help draft?"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
               rows={1}
             />
           </div>
-          <div className="mobile-composer-tools mobile-composer-tools--minimal">
-            <ModeSelector current="draft" embedded menuPlacement="top" />
-            {modelSelector}
-            <div className="mobile-composer-actions">{sendButton}</div>
+          <div className="mobile-composer-tools mobile-composer-tools--minimal home-composer-tools">
+            <div className="composer-toolbar-start" />
+            <div className="home-composer-end">
+              {modelSelector}
+              <ModeSelector current="draft" embedded menuPlacement="top" />
+              {sendButton}
+            </div>
           </div>
         </div>
       ) : (
@@ -478,9 +476,9 @@ export default function DraftForm({
           />
           <div className="composer-toolbar">
             <div className="composer-toolbar-start" />
-            <div className="composer-toolbar-end">
-              <ModeSelector current="draft" embedded menuPlacement="top" />
+            <div className="composer-toolbar-end home-composer-end">
               {modelSelector}
+              <ModeSelector current="draft" embedded menuPlacement="top" />
               {sendButton}
             </div>
           </div>
@@ -555,14 +553,14 @@ export default function DraftForm({
         <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
           {isMobileView ? (
             <>
-              <Logo size={44} animated />
+              <Logo size={40} animated />
               <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
                 Draft with {PERTA_AGENT.name}.
               </h1>
             </>
           ) : (
             <div className="home-hero-row home-hero-enter">
-              <Logo variant="hero" className="home-hero-logo" size={52} animated />
+              <Logo variant="hero" className="home-hero-logo" size={46} animated />
               <div className="home-hero-heading-wrap">
                 <h1 className="home-hero-serif home-hero-serif--enter">
                   Draft with {PERTA_AGENT.name}.

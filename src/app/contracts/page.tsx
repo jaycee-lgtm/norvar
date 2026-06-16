@@ -227,14 +227,14 @@ function ContractsPageInner() {
             <div className={isMobileView ? "home-hero-block home-hero-enter" : undefined}>
               {isMobileView ? (
                 <>
-                  <Logo size={44} animated />
+                  <Logo size={40} animated />
                   <h1 className="home-hero-serif mobile-home-serif home-hero-serif--enter">
                     Review with {VARRO_AGENT.name}.
                   </h1>
                 </>
               ) : (
                 <div className="home-hero-row home-hero-enter">
-                  <Logo variant="hero" className="home-hero-logo" size={52} animated />
+                  <Logo variant="hero" className="home-hero-logo" size={46} animated />
                   <div className="home-hero-heading-wrap">
                     <h1 className="home-hero-serif home-hero-serif--enter">
                       Review with {VARRO_AGENT.name}.
