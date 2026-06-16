@@ -5580,7 +5580,7 @@ input, textarea, select, button {
     display: flex;
     flex-direction: column;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
     text-align: center;
     justify-content: space-between;
   }

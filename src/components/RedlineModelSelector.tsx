@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Brain, Check, ChevronDown, Cpu, ScanSearch, Sparkles, Zap } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 import {
   DEFAULT_REDLINE_REVIEW_MODEL,
   REDLINE_MODEL_GROUPS,
@@ -25,15 +27,18 @@ export default function RedlineModelSelector({
   disabled = false,
   menuPlacement = "top",
   variant = "default",
+  menuAlign = "end",
 }: {
   value?:          RedlineReviewModelChoice;
   onChange?:       (value: RedlineReviewModelChoice) => void;
   disabled?:       boolean;
   menuPlacement?:  "bottom" | "top";
   variant?:        "default" | "inline" | "icon";
+  menuAlign?:      "start" | "end";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const isMobileView = useIsMobile();
   const active = REDLINE_REVIEW_MODELS.find(m => m.id === value) ?? REDLINE_REVIEW_MODELS[0];
   const menuUp = menuPlacement === "top";
   const isInline = variant === "inline";
@@ -46,6 +51,12 @@ export default function RedlineModelSelector({
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
+
+  const floatingMenuStyle = useFloatingMenuStyles(open && isMobileView, ref, {
+    placement: menuUp ? "top" : "bottom",
+    align:     menuAlign,
+    width:     280,
+  });
 
   return (
     <div
@@ -115,12 +126,18 @@ export default function RedlineModelSelector({
         <div
           className="mode-selector-menu"
           role="listbox"
-          style={{
+          style={isMobileView ? {
+            ...floatingMenuStyle,
+            background:   "var(--card)",
+            border:       "0.5px solid var(--bdr2)",
+            borderRadius: 9,
+            boxShadow:    "var(--shadow-md)",
+          } : {
             position:     "absolute",
             top:          menuUp ? undefined : "calc(100% + 6px)",
             bottom:       menuUp ? "calc(100% + 6px)" : undefined,
-            left:         isInline ? undefined : 0,
-            right:        isInline ? 0 : undefined,
+            left:         menuAlign === "end" || isInline ? undefined : 0,
+            right:        menuAlign === "end" || isInline ? 0 : undefined,
             minWidth:     280,
             maxHeight:    420,
             overflowY:    "auto",

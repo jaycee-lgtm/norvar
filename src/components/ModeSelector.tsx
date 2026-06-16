@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ShieldAlert, MessageSquare, Check, FilePenLine, FileText } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 
 export type Mode = "chat" | "assess" | "contracts" | "draft";
 
@@ -53,6 +55,7 @@ export default function ModeSelector({
   compact = false,
   embedded = false,
   menuPlacement = "bottom",
+  menuAlign = "start",
   onSelect,
   navigate = true,
   disabled = false,
@@ -61,6 +64,7 @@ export default function ModeSelector({
   compact?: boolean;
   embedded?: boolean;
   menuPlacement?: "bottom" | "top";
+  menuAlign?:     "start" | "end";
   onSelect?: (mode: Mode) => void;
   navigate?: boolean;
   disabled?: boolean;
@@ -68,6 +72,7 @@ export default function ModeSelector({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const isMobileView = useIsMobile();
 
   const active = MODES.find(m => m.id === current) ?? MODES[0];
 
@@ -80,6 +85,11 @@ export default function ModeSelector({
   }, []);
 
   const menuUp = menuPlacement === "top";
+  const floatingMenuStyle = useFloatingMenuStyles(open && isMobileView, ref, {
+    placement: menuUp ? "top" : "bottom",
+    align:     menuAlign,
+    width:     compact ? 0 : 260,
+  });
 
   return (
     <div
@@ -145,12 +155,18 @@ export default function ModeSelector({
         <div
           className="mode-selector-menu"
           role="listbox"
-          style={{
+          style={isMobileView ? {
+            ...floatingMenuStyle,
+            background:   "var(--card)",
+            border:       "0.5px solid var(--bdr2)",
+            borderRadius: 9,
+            boxShadow:    "var(--shadow-md)",
+          } : {
           position:     "absolute",
           top:          menuUp ? undefined : "calc(100% + 6px)",
           bottom:       menuUp ? "calc(100% + 6px)" : undefined,
-          left:         0,
-          right:        compact ? 0 : undefined,
+          left:         menuAlign === "end" ? undefined : 0,
+          right:        menuAlign === "end" ? 0 : compact ? 0 : undefined,
           minWidth:     compact ? undefined : 260,
           width:        compact ? "100%" : undefined,
           maxWidth:     compact ? "100%" : undefined,
