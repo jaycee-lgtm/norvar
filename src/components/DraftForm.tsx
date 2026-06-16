@@ -683,23 +683,30 @@ export default function DraftForm({
           {activityPanel}
         </div>
       </div>
-      <div className="input-bar">
-        <input
-          className="contract-review-input"
-          placeholder={composerPlaceholder}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          disabled={working || guidedTyping || (guidedActive && activeQuestion?.type !== "text")}
-        />
-        <div className="composer-toolbar">
-          <div className="composer-toolbar-start">
-            <span className="contract-review-label">Model</span>
-            {modelSelector}
-          </div>
-          <div className="composer-toolbar-end">{sendButton}</div>
-        </div>
-      </div>
+      <AgentComposer
+        variant="thread"
+        mode="draft"
+        value={input}
+        onChange={setInput}
+        onKeyDown={handleKey}
+        inputRef={homeInputRef}
+        placeholder={composerPlaceholder}
+        disabled={working || guidedTyping || (guidedActive && activeQuestion?.type !== "text")}
+        loading={working}
+        canSend={canSend}
+        onSend={() => { sendWithVoice(); }}
+        showSendButton={showSendButton}
+        attachControl={attachControl}
+        voiceControl={threadVoiceControl}
+        modelControl={modelSelector}
+      />
+      <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
+      {fileError && (
+        <p style={{ fontSize: 11, color: "var(--rh)", marginTop: 8, fontFamily: "'Sora', sans-serif" }}>{fileError}</p>
+      )}
+      {voice.voiceError && (
+        <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
+      )}
       {error && <p className="contract-review-error">{error}</p>}
       <div className="app-modal-actions">
         {onCancel && (
