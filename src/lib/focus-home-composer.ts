@@ -2,8 +2,8 @@ import type { MouseEvent, TouchEvent } from "react";
 
 const COMPOSER_FOCUS_IGNORE =
   "button, a, input, textarea, select, label, [role='button'], [role='menu'], [role='listbox'], " +
-  ".mode-selector-trigger, .mode-selector-menu, .doc-picker-menu, .doc-picker-popover, " +
-  ".sample-questions-menu, .contracts-clear-source, .redline-model-menu";
+  ".mode-selector-trigger, .mode-selector-menu, .mode-selector-menu--floating, .doc-picker-menu, .doc-picker-popover, " +
+  ".sample-questions-menu, .contracts-clear-source, .redline-model-picker, .redline-model-trigger";
 
 export function shouldIgnoreComposerFocusTap(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return true;

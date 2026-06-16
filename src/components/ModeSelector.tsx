@@ -89,7 +89,8 @@ export default function ModeSelector({
   }, []);
 
   const menuUp = menuPlacement === "top";
-  const floatingMenuStyle = useFloatingMenuStyles(open && isMobileView, ref, {
+  const useFloatingMenu = isMobileView || homePrompt;
+  const floatingMenuStyle = useFloatingMenuStyles(open && useFloatingMenu, ref, {
     placement: menuUp ? "top" : "bottom",
     align:     menuAlign,
     width:     compact ? 0 : 260,
@@ -166,9 +167,9 @@ export default function ModeSelector({
 
       {open && (
         <div
-          className="mode-selector-menu"
+          className={`mode-selector-menu${useFloatingMenu ? " mode-selector-menu--floating" : ""}`}
           role="listbox"
-          style={isMobileView ? {
+          style={useFloatingMenu ? {
             ...floatingMenuStyle,
             background:   "var(--card)",
             border:       "0.5px solid var(--bdr2)",

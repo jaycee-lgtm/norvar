@@ -957,10 +957,24 @@ input, textarea, select, button {
   line-height: 1.45;
   text-align: left;
   justify-content: flex-start;
-  align-self: flex-start;
-  width: auto;
+  align-self: stretch;
+  width: 100%;
   max-width: 100%;
-  margin-right: auto;
+  min-height: 44px;
+  margin-right: 0;
+}
+
+.agent-composer--hide-input .agent-composer-prompt {
+  cursor: default;
+}
+
+.agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt {
+  width: 100%;
+}
+
+.agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger {
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .mode-selector--home-prompt .mode-selector-trigger:hover,

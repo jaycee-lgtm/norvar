@@ -86,6 +86,10 @@ export default function AgentComposer({
     focusField();
   };
 
+  const promptHandlers = hideInput
+    ? {}
+    : { onPointerDown: handleShellPointerDown, onClick: handleShellClick };
+
   const rootClass = [
     "agent-composer",
     `agent-composer--${variant}`,
@@ -109,14 +113,12 @@ export default function AgentComposer({
       {header}
       <div
         className={shellClass}
-        onPointerDown={handleShellPointerDown}
-        onClick={handleShellClick}
+        {...(hideInput ? {} : { onPointerDown: handleShellPointerDown, onClick: handleShellClick })}
       >
         {isHome && (
           <div
             className="agent-composer-prompt"
-            onPointerDown={handleShellPointerDown}
-            onClick={handleShellClick}
+            {...promptHandlers}
           >
             {promptOverride ?? (
               <ModeSelector
@@ -125,6 +127,7 @@ export default function AgentComposer({
                 askPrefix
                 homePrompt
                 menuPlacement="top"
+                disabled={disabled || loading}
               />
             )}
           </div>
