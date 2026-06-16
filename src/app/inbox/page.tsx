@@ -12,7 +12,7 @@ import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
   Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail, MailOpen,
   Archive, Trash2, RotateCcw, Inbox as InboxIcon, ChevronDown,
-  CheckSquare, Square,
+  CheckSquare, Square, RefreshCw,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -474,10 +474,178 @@ function InboxContent() {
   const threadSev = thread ? normalizeGapSeverity(thread.gap_severity) : "low";
   const threadSevColor = SEV_COLORS[threadSev] ?? "var(--fg3)";
 
+  const folderNav = (
+    <nav className="inbox-folder-nav" aria-label="Inbox folders">
+      {INBOX_FOLDERS.map(f => {
+        const FolderIcon = FOLDER_ICONS[f.icon];
+        return (
+          <button
+            key={f.id}
+            type="button"
+            className={`inbox-folder-tab${folder === f.id ? " active" : ""}`}
+            onClick={() => setFolder(f.id)}
+          >
+            <FolderIcon size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
+            <span>{f.label}</span>
+            {f.id === "received" && counts.unread_received > 0 ? (
+              <span className="inbox-folder-count inbox-folder-count--unread">
+                {counts.unread_received}
+              </span>
+            ) : counts[f.id] > 0 ? (
+              <span className="inbox-folder-count">{counts[f.id]}</span>
+            ) : null}
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  const listToolbar = !isMobile ? (
+    <div className="inbox-list-toolbar">
+      <button
+        type="button"
+        className="inbox-toolbar-btn"
+        aria-label={selectMode ? "Exit selection mode" : "Select messages"}
+        disabled={loadingList || items.length === 0}
+        onClick={() => {
+          if (selectMode) exitSelectMode();
+          else setSelectMode(true);
+        }}
+      >
+        {selectMode ? <CheckSquare size={16} strokeWidth={1.75} /> : <Square size={16} strokeWidth={1.75} />}
+      </button>
+      <button
+        type="button"
+        className="inbox-toolbar-btn"
+        aria-label="Refresh"
+        disabled={loadingList}
+        onClick={() => { void loadList(); }}
+      >
+        <RefreshCw size={16} strokeWidth={1.75} className={loadingList ? "spin" : undefined} />
+      </button>
+      <span className="inbox-list-toolbar-spacer" />
+      <span className="inbox-list-range">
+        {items.length > 0 ? `1–${items.length}` : "0"} of {items.length}
+      </span>
+    </div>
+  ) : null;
+
+  const listScroll = (
+    <>
+      {loadingList && (
+        <div className="inbox-empty">
+          <Loader2 size={16} className="spin" />
+        </div>
+      )}
+
+      {!loadingList && items.length === 0 && (
+        <div className="inbox-empty">
+          <Mail size={22} color="var(--fg4)" />
+          <p>{emptyCopy[folder].title}</p>
+          <p className="inbox-empty-sub">{emptyCopy[folder].sub}</p>
+        </div>
+      )}
+
+      {!loadingList && items.length > 0 && groupByRead && (
+        <div className="inbox-list-sections">
+          <InboxListSection
+            title="Unread"
+            icon={Mail}
+            items={unreadItems}
+            folder={folder}
+            threadId={threadId}
+            open={unreadOpen}
+            onToggle={() => setUnreadOpen(v => !v)}
+            onSelectThread={selectThread}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleMessageSelect}
+            emptyLabel="No unread messages"
+          />
+          <InboxListSection
+            title="Everything else"
+            icon={MailOpen}
+            items={readItems}
+            folder={folder}
+            threadId={threadId}
+            open={readOpen}
+            onToggle={() => setReadOpen(v => !v)}
+            onSelectThread={selectThread}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleMessageSelect}
+            emptyLabel="No other messages"
+          />
+        </div>
+      )}
+
+      {!loadingList && items.length > 0 && !groupByRead && (
+        <ul className="inbox-thread-list">
+          {items.map(item => (
+            <InboxThreadRow
+              key={item.message_id}
+              item={item}
+              folder={folder}
+              active={item.remediation_id === threadId}
+              selected={selectedIds.has(item.message_id)}
+              selectMode={selectMode}
+              onSelect={() => selectThread(item.remediation_id)}
+              onToggleSelect={() => toggleMessageSelect(item.message_id)}
+            />
+          ))}
+        </ul>
+      )}
+    </>
+  );
+
+  const listBody = (
+    <>
+      {listScroll}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="inbox-bulk-bar">
+          <button
+            type="button"
+            className="inbox-bulk-select-all"
+            onClick={toggleSelectAll}
+            disabled={bulkBusy}
+          >
+            {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+            {allSelected ? "Deselect all" : "Select all"}
+          </button>
+          <span className="inbox-bulk-count">
+            {selectedIds.size} selected
+          </span>
+          <div className="inbox-bulk-actions">
+            {folder === "trash" && (
+              <button
+                type="button"
+                className="inbox-bulk-btn"
+                disabled={bulkBusy}
+                onClick={() => void bulkRestore()}
+              >
+                <RotateCcw size={12} />
+                Restore
+              </button>
+            )}
+            <button
+              type="button"
+              className="inbox-bulk-btn danger"
+              disabled={bulkBusy}
+              onClick={() => void bulkDelete()}
+            >
+              {bulkBusy ? <Loader2 size={12} className="spin" /> : <Trash2 size={12} />}
+              {folder === "trash" ? "Delete forever" : "Delete"}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <main className={`main-area inbox-page${isMobile ? " inbox-page--mobile" : ""}`}>
       <div className="inbox-layout">
-        {showList && (
+        {showList && isMobile && (
           <aside className="inbox-list-pane">
             <div className="inbox-list-head">
               <Inbox size={14} color="var(--fg3)" />
@@ -495,138 +663,72 @@ function InboxContent() {
                 </button>
               )}
             </div>
-
-            <nav className="inbox-folder-nav" aria-label="Inbox folders">
-              {INBOX_FOLDERS.map(f => {
-                const FolderIcon = FOLDER_ICONS[f.icon];
-                return (
-                <button
-                  key={f.id}
-                  type="button"
-                  className={`inbox-folder-tab${folder === f.id ? " active" : ""}`}
-                  onClick={() => setFolder(f.id)}
-                >
-                  <FolderIcon size={12} strokeWidth={1.75} className="inbox-folder-tab-icon" />
-                  <span>{f.label}</span>
-                  {f.id === "received" && counts.unread_received > 0 ? (
-                    <span className="inbox-folder-count inbox-folder-count--unread">
-                      {counts.unread_received}
-                    </span>
-                  ) : counts[f.id] > 0 ? (
-                    <span className="inbox-folder-count">{counts[f.id]}</span>
-                  ) : null}
-                </button>
-                );
-              })}
-            </nav>
-
+            {folderNav}
             {folder === "trash" && (
               <p className="inbox-trash-note">Deleted messages are kept for 90 days, then removed permanently.</p>
             )}
+            {listBody}
+          </aside>
+        )}
 
-            {loadingList && (
-              <div className="inbox-empty">
-                <Loader2 size={16} className="spin" />
+        {showList && !isMobile && (
+          <>
+            <aside className="inbox-sidebar">
+              <div className="inbox-sidebar-head">
+                <h1 className="inbox-sidebar-title">Escalation inbox</h1>
+                <Link href="/remediation" className="inbox-compose-btn">
+                  <Send size={14} strokeWidth={2} />
+                  View queue
+                </Link>
               </div>
-            )}
-
-            {!loadingList && items.length === 0 && (
-              <div className="inbox-empty">
-                <Mail size={22} color="var(--fg4)" />
-                <p>{emptyCopy[folder].title}</p>
-                <p className="inbox-empty-sub">{emptyCopy[folder].sub}</p>
-              </div>
-            )}
-
-            {!loadingList && items.length > 0 && groupByRead && (
-              <div className="inbox-list-sections">
-                <InboxListSection
-                  title="Unread"
-                  icon={Mail}
-                  items={unreadItems}
-                  folder={folder}
-                  threadId={threadId}
-                  open={unreadOpen}
-                  onToggle={() => setUnreadOpen(v => !v)}
-                  onSelectThread={selectThread}
-                  selectMode={selectMode}
-                  selectedIds={selectedIds}
-                  onToggleSelect={toggleMessageSelect}
-                  emptyLabel="No unread messages"
-                />
-                <InboxListSection
-                  title="Read"
-                  icon={MailOpen}
-                  items={readItems}
-                  folder={folder}
-                  threadId={threadId}
-                  open={readOpen}
-                  onToggle={() => setReadOpen(v => !v)}
-                  onSelectThread={selectThread}
-                  selectMode={selectMode}
-                  selectedIds={selectedIds}
-                  onToggleSelect={toggleMessageSelect}
-                  emptyLabel="No read messages yet"
-                />
-              </div>
-            )}
-
-            {!loadingList && items.length > 0 && !groupByRead && (
-            <ul className="inbox-thread-list">
-              {items.map(item => (
-                <InboxThreadRow
-                  key={item.message_id}
-                  item={item}
-                  folder={folder}
-                  active={item.remediation_id === threadId}
-                  selected={selectedIds.has(item.message_id)}
-                  selectMode={selectMode}
-                  onSelect={() => selectThread(item.remediation_id)}
-                  onToggleSelect={() => toggleMessageSelect(item.message_id)}
-                />
-              ))}
-            </ul>
-            )}
-
-            {selectMode && selectedIds.size > 0 && (
-              <div className="inbox-bulk-bar">
-                <button
-                  type="button"
-                  className="inbox-bulk-select-all"
-                  onClick={toggleSelectAll}
-                  disabled={bulkBusy}
-                >
-                  {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
-                  {allSelected ? "Deselect all" : "Select all"}
-                </button>
-                <span className="inbox-bulk-count">
-                  {selectedIds.size} selected
-                </span>
-                <div className="inbox-bulk-actions">
-                  {folder === "trash" && (
-                    <button
-                      type="button"
-                      className="inbox-bulk-btn"
-                      disabled={bulkBusy}
-                      onClick={() => void bulkRestore()}
-                    >
-                      <RotateCcw size={12} />
-                      Restore
-                    </button>
-                  )}
+              {folderNav}
+              {folder === "trash" && (
+                <p className="inbox-trash-note">Deleted messages are kept for 90 days, then removed permanently.</p>
+              )}
+            </aside>
+            <section className={`inbox-list-main${threadId ? " inbox-list-main--split" : ""}`}>
+              {listToolbar}
+              <div className="inbox-list-scroll">{listScroll}</div>
+              {selectMode && selectedIds.size > 0 && (
+                <div className="inbox-bulk-bar">
                   <button
                     type="button"
-                    className="inbox-bulk-btn danger"
+                    className="inbox-bulk-select-all"
+                    onClick={toggleSelectAll}
                     disabled={bulkBusy}
-                    onClick={() => void bulkDelete()}
                   >
-                    {bulkBusy ? <Loader2 size={12} className="spin" /> : <Trash2 size={12} />}
-                    {folder === "trash" ? "Delete forever" : "Delete"}
+                    {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                    {allSelected ? "Deselect all" : "Select all"}
                   </button>
+                  <span className="inbox-bulk-count">
+                    {selectedIds.size} selected
+                  </span>
+                  <div className="inbox-bulk-actions">
+                    {folder === "trash" && (
+                      <button
+                        type="button"
+                        className="inbox-bulk-btn"
+                        disabled={bulkBusy}
+                        onClick={() => void bulkRestore()}
+                      >
+                        <RotateCcw size={12} />
+                        Restore
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="inbox-bulk-btn danger"
+                      disabled={bulkBusy}
+                      onClick={() => void bulkDelete()}
+                    >
+                      {bulkBusy ? <Loader2 size={12} className="spin" /> : <Trash2 size={12} />}
+                      {folder === "trash" ? "Delete forever" : "Delete"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </aside>
+              )}
+            </section>
+          </>
         )}
 
         {showPanel && (
@@ -647,21 +749,25 @@ function InboxContent() {
             {threadId && !loadingThread && thread ? (
               <>
                 <header className="inbox-thread-head">
-                  <div className="inbox-thread-nav">
-                    {isMobile && (
-                      <Link
-                        href={listHref}
-                        className="inbox-back-btn"
-                        aria-label="Back to inbox"
-                        onClick={e => {
-                          e.preventDefault();
-                          closeThread();
-                        }}
-                      >
-                        <ArrowLeft size={18} strokeWidth={2} />
-                      </Link>
+                  <div className="inbox-thread-toolbar">
+                    {isMobile ? (
+                      <>
+                        <Link
+                          href={listHref}
+                          className="inbox-back-btn"
+                          aria-label="Back to inbox"
+                          onClick={e => {
+                            e.preventDefault();
+                            closeThread();
+                          }}
+                        >
+                          <ArrowLeft size={18} strokeWidth={2} />
+                        </Link>
+                        <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
+                      </>
+                    ) : (
+                      <span className="inbox-thread-toolbar-spacer" aria-hidden />
                     )}
-                    <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
                     <Link href="/remediation" className="inbox-open-gap">
                       View gap
                       <ExternalLink size={12} strokeWidth={2} />
@@ -669,7 +775,8 @@ function InboxContent() {
                   </div>
 
                   <div className="inbox-thread-head-body">
-                    <div className="inbox-thread-badges">
+                    <h1 className="inbox-thread-title">{thread.gap_title}</h1>
+                    <div className="inbox-thread-meta-row">
                       <span
                         className="inbox-severity-pill"
                         style={{
@@ -683,136 +790,165 @@ function InboxContent() {
                       {thread.project_title && (
                         <span className="inbox-project-pill">{thread.project_title}</span>
                       )}
-                    </div>
-                    <h1 className="inbox-thread-title">{thread.gap_title}</h1>
-                    <div className="inbox-thread-recipient">
-                      <Mail size={12} strokeWidth={1.75} />
-                      <span>
-                        To{" "}
-                        <strong>{thread.recipient_name ?? thread.recipient_email ?? "Recipient"}</strong>
+                      <span className="inbox-thread-meta-divider" aria-hidden />
+                      <span className="inbox-thread-meta-recipient">
+                        <Mail size={12} strokeWidth={1.75} />
+                        {thread.recipient_name ?? thread.recipient_email ?? "Recipient"}
+                        {thread.recipient_email && thread.recipient_name && (
+                          <span className="inbox-thread-email">&lt;{thread.recipient_email}&gt;</span>
+                        )}
                       </span>
-                      {thread.recipient_email && thread.recipient_name && (
-                        <span className="inbox-thread-email">{thread.recipient_email}</span>
-                      )}
                     </div>
                   </div>
                 </header>
 
-                {(thread.escalation_question || thread.escalation_note) && (
-                  <div className="inbox-thread-context">
-                    {thread.escalation_question && (
-                      <p><strong>Question:</strong> {thread.escalation_question}</p>
-                    )}
-                    {thread.escalation_note && (
-                      <p><strong>Context:</strong> {thread.escalation_note}</p>
-                    )}
-                  </div>
-                )}
-
                 <div className="inbox-messages">
+                  {(thread.escalation_question || thread.escalation_note) && (
+                    <div className="inbox-thread-context">
+                      {thread.escalation_question && (
+                        <div className="inbox-context-item">
+                          <span className="inbox-context-label">Question</span>
+                          <p>{thread.escalation_question}</p>
+                        </div>
+                      )}
+                      {thread.escalation_note && (
+                        <div className="inbox-context-item">
+                          <span className="inbox-context-label">Context</span>
+                          <p>{thread.escalation_note}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {thread.messages.length === 0 && (
                     <p className="inbox-messages-empty">No messages in this folder for this thread.</p>
                   )}
-                  {thread.messages.map(msg => (
-                    <div
-                      key={msg.id}
-                      className={`inbox-message${msg.direction === "outbound" ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
-                    >
-                      <div className="inbox-message-head">
-                        <div className="inbox-message-meta">
-                          {msg.is_read === false && msg.direction === "inbound" && (
-                            <span className="inbox-unread-dot" aria-hidden />
-                          )}
-                          <span className="inbox-message-from">
-                            {msg.direction === "outbound"
-                              ? (msg.from_name ?? "You")
-                              : (msg.from_name ?? msg.from_email)}
-                          </span>
-                          <span className="inbox-message-date">{fmtDate(msg.created_at)}</span>
+                  {thread.messages.map(msg => {
+                    const senderName = msg.direction === "outbound"
+                      ? (msg.from_name ?? "You")
+                      : (msg.from_name ?? msg.from_email);
+                    const senderEmail = msg.from_email;
+                    const avatar = avatarMeta(senderName, senderEmail);
+                    const recipientLine = msg.direction === "outbound"
+                      ? msg.to_email
+                      : senderEmail;
+
+                    return (
+                      <article
+                        key={msg.id}
+                        className={`inbox-msg-card${msg.direction === "outbound" ? " outbound" : " inbound"}${msg.is_read === false ? " unread" : ""}`}
+                      >
+                        <header className="inbox-msg-card-head">
+                          <div className="inbox-msg-card-identity">
+                            <div
+                              className="inbox-msg-card-avatar"
+                              style={{ background: `${avatar.color}22`, color: avatar.color }}
+                              aria-hidden
+                            >
+                              {avatar.initial}
+                            </div>
+                            <div className="inbox-msg-card-who">
+                              <div className="inbox-msg-card-name-row">
+                                {msg.is_read === false && msg.direction === "inbound" && (
+                                  <span className="inbox-unread-dot" aria-hidden />
+                                )}
+                                <span className="inbox-msg-card-from">{senderName}</span>
+                                {msg.direction === "outbound" && (
+                                  <span className="inbox-msg-card-badge">Sent</span>
+                                )}
+                              </div>
+                              {recipientLine && (
+                                <span className="inbox-msg-card-email">
+                                  {msg.direction === "outbound" ? `to ${recipientLine}` : recipientLine}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="inbox-msg-card-head-end">
+                            <time className="inbox-msg-card-date" dateTime={msg.created_at}>
+                              {fmtDate(msg.created_at)}
+                            </time>
+                            <div className="inbox-message-actions">
+                              {folder === "trash" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="inbox-msg-action"
+                                    disabled={actionBusy === msg.id}
+                                    title="Restore"
+                                    onClick={() => void patchMessage(msg.id, "restore")}
+                                  >
+                                    <RotateCcw size={11} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="inbox-msg-action danger"
+                                    disabled={actionBusy === msg.id}
+                                    title="Delete permanently"
+                                    onClick={() => void patchMessage(msg.id, "purge")}
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </>
+                              )}
+                              {folder === "archived" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="inbox-msg-action"
+                                    disabled={actionBusy === msg.id}
+                                    title="Move back to inbox"
+                                    onClick={() => void patchMessage(msg.id, "unarchive")}
+                                  >
+                                    <InboxIcon size={11} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="inbox-msg-action danger"
+                                    disabled={actionBusy === msg.id}
+                                    title="Delete"
+                                    onClick={() => void patchMessage(msg.id, "delete")}
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </>
+                              )}
+                              {(folder === "received" || folder === "sent") && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="inbox-msg-action"
+                                    disabled={actionBusy === msg.id}
+                                    title="Archive"
+                                    onClick={() => void patchMessage(msg.id, "archive")}
+                                  >
+                                    <Archive size={11} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="inbox-msg-action danger"
+                                    disabled={actionBusy === msg.id}
+                                    title="Delete"
+                                    onClick={() => void patchMessage(msg.id, "delete")}
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </header>
+                        {msg.deleted_at && folder === "trash" && (
+                          <div className="inbox-msg-card-purge">
+                            Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
+                          </div>
+                        )}
+                        <div className="inbox-msg-card-body">
+                          <p className="inbox-message-body">{msg.body}</p>
                         </div>
-                        <div className="inbox-message-actions">
-                          {folder === "trash" && (
-                            <>
-                              <button
-                                type="button"
-                                className="inbox-msg-action"
-                                disabled={actionBusy === msg.id}
-                                title="Restore"
-                                onClick={() => void patchMessage(msg.id, "restore")}
-                              >
-                                <RotateCcw size={11} />
-                              </button>
-                              <button
-                                type="button"
-                                className="inbox-msg-action danger"
-                                disabled={actionBusy === msg.id}
-                                title="Delete permanently"
-                                onClick={() => void patchMessage(msg.id, "purge")}
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </>
-                          )}
-                          {folder === "archived" && (
-                            <>
-                              <button
-                                type="button"
-                                className="inbox-msg-action"
-                                disabled={actionBusy === msg.id}
-                                title="Move back to inbox"
-                                onClick={() => void patchMessage(msg.id, "unarchive")}
-                              >
-                                <InboxIcon size={11} />
-                              </button>
-                              <button
-                                type="button"
-                                className="inbox-msg-action danger"
-                                disabled={actionBusy === msg.id}
-                                title="Delete"
-                                onClick={() => void patchMessage(msg.id, "delete")}
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </>
-                          )}
-                          {(folder === "received" || folder === "sent") && (
-                            <>
-                              <button
-                                type="button"
-                                className="inbox-msg-action"
-                                disabled={actionBusy === msg.id}
-                                title="Archive"
-                                onClick={() => void patchMessage(msg.id, "archive")}
-                              >
-                                <Archive size={11} />
-                              </button>
-                              <button
-                                type="button"
-                                className="inbox-msg-action danger"
-                                disabled={actionBusy === msg.id}
-                                title="Delete"
-                                onClick={() => void patchMessage(msg.id, "delete")}
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      {msg.direction === "inbound" && msg.from_name && (
-                        <div className="inbox-message-email">{msg.from_email}</div>
-                      )}
-                      {msg.direction === "outbound" && msg.to_email && (
-                        <div className="inbox-message-email">To {msg.to_email}</div>
-                      )}
-                      {msg.deleted_at && folder === "trash" && (
-                        <div className="inbox-purge-hint">
-                          Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
-                        </div>
-                      )}
-                      <p className="inbox-message-body">{msg.body}</p>
-                    </div>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
 
                 {canCompose && (
