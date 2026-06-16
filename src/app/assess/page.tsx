@@ -31,7 +31,6 @@ import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ASSESS_AGENT, CHAT_AGENT } from "@/lib/agents";
 import SampleQuestionsDropdown from "@/components/SampleQuestionsDropdown";
-import AssessmentFollowUpChips from "@/components/AssessmentFollowUpChips";
 import {
   ASSESSMENT_CONFIRM_NOT_YET,
   ASSESSMENT_CONFIRM_OPTIONS,
@@ -318,6 +317,37 @@ function exportAssessment(a: Assessment) {
   URL.revokeObjectURL(url);
 }
 
+function formatGapStreamText(gap: Gap, index: number): string {
+  const sev = normalizeGapSeverity(gap.severity);
+  const lines = [
+    "",
+    `GAP ${index + 1} · ${sev.charAt(0).toUpperCase() + sev.slice(1)}`,
+    gap.title,
+    "",
+  ];
+  if (gap.detail || gap.description) {
+    lines.push("Gap", gap.detail || gap.description || "", "");
+  }
+  const steps = gap.remediation ? splitRemediationSteps(gap.remediation) : [];
+  if (steps.length > 0) {
+    lines.push("Proposed remediation");
+    steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+function splitAssessmentStream(text: string): { summary: string; gaps: string } {
+  const match = text.match(/\n\nGAP \d+/);
+  if (!match || match.index === undefined) {
+    return { summary: text.trim(), gaps: "" };
+  }
+  return {
+    summary: text.slice(0, match.index).trim(),
+    gaps:    text.slice(match.index).trim(),
+  };
+}
+
 // ── Assessment card ────────────────────────────────────────────────────────────
 
 function TierBadge({ tier }: { tier: string }) {
@@ -345,13 +375,15 @@ const DOMAIN_LABELS: Record<string, string> = {
   cybersecurity: "Cybersecurity",
 };
 
-function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, scopedDomains: scopedDomainsProp }: {
+function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, scopedDomains: scopedDomainsProp, streamingText, streamActive }: {
   a:                 Assessment;
   onNew:             () => void;
   assessmentId?:     string | null;
   gapChats?:         Record<string, GapChatMessage[]>;
   onGapChatsUpdate?: (key: string, messages: GapChatMessage[]) => void;
   scopedDomains?:    string[];
+  streamingText?:    string;
+  streamActive?:     boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"gaps" | "frameworks">("gaps");
@@ -366,6 +398,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
     : (Object.keys(byDomain ?? {}) as RiskDomainKey[]);
   const gaps        = a.gaps ?? [];
   const isProcessing = a.status === "processing";
+  const streamParts  = streamingText ? splitAssessmentStream(streamingText) : { summary: "", gaps: "" };
   const showDomainTiers = Boolean(
     byDomain &&
     visibleDomains.length > 0 &&
@@ -464,7 +497,10 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
       )}
 
       <p className="assessment-summary">
-        {a.summary || (isProcessing ? "Analysing your deployment. Gaps will appear as they are identified." : "")}
+        {a.summary || streamParts.summary || (isProcessing ? "Analysing your deployment. Gaps will stream in below." : "")}
+        {isProcessing && streamActive && !streamParts.gaps && streamParts.summary && (
+          <span className="assessment-stream-cursor" aria-hidden />
+        )}
       </p>
       <div className="section-divider" />
 
@@ -510,8 +546,13 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
 
       {tab === "gaps" && (
         <div>
-          {ordered.length === 0 && (
-            isProcessing ? (
+          {isProcessing ? (
+            streamParts.gaps ? (
+              <div className="assessment-gap-stream">
+                {streamParts.gaps}
+                {streamActive && <span className="assessment-stream-cursor" aria-hidden />}
+              </div>
+            ) : (
               <div style={{ padding: "12px 0", display: "flex", alignItems: "center", gap: 8 }}>
                 <span className="loading-dot" />
                 <span className="loading-dot" />
@@ -520,11 +561,11 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
                   Identifying compliance gaps...
                 </span>
               </div>
-            ) : (
-              <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No gaps identified.</p>
             )
-          )}
-          {ordered.map((gap, i) => {
+          ) : ordered.length === 0 ? (
+            <p style={{ fontSize: 12, color: "var(--fg3)", padding: "8px 0" }}>No gaps identified.</p>
+          ) : (
+          ordered.map((gap, i) => {
             const steps = gap.remediation ? splitRemediationSteps(gap.remediation) : [];
             const sev = normalizeGapSeverity(gap.severity);
             return (
@@ -585,7 +626,8 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
               </div>
             </div>
             );
-          })}
+          })
+          )}
         </div>
       )}
 
@@ -718,6 +760,7 @@ function Home() {
   const [guidedMultiSelections, setGuidedMultiSelections] = useState<string[]>([]);
   const [activeGuidedQuestionId, setActiveGuidedQuestionId] = useState<string | null>(null);
   const [guidedTyping, setGuidedTyping] = useState(false);
+  const [assessmentStreamText, setAssessmentStreamText] = useState("");
   const [preScopePhase, setPreScopePhase] = useState<"chat" | "confirm" | null>("chat");
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
@@ -831,12 +874,9 @@ function Home() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading, guidedTyping]);
+  }, [messages, loading, guidedTyping, assessmentStreamText]);
 
   const hasAssessment   = messages.some(m => m.role === "assistant");
-  const latestAssessment = [...messages].reverse().find(
-    (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
-  )?.assessment;
   const firstDisclaimerIndex = messages.findIndex(m =>
     m.role === "nora"
     || m.role === "chat"
@@ -868,6 +908,7 @@ function Home() {
     setGuidedMultiSelections([]);
     setActiveGuidedQuestionId(null);
     setGuidedTyping(false);
+    setAssessmentStreamText("");
     setPreScopePhase("chat");
     typewriterRef.current?.reset();
     router.push("/assess");
@@ -1059,15 +1100,6 @@ function Home() {
     onVoiceSend: text => handleSendRef.current(text),
     disabled: loading,
   });
-
-  const noraFollowUpChips = hasAssessment && latestAssessment ? (
-    <AssessmentFollowUpChips
-      assessmentTitle={latestAssessment.title}
-      gaps={latestAssessment.gaps ?? []}
-      disabled={loading}
-      onSelect={q => { void sendWithVoice(q); }}
-    />
-  ) : null;
 
   const examplesControl = (
     <SampleQuestionsDropdown
@@ -1262,13 +1294,15 @@ function Home() {
     setMessages(prev => [...prev, { role: "thinking", text: "", status: "Retrieving regulations..." }]);
     setLoading(true);
     setGuidedTyping(false);
+    setAssessmentStreamText("");
 
     typewriterRef.current?.reset();
     typewriterRef.current = createTypewriterDrain(ch => {
+      setAssessmentStreamText(prev => prev + ch);
       setMessages(prev => {
         const next = [...prev];
         const idx  = next.findLastIndex(m => m.role === "thinking");
-        if (idx >= 0) {
+        if (idx >= 0 && !next.some(m => m.role === "assistant")) {
           const msg = next[idx] as Extract<Message, { role: "thinking" }>;
           next[idx] = { ...msg, text: msg.text + ch, status: undefined };
         }
@@ -1335,7 +1369,6 @@ function Home() {
         if (ev.type === "started") {
           receivedStarted = true;
           showCard = true;
-          typewriterRef.current?.reset();
           const assessment = ev.assessment;
           if (ev.assessment_id) {
             setAssessmentId(ev.assessment_id);
@@ -1359,36 +1392,35 @@ function Home() {
         }
 
         if (ev.type === "token") {
-          if (!showCard) {
-            streamingText += ev.text ?? "";
-            typewriterRef.current?.enqueue(ev.text ?? "");
-          }
+          streamingText += ev.text ?? "";
+          typewriterRef.current?.enqueue(ev.text ?? "");
           return;
         }
 
         if (ev.type === "summary") {
           const summary = ev.text ?? "";
           summaryText = summary;
-          if (!showCard) {
-            const delta = summary.slice(streamingText.length);
-            streamingText = summary;
-            if (delta) typewriterRef.current?.enqueue(delta);
-          }
+          const delta = summary.slice(streamingText.length);
+          streamingText = summary;
+          if (delta) typewriterRef.current?.enqueue(delta);
           return;
         }
 
         if (ev.type === "gap") {
           showCard = true;
-          typewriterRef.current?.reset();
           if (ev.assessment) {
             applyAssessment(ev.assessment);
           }
+          typewriterRef.current?.enqueue(formatGapStreamText(ev.gap, ev.index));
           return;
         }
 
         if (ev.type === "done" || ev.type === "saved") {
           receivedDone = ev.type === "done" ? true : receivedDone;
-          typewriterRef.current?.reset();
+          if (ev.type === "done") {
+            typewriterRef.current?.reset();
+            setAssessmentStreamText("");
+          }
           const assessment = ev.assessment;
           if (!assessment) throw new Error("Assessment failed");
           if (assessment.id) setAssessmentId(assessment.id);
@@ -1849,6 +1881,7 @@ function Home() {
                     }
 
                     if (msg.role === "assistant") {
+                      const isStreaming = loading && msg.assessment.status === "processing";
                       return (
                         <div key={i} className="msg-ai">
                           <AssessmentCard
@@ -1858,6 +1891,8 @@ function Home() {
                             assessmentId={assessmentId}
                             gapChats={gapChats}
                             onGapChatsUpdate={(key, msgs) => setGapChats(prev => ({ ...prev, [key]: msgs }))}
+                            streamingText={isStreaming ? assessmentStreamText : undefined}
+                            streamActive={isStreaming}
                           />
                         </div>
                       );
@@ -1901,7 +1936,6 @@ function Home() {
                     return null;
                   })}
                   {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
-                  {isMobileView && noraFollowUpChips}
                 </div>
                 </div>
 
@@ -1929,7 +1963,6 @@ function Home() {
                     {voice.voiceError && (
                       <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />
                     )}
-                    {!isMobileView && noraFollowUpChips}
                     </div>
                   </div>
                 </div>
