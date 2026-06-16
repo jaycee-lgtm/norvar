@@ -110,8 +110,12 @@ function DraftPageInner() {
     return () => { cancelled = true; };
   }, [draftId, loading, drafts]);
 
-  const handleDraftDone = () => {
+  const handleDraftDone = (savedId?: string) => {
     void load().then(() => {
+      if (savedId) {
+        router.replace(draftHistoryHref(savedId));
+        return;
+      }
       fetch("/api/drafts?limit=1")
         .then(r => r.json())
         .then(({ drafts: d }: { drafts?: DraftRecord[] }) => {
@@ -134,10 +138,15 @@ function DraftPageInner() {
     }
   }, [activeDraft?.id, activeDraft?.followups]);
 
-  const isHome    = !loading && !draftId && !showDrafts;
-  const showSplit = !loading && (draftId || showDrafts);
-  const showList  = !isMobileView || !draftId;
+  const isHome     = !loading && !draftId && !showDrafts;
+  const showSplit  = !loading && (draftId || (showDrafts && !isMobileView));
+  const showList   = !isMobileView && (draftId || showDrafts);
   const showDetail = !isMobileView || !!draftId;
+
+  useEffect(() => {
+    if (!isMobileView || loading || draftId || !showDrafts) return;
+    router.replace("/draft");
+  }, [isMobileView, loading, draftId, showDrafts, router]);
 
   return (
     <AppShell>
@@ -212,8 +221,8 @@ function DraftPageInner() {
                 ) : (
                   <div className="contracts-detail-inner">
                     {isMobileView && (
-                      <button type="button" className="contracts-back-btn" onClick={() => router.replace(draftHistoryHref())}>
-                        <ArrowLeft size={14} /> All drafts
+                      <button type="button" className="contracts-back-btn" onClick={() => router.replace("/draft")}>
+                        <ArrowLeft size={14} /> Back
                       </button>
                     )}
                     {!isMobileView && (
@@ -237,7 +246,11 @@ function DraftPageInner() {
                             body:    JSON.stringify({ id: activeDraft.id }),
                           });
                           const remaining = drafts.filter(r => r.id !== activeDraft.id);
-                          router.replace(remaining.length ? draftHistoryHref() : "/draft");
+                          router.replace(
+                            remaining.length
+                              ? (isMobileView ? "/draft" : draftHistoryHref())
+                              : "/draft",
+                          );
                           void load();
                         }}
                       >

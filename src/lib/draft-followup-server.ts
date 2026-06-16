@@ -16,14 +16,15 @@ export async function syncDraftFollowUp(
   messages: DraftFollowUpMessage[],
   userId: string,
 ) {
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from("drafted_agreements")
     .select("followups, user_id")
     .eq("id", draftId)
     .eq("user_id", userId)
     .single();
 
-  if (!row) return;
+  if (error?.message?.includes("followups")) return;
+  if (error || !row) return;
 
   const current = (row.followups && typeof row.followups === "object")
     ? row.followups as DraftFollowUps

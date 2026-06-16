@@ -65,7 +65,7 @@ export default function DraftForm({
   isMobileView = false,
   onThreadActive,
 }: {
-  onDone:            () => void;
+  onDone:            (draftId?: string) => void;
   onCancel?:         () => void;
   variant?:          "home" | "modal";
   isMobileView?:     boolean;
@@ -370,7 +370,8 @@ export default function DraftForm({
           setActivitySteps(prev => prev.map(s =>
             s.state === "active" ? { ...s, state: "done" as const } : s,
           ));
-          onDone();
+          const savedId = (event.draft as { id?: string } | undefined)?.id;
+          onDone(savedId);
         }
       });
     } catch (e) {

@@ -2,12 +2,17 @@ import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
+import {
+  DRAFTED_AGREEMENT_SELECT,
+  normalizeDraftRow,
+} from "@/lib/drafted-agreements-db";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-const SELECT = "id, agent, agreement_type, governing_law, result, document_id, folder_id, followups, created_at";
+const SELECT = DRAFTED_AGREEMENT_SELECT;
 
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
@@ -28,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     if (error) return Response.json({ error: error.message }, { status: 500 });
     if (!data) return Response.json({ error: "Not found" }, { status: 404 });
-    return Response.json({ draft: data });
+    return Response.json({ draft: normalizeDraftRow(data) });
   }
 
   let query = supabase
@@ -42,7 +47,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ drafts: data });
+  return Response.json({ drafts: (data ?? []).map(normalizeDraftRow) });
 }
 
 export async function DELETE(req: NextRequest) {

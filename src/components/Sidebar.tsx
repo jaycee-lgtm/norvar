@@ -440,7 +440,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
               <FileText size={14} strokeWidth={isDraft && !isDraftHistory ? 2 : 1.75} />
               Draft
             </Link>
-            {isDraft && (
+            {isDraft && !isMobileView && (
               <Link
                 href={draftHistoryHref()}
                 className={`sidebar-nav-subitem${isDraftHistory ? " active" : ""}`}
@@ -585,7 +585,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 />
               </button>
             </div>
-            {draftNavOpen && (
+            {draftNavOpen && !isMobileView && (
               <Link
                 href={draftHistoryHref()}
                 className={`sidebar-nav-subitem${isDraftHistory ? " active" : ""}`}
@@ -793,7 +793,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                     );
                   })
                 )}
-                <Link href={draftHistoryHref()} className="sidebar-all-link">
+                <Link href={isMobileView ? "/draft" : draftHistoryHref()} className="sidebar-all-link">
                   All drafts
                   <ChevronRight size={14} strokeWidth={2} />
                 </Link>

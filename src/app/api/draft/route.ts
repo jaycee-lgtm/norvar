@@ -20,6 +20,7 @@ import {
   appendRegulatoryContextToSystem,
   retrieveRegulatoryContext,
 } from "@/lib/regulatory-rag";
+import { buildDraftInsertRow } from "@/lib/drafted-agreements-db";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -551,41 +552,23 @@ export async function POST(req: NextRequest) {
       if (!auditMode) {
         const { data: saved, error: insertErr } = await supabase
           .from("drafted_agreements")
-          .insert({
+          .insert(buildDraftInsertRow({
             user_id:        userId,
             agent:          resolvedAgent,
             agreement_type: typeLabel,
             governing_law:  draft.governing_law || null,
             result:         draft,
-            followups:      {},
-            created_at:     new Date().toISOString(),
-          })
+          }))
           .select("id")
           .single();
 
-      if (insertErr) {
-        console.error("Draft save error:", insertErr);
-        if (insertErr.message?.includes("followups")) {
-          const { followups: _f, ...rowWithoutFollowups } = {
-            user_id:        userId,
-            agent:          resolvedAgent,
-            agreement_type: typeLabel,
-            governing_law:  draft.governing_law || null,
-            result:         draft,
-            followups:      {},
-            created_at:     new Date().toISOString(),
-          };
-          const retry = await supabase.from("drafted_agreements").insert(rowWithoutFollowups).select("id").single();
-          if (!retry.error && retry.data?.id) {
-            draft.id = retry.data.id;
-            await send({ type: "done", draft });
-            await writer.close();
-            return;
-          }
-        }
-        await send({
+        if (insertErr) {
+          console.error("Draft save error:", insertErr);
+          await send({
             type: "error",
-            text: "Draft completed but could not be saved. Run the drafted_agreements migration in Supabase.",
+            text: insertErr.message?.includes("drafted_agreements")
+              ? "Draft completed but could not be saved. Run SETUP_DRAFTED_AGREEMENTS.sql in Supabase."
+              : `Draft completed but could not be saved: ${insertErr.message}`,
           });
           await writer.close();
           return;
