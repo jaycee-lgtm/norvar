@@ -474,7 +474,7 @@ input, textarea, select, button {
 }
 
 .home-hero-logo {
-  margin-right: -2px;
+  margin-right: 0;
   transform: scale(0.9);
   transform-origin: center center;
   filter:
@@ -7388,6 +7388,12 @@ input, textarea, select, button {
 
   .home-hero-block .home-hero-row {
     margin-bottom: 0;
+  }
+
+  .home-hero-logo,
+  .home-hero-heading-wrap {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .mobile-home-serif {
