@@ -1,11 +1,27 @@
-import type { MouseEvent } from "react";
+import type { MouseEvent, TouchEvent } from "react";
 
+const COMPOSER_FOCUS_IGNORE =
+  "button, a, input, textarea, select, label, [role='button'], [role='menu'], [role='listbox'], " +
+  ".mode-selector-trigger, .mode-selector-menu, .doc-picker-menu, .doc-picker-popover, " +
+  ".sample-questions-menu, .contracts-clear-source, .redline-model-menu";
+
+export function shouldIgnoreComposerFocusTap(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return true;
+  return !!target.closest(COMPOSER_FOCUS_IGNORE);
+}
+
+export function focusComposerField(
+  e: MouseEvent | TouchEvent,
+  field: HTMLTextAreaElement | HTMLInputElement | null,
+) {
+  if (shouldIgnoreComposerFocusTap(e.target) || !field || field.disabled) return;
+  field.focus();
+}
+
+/** @deprecated Use focusComposerField */
 export function focusHomeComposerInput(
   e: MouseEvent,
   field: HTMLTextAreaElement | HTMLInputElement | null,
 ) {
-  const target = e.target as HTMLElement;
-  if (target.closest(".mode-selector-menu, button, a, input, textarea, select")) return;
-  if (target.closest(".mode-selector-trigger")) return;
-  field?.focus();
+  focusComposerField(e, field);
 }

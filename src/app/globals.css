@@ -891,14 +891,17 @@ input, textarea, select, button {
   flex-direction: column;
   text-align: left;
   cursor: text;
+  position: relative;
 }
 
 .agent-composer-shell--home {
   padding: 16px 16px 12px;
+  min-height: 96px;
 }
 
 .agent-composer-shell--thread {
   padding: 14px 16px 12px;
+  min-height: 72px;
 }
 
 .agent-composer-shell .mode-selector-trigger,
@@ -910,6 +913,8 @@ input, textarea, select, button {
 .agent-composer-prompt {
   width: 100%;
   text-align: left;
+  flex-shrink: 0;
+  cursor: text;
 }
 
 .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt,
@@ -927,12 +932,16 @@ input, textarea, select, button {
 .agent-composer--home .agent-composer-input-row,
 .agent-composer--thread .agent-composer-input-row {
   display: flex;
+  flex: 1 1 auto;
   width: 100%;
+  min-height: 28px;
   max-height: 72px;
   margin: 0 0 8px;
   overflow: visible;
   opacity: 1;
   pointer-events: auto;
+  cursor: text;
+  align-items: stretch;
 }
 
 .agent-composer--thread .agent-composer-prompt {
@@ -941,6 +950,7 @@ input, textarea, select, button {
 
 .agent-composer-field {
   width: 100%;
+  flex: 1 1 auto;
   border: none;
   outline: none;
   background: transparent;
@@ -949,11 +959,12 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
   color: var(--fg);
   line-height: 1.35;
-  min-height: 22px;
+  min-height: 28px;
   max-height: 72px;
   padding: 0;
   margin: 0;
   pointer-events: auto;
+  cursor: text;
 }
 
 .agent-composer--home.agent-composer--active .agent-composer-field,
@@ -973,6 +984,8 @@ input, textarea, select, button {
   gap: 8px;
   width: 100%;
   min-height: 32px;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 .agent-composer-toolbar-start,
@@ -981,6 +994,12 @@ input, textarea, select, button {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  pointer-events: none;
+}
+
+.agent-composer-toolbar-start > *,
+.agent-composer-toolbar-end > * {
+  pointer-events: auto;
 }
 
 .agent-composer-toolbar-start {

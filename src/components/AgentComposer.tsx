@@ -3,13 +3,14 @@
 import {
   type KeyboardEvent,
   type MouseEvent,
+  type PointerEvent,
   type ReactNode,
   type RefObject,
   useState,
 } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import ModeSelector, { type Mode } from "@/components/ModeSelector";
-import { focusHomeComposerInput } from "@/lib/focus-home-composer";
+import { focusComposerField, shouldIgnoreComposerFocusTap } from "@/lib/focus-home-composer";
 
 export type AgentComposerProps = {
   variant: "home" | "thread";
@@ -66,10 +67,21 @@ export default function AgentComposer({
   const isActive = isHome && (hasText || focused);
   const sendVisible = showSendButton ?? (hasText || loading);
 
-  const handleShellMouseDown = (e: MouseEvent) => {
-    if (hideInput || !inputRef?.current) return;
-    focusHomeComposerInput(e, inputRef.current);
+  const focusField = () => {
+    if (hideInput || disabled || !inputRef?.current) return;
+    inputRef.current.focus();
     if (isHome) setFocused(true);
+  };
+
+  const handleShellPointerDown = (e: PointerEvent) => {
+    if (shouldIgnoreComposerFocusTap(e.target)) return;
+    focusComposerField(e, inputRef?.current ?? null);
+    if (isHome) setFocused(true);
+  };
+
+  const handleShellClick = (e: MouseEvent) => {
+    if (shouldIgnoreComposerFocusTap(e.target)) return;
+    focusField();
   };
 
   const rootClass = [
@@ -88,9 +100,17 @@ export default function AgentComposer({
   return (
     <div className={rootClass}>
       {header}
-      <div className={shellClass} onMouseDown={handleShellMouseDown}>
+      <div
+        className={shellClass}
+        onPointerDown={handleShellPointerDown}
+        onClick={handleShellClick}
+      >
         {isHome && (
-          <div className="agent-composer-prompt">
+          <div
+            className="agent-composer-prompt"
+            onPointerDown={handleShellPointerDown}
+            onClick={handleShellClick}
+          >
             {promptOverride ?? (
               <ModeSelector
                 current={mode}
@@ -104,7 +124,11 @@ export default function AgentComposer({
         )}
 
         {!hideInput && (
-          <div className="agent-composer-input-row">
+          <div
+            className="agent-composer-input-row"
+            onPointerDown={handleShellPointerDown}
+            onClick={handleShellClick}
+          >
             <textarea
               ref={inputRef}
               className="agent-composer-field"
