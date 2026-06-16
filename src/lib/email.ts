@@ -1,6 +1,6 @@
 import { escalationReplyToAddress, escalationViewUrl, formatEscalationRef } from "@/lib/escalation";
 
-type EscalationEmailPayload = {
+export type EscalationEmailPayload = {
   token:             string;
   assessmentNumber?: string | null;
   recipientEmail:    string;
@@ -25,7 +25,12 @@ function escapeHtml(text: string) {
     .replace(/"/g, "&quot;");
 }
 
-function buildEscalationText(payload: EscalationEmailPayload) {
+export function escalationEmailSubject(payload: EscalationEmailPayload): string {
+  const ref = formatEscalationRef(payload.assessmentNumber, payload.token);
+  return `[ref:${ref}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+}
+
+export function buildEscalationEmailText(payload: EscalationEmailPayload) {
   const link = escalationViewUrl(payload.token);
   const question = payload.question || payload.note;
   const assigneeLines = payload.assigneeNames.map((name, i) => {
@@ -108,10 +113,9 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
     return { ok: false, error: "Email not configured" };
   }
 
-  const ref     = formatEscalationRef(payload.assessmentNumber, payload.token);
-  const subject = `[ref:${ref}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+  const subject = escalationEmailSubject(payload);
   const html    = buildEscalationHtml(payload);
-  const text    = buildEscalationText(payload);
+  const text    = buildEscalationEmailText(payload);
   const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
   const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
 

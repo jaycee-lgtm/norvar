@@ -12,8 +12,8 @@ import {
 } from "@/lib/remediation-access";
 import { gapKeyFromTitle } from "@/lib/gap-chat";
 import { sortBySeverity } from "@/lib/remediation";
-import { touchAssigneeMeta, type AssigneeMeta } from "@/lib/escalation";
-import { sendEscalationEmail } from "@/lib/email";
+import { touchAssigneeMeta, type AssigneeMeta, ESCALATION_INBOX_SENT_ACTION, escalationInboxSentDetail } from "@/lib/escalation";
+import { buildEscalationEmailText, escalationEmailSubject, sendEscalationEmail, type EscalationEmailPayload } from "@/lib/email";
 import { rolesForAssignees } from "@/lib/org-assignee-roles-server";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import { splitRemediationSteps, buildStepItemsFromTexts, type RemediationStepItem } from "@/lib/remediation-steps";
@@ -84,7 +84,7 @@ async function assertCanAssign(userId: string, orgId: string | null, targetUserI
   return null;
 }
 
-async function dispatchEscalationEmail(
+async function buildEscalationEmailPayload(
   item: {
     gap_title: string;
     gap_severity: string;
@@ -101,12 +101,12 @@ async function dispatchEscalationEmail(
     escalation_note?: string | null;
   },
   escalatedByName: string,
-) {
+): Promise<EscalationEmailPayload> {
   const assigneeIds = item.assigned_to ?? [];
   const profiles    = await resolveUserProfiles(assigneeIds);
   const meta        = item.assignee_meta ?? {};
 
-  return sendEscalationEmail({
+  return {
     token:             item.escalation_token,
     assessmentNumber:  item.assessment_number,
     recipientEmail:    item.escalation_email,
@@ -121,6 +121,27 @@ async function dispatchEscalationEmail(
     assigneeNames:   assigneeIds.map(id => profiles[id]?.name ?? "Assignee"),
     assigneeRoles:   assigneeIds.map(id => meta[id]?.role ?? ""),
     escalatedByName,
+  };
+}
+
+async function recordEscalationInboxSent(
+  remediationId: string,
+  userId: string,
+  senderEmail: string,
+  senderName: string,
+  payload: EscalationEmailPayload,
+) {
+  await supabase.from("remediation_activity").insert({
+    remediation_id: remediationId,
+    user_id:        userId,
+    action:         ESCALATION_INBOX_SENT_ACTION,
+    detail:         escalationInboxSentDetail({
+      from_email: senderEmail,
+      from_name:  senderName,
+      to_email:   payload.recipientEmail,
+      subject:    escalationEmailSubject(payload),
+      body:       buildEscalationEmailText(payload),
+    }),
   });
 }
 
@@ -403,7 +424,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     const profiles = await resolveUserProfiles([userId]);
-    const emailResult = await dispatchEscalationEmail(
+    const escalatedByName = profiles[userId]?.name ?? "A colleague";
+    const emailPayload = await buildEscalationEmailPayload(
       {
         gap_title:        current.gap_title,
         gap_severity:     current.gap_severity,
@@ -419,8 +441,9 @@ export async function PATCH(req: NextRequest) {
         escalation_question: current.escalation_question,
         escalation_note:  current.escalation_note,
       },
-      profiles[userId]?.name ?? "A colleague",
+      escalatedByName,
     );
+    const emailResult = await sendEscalationEmail(emailPayload);
 
     await supabase
       .from("remediation_items")
@@ -435,6 +458,14 @@ export async function PATCH(req: NextRequest) {
         ? `Reminder sent to ${current.escalation_email}`
         : `Renotify attempted — ${emailResult.error ?? "email failed"}`,
     });
+
+    await recordEscalationInboxSent(
+      id,
+      userId,
+      profiles[userId]?.email ?? userId,
+      escalatedByName,
+      emailPayload,
+    );
 
     return Response.json({ ok: true, email_sent: emailResult.ok, email_error: emailResult.error });
   }
@@ -464,6 +495,11 @@ export async function PATCH(req: NextRequest) {
   const updates: Record<string, unknown> = {};
   let activityAction = "note_added";
   let activityDetail = "";
+  let escalationInboxSent: {
+    payload:     EscalationEmailPayload;
+    senderEmail: string;
+    senderName:  string;
+  } | null = null;
 
   if (init_step_checklist) {
     const existing = Array.isArray(current.step_checklist) ? current.step_checklist : [];
@@ -580,7 +616,8 @@ export async function PATCH(req: NextRequest) {
     activityAction = "escalated";
     activityDetail = `Escalated to ${recipient?.name ?? email}${escalation_role ? ` (${escalation_role})` : ""}`;
 
-    const emailResult = await dispatchEscalationEmail(
+    const escalatedByName = profiles[userId]?.name ?? "A colleague";
+    const emailPayload = await buildEscalationEmailPayload(
       {
         gap_title:        current.gap_title,
         gap_severity:     current.gap_severity,
@@ -596,8 +633,15 @@ export async function PATCH(req: NextRequest) {
         escalation_question: escalation_question?.trim(),
         escalation_note:  escalation_note?.trim(),
       },
-      profiles[userId]?.name ?? "A colleague",
+      escalatedByName,
     );
+    const emailResult = await sendEscalationEmail(emailPayload);
+
+    escalationInboxSent = {
+      payload:     emailPayload,
+      senderEmail: profiles[userId]?.email ?? userId,
+      senderName:  escalatedByName,
+    };
 
     if (!emailResult.ok) {
       activityDetail += emailResult.error ? ` — email: ${emailResult.error}` : "";
@@ -731,6 +775,16 @@ export async function PATCH(req: NextRequest) {
       action:         activityAction,
       detail:         activityDetail,
     });
+  }
+
+  if (escalationInboxSent) {
+    await recordEscalationInboxSent(
+      id,
+      userId,
+      escalationInboxSent.senderEmail,
+      escalationInboxSent.senderName,
+      escalationInboxSent.payload,
+    );
   }
 
   return Response.json({ item: data });

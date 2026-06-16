@@ -60,6 +60,22 @@ export function escalationViewUrl(token: string) {
 export const ESCALATION_EMAIL_REPLY_ACTION = "escalation_email_reply";
 export const ESCALATION_INBOX_SENT_ACTION = "escalation_inbox_sent";
 
+export function escalationInboxSentDetail(input: {
+  from_email: string;
+  from_name:  string;
+  to_email:   string;
+  body:       string;
+  subject?:   string | null;
+}): string {
+  return JSON.stringify({
+    from_email: input.from_email,
+    from_name:  input.from_name,
+    to_email:   input.to_email,
+    subject:    input.subject ?? null,
+    body:       input.body,
+  });
+}
+
 export type EscalationEmailReply = {
   id:         string;
   from_email: string;
