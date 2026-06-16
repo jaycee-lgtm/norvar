@@ -41,6 +41,7 @@ export default function ContractReviewForm({
   onReviewModelChange?: (value: RedlineReviewModelChoice) => void;
 }) {
   const fileRef                     = useRef<HTMLInputElement>(null);
+  const composerRef                 = useRef<HTMLTextAreaElement>(null);
   const [inputMode, setInputMode]   = useState<InputMode>("document");
   const [selectedDocId, setSelectedDocId] = useState<string | null>(initialDocumentId ?? null);
   const [docCatalog, setDocCatalog] = useState<Record<string, string>>({});
@@ -262,6 +263,22 @@ export default function ContractReviewForm({
     ? uploadName
     : null;
 
+  const hideComposerInput = !!sourceLabel;
+
+  const handleComposerChange = (value: string) => {
+    setPastedText(value);
+    if (value.trim()) {
+      setInputMode("paste");
+      setSelectedDocId(null);
+      setContractText("");
+      setUploadName("");
+      setActivitySteps([]);
+      setError("");
+    } else if (inputMode === "paste") {
+      setInputMode("document");
+    }
+  };
+
   const activityPanel = showActivity && (
     <ContractReviewActivity
       agentName={modelLabel}
@@ -284,9 +301,11 @@ export default function ContractReviewForm({
       <AgentComposer
         variant="home"
         mode="contracts"
-        value=""
-        onChange={() => {}}
-        hideInput
+        value={inputMode === "paste" ? pastedText : ""}
+        onChange={handleComposerChange}
+        inputRef={composerRef}
+        placeholder="Paste contract text to review..."
+        hideInput={hideComposerInput}
         loading={working || fileExtracting}
         canSend={canSend}
         onSend={() => { void submit(); }}

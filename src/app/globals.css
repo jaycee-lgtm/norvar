@@ -966,6 +966,13 @@ input, textarea, select, button {
 
 .agent-composer--hide-input .agent-composer-prompt {
   cursor: default;
+  position: relative;
+  z-index: 2;
+}
+
+.agent-composer--hide-input .agent-composer-toolbar {
+  position: relative;
+  z-index: 1;
 }
 
 .agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt {
@@ -974,6 +981,11 @@ input, textarea, select, button {
 
 .agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger {
   cursor: pointer;
+}
+
+.agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger,
+.agent-composer--hide-input .agent-composer-prompt .contracts-selected-bar--home,
+.agent-composer--hide-input .agent-composer-prompt .contracts-selected-bar--home button {
   pointer-events: auto;
 }
 
@@ -1113,6 +1125,11 @@ input, textarea, select, button {
   text-align: left;
   flex-shrink: 0;
   cursor: text;
+  pointer-events: none;
+}
+
+.agent-composer-prompt > * {
+  pointer-events: auto;
 }
 
 .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt,
@@ -1261,10 +1278,13 @@ input, textarea, select, button {
 }
 
 .agent-composer--attach-end .agent-composer-toolbar-end .doc-picker-wrap,
-.agent-composer--attach-end .agent-composer-toolbar-end .voice-input-btn,
+.agent-composer--attach-end .agent-composer-toolbar-end .voice-input-btn {
+  transform: translateY(-5px);
+}
+
 .agent-composer--hide-input .agent-composer-toolbar-end .doc-picker-wrap,
 .agent-composer--hide-input .agent-composer-toolbar-end .voice-input-btn {
-  transform: translateY(-5px);
+  transform: none;
 }
 
 .agent-composer--hide-input .agent-composer-shell .attach-plus-btn,

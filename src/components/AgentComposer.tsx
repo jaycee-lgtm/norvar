@@ -142,7 +142,7 @@ export default function AgentComposer({
             <textarea
               ref={inputRef}
               className="agent-composer-field"
-              placeholder={isHome ? "" : placeholder}
+              placeholder={isHome && hideInput ? "" : placeholder}
               value={value}
               onChange={e => onChange(e.target.value)}
               onKeyDown={onKeyDown}
