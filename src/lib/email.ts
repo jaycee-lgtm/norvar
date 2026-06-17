@@ -34,80 +34,135 @@ function escapeHtml(text: string) {
 
 export function escalationEmailSubject(payload: EscalationEmailPayload): string {
   const ref = formatEscalationRef(payload.assessmentNumber, payload.token);
-  return `[ref:${ref}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
+  return `[ref:${ref}] Escalation: ${payload.gapTitle}`;
 }
 
-export function buildEscalationEmailText(payload: EscalationEmailPayload) {
-  const link = escalationViewUrl(payload.token);
-  const question = payload.question || payload.note;
-  const assigneeLines = payload.assigneeNames.map((name, i) => {
-    const role = payload.assigneeRoles[i];
+function trimField(value?: string | null): string | null {
+  const trimmed = value?.trim();
+  return trimmed || null;
+}
+
+function formatAssigneeLines(names: string[], roles: string[]): string {
+  return names.map((name, i) => {
+    const role = roles[i];
     return role ? `${name} (${role})` : name;
   }).join(", ");
+}
+
+function escalationReference(payload: EscalationEmailPayload): string | null {
+  return formatEscalationRef(payload.assessmentNumber, payload.token) || trimField(payload.gapId);
+}
+
+function appendTextSection(lines: string[], label: string, body: string | null) {
+  if (!body) return;
+  lines.push("", label, body);
+}
+
+function buildEscalationEmailText(payload: EscalationEmailPayload) {
+  const link = escalationViewUrl(payload.token);
+  const question = trimField(payload.question);
+  const note = trimField(payload.note);
+  const gapDetail = trimField(payload.gapDetail);
+  const assigneeLines = formatAssigneeLines(payload.assigneeNames, payload.assigneeRoles);
+  const reference = escalationReference(payload);
 
   const lines = [
     `Hi${payload.recipientName ? ` ${payload.recipientName}` : ""},`,
     "",
     `${payload.escalatedByName} escalated a compliance gap to you on Norvar.`,
-    "",
-    `Gap: ${payload.gapTitle}`,
-    payload.gapId ? `ID: ${payload.gapId}` : "",
-    `Severity: ${payload.gapSeverity} · Domain: ${payload.gapDomain}`,
-    payload.projectTitle ? `Project: ${payload.projectTitle}` : "",
-    payload.gapDetail ? payload.gapDetail : "",
-    question ? `\nQuestion / context:\n${question}` : "",
-    assigneeLines ? `\nCurrently assigned: ${assigneeLines}` : "",
+  ];
+
+  appendTextSection(lines, "Reference", reference);
+  if (payload.projectTitle || payload.assessmentNumber) {
+    lines.push("", "Assessment");
+    if (payload.projectTitle) lines.push(payload.projectTitle);
+    if (payload.assessmentNumber) lines.push(payload.assessmentNumber);
+  }
+
+  lines.push("", "Gap", payload.gapTitle);
+  if (payload.gapId) lines.push(`ID: ${payload.gapId}`);
+  lines.push(`Severity: ${payload.gapSeverity} · Domain: ${payload.gapDomain}`);
+  appendTextSection(lines, "Finding", gapDetail);
+  appendTextSection(lines, "Question", question);
+  appendTextSection(lines, "Context", note);
+  appendTextSection(lines, "Assigned to", assigneeLines || null);
+
+  lines.push(
     "",
     `View gap, chats & assessment: ${link}`,
     "",
     "Reply directly to this email to send your response back to the team in Norvar.",
-  ];
+  );
 
-  return lines.filter(Boolean).join("\n");
+  return lines.join("\n");
+}
+
+function emailHtmlSection(label: string, body: string, options?: { monospace?: boolean; title?: boolean }) {
+  const bodyStyle = options?.title
+    ? "margin: 0; font-size: 15px; font-weight: 600; color: #1a1a1a;"
+    : options?.monospace
+    ? "margin: 0; font-size: 12px; white-space: pre-wrap; color: #525252; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
+    : "margin: 0; font-size: 14px; white-space: pre-wrap; color: #1a1a1a;";
+
+  return `
+  <div style="margin-bottom: 16px;">
+    <p style="margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #737373;">${escapeHtml(label)}</p>
+    <p style="${bodyStyle}">${escapeHtml(body)}</p>
+  </div>`;
 }
 
 function buildEscalationHtml(payload: EscalationEmailPayload) {
   const link = escalationViewUrl(payload.token);
-  const question = payload.question || payload.note;
-  const assigneeLines = payload.assigneeNames.map((name, i) => {
-    const role = payload.assigneeRoles[i];
-    return role ? `${name} (${role})` : name;
-  }).join(", ");
+  const question = trimField(payload.question);
+  const note = trimField(payload.note);
+  const gapDetail = trimField(payload.gapDetail);
+  const assigneeLines = formatAssigneeLines(payload.assigneeNames, payload.assigneeRoles);
+  const reference = escalationReference(payload);
+
+  const assessmentLines = [
+    payload.projectTitle,
+    payload.assessmentNumber,
+  ].filter(Boolean) as string[];
+
+  const gapMeta = [
+    payload.gapId ? `ID: ${payload.gapId}` : null,
+    `${payload.gapSeverity} · ${payload.gapDomain}`,
+  ].filter(Boolean).join(" · ");
+
+  const sections = [
+    reference ? emailHtmlSection("Reference", reference, { monospace: true }) : "",
+    assessmentLines.length
+      ? emailHtmlSection("Assessment", assessmentLines.join("\n"))
+      : "",
+    emailHtmlSection("Gap", payload.gapTitle, { title: true })
+    + emailHtmlSection("Details", gapMeta, { monospace: true })
+    + (gapDetail ? emailHtmlSection("Finding", gapDetail) : ""),
+    question ? emailHtmlSection("Question", question) : "",
+    note ? emailHtmlSection("Context", note) : "",
+    assigneeLines ? emailHtmlSection("Assigned to", assigneeLines) : "",
+  ].join("");
 
   return `
 <!DOCTYPE html>
 <html>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; line-height: 1.5; max-width: 560px;">
-  <p style="font-size: 14px;">Hi${payload.recipientName ? ` ${escapeHtml(payload.recipientName)}` : ""},</p>
-  <p style="font-size: 14px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; line-height: 1.55; max-width: 560px; margin: 0; padding: 24px 16px;">
+  <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #737373; margin: 0 0 12px;">Norvar escalation</p>
+  <p style="font-size: 14px; margin: 0 0 8px;">Hi${payload.recipientName ? ` ${escapeHtml(payload.recipientName)}` : ""},</p>
+  <p style="font-size: 14px; margin: 0 0 20px;">
     ${escapeHtml(payload.escalatedByName)} escalated a compliance gap to you on Norvar.
   </p>
-  <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; margin: 16px 0;">
-    <p style="margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #737373;">Gap</p>
-    <p style="margin: 0 0 6px; font-size: 15px; font-weight: 600;">${escapeHtml(payload.gapTitle)}</p>
-    ${payload.gapId ? `<p style="margin: 0 0 6px; font-size: 12px; color: #737373; font-family: monospace;">${escapeHtml(payload.gapId)}</p>` : ""}
-    <p style="margin: 0; font-size: 13px; color: #525252;">
-      Severity: ${escapeHtml(payload.gapSeverity)} · Domain: ${escapeHtml(payload.gapDomain)}
-      ${payload.projectTitle ? `<br>Project: ${escapeHtml(payload.projectTitle)}` : ""}
-    </p>
-    ${payload.gapDetail ? `<p style="margin: 12px 0 0; font-size: 13px;">${escapeHtml(payload.gapDetail)}</p>` : ""}
+  <div style="background: #f5f5f4; border-radius: 10px; padding: 18px 18px 4px; margin: 0 0 24px;">
+    ${sections}
   </div>
-  ${question ? `
-  <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #737373; margin-bottom: 6px;">Question / context</p>
-  <p style="font-size: 14px; margin-top: 0;">${escapeHtml(question)}</p>
-  ` : ""}
-  ${assigneeLines ? `
-  <p style="font-size: 13px; color: #525252;">Currently assigned: ${escapeHtml(assigneeLines)}</p>
-  ` : ""}
-  <p style="margin: 24px 0;">
+  <p style="margin: 0 0 10px;">
     <a href="${link}" style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 500;">
       View gap, chats &amp; assessment
     </a>
   </p>
-  <p style="font-size: 12px; color: #737373;">
-    This link gives you the full escalation view: gap details, remediation chat history, and the parent assessment.
+  <p style="font-size: 12px; color: #737373; margin: 0 0 20px;">
+    Open the full escalation view for gap details, remediation chat history, and the parent assessment.
   </p>
-  <p style="font-size: 13px; color: #525252; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e5e5;">
+  <p style="font-size: 13px; color: #525252; margin: 0; padding-top: 16px; border-top: 1px solid #e5e5e5;">
     <strong>Reply to this email</strong> to send your response. Your reply will appear in Norvar for the team who escalated this gap.
   </p>
 </body>
