@@ -18,6 +18,16 @@ function displayName(user: {
     || "Unknown user";
 }
 
+function extractUserEmail(user: {
+  primaryEmailAddress?: { emailAddress: string } | null;
+  emailAddresses?: Array<{ emailAddress: string }>;
+}): string {
+  return user.primaryEmailAddress?.emailAddress
+    ?? user.emailAddresses?.find(e => e.emailAddress)?.emailAddress
+    ?? user.emailAddresses?.[0]?.emailAddress
+    ?? "";
+}
+
 export async function resolveUserProfiles(ids: string[]): Promise<Record<string, UserProfile>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (!unique.length) return {};
@@ -28,29 +38,55 @@ export async function resolveUserProfiles(ids: string[]): Promise<Record<string,
   try {
     const { data } = await client.users.getUserList({ userId: unique, limit: unique.length });
     for (const user of data) {
-      const email = user.primaryEmailAddress?.emailAddress
-        ?? user.emailAddresses[0]?.emailAddress
-        ?? "";
-      profiles[user.id] = { id: user.id, name: displayName(user), email };
+      profiles[user.id] = {
+        id:    user.id,
+        name:  displayName(user),
+        email: extractUserEmail(user),
+      };
     }
   } catch {
     // fall through — fill missing below
   }
 
   for (const id of unique) {
-    if (profiles[id]) continue;
+    if (profiles[id]?.email) continue;
     try {
       const user = await client.users.getUser(id);
-      const email = user.primaryEmailAddress?.emailAddress
-        ?? user.emailAddresses[0]?.emailAddress
-        ?? "";
-      profiles[id] = { id, name: displayName(user), email };
+      const email = extractUserEmail(user);
+      if (email) {
+        profiles[id] = { id, name: displayName(user), email };
+        continue;
+      }
+
+      const { data: memberships } = await client.users.getOrganizationMembershipList({ userId: id, limit: 10 });
+      const membershipEmail = memberships
+        .map(m => m.publicUserData?.identifier?.trim())
+        .find(identifier => identifier && identifier.includes("@"));
+
+      profiles[id] = {
+        id,
+        name:  displayName(user),
+        email: membershipEmail ?? "",
+      };
     } catch {
       profiles[id] = { id, name: "Unknown user", email: "" };
     }
   }
 
   return profiles;
+}
+
+/** Resolve notification email addresses for Clerk user ids (creator + assignees). */
+export async function resolveNotificationEmails(userIds: string[]): Promise<string[]> {
+  const unique = [...new Set(userIds.filter(Boolean))];
+  if (!unique.length) return [];
+
+  const profiles = await resolveUserProfiles(unique);
+  const emails = unique
+    .map(id => profiles[id]?.email?.trim().toLowerCase())
+    .filter((email): email is string => !!email);
+
+  return [...new Set(emails)];
 }
 
 export async function findUserByEmail(email: string): Promise<UserProfile | null> {

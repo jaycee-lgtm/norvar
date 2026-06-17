@@ -1,4 +1,10 @@
-import { escalationReplyToAddress, escalationViewUrl, formatEscalationRef } from "@/lib/escalation";
+import { escalationReplyToAddress, escalationReplyDomain, escalationViewUrl, formatEscalationRef } from "@/lib/escalation";
+
+function escalationFromAddress(): string {
+  const configured = process.env.ESCALATION_FROM?.trim() || process.env.EMAIL_FROM?.trim();
+  if (configured) return configured;
+  return `Norvar Escalations <notifications@${escalationReplyDomain()}>`;
+}
 
 export type EscalationEmailPayload = {
   token:             string;
@@ -120,7 +126,7 @@ export async function sendEscalationEmail(payload: EscalationEmailPayload): Prom
   const html    = buildEscalationHtml(payload);
   const text    = buildEscalationEmailText(payload);
   const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
-  const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
+  const from    = escalationFromAddress();
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -174,7 +180,7 @@ export async function sendEscalationInboxReply(
   const ref     = formatEscalationRef(payload.assessmentNumber, payload.token);
   const subject = `Re: [ref:${ref}] Escalation: ${payload.gapTitle}${payload.projectTitle ? ` · ${payload.projectTitle}` : ""}`;
   const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
-  const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
+  const from    = escalationFromAddress();
   const greeting  = payload.recipientName ? `Hi ${payload.recipientName},\n\n` : "";
   const text      = `${greeting}${payload.body.trim()}\n\n— ${payload.senderName} (via Norvar)`;
   const html      = `
@@ -233,11 +239,14 @@ export type EscalationAssigneeNotifyPayload = {
 
 export async function sendEscalationAssigneeReplyNotification(
   payload: EscalationAssigneeNotifyPayload,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; sent?: number }> {
   const apiKey = process.env.RESEND_API_KEY;
   const to     = [...new Set(payload.toEmails.map(e => e.trim().toLowerCase()).filter(Boolean))];
 
-  if (!to.length) return { ok: true };
+  if (!to.length) {
+    console.warn("[email] assignee reply notification skipped — no recipient addresses");
+    return { ok: false, error: "No assignee email addresses" };
+  }
   if (!apiKey) {
     console.warn("[email] RESEND_API_KEY not set — assignee reply notification not sent");
     return { ok: false, error: "Email not configured" };
@@ -245,7 +254,7 @@ export async function sendEscalationAssigneeReplyNotification(
 
   const ref     = formatEscalationRef(payload.assessmentNumber, payload.token);
   const replyTo = escalationReplyToAddress(payload.token, payload.assessmentNumber);
-  const from    = process.env.ESCALATION_FROM?.trim() || `Norvar Escalations <${replyTo}>`;
+  const from    = escalationFromAddress();
   const sender  = payload.recipientName?.trim() || payload.recipientEmail;
   const source  = payload.replySource === "form" ? "the escalation page" : "email";
   const preview = payload.replyBody.trim().slice(0, 1200);
@@ -289,32 +298,48 @@ export async function sendEscalationAssigneeReplyNotification(
 </body>
 </html>`;
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method:  "POST",
-      headers: {
-        Authorization:  `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to,
-        reply_to: replyTo,
-        subject,
-        html,
-        text,
-      }),
-    });
+  const errors: string[] = [];
+  let sent = 0;
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { ok: false, error: data.message ?? `Resend error ${res.status}` };
+  for (const recipient of to) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method:  "POST",
+        headers: {
+          Authorization:  `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to:       [recipient],
+          reply_to: replyTo,
+          subject,
+          html,
+          text,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        errors.push(`${recipient}: ${data.message ?? `Resend error ${res.status}`}`);
+        continue;
+      }
+
+      sent += 1;
+    } catch (err) {
+      errors.push(`${recipient}: ${err instanceof Error ? err.message : "Send failed"}`);
     }
-
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Send failed" };
   }
+
+  if (sent === 0) {
+    return { ok: false, error: errors.join("; ") || "No assignee emails sent", sent: 0 };
+  }
+
+  if (errors.length) {
+    console.warn("[email] assignee reply notification partial failure", errors);
+  }
+
+  return { ok: true, sent, error: errors.length ? errors.join("; ") : undefined };
 }
 
 export type ContactEmailPayload = {

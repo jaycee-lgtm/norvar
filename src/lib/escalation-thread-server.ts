@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { findUserByEmail, resolveUserProfiles } from "@/lib/clerk-users";
+import { clerkClient } from "@clerk/nextjs/server";
+import { findUserByEmail, resolveNotificationEmails, resolveUserProfiles } from "@/lib/clerk-users";
 import {
   ESCALATION_EMAIL_REPLY_ACTION,
   ESCALATION_INBOX_SENT_ACTION,
@@ -60,12 +61,7 @@ export async function loadEscalationById(
 
 async function assigneeEmails(item: EscalationThreadItem): Promise<string[]> {
   const ids = Array.from(new Set([item.created_by, ...(item.assigned_to ?? [])].filter(Boolean)));
-  const profiles = await resolveUserProfiles(ids);
-  const emails = ids
-    .map(id => profiles[id]?.email?.trim().toLowerCase())
-    .filter((email): email is string => !!email);
-
-  return [...new Set(emails)];
+  return resolveNotificationEmails(ids);
 }
 
 export async function resolveTeamSender(
@@ -88,6 +84,26 @@ export async function resolveTeamSender(
   const byEmail = await findUserByEmail(normalized);
   if (byEmail && allowedIds.has(byEmail.id)) {
     return { userId: byEmail.id, name: byEmail.name, email: byEmail.email };
+  }
+
+  const client = await clerkClient();
+  for (const id of allowedIds) {
+    try {
+      const { data: memberships } = await client.users.getOrganizationMembershipList({ userId: id, limit: 10 });
+      for (const membership of memberships) {
+        const identifier = membership.publicUserData?.identifier?.trim().toLowerCase();
+        if (identifier === normalized) {
+          const profile = profiles[id] ?? (await resolveUserProfiles([id]))[id];
+          return {
+            userId: id,
+            name:   profile?.name ?? "Norvar user",
+            email:  profile?.email || identifier,
+          };
+        }
+      }
+    } catch {
+      continue;
+    }
   }
 
   return null;
@@ -113,11 +129,19 @@ export async function notifyAssigneesOfRecipientReply(
   const recipients = (await assigneeEmails(item)).filter(
     email => email !== item.escalation_email?.trim().toLowerCase(),
   );
-  if (!recipients.length || !item.escalation_token) return;
+  if (!recipients.length || !item.escalation_token) {
+    console.warn("[escalation] assignee notification skipped", {
+      remediation_id: item.id,
+      reason:         !item.escalation_token ? "missing token" : "no assignee emails",
+      created_by:     item.created_by,
+      assigned_to:    item.assigned_to,
+    });
+    return;
+  }
 
   const inboxUrl = `${appBaseUrl()}/inbox?folder=received&thread=${item.id}`;
 
-  await sendEscalationAssigneeReplyNotification({
+  const result = await sendEscalationAssigneeReplyNotification({
     toEmails:         recipients,
     token:            item.escalation_token,
     assessmentNumber: item.assessment_number,
@@ -129,6 +153,15 @@ export async function notifyAssigneesOfRecipientReply(
     replySource:      input.source,
     inboxUrl,
   });
+
+  if (!result.ok) {
+    console.warn("[escalation] assignee notification email failed", {
+      remediation_id: item.id,
+      recipients,
+      error:          result.error,
+    });
+    throw new Error(result.error ?? "Assignee notification failed");
+  }
 }
 
 export async function sendTeamEscalationReply(
