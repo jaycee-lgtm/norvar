@@ -1345,6 +1345,10 @@ input, textarea, select, button {
 }
 
 @media (min-width: 769px) {
+  .mode-selector--home-prompt .mode-selector-trigger {
+    font-size: 17px;
+  }
+
   .agent-composer-toolbar {
     min-height: 28px;
   }
