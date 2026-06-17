@@ -148,7 +148,18 @@ function SevBadge({ sev }: { sev: string }) {
   );
 }
 
-function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessagesChange, initialExpanded = false }: {
+function assessmentGroupTitle(
+  item: RemediationItem,
+  projects: ProjectOption[],
+): string {
+  if (item.project_title?.trim()) return item.project_title.trim();
+  const project = projects.find(p => p.id === item.assessment_id);
+  if (project?.title?.trim()) return project.title.trim();
+  if (item.assessment_number?.trim()) return item.assessment_number.trim();
+  return "Assessment";
+}
+
+function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessagesChange, initialExpanded = false, hideProjectInMeta = false }: {
   item:     RemediationItem;
   profiles: Record<string, UserProfile>;
   isMobile: boolean;
@@ -156,6 +167,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
   onStatusChange: (id: string, status: RemediationStatus) => void;
   onMessagesChange: (id: string, messages: GapChatMessage[]) => void;
   initialExpanded?: boolean;
+  hideProjectInMeta?: boolean;
 }) {
   const [expanded, setExpanded]     = useState(initialExpanded);
   const [escalating, setEscalating] = useState(false);
@@ -246,7 +258,7 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
                   {ownerLabel && (
                     <span className="remediation-item-meta-owner">{ownerLabel}</span>
                   )}
-                  {item.project_title && (
+                  {!hideProjectInMeta && item.project_title && (
                     <span className="remediation-item-meta-project">{item.project_title}</span>
                   )}
                   {item.gap_id && (
@@ -455,6 +467,83 @@ function ItemCard({ item, profiles, isMobile, onUpdate, onStatusChange, onMessag
   );
 }
 
+type AssessmentGroup = {
+  assessmentId: string;
+  title:        string;
+  number:       string | null;
+  latestAt:     string;
+  items:        RemediationItem[];
+};
+
+function AssessmentGroupSection({
+  group,
+  collapsed,
+  onToggle,
+  profiles,
+  isMobile,
+  focusGapId,
+  onUpdate,
+  onStatusChange,
+  onMessagesChange,
+}: {
+  group:              AssessmentGroup;
+  collapsed:          boolean;
+  onToggle:           () => void;
+  profiles:           Record<string, UserProfile>;
+  isMobile:           boolean;
+  focusGapId:         string | null;
+  onUpdate:           () => void;
+  onStatusChange:     (id: string, status: RemediationStatus) => void;
+  onMessagesChange:   (id: string, messages: GapChatMessage[]) => void;
+}) {
+  return (
+    <section className={`remediation-assessment-group${collapsed ? " is-collapsed" : ""}`}>
+      <button
+        type="button"
+        className="remediation-assessment-group-head"
+        aria-expanded={!collapsed}
+        onClick={onToggle}
+      >
+        <ChevronDown size={14} className="remediation-assessment-group-chevron" />
+        <div className="remediation-assessment-group-label">
+          <span className="remediation-assessment-group-title">{group.title}</span>
+          {group.number && group.number !== group.title && (
+            <span className="remediation-assessment-group-num">{group.number}</span>
+          )}
+        </div>
+        <span className="remediation-assessment-group-count">
+          {group.items.length} gap{group.items.length === 1 ? "" : "s"}
+        </span>
+        <Link
+          href={`/assess?id=${group.assessmentId}`}
+          className="remediation-assessment-group-link"
+          onClick={e => e.stopPropagation()}
+        >
+          <ExternalLink size={11} />
+          View
+        </Link>
+      </button>
+      {!collapsed && (
+        <div className="remediation-assessment-group-body">
+          {group.items.map(item => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              profiles={profiles}
+              isMobile={isMobile}
+              hideProjectInMeta
+              initialExpanded={item.id === focusGapId}
+              onUpdate={onUpdate}
+              onStatusChange={onStatusChange}
+              onMessagesChange={onMessagesChange}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function RemediationPage() {
   return (
     <Suspense fallback={
@@ -486,6 +575,7 @@ function RemediationContent() {
   const [filterProjectNum, setFilterProjectNum] = useState("");
   const [mineOnly, setMineOnly]         = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const load = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
@@ -516,6 +606,54 @@ function RemediationContent() {
       (!filterDomain || i.gap_domain === filterDomain),
     ),
   );
+
+  const assessmentGroups = useMemo((): AssessmentGroup[] => {
+    const byAssessment = new Map<string, RemediationItem[]>();
+    for (const item of filtered) {
+      const group = byAssessment.get(item.assessment_id) ?? [];
+      group.push(item);
+      byAssessment.set(item.assessment_id, group);
+    }
+
+    return [...byAssessment.entries()]
+      .map(([assessmentId, groupItems]) => {
+        const itemsSorted = [...groupItems].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
+        const latest = groupItems.reduce((best, item) =>
+          new Date(item.created_at) > new Date(best.created_at) ? item : best,
+        groupItems[0]);
+        return {
+          assessmentId,
+          title:    assessmentGroupTitle(latest, projects),
+          number:   latest.assessment_number,
+          latestAt: latest.created_at,
+          items:    itemsSorted,
+        };
+      })
+      .sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime());
+  }, [filtered, projects]);
+
+  useEffect(() => {
+    if (!focusGapId) return;
+    const item = items.find(i => i.id === focusGapId);
+    if (!item) return;
+    setCollapsedGroups(prev => {
+      if (!prev.has(item.assessment_id)) return prev;
+      const next = new Set(prev);
+      next.delete(item.assessment_id);
+      return next;
+    });
+  }, [focusGapId, items]);
+
+  const toggleAssessmentGroup = (assessmentId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(assessmentId)) next.delete(assessmentId);
+      else next.add(assessmentId);
+      return next;
+    });
+  };
 
   const updateItemMessages = (id: string, messages: GapChatMessage[]) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, messages } : i));
@@ -774,13 +912,15 @@ function RemediationContent() {
               </p>
             </div>
           )}
-          {!loading && filtered.map(item => (
-            <ItemCard
-              key={item.id}
-              item={item}
+          {!loading && assessmentGroups.map(group => (
+            <AssessmentGroupSection
+              key={group.assessmentId}
+              group={group}
+              collapsed={collapsedGroups.has(group.assessmentId)}
+              onToggle={() => toggleAssessmentGroup(group.assessmentId)}
               profiles={profiles}
               isMobile={isMobileView}
-              initialExpanded={item.id === focusGapId}
+              focusGapId={focusGapId}
               onUpdate={() => load({ silent: true })}
               onStatusChange={handleStatusChange}
               onMessagesChange={updateItemMessages}
