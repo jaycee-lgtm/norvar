@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src audit"
+    "lint": "eslint src audit",
+    "audit:auto": "node audit/auto-audit.mjs",
+    "audit:auto:fast": "node audit/auto-audit.mjs --fast"
   },
   "dependencies": {
     "@ai-sdk/elevenlabs": "^2.0.34",
