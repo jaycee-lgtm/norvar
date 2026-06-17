@@ -58,7 +58,7 @@ function appendTextSection(lines: string[], label: string, body: string | null) 
   lines.push("", label, body);
 }
 
-function buildEscalationEmailText(payload: EscalationEmailPayload) {
+export function buildEscalationEmailText(payload: EscalationEmailPayload) {
   const link = escalationViewUrl(payload.token);
   const question = trimField(payload.question);
   const note = trimField(payload.note);
