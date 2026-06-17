@@ -361,6 +361,8 @@ export async function POST(req: NextRequest) {
         return;
       }
 
+      const draftAgent: DraftOutput["drafted_by"] = agent === "nora" ? "nora" : "cassius";
+
       const modelChoice = review_model !== undefined
         ? normalizeRedlineReviewModelChoice(review_model)
         : "auto";
@@ -374,7 +376,6 @@ export async function POST(req: NextRequest) {
 
       const draftModels = resolveDraftReviewModel(modelChoice, complexityInput);
       const {
-        agent: resolvedAgent,
         provider,
         modelId,
         repairProvider,
@@ -534,7 +535,7 @@ export async function POST(req: NextRequest) {
       });
 
       const sectionSystemPrompt = appendRegulatoryContextToSystem(
-        SECTION_SYSTEM(resolvedAgent === "nora" ? NORA_DRAFT_PROMPT : CASSIUS_DRAFT_PROMPT),
+        SECTION_SYSTEM(draftAgent === "nora" ? NORA_DRAFT_PROMPT : CASSIUS_DRAFT_PROMPT),
         corpusContext,
         "Regulatory corpus excerpts (ground clause obligations in these where relevant):",
       );
@@ -638,7 +639,7 @@ export async function POST(req: NextRequest) {
         frameworks:         plan.frameworks || [],
         sections:           draftedSections,
         drafting_notes:     plan.drafting_notes || [],
-        drafted_by:         resolvedAgent,
+        drafted_by:         draftAgent,
       };
 
       if (!auditMode) {
@@ -646,7 +647,7 @@ export async function POST(req: NextRequest) {
           .from("drafted_agreements")
           .insert(buildDraftInsertRow({
             user_id:        userId,
-            agent:          resolvedAgent,
+            agent:          draftAgent,
             agreement_type: typeLabel,
             governing_law:  draft.governing_law || null,
             result:         draft,

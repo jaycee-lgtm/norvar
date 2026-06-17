@@ -81,39 +81,12 @@ export async function resolveNotificationEmails(userIds: string[]): Promise<stri
   const unique = [...new Set(userIds.filter(Boolean))];
   if (!unique.length) return [];
 
-  const client = await clerkClient();
-  const emails = new Set<string>();
+  const profiles = await resolveUserProfiles(unique);
+  const emails = unique
+    .map(id => profiles[id]?.email?.trim().toLowerCase())
+    .filter((email): email is string => !!email);
 
-  for (const id of unique) {
-    const before = emails.size;
-    try {
-      const user = await client.users.getUser(id);
-      for (const entry of user.emailAddresses ?? []) {
-        const email = entry.emailAddress?.trim().toLowerCase();
-        if (email) emails.add(email);
-      }
-      const primary = user.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
-      if (primary) emails.add(primary);
-    } catch {
-      const profiles = await resolveUserProfiles([id]);
-      const email = profiles[id]?.email?.trim().toLowerCase();
-      if (email) emails.add(email);
-    }
-
-    if (emails.size === before) {
-      try {
-        const { data: memberships } = await client.users.getOrganizationMembershipList({ userId: id, limit: 10 });
-        for (const membership of memberships) {
-          const identifier = membership.publicUserData?.identifier?.trim().toLowerCase();
-          if (identifier?.includes("@")) emails.add(identifier);
-        }
-      } catch {
-        // ignore
-      }
-    }
-  }
-
-  return [...emails];
+  return [...new Set(emails)];
 }
 
 export async function findUserByEmail(email: string): Promise<UserProfile | null> {
