@@ -12,15 +12,21 @@ import {
 import { generateRedlineText } from "@/lib/redline-generate";
 import {
   normalizeRedlineReviewModelChoice,
-  resolveRedlineReviewModel,
   type RedlineProvider,
 } from "@/lib/redline-models";
+import { resolveDraftReviewModel } from "@/lib/draft-models";
 import { generateDraftDocumentTitle } from "@/lib/generate-thread-title";
 import {
   appendRegulatoryContextToSystem,
   retrieveRegulatoryContext,
 } from "@/lib/regulatory-rag";
 import { buildDraftInsertRow } from "@/lib/drafted-agreements-db";
+import {
+  fallbackDraftPlan,
+  normalizeDraftPlan,
+  type DraftPlanShape,
+} from "@/lib/draft-plan";
+import { parseModelJson } from "@/lib/parse-model-json";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,9 +62,13 @@ Cybersecurity: NIS2, DORA, ISO 27001, ISO 27002, SOC 2, NIST CSF 2.0.
 
 Rules:
 - Plan only — no clause text, just structure.
-- section clause_count should reflect realistic depth (3-8 clauses per section).
+- Return 8–12 sections maximum (complete but concise).
+- section clause_count should reflect realistic depth (3–6 clauses per section).
 - Include every section needed for a complete, enforceable agreement.
+- Output must be valid JSON only — no markdown fences, no commentary.
 `;
+
+const PLAN_MAX_TOKENS = 4096;
 
 const SECTION_SYSTEM = (agentPrompt: string) => `${agentPrompt}
 
@@ -76,22 +86,46 @@ Write every clause in full. No placeholders except party names in [brackets].
 Ground all obligations in the regulatory corpus.
 `;
 
-type DraftPlanShape = {
-  title:          string;
-  agreement_type: string;
-  parties:        { provider: string; customer: string };
-  governing_law:  string;
-  frameworks:     string[];
-  summary:        string;
-  sections:       Array<{ number: string; title: string; clause_count: number }>;
-  drafting_notes: string[];
+type PlanDefaults = {
+  typeLabel:         string;
+  agreementTypeKey?: string;
+  providerName:      string;
+  customerName:      string;
+  jurisdictions:     string[];
 };
 
-function parseJsonSlice<T>(raw: string, opener: "{" | "["): T {
-  const cleaned = raw.trim().replace(/^```json?\s*/im, "").replace(/```\s*$/m, "").trim();
-  const start   = cleaned.indexOf(opener);
-  if (start < 0) throw new Error(`No JSON ${opener} in model output`);
-  return JSON.parse(cleaned.slice(start)) as T;
+async function requestPlanJson(
+  send: DraftSend,
+  options: {
+    provider:     RedlineProvider;
+    modelId:      string;
+    planSystem:   string;
+    planUserMsg:  string;
+    displayName:  string;
+    pulseMessages: string[];
+    stepLabel:    string;
+  },
+) {
+  await send({ type: "step", text: options.stepLabel, state: "active" });
+
+  const response = await pulseWhile(
+    send,
+    options.pulseMessages,
+    () => generateRedlineText({
+      provider:     options.provider,
+      modelId:      options.modelId,
+      systemPrompt: options.planSystem,
+      userMsg:      options.planUserMsg,
+      maxTokens:    PLAN_MAX_TOKENS,
+    }),
+  );
+
+  return response;
+}
+
+function parsePlanResponse(raw: string, defaults: PlanDefaults): DraftPlanShape {
+  const parsed = parseModelJson<unknown>(raw, "{");
+  return normalizeDraftPlan(parsed, defaults);
 }
 
 type DraftSend = (d: object) => Promise<void>;
@@ -122,14 +156,15 @@ async function pulseWhile<T>(
 async function generatePlan(
   send: DraftSend,
   options: {
-    provider: RedlineProvider;
-    modelId: string;
-    repairProvider: RedlineProvider;
-    repairModelId: string;
     displayName: string;
     planUserMsg: string;
     corpusContext: string;
     typeLabel: string;
+    planDefaults: PlanDefaults;
+    planProvider: RedlineProvider;
+    planModelId: string;
+    repairProvider: RedlineProvider;
+    repairModelId: string;
   },
 ): Promise<DraftPlanShape> {
   const planSystem = appendRegulatoryContextToSystem(
@@ -145,32 +180,49 @@ async function generatePlan(
     "Still planning the agreement structure — this usually takes 30–90 seconds...",
   ];
 
-  await send({
-    type:  "step",
-    text:  `Planning structure with ${options.displayName}...`,
-    state: "active",
-  });
-
-  let planResponse;
+  let planResponse: Awaited<ReturnType<typeof generateRedlineText>>;
   try {
-    planResponse = await pulseWhile(
-      send,
-      planPulseMessages,
-      () => generateRedlineText({
-        provider:     options.provider,
-        modelId:      options.modelId,
-        systemPrompt: planSystem,
-        userMsg:      options.planUserMsg,
-        maxTokens:    2000,
-      }),
-    );
+    planResponse = await requestPlanJson(send, {
+      provider:      options.planProvider,
+      modelId:       options.planModelId,
+      planSystem,
+      planUserMsg:   options.planUserMsg,
+      displayName:   options.displayName,
+      pulseMessages: planPulseMessages,
+      stepLabel:     `Planning structure with ${options.displayName}...`,
+    });
   } catch (err) {
     console.error("Draft plan generation failed:", err);
-    throw new Error(`${options.displayName} could not plan the agreement. Check your connection and try again.`);
+    await send({
+      type:  "step",
+      text:  "Using Norvar's standard agreement outline...",
+      state: "done",
+    });
+    return fallbackDraftPlan(options.planDefaults);
+  }
+
+  if (planResponse.truncated) {
+    try {
+      planResponse = await requestPlanJson(send, {
+        provider:      options.planProvider,
+        modelId:       options.planModelId,
+        planSystem,
+        planUserMsg: [
+          options.planUserMsg,
+          "",
+          "Keep the plan concise: 8–10 sections maximum. Valid JSON only.",
+        ].join("\n"),
+        displayName:   options.displayName,
+        pulseMessages: ["Retrying with a shorter outline..."],
+        stepLabel:     "Previous plan was truncated — retrying...",
+      });
+    } catch {
+      // Continue with the truncated response — parse repair may still succeed.
+    }
   }
 
   try {
-    const plan = parseJsonSlice<DraftPlanShape>(planResponse.text, "{");
+    const plan = parsePlanResponse(planResponse.text, options.planDefaults);
     await send({
       type:  "step",
       text:  `Planning structure with ${options.displayName}...`,
@@ -185,35 +237,39 @@ async function generatePlan(
       state: "active",
     });
 
-    const repairResponse = await pulseWhile(
-      send,
-      [
-        "Repair model is re-reading the plan request...",
-        "Trying a simpler structure pass — almost there...",
-      ],
-      () => generateRedlineText({
-        provider:     options.repairProvider,
-        modelId:      options.repairModelId,
-        systemPrompt: planSystem,
-        userMsg:      [
+    try {
+      const repairResponse = await requestPlanJson(send, {
+        provider:      options.repairProvider,
+        modelId:       options.repairModelId,
+        planSystem,
+        planUserMsg: [
           options.planUserMsg,
           "",
-          "Return ONLY valid JSON matching the required plan shape. No markdown fences.",
+          "Return ONLY valid JSON matching the required plan shape. No markdown fences. 8–12 sections max.",
         ].join("\n"),
-        maxTokens: 2000,
-      }),
-    );
+        displayName:   options.displayName,
+        pulseMessages: [
+          "Repair model is re-reading the plan request...",
+          "Trying a simpler structure pass — almost there...",
+        ],
+        stepLabel: "Repair model is re-reading the plan request...",
+      });
 
-    try {
-      const plan = parseJsonSlice<DraftPlanShape>(repairResponse.text, "{");
+      const plan = parsePlanResponse(repairResponse.text, options.planDefaults);
       await send({
         type:  "step",
         text:  "Recovered agreement plan on second attempt",
         state: "done",
       });
       return plan;
-    } catch {
-      throw new Error("Failed to plan agreement structure. Please try again.");
+    } catch (repairErr) {
+      console.error("Draft plan repair failed:", repairErr);
+      await send({
+        type:  "step",
+        text:  "Using Norvar's standard agreement outline...",
+        state: "done",
+      });
+      return fallbackDraftPlan(options.planDefaults);
     }
   }
 }
@@ -258,7 +314,7 @@ async function draftSection(
     ? await pulseWhile(send, pulseMessages, run, 5000)
     : await run();
 
-  const clauses = parseJsonSlice<DraftClause[]>(response.text, "[");
+  const clauses = parseModelJson<DraftClause[]>(response.text, "[");
   return clauses.map(c => ({
     number: c.number ?? `${sectionNumber}.?`,
     title:  c.title  ?? "Untitled",
@@ -307,11 +363,16 @@ export async function POST(req: NextRequest) {
 
       const modelChoice = review_model !== undefined
         ? normalizeRedlineReviewModelChoice(review_model)
-        : agent === "nora"
-        ? "sonnet"
-        : "opus";
+        : "auto";
 
-      const resolved = resolveRedlineReviewModel(modelChoice, 0);
+      const complexityInput = {
+        agreementType:  agreement_type,
+        jurisdictions,
+        context,
+        includeClauses: include_clauses,
+      };
+
+      const draftModels = resolveDraftReviewModel(modelChoice, complexityInput);
       const {
         agent: resolvedAgent,
         provider,
@@ -320,7 +381,19 @@ export async function POST(req: NextRequest) {
         repairModelId,
         maxTokens,
         displayName,
-      } = resolved;
+        planProvider,
+        planModelId,
+        planDisplayName,
+        statusLead,
+      } = draftModels;
+
+      if (modelChoice === "auto") {
+        await send({
+          type:  "step",
+          text:  statusLead,
+          state: "done",
+        });
+      }
 
       const typeLabel = agreement_type_label || agreement_type;
 
@@ -385,26 +458,23 @@ export async function POST(req: NextRequest) {
         `Use "${provider_name}" and "${customer_name}" throughout.`,
       ].join("\n");
 
-      let plan: DraftPlanShape;
-      try {
-        plan = await generatePlan(send, {
-          provider,
-          modelId,
-          repairProvider,
-          repairModelId,
-          displayName,
-          planUserMsg,
-          corpusContext,
+      const plan = await generatePlan(send, {
+        displayName:    planDisplayName,
+        planUserMsg,
+        corpusContext,
+        typeLabel,
+        planDefaults: {
           typeLabel,
-        });
-      } catch (planErr) {
-        await send({
-          type: "error",
-          text: planErr instanceof Error ? planErr.message : "Failed to plan agreement structure.",
-        });
-        await writer.close();
-        return;
-      }
+          agreementTypeKey: agreement_type,
+          providerName:     provider_name,
+          customerName:     customer_name,
+          jurisdictions,
+        },
+        planProvider,
+        planModelId,
+        repairProvider,
+        repairModelId,
+      });
 
       const frameworkList = plan.frameworks?.slice(0, 6).join(", ") || "applicable frameworks";
       await send({
@@ -421,6 +491,28 @@ export async function POST(req: NextRequest) {
         text:  `Structure ready — ${plan.sections.length} sections, ~${totalClauses} clauses`,
         state: "done",
       });
+
+      const upgradedDraft = resolveDraftReviewModel(modelChoice, complexityInput, {
+        sectionCount: plan.sections.length,
+        totalClauses,
+      });
+
+      let draftProvider = provider;
+      let draftModelId  = modelId;
+      let draftDisplayName = displayName;
+
+      if (
+        modelChoice === "auto" &&
+        (upgradedDraft.provider !== provider || upgradedDraft.modelId !== modelId)
+      ) {
+        draftProvider    = upgradedDraft.provider;
+        draftModelId     = upgradedDraft.modelId;
+        draftDisplayName = upgradedDraft.displayName;
+        await send({
+          type: "status",
+          text: `${upgradedDraft.statusLead} — upgraded for clause drafting`,
+        });
+      }
 
       await send({
         type: "plan",
@@ -462,12 +554,12 @@ export async function POST(req: NextRequest) {
             section.title,
             section.clause_count ?? 4,
             contextBlock,
-            provider,
-            modelId,
+            draftProvider,
+            draftModelId,
             sectionSystemPrompt,
             Math.min(maxTokens, 4000),
             send,
-            displayName,
+            draftDisplayName,
           );
         } catch (sectionErr) {
           console.error(`Section ${section.number} draft failed:`, sectionErr);
@@ -486,7 +578,7 @@ export async function POST(req: NextRequest) {
               sectionSystemPrompt,
               3000,
               send,
-              `${displayName} (repair)`,
+              `${draftDisplayName} (repair)`,
             );
             await send({
               type: "status",

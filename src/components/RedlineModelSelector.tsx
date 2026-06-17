@@ -27,6 +27,7 @@ export default function RedlineModelSelector({
   menuPlacement = "top",
   variant = "default",
   menuAlign = "end",
+  autoTagline,
 }: {
   value?:          RedlineReviewModelChoice;
   onChange?:       (value: RedlineReviewModelChoice) => void;
@@ -34,6 +35,7 @@ export default function RedlineModelSelector({
   menuPlacement?:  "bottom" | "top";
   variant?:        "default" | "inline" | "icon";
   menuAlign?:      "start" | "end";
+  autoTagline?:    string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -246,7 +248,7 @@ export default function RedlineModelSelector({
                           lineHeight:   1.35,
                         }}
                         >
-                          {model.tagline}
+                          {model.id === "auto" && autoTagline ? autoTagline : model.tagline}
                         </div>
                       </div>
 

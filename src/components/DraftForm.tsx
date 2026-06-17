@@ -33,6 +33,7 @@ import {
   DEFAULT_REDLINE_REVIEW_MODEL,
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
+import { DRAFT_AUTO_MODEL_TAGLINE } from "@/lib/draft-models";
 
 type DraftMessage =
   | { id: string; role: "user"; content: string }
@@ -413,6 +414,7 @@ export default function DraftForm({
       onChange={setReviewModel}
       disabled={working}
       menuPlacement="top"
+      autoTagline={DRAFT_AUTO_MODEL_TAGLINE}
     />
   );
 
