@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, Search, Sparkles, X } from "lucide-react";
 import type { UserProfile } from "@/lib/clerk-users";
 
 type EscalateModalProps = {
@@ -20,6 +20,7 @@ export default function EscalateModal({ itemId, gapTitle, onClose, onDone }: Esc
   const [members, setMembers]   = useState<UserProfile[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [saving, setSaving]     = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [error, setError]       = useState("");
 
   useEffect(() => {
@@ -43,6 +44,29 @@ export default function EscalateModal({ itemId, gapTitle, onClose, onDone }: Esc
   const pickMember = (member: UserProfile) => {
     setEmail(member.email);
     setQuery("");
+  };
+
+  const draftWithAi = async () => {
+    setDrafting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/escalation/draft", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          remediation_id: itemId,
+          recipient_role: role.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not draft escalation");
+      if (data.question) setQuestion(data.question);
+      if (data.context) setNote(data.context);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not draft escalation");
+    } finally {
+      setDrafting(false);
+    }
   };
 
   const submit = async () => {
@@ -167,6 +191,41 @@ export default function EscalateModal({ itemId, gapTitle, onClose, onDone }: Esc
               color: "var(--fg)", fontSize: 12, fontFamily: "'Sora', sans-serif",
             }}
           />
+        </div>
+
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 10,
+        }}>
+          <span style={{ fontSize: 11, color: "var(--fg3)", lineHeight: 1.45 }}>
+            Draft the question and background with AI, then edit before sending.
+          </span>
+          <button
+            type="button"
+            onClick={() => void draftWithAi()}
+            disabled={drafting || saving}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: "0.5px solid var(--bdr2)",
+              background: "var(--card2)",
+              color: "var(--fg2)",
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: drafting || saving ? "not-allowed" : "pointer",
+              fontFamily: "'Sora', sans-serif",
+              flexShrink: 0,
+            }}
+          >
+            {drafting ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />}
+            {drafting ? "Drafting..." : "Draft with AI"}
+          </button>
         </div>
 
         <div style={{ marginBottom: 12 }}>
