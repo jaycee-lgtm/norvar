@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Search, Sparkles, X } from "lucide-react";
+import HoverTip from "@/components/HoverTip";
 import type { UserProfile } from "@/lib/clerk-users";
 
 type EscalateModalProps = {
@@ -117,9 +118,16 @@ export default function EscalateModal({ itemId, gapTitle, onClose, onDone }: Esc
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>Escalate gap</span>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}>
-            <X size={15} />
-          </button>
+          <HoverTip label="Close">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}
+            >
+              <X size={15} />
+            </button>
+          </HoverTip>
         </div>
         <p style={{ fontSize: 12, color: "var(--fg3)", marginBottom: 16 }}>{gapTitle}</p>
 

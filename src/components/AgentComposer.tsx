@@ -10,6 +10,7 @@ import {
 } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import ModeSelector, { type Mode } from "@/components/ModeSelector";
+import HoverTip from "@/components/HoverTip";
 import { focusComposerField, shouldIgnoreComposerFocusTap } from "@/lib/focus-home-composer";
 
 export type AgentComposerProps = {
@@ -179,20 +180,19 @@ export default function AgentComposer({
             {showVoice && voiceControl}
             {attachInEnd && showAttach && attachControl}
             {sendVisible && (
-              <span className="agent-composer-send-wrap" title={sendAriaLabel}>
+              <HoverTip label={sendAriaLabel} className="agent-composer-send-wrap">
                 <button
                   type="button"
                   className="send-btn"
                   onClick={onSend}
                   disabled={disabled || loading || !canSend}
                   aria-label={sendAriaLabel}
-                  title={sendAriaLabel}
                 >
                   {loading
                     ? <Loader2 size={16} className="spin" />
                     : <ArrowUp size={16} strokeWidth={2.5} />}
                 </button>
-              </span>
+              </HoverTip>
             )}
           </div>
         </div>

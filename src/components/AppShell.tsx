@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import MobileProfileMenu from "@/components/MobileProfileMenu";
+import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 function AppShellInner({
@@ -34,15 +35,17 @@ function AppShellInner({
   return (
     <div className={`app-shell${mobileOpen ? " sidebar-mobile-open" : ""}`}>
       <header className="mobile-header">
-        <button
-          type="button"
-          className="mobile-menu-btn"
-          aria-expanded={mobileOpen}
-          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-          onClick={() => setMobileOpen(open => !open)}
-        >
-          <Menu size={18} strokeWidth={1.75} />
-        </button>
+        <HoverTip label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}>
+          <button
+            type="button"
+            className="mobile-menu-btn"
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            onClick={() => setMobileOpen(open => !open)}
+          >
+            <Menu size={18} strokeWidth={1.75} />
+          </button>
+        </HoverTip>
         <div className="mobile-header-spacer" />
         <MobileProfileMenu />
       </header>

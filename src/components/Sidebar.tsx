@@ -7,6 +7,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine, FileText } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
+import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { normalizeRiskTier } from "@/lib/risk-tiers";
 import { getNewAction, getSidebarMode, draftHistoryHref, isDraftHistoryPath } from "@/lib/mobile-nav";
@@ -467,19 +468,21 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
                 Chat
               </Link>
-              <button
-                type="button"
-                className="sidebar-nav-toggle"
-                aria-expanded={chatNavOpen}
-                aria-label={chatNavOpen ? "Collapse chat menu" : "Expand chat menu"}
-                onClick={() => setChatNavOpen(v => !v)}
-              >
-                <ChevronDown
-                  size={12}
-                  strokeWidth={2}
-                  style={{ transform: chatNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                />
-              </button>
+              <HoverTip label={chatNavOpen ? "Collapse chat menu" : "Expand chat menu"}>
+                <button
+                  type="button"
+                  className="sidebar-nav-toggle"
+                  aria-expanded={chatNavOpen}
+                  aria-label={chatNavOpen ? "Collapse chat menu" : "Expand chat menu"}
+                  onClick={() => setChatNavOpen(v => !v)}
+                >
+                  <ChevronDown
+                    size={12}
+                    strokeWidth={2}
+                    style={{ transform: chatNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                  />
+                </button>
+              </HoverTip>
             </div>
             {chatNavOpen && (
               <Link
@@ -501,19 +504,21 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
                 Assessments
               </Link>
-              <button
-                type="button"
-                className="sidebar-nav-toggle"
-                aria-expanded={assessNavOpen}
-                aria-label={assessNavOpen ? "Collapse assessments menu" : "Expand assessments menu"}
-                onClick={() => setAssessNavOpen(v => !v)}
-              >
-                <ChevronDown
-                  size={12}
-                  strokeWidth={2}
-                  style={{ transform: assessNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                />
-              </button>
+              <HoverTip label={assessNavOpen ? "Collapse assessments menu" : "Expand assessments menu"}>
+                <button
+                  type="button"
+                  className="sidebar-nav-toggle"
+                  aria-expanded={assessNavOpen}
+                  aria-label={assessNavOpen ? "Collapse assessments menu" : "Expand assessments menu"}
+                  onClick={() => setAssessNavOpen(v => !v)}
+                >
+                  <ChevronDown
+                    size={12}
+                    strokeWidth={2}
+                    style={{ transform: assessNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                  />
+                </button>
+              </HoverTip>
             </div>
             {assessNavOpen && (
               <Link
@@ -536,19 +541,21 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 <FilePenLine size={14} strokeWidth={isContracts ? 2 : 1.75} />
                 Review
               </Link>
-              <button
-                type="button"
-                className="sidebar-nav-toggle"
-                aria-expanded={contractsNavOpen}
-                aria-label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}
-                onClick={() => setContractsNavOpen(v => !v)}
-              >
-                <ChevronDown
-                  size={12}
-                  strokeWidth={2}
-                  style={{ transform: contractsNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                />
-              </button>
+              <HoverTip label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}>
+                <button
+                  type="button"
+                  className="sidebar-nav-toggle"
+                  aria-expanded={contractsNavOpen}
+                  aria-label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}
+                  onClick={() => setContractsNavOpen(v => !v)}
+                >
+                  <ChevronDown
+                    size={12}
+                    strokeWidth={2}
+                    style={{ transform: contractsNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                  />
+                </button>
+              </HoverTip>
             </div>
             {contractsNavOpen && (
               <Link
@@ -571,19 +578,21 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                 <FileText size={14} strokeWidth={isDraft ? 2 : 1.75} />
                 Draft
               </Link>
-              <button
-                type="button"
-                className="sidebar-nav-toggle"
-                aria-expanded={draftNavOpen}
-                aria-label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}
-                onClick={() => setDraftNavOpen(v => !v)}
-              >
-                <ChevronDown
-                  size={12}
-                  strokeWidth={2}
-                  style={{ transform: draftNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                />
-              </button>
+              <HoverTip label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}>
+                <button
+                  type="button"
+                  className="sidebar-nav-toggle"
+                  aria-expanded={draftNavOpen}
+                  aria-label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}
+                  onClick={() => setDraftNavOpen(v => !v)}
+                >
+                  <ChevronDown
+                    size={12}
+                    strokeWidth={2}
+                    style={{ transform: draftNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                  />
+                </button>
+              </HoverTip>
             </div>
             {draftNavOpen && !isMobileView && (
               <Link
@@ -635,15 +644,17 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                         <div className="recent-dot" style={{ background: c.dot }} />
                         <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
                       </Link>
-                      <button
-                        type="button"
-                        className="recent-delete"
-                        aria-label={`Delete ${item.title}`}
-                        disabled={deletingId === item.id}
-                        onClick={() => deleteAssessment(item.id, item.title)}
-                      >
-                        <Trash2 size={11} />
-                      </button>
+                      <HoverTip label={`Delete ${item.title}`}>
+                        <button
+                          type="button"
+                          className="recent-delete"
+                          aria-label={`Delete ${item.title}`}
+                          disabled={deletingId === item.id}
+                          onClick={() => deleteAssessment(item.id, item.title)}
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </HoverTip>
                     </div>
                   );
                 })}
@@ -688,15 +699,17 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                           {item.title || "Untitled chat"}
                         </span>
                       </Link>
-                      <button
-                        type="button"
-                        className="recent-delete"
-                        aria-label={`Delete ${item.title || "chat"}`}
-                        disabled={deletingChatId === item.id}
-                        onClick={() => deleteConversation(item.id, item.title)}
-                      >
-                        <Trash2 size={11} />
-                      </button>
+                      <HoverTip label={`Delete ${item.title || "chat"}`}>
+                        <button
+                          type="button"
+                          className="recent-delete"
+                          aria-label={`Delete ${item.title || "chat"}`}
+                          disabled={deletingChatId === item.id}
+                          onClick={() => deleteConversation(item.id, item.title)}
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </HoverTip>
                     </div>
                   );
                 })}
@@ -825,32 +838,35 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
       <div className="sidebar-footer">
         <div className="avatar-row sidebar-account-row">
-          <div className="sidebar-account-avatar">
-            <div className="avatar">{initials}</div>
-            <div className="sidebar-account-button">
-              <UserButton
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox:       { display: "none" },
-                    userButtonOuterIdentifier: { display: "none" },
-                    userButtonTrigger:         { width: "100%", height: "100%" },
-                    rootBox:                   { width: "100%", height: "100%" },
-                  },
-                }}
-              />
+          <HoverTip label="Account menu">
+            <div className="sidebar-account-avatar">
+              <div className="avatar">{initials}</div>
+              <div className="sidebar-account-button">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox:       { display: "none" },
+                      userButtonOuterIdentifier: { display: "none" },
+                      userButtonTrigger:         { width: "100%", height: "100%" },
+                      rootBox:                   { width: "100%", height: "100%" },
+                    },
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          </HoverTip>
           <div className="avatar-name" style={{ flex: 1, minWidth: 0 }}>
             {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
           </div>
-          <Link
-            href="/settings"
-            className={`sidebar-settings-btn${path === "/settings" ? " active" : ""}`}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <Settings size={14} strokeWidth={path === "/settings" ? 2 : 1.75} />
-          </Link>
+          <HoverTip label="Settings">
+            <Link
+              href="/settings"
+              className={`sidebar-settings-btn${path === "/settings" ? " active" : ""}`}
+              aria-label="Settings"
+            >
+              <Settings size={14} strokeWidth={path === "/settings" ? 2 : 1.75} />
+            </Link>
+          </HoverTip>
         </div>
       </div>
     </aside>

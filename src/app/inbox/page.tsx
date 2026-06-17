@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
 import type { InboxFolder, InboxFolderCounts, InboxListItem } from "@/lib/inbox";
@@ -551,27 +552,31 @@ function InboxContent() {
 
   const listToolbar = !isMobile ? (
     <div className="inbox-list-toolbar">
-      <button
-        type="button"
-        className="inbox-toolbar-btn"
-        aria-label={selectMode ? "Exit selection mode" : "Select messages"}
-        disabled={loadingList || items.length === 0}
-        onClick={() => {
-          if (selectMode) exitSelectMode();
-          else setSelectMode(true);
-        }}
-      >
-        {selectMode ? <CheckSquare size={16} strokeWidth={1.75} /> : <Square size={16} strokeWidth={1.75} />}
-      </button>
-      <button
-        type="button"
-        className="inbox-toolbar-btn"
-        aria-label="Refresh"
-        disabled={loadingList}
-        onClick={() => { void loadList(); }}
-      >
-        <RefreshCw size={16} strokeWidth={1.75} className={loadingList ? "spin" : undefined} />
-      </button>
+      <HoverTip label={selectMode ? "Exit selection mode" : "Select messages"}>
+        <button
+          type="button"
+          className="inbox-toolbar-btn"
+          aria-label={selectMode ? "Exit selection mode" : "Select messages"}
+          disabled={loadingList || items.length === 0}
+          onClick={() => {
+            if (selectMode) exitSelectMode();
+            else setSelectMode(true);
+          }}
+        >
+          {selectMode ? <CheckSquare size={16} strokeWidth={1.75} /> : <Square size={16} strokeWidth={1.75} />}
+        </button>
+      </HoverTip>
+      <HoverTip label="Refresh">
+        <button
+          type="button"
+          className="inbox-toolbar-btn"
+          aria-label="Refresh"
+          disabled={loadingList}
+          onClick={() => { void loadList(); }}
+        >
+          <RefreshCw size={16} strokeWidth={1.75} className={loadingList ? "spin" : undefined} />
+        </button>
+      </HoverTip>
       <span className="inbox-list-toolbar-spacer" />
       <span className="inbox-list-range">
         {items.length > 0 ? `1–${items.length}` : "0"} of {items.length}
@@ -777,17 +782,19 @@ function InboxContent() {
               <>
                 <header className="inbox-thread-head">
                   <div className={`inbox-thread-nav${!isMobile ? " inbox-thread-nav--desktop" : ""}`}>
-                    <Link
-                      href={listHref}
-                      className="inbox-back-btn"
-                      aria-label="Back to inbox"
-                      onClick={e => {
-                        e.preventDefault();
-                        closeThread();
-                      }}
-                    >
-                      <ArrowLeft size={18} strokeWidth={2} />
-                    </Link>
+                    <HoverTip label="Back to inbox">
+                      <Link
+                        href={listHref}
+                        className="inbox-back-btn"
+                        aria-label="Back to inbox"
+                        onClick={e => {
+                          e.preventDefault();
+                          closeThread();
+                        }}
+                      >
+                        <ArrowLeft size={18} strokeWidth={2} />
+                      </Link>
+                    </HoverTip>
                     {isMobile && (
                       <span className="inbox-thread-nav-label">{activeFolderLabel}</span>
                     )}

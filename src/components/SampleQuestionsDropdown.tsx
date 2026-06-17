@@ -6,6 +6,7 @@ import { useSampleQuestions } from "@/hooks/useSampleQuestions";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 import type { SampleQuestionsContext } from "@/lib/sample-questions";
 import type { SampleQuestionsPayload } from "@/lib/sample-questions-generate";
+import HoverTip from "@/components/HoverTip";
 
 type SampleQuestionsDropdownProps = {
   context: SampleQuestionsContext;
@@ -54,34 +55,43 @@ export default function SampleQuestionsDropdown({
       className={`sample-questions-wrap${isIcon ? " sample-questions-wrap--icon" : ""}${refreshing ? " sample-questions-wrap--refreshing" : ""}`}
       style={!isIcon && align === "center" ? { margin: "0 auto" } : undefined}
     >
-      <button
-        type="button"
-        className={isIcon ? "sample-questions-icon-btn attach-plus-btn" : "sample-questions-trigger"}
-        disabled={disabled}
-        onClick={() => setOpen(v => !v)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-label="Browse example questions"
-        title="Browse example questions"
-      >
-        {isIcon ? (
-          refreshing
-            ? <Loader2 size={22} className="spin" strokeWidth={2} />
-            : <Lightbulb size={22} strokeWidth={2} />
-        ) : (
-          <>
-            Sample questions
-            <ChevronDown
-              size={11}
-              strokeWidth={2}
-              style={{
-                transition: "transform 0.15s",
-                transform: open ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-            />
-          </>
-        )}
-      </button>
+      {isIcon ? (
+        <HoverTip label="Browse example questions">
+          <button
+            type="button"
+            className="sample-questions-icon-btn attach-plus-btn"
+            disabled={disabled}
+            onClick={() => setOpen(v => !v)}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-label="Browse example questions"
+          >
+            {refreshing
+              ? <Loader2 size={22} className="spin" strokeWidth={2} />
+              : <Lightbulb size={22} strokeWidth={2} />}
+          </button>
+        </HoverTip>
+      ) : (
+        <button
+          type="button"
+          className="sample-questions-trigger"
+          disabled={disabled}
+          onClick={() => setOpen(v => !v)}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label="Browse example questions"
+        >
+          Sample questions
+          <ChevronDown
+            size={11}
+            strokeWidth={2}
+            style={{
+              transition: "transform 0.15s",
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
+        </button>
+      )}
 
       {open && (
         <div

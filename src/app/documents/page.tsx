@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   Upload, Archive, Trash2, FolderOpen,
@@ -113,9 +114,16 @@ function UploadModal({ folders, defaultFolderId, onClose, onUploaded }: {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: "var(--fg)" }}>Upload document</span>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}>
-            <X size={16} />
-          </button>
+          <HoverTip label="Close">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}
+            >
+              <X size={16} />
+            </button>
+          </HoverTip>
         </div>
 
         <div

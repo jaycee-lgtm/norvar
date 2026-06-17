@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { Settings, Layers, LogOut } from "lucide-react";
+import HoverTip from "@/components/HoverTip";
 
 export default function MobileProfileMenu() {
   const { user } = useUser();
@@ -30,16 +31,18 @@ export default function MobileProfileMenu() {
 
   return (
     <div className="mobile-header-profile" ref={ref}>
-      <button
-        type="button"
-        className="mobile-header-profile-btn"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label="Account menu"
-        onClick={() => setOpen(o => !o)}
-      >
-        <span className="mobile-header-initials" aria-hidden>{initials}</span>
-      </button>
+      <HoverTip label="Account menu">
+        <button
+          type="button"
+          className="mobile-header-profile-btn"
+          aria-expanded={open}
+          aria-haspopup="menu"
+          aria-label="Account menu"
+          onClick={() => setOpen(o => !o)}
+        >
+          <span className="mobile-header-initials" aria-hidden>{initials}</span>
+        </button>
+      </HoverTip>
 
       {open && (
         <div className="mobile-profile-menu" role="menu">

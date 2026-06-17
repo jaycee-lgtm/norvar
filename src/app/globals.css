@@ -1936,6 +1936,63 @@ input, textarea, select, button {
   letter-spacing: -0.01em;
 }
 
+.assessment-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--fg2);
+  font-weight: 500;
+}
+
+.assessment-scroll-shell {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.assessment-scroll-shell .main-scroll {
+  flex: 1 1 0;
+}
+
+.assessment-scroll-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px 6px;
+  border-radius: 999px;
+  border: 0.5px solid var(--bdr2);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-md);
+  color: var(--fg2);
+  font-size: 10px;
+  font-family: "Sora", sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  animation: assessment-scroll-hint-bob 2.2s ease-in-out infinite;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.assessment-scroll-hint:hover {
+  color: var(--fg);
+  border-color: var(--bdr3);
+}
+
+@keyframes assessment-scroll-hint-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.88; }
+  50% { transform: translateX(-50%) translateY(4px); opacity: 1; }
+}
+
 .assessment-stream-cursor {
   display: inline-block;
   width: 2px;
@@ -9897,4 +9954,41 @@ html:has(.public-shell--document) body {
   line-height: 1.75;
   white-space: pre-wrap;
   margin: 0;
+}
+
+/* Icon hover tooltips */
+.hover-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.hover-tip-popup {
+  position: absolute;
+  background: var(--card);
+  border: 0.5px solid var(--bdr2);
+  border-radius: 7px;
+  padding: 6px 10px;
+  max-width: 240px;
+  font-size: 11px;
+  color: var(--fg2);
+  line-height: 1.4;
+  font-family: "Sora", sans-serif;
+  letter-spacing: -0.01em;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+  white-space: normal;
+}
+
+.hover-tip:hover .hover-tip-popup,
+.hover-tip:focus-within .hover-tip-popup {
+  opacity: 1;
+  visibility: visible;
 }

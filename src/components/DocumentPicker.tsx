@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, FileText, FolderOpen, Loader2, Plus, Search, Upload, X } from "lucide-react";
 import type { UserDocument } from "@/lib/documents";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
+import HoverTip from "@/components/HoverTip";
 
 type DocumentPickerProps = {
   selectedIds: string[];
@@ -246,25 +247,26 @@ export default function DocumentPicker({
   return (
     <div ref={ref} className="doc-picker-wrap">
       {isIcon ? (
-        <button
-          type="button"
-          className="attach-icon-btn attach-plus-btn"
-          disabled={disabled || uploading}
-          onPointerDown={stopMenuEvent}
-          onClick={(e) => {
-            stopMenuEvent(e);
-            toggle();
-          }}
-          aria-label="Attach a document or upload a file"
-          title="Attach a document or upload a file"
-        >
-          {uploading
-            ? <Loader2 size={22} className="spin" strokeWidth={2} />
-            : <Plus size={22} strokeWidth={2} />}
-          {attachmentCount > 0 && (
-            <span className="attach-icon-badge">{attachmentCount}</span>
-          )}
-        </button>
+        <HoverTip label="Attach a document or upload a file">
+          <button
+            type="button"
+            className="attach-icon-btn attach-plus-btn"
+            disabled={disabled || uploading}
+            onPointerDown={stopMenuEvent}
+            onClick={(e) => {
+              stopMenuEvent(e);
+              toggle();
+            }}
+            aria-label="Attach a document or upload a file"
+          >
+            {uploading
+              ? <Loader2 size={22} className="spin" strokeWidth={2} />
+              : <Plus size={22} strokeWidth={2} />}
+            {attachmentCount > 0 && (
+              <span className="attach-icon-badge">{attachmentCount}</span>
+            )}
+          </button>
+        </HoverTip>
       ) : (
         <button
           type="button"
@@ -321,13 +323,16 @@ export function SelectedDocumentChips({
         >
           <FileText size={10} strokeWidth={2} />
           {doc.name}
-          <button
-            type="button"
-            onClick={() => onRemove(doc.id)}
-            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
-          >
-            <X size={10} strokeWidth={2} color="var(--fg3)" />
-          </button>
+          <HoverTip label={`Remove ${doc.name}`}>
+            <button
+              type="button"
+              onClick={() => onRemove(doc.id)}
+              aria-label={`Remove ${doc.name}`}
+              style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+            >
+              <X size={10} strokeWidth={2} color="var(--fg3)" />
+            </button>
+          </HoverTip>
         </span>
       ))}
     </>

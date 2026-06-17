@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ShieldAlert, MessageSquare, Check, FilePenLine, FileText } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
+import HoverTip from "@/components/HoverTip";
 
 export type Mode = "chat" | "assess" | "contracts" | "draft";
 
@@ -108,15 +109,15 @@ export default function ModeSelector({
       className={`mode-selector${compact ? " mode-selector--compact" : ""}${embedded ? " mode-selector--embedded" : ""}${homePrompt ? " mode-selector--home-prompt" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
       style={{ position: "relative", display: (compact && !embedded) ? "block" : homePrompt ? "block" : "inline-block", width: (compact && !embedded) || homePrompt ? "100%" : undefined }}
     >
-      <button
-        type="button"
-        className="mode-selector-trigger"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-label={triggerTitle}
-        title={triggerTitle}
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
+      <HoverTip label={triggerTitle}>
+        <button
+          type="button"
+          className="mode-selector-trigger"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label={triggerTitle}
+          disabled={disabled}
+          onClick={() => !disabled && setOpen(o => !o)}
         style={homePrompt ? {
           display:    "inline-flex",
           alignItems: "center",
@@ -172,6 +173,7 @@ export default function ModeSelector({
           style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
         />
       </button>
+      </HoverTip>
 
       {open && (
         <div

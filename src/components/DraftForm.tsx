@@ -34,6 +34,7 @@ import {
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
 import { DRAFT_AUTO_MODEL_TAGLINE } from "@/lib/draft-models";
+import HoverTip from "@/components/HoverTip";
 
 type DraftMessage =
   | { id: string; role: "user"; content: string }
@@ -462,9 +463,16 @@ export default function DraftForm({
         }}>
           <FileText size={10} strokeWidth={2} />
           {attachedDocName}
-          <button type="button" onClick={clearAttachedDoc} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
-            ×
-          </button>
+          <HoverTip label="Remove uploaded file">
+            <button
+              type="button"
+              onClick={clearAttachedDoc}
+              aria-label="Remove uploaded file"
+              style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+            >
+              ×
+            </button>
+          </HoverTip>
         </span>
       )}
     </div>

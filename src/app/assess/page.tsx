@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect, type RefObject } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Show } from "@clerk/nextjs";
 import AppShell from "@/components/AppShell";
@@ -58,7 +58,7 @@ import {
   FileText,
   Loader2, AlertTriangle, AlertCircle, Info,
   ShieldAlert, X, Download,
-  History, SquarePen,
+  History, SquarePen, ChevronDown,
 } from "lucide-react";
 
 import {
@@ -351,6 +351,58 @@ function splitAssessmentStream(text: string): { summary: string; gaps: string } 
   };
 }
 
+function AssessmentScrollHint({
+  containerRef,
+  visible,
+}: {
+  containerRef: RefObject<HTMLDivElement | null>;
+  visible:        boolean;
+}) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setShow(false);
+      return;
+    }
+
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setShow(remaining > 96);
+    };
+
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [containerRef, visible]);
+
+  if (!show) return null;
+
+  return (
+    <button
+      type="button"
+      className="assessment-scroll-hint"
+      aria-label="More gaps below — scroll down"
+      onClick={() => {
+        const el = containerRef.current;
+        if (!el) return;
+        el.scrollBy({ top: Math.round(el.clientHeight * 0.72), behavior: "smooth" });
+      }}
+    >
+      <ChevronDown size={16} strokeWidth={2.25} />
+      <span>More below</span>
+    </button>
+  );
+}
+
 // ── Assessment card ────────────────────────────────────────────────────────────
 
 function TierBadge({ tier }: { tier: string }) {
@@ -404,14 +456,16 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
   const isProcessing = a.status === "processing";
   const streamParts  = streamingText ? splitAssessmentStream(streamingText) : { summary: "", gaps: "" };
   const showDomainTiers = Boolean(
+    !isProcessing &&
     byDomain &&
     visibleDomains.length > 0 &&
-    !(isProcessing && gaps.length === 0) &&
     (
       visibleDomains.length > 1 ||
       visibleDomains.some(domain => (byDomain[domain]?.gap_count ?? 0) > 0)
     ),
   );
+  const hasStreamGaps = Boolean(streamParts.gaps);
+  const showRiskSummary = !isProcessing;
   const ordered     = [...gaps].sort(
     (x, y) => compareGapSeverity(x.severity, y.severity),
   );
@@ -464,17 +518,29 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
         {ASSESS_AGENT.name} assessment
       </div>
 
-      <div className="score-row">
-        <TierBadge tier={overallTier} />
-        <span style={{ fontSize: 12, color: "var(--fg2)", fontWeight: 500, marginLeft: 6 }}>
-          {overallTier.charAt(0).toUpperCase() + overallTier.slice(1)} risk
-        </span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)" }}>
-          {isProcessing ? "Analysing..." : `${gaps.length} gap${gaps.length !== 1 ? "s" : ""} · ${frameworks.length} framework${frameworks.length !== 1 ? "s" : ""}`}
-        </span>
-      </div>
+      {showRiskSummary ? (
+        <div className="score-row">
+          <TierBadge tier={overallTier} />
+          <span style={{ fontSize: 12, color: "var(--fg2)", fontWeight: 500, marginLeft: 6 }}>
+            {overallTier.charAt(0).toUpperCase() + overallTier.slice(1)} risk
+          </span>
+          <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)" }}>
+            {`${gaps.length} gap${gaps.length !== 1 ? "s" : ""} · ${frameworks.length} framework${frameworks.length !== 1 ? "s" : ""}`}
+          </span>
+        </div>
+      ) : (
+        <div className="assessment-status-row">
+          <Loader2 size={12} className="spin" color="var(--fg3)" />
+          <span>Analysing your deployment</span>
+          {gaps.length > 0 && (
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--fg3)" }}>
+              {gaps.length} gap{gaps.length !== 1 ? "s" : ""} identified so far
+            </span>
+          )}
+        </div>
+      )}
 
-      {isProcessing && gaps.length === 0 && (
+      {isProcessing && gaps.length === 0 && !hasStreamGaps && (
         <div style={{ display: "flex", gap: 5, padding: "6px 0 10px" }}>
           <span className="loading-dot" />
           <span className="loading-dot" />
@@ -557,7 +623,7 @@ function AssessmentCard({ a, onNew, assessmentId, gapChats, onGapChatsUpdate, sc
       </div>
 
       {tab === "gaps" && (
-        <div>
+        <div className="assessment-gaps-section">
           {isProcessing ? (
             streamParts.gaps ? (
               <div className="assessment-gap-stream">
@@ -805,6 +871,14 @@ function Home() {
   const handleSendRef  = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef  = useRef<TypewriterDrain | null>(null);
   const assessingRef   = useRef(false);
+  const assessGapAnchoredRef = useRef(false);
+  const assessScrollLockedRef = useRef(false);
+  const prevAssessmentStatusRef = useRef<string | undefined>(undefined);
+
+  function resetAssessmentScroll() {
+    assessGapAnchoredRef.current = false;
+    assessScrollLockedRef.current = false;
+  }
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -907,14 +981,61 @@ function Home() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading, guidedTyping, assessmentStreamText]);
-
   const hasAssessment   = messages.some(m => m.role === "assistant");
   const latestAssessment = [...messages].reverse().find(
     (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
   )?.assessment;
+  const assessmentInProgress = latestAssessment?.status === "processing";
+  const showAssessmentScrollHint = Boolean(
+    loading &&
+    assessmentInProgress &&
+    ((latestAssessment?.gaps?.length ?? 0) > 0 || assessmentStreamText.includes("GAP ")),
+  );
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const streamingAssessment = loading && (
+      assessmentStreamText.length > 0 || assessmentInProgress
+    );
+
+    if (streamingAssessment) {
+      const parts = splitAssessmentStream(assessmentStreamText);
+      const hasFirstGap = Boolean(parts.gaps) || (latestAssessment?.gaps?.length ?? 0) > 0;
+
+      if (hasFirstGap && !assessGapAnchoredRef.current) {
+        assessGapAnchoredRef.current = true;
+        assessScrollLockedRef.current = true;
+        requestAnimationFrame(() => {
+          el.querySelector(".assessment-gaps-section")
+            ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+        return;
+      }
+
+      if (assessScrollLockedRef.current) return;
+
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      return;
+    }
+
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [messages, loading, guidedTyping, assessmentStreamText, assessmentInProgress, latestAssessment?.gaps?.length]);
+
+  useEffect(() => {
+    const status = latestAssessment?.status;
+    const prev = prevAssessmentStatusRef.current;
+    if (prev === "processing" && status && status !== "processing") {
+      requestAnimationFrame(() => {
+        scrollRef.current?.querySelector(".assessment-card")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      assessScrollLockedRef.current = false;
+    }
+    prevAssessmentStatusRef.current = status;
+  }, [latestAssessment?.status]);
+
   const firstDisclaimerIndex = messages.findIndex(m =>
     m.role === "nora"
     || m.role === "chat"
@@ -948,6 +1069,7 @@ function Home() {
     setGuidedTyping(false);
     setAssessmentStreamText("");
     setPreScopePhase("chat");
+    resetAssessmentScroll();
     typewriterRef.current?.reset();
     router.push("/assess");
   }
@@ -1344,6 +1466,7 @@ function Home() {
     setLoading(true);
     setGuidedTyping(false);
     setAssessmentStreamText("");
+    resetAssessmentScroll();
 
     typewriterRef.current?.reset();
     typewriterRef.current = createTypewriterDrain(ch => {
@@ -1823,6 +1946,7 @@ function Home() {
 
             {!isHome && !loadingSaved && (
               <>
+                <div className="assessment-scroll-shell">
                 <div ref={scrollRef} className="main-scroll">
                 <div className="chat-scroll">
                   {messages.map((msg, i) => {
@@ -1990,6 +2114,11 @@ function Home() {
                   })}
                   {error && <p style={{ fontSize: 12, color: "var(--rh)" }}>{error}</p>}
                 </div>
+                </div>
+                <AssessmentScrollHint
+                  containerRef={scrollRef}
+                  visible={showAssessmentScrollHint}
+                />
                 </div>
 
                 <div className="chat-input-row">

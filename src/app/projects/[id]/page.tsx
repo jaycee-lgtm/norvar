@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import HoverTip from "@/components/HoverTip";
 import { fmtProjectDate } from "@/lib/projects";
 import { normalizeGapSeverity, normalizeRiskTier } from "@/lib/risk-tiers";
 import {
@@ -58,9 +59,16 @@ function AddItemModal({
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
           <span style={{ fontSize: 13, fontWeight: 500 }}>{title}</span>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}>
-            <X size={15} />
-          </button>
+          <HoverTip label="Close">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}
+            >
+              <X size={15} />
+            </button>
+          </HoverTip>
         </div>
         {items.length === 0 ? (
           <p style={{ fontSize: 12, color: "var(--fg3)" }}>{emptyLabel}</p>
@@ -390,15 +398,19 @@ function ProjectRow({
         </div>
         {meta && <div style={{ fontSize: 10, color: "var(--fg3)", marginTop: 2 }}>{meta}</div>}
       </Link>
-      <Link href={href} style={{ color: "var(--fg3)", flexShrink: 0 }}>
-        <ExternalLink size={12} />
-      </Link>
+      <HoverTip label={`Open ${title}`}>
+        <Link href={href} style={{ color: "var(--fg3)", flexShrink: 0 }} aria-label={`Open ${title}`}>
+          <ExternalLink size={12} />
+        </Link>
+      </HoverTip>
       {onRemove && (
-        <button type="button" onClick={onRemove} aria-label="Remove from project" style={{
-          background: "none", border: "none", color: "var(--fg3)", cursor: "pointer", flexShrink: 0,
-        }}>
-          <X size={12} />
-        </button>
+        <HoverTip label="Remove from project">
+          <button type="button" onClick={onRemove} aria-label="Remove from project" style={{
+            background: "none", border: "none", color: "var(--fg3)", cursor: "pointer", flexShrink: 0,
+          }}>
+            <X size={12} />
+          </button>
+        </HoverTip>
       )}
     </div>
   );

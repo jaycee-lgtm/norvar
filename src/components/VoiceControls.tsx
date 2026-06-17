@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Mic, MicOff, Volume2 } from "lucide-react";
+import HoverTip from "@/components/HoverTip";
 
 type VoiceInputIconProps = {
   isListening: boolean;
@@ -48,22 +49,23 @@ export function VoiceInputIcon({
   else if (!configured) title = "Voice not configured — set up in Settings";
 
   return (
-    <button
-      type="button"
-      className={`${btnClass}${isActive ? " active" : ""}${isListening ? " listening" : ""}${isTranscribing ? " transcribing" : ""}`}
-      title={title}
-      onClick={handleClick}
-      disabled={(isDisabled && !isBusy) || isTranscribing}
-      aria-label={title}
-    >
-      {isTranscribing
-        ? <Loader2 size={iconSize} className="spin" strokeWidth={2} />
-        : isListening
-          ? <MicOff size={iconSize} strokeWidth={2} />
-          : isSpeaking
-            ? <Volume2 size={iconSize} strokeWidth={2} />
-            : <Mic size={iconSize} strokeWidth={2} />}
-    </button>
+    <HoverTip label={title}>
+      <button
+        type="button"
+        className={`${btnClass}${isActive ? " active" : ""}${isListening ? " listening" : ""}${isTranscribing ? " transcribing" : ""}`}
+        onClick={handleClick}
+        disabled={(isDisabled && !isBusy) || isTranscribing}
+        aria-label={title}
+      >
+        {isTranscribing
+          ? <Loader2 size={iconSize} className="spin" strokeWidth={2} />
+          : isListening
+            ? <MicOff size={iconSize} strokeWidth={2} />
+            : isSpeaking
+              ? <Volume2 size={iconSize} strokeWidth={2} />
+              : <Mic size={iconSize} strokeWidth={2} />}
+      </button>
+    </HoverTip>
   );
 }
 

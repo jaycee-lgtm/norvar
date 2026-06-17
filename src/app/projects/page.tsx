@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import HoverTip from "@/components/HoverTip";
 import { PROJECT_COLORS, fmtProjectDate } from "@/lib/projects";
 import {
   Briefcase, Plus, FolderOpen, FileSearch, ShieldAlert,
@@ -68,9 +69,16 @@ function CreateProjectModal({ onClose, onCreated }: {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 500 }}>New project</span>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}>
-            <X size={15} />
-          </button>
+          <HoverTip label="Close">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg3)" }}
+            >
+              <X size={15} />
+            </button>
+          </HoverTip>
         </div>
 
         <label style={labelStyle}>Name</label>
@@ -92,16 +100,18 @@ function CreateProjectModal({ onClose, onCreated }: {
         <label style={{ ...labelStyle, marginTop: 12 }}>Colour</label>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {PROJECT_COLORS.map(c => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              style={{
-                width: 22, height: 22, borderRadius: "50%", background: c,
-                border: color === c ? "2px solid var(--fg)" : "2px solid transparent",
-                cursor: "pointer",
-              }}
-            />
+            <HoverTip key={c} label={`Select colour ${c}`}>
+              <button
+                type="button"
+                onClick={() => setColor(c)}
+                aria-label={`Select colour ${c}`}
+                style={{
+                  width: 22, height: 22, borderRadius: "50%", background: c,
+                  border: color === c ? "2px solid var(--fg)" : "2px solid transparent",
+                  cursor: "pointer",
+                }}
+              />
+            </HoverTip>
           ))}
         </div>
 

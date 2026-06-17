@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Brain, Check, ChevronDown, Feather, Gauge, Gem, ScanSearch, Sun } from "lucide-react";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
+import HoverTip from "@/components/HoverTip";
 import {
   DEFAULT_REDLINE_REVIEW_MODEL,
   REDLINE_MODEL_GROUPS,
@@ -66,15 +67,15 @@ export default function RedlineModelSelector({
       className={`mode-selector mode-selector--embedded mode-selector--menu-up redline-model-picker${isInline ? " redline-model-picker--inline" : ""}${isIcon ? " redline-model-picker--icon" : ""}`}
       style={{ position: "relative", display: "inline-block" }}
     >
-      <button
-        type="button"
-        className="mode-selector-trigger redline-model-trigger"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-label={triggerTitle}
-        title={triggerTitle}
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
+      <HoverTip label={triggerTitle}>
+        <button
+          type="button"
+          className="mode-selector-trigger redline-model-trigger"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label={triggerTitle}
+          disabled={disabled}
+          onClick={() => !disabled && setOpen(o => !o)}
         style={{
           display:       "inline-flex",
           alignItems:    "center",
@@ -124,6 +125,7 @@ export default function RedlineModelSelector({
           />
         )}
       </button>
+      </HoverTip>
 
       {open && (
         <div
