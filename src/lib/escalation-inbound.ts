@@ -330,7 +330,7 @@ export async function recordEscalationEmailReply(
   if (insertError) return { ok: false, error: insertError.message };
 
   try {
-    await notifyAssigneesOfRecipientReply(item, {
+    await notifyAssigneesOfRecipientReply(supabase, item, {
       fromName:  sender.name,
       fromEmail: sender.email,
       body,

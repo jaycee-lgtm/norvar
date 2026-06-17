@@ -118,6 +118,7 @@ export function isEscalationRecipientSender(
 }
 
 export async function notifyAssigneesOfRecipientReply(
+  supabase: SupabaseClient,
   item: EscalationThreadItem,
   input: {
     fromName:    string | null;
@@ -126,15 +127,28 @@ export async function notifyAssigneesOfRecipientReply(
     source:      "email" | "form";
   },
 ): Promise<void> {
-  const recipients = (await assigneeEmails(item)).filter(
-    email => email !== item.escalation_email?.trim().toLowerCase(),
-  );
-  if (!recipients.length || !item.escalation_token) {
+  if (!item.escalation_token) {
     console.warn("[escalation] assignee notification skipped", {
       remediation_id: item.id,
-      reason:         !item.escalation_token ? "missing token" : "no assignee emails",
+      reason:         "missing token",
+    });
+    return;
+  }
+
+  const recipients = await assigneeEmails(item);
+
+  if (!recipients.length) {
+    console.warn("[escalation] assignee notification skipped", {
+      remediation_id: item.id,
+      reason:         "no assignee emails",
       created_by:     item.created_by,
       assigned_to:    item.assigned_to,
+    });
+    await supabase.from("remediation_activity").insert({
+      remediation_id: item.id,
+      user_id:        "system",
+      action:         "escalation_assignee_notify_skipped",
+      detail:         "Assignee notification skipped — could not resolve assignee email addresses.",
     });
     return;
   }
@@ -160,8 +174,21 @@ export async function notifyAssigneesOfRecipientReply(
       recipients,
       error:          result.error,
     });
+    await supabase.from("remediation_activity").insert({
+      remediation_id: item.id,
+      user_id:        "system",
+      action:         "escalation_assignee_notify_failed",
+      detail:         result.error ?? "Assignee notification failed",
+    });
     throw new Error(result.error ?? "Assignee notification failed");
   }
+
+  await supabase.from("remediation_activity").insert({
+    remediation_id: item.id,
+    user_id:        "system",
+    action:         "escalation_assignee_notified",
+    detail:         `Notified ${result.sent ?? recipients.length} assignee(s): ${recipients.join(", ")}`,
+  });
 }
 
 export async function sendTeamEscalationReply(

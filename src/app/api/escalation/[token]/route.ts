@@ -184,7 +184,7 @@ export async function PATCH(
     const threadItem = await loadEscalationById(supabase, item.id);
     if (threadItem) {
       try {
-        await notifyAssigneesOfRecipientReply(threadItem, {
+        await notifyAssigneesOfRecipientReply(supabase, threadItem, {
           fromName:  item.escalation_recipient_name ?? null,
           fromEmail: item.escalation_email?.trim() || actorId,
           body:      response_note.trim(),
