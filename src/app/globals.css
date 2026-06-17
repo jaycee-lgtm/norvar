@@ -475,11 +475,11 @@ input, textarea, select, button {
   }
 
   .home-hero-row .home-hero-serif {
-    font-size: clamp(38px, 4.2vw, 52px);
+    font-size: clamp(34px, 3.75vw, 46px);
   }
 
   .home-hero-logo {
-    transform: scale(1);
+    transform: scale(0.94);
     margin-right: -8px;
   }
 

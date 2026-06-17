@@ -21,7 +21,7 @@ export default function HomeHero({
         </>
       ) : (
         <div className="home-hero-row home-hero-enter">
-          <Logo variant="hero" className="home-hero-logo" size={68} animated />
+          <Logo variant="hero" className="home-hero-logo" size={60} animated />
           <div className="home-hero-heading-wrap">
             <h1 className="home-hero-serif home-hero-serif--enter">{title}</h1>
             {infoTip ? <InfoTip text={infoTip} /> : null}
