@@ -113,7 +113,7 @@ export default function AgentComposer({
   const showVoice = voiceControl && !hideToolbarIcons;
   const showAttach = attachControl && !hideToolbarIcons;
   const showModel = modelControl && !hideToolbarIcons;
-  const showExtraStart = extraToolbarStart && !hideToolbarIcons;
+  const showExtraStart = extraToolbarStart;
   const showExtraEnd = extraToolbarEnd && !hideToolbarIcons;
   const showHomePrompt = isHome && !hideToolbarIcons;
 

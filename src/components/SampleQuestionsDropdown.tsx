@@ -5,6 +5,7 @@ import { ChevronDown, Lightbulb, Loader2 } from "lucide-react";
 import { useSampleQuestions } from "@/hooks/useSampleQuestions";
 import { useFloatingMenuStyles } from "@/hooks/useFloatingMenuStyles";
 import type { SampleQuestionsContext } from "@/lib/sample-questions";
+import type { SampleQuestionsPayload } from "@/lib/sample-questions-generate";
 
 type SampleQuestionsDropdownProps = {
   context: SampleQuestionsContext;
@@ -14,6 +15,7 @@ type SampleQuestionsDropdownProps = {
   variant?: "chip" | "icon";
   menuPlacement?: "top" | "bottom";
   enabled?: boolean;
+  payload?: SampleQuestionsPayload;
 };
 
 export default function SampleQuestionsDropdown({
@@ -24,10 +26,11 @@ export default function SampleQuestionsDropdown({
   variant = "chip",
   menuPlacement = "bottom",
   enabled = true,
+  payload,
 }: SampleQuestionsDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref   = useRef<HTMLDivElement>(null);
-  const { questions, refreshing } = useSampleQuestions(context, { enabled });
+  const { questions, refreshing } = useSampleQuestions(context, { enabled, payload });
   const floatingMenuStyle = useFloatingMenuStyles(open && variant === "icon", ref, {
     placement: menuPlacement === "top" ? "top" : "bottom",
     align:     "start",

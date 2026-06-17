@@ -1261,6 +1261,10 @@ input, textarea, select, button {
   display: none;
 }
 
+.agent-composer--typing .sample-questions-wrap {
+  display: none;
+}
+
 .agent-composer--typing .agent-composer-toolbar-end {
   margin-left: auto;
   width: 100%;
@@ -8362,10 +8366,6 @@ html:has(.public-shell--document) body {
     white-space: normal;
     width: 100%;
     padding: 0 2px 8px;
-  }
-
-  .mobile-thread-layout .sample-questions-wrap {
-    display: none;
   }
 
   .mobile-thread-layout .chat-input-row {

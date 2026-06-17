@@ -912,6 +912,9 @@ function Home() {
   }, [messages, loading, guidedTyping, assessmentStreamText]);
 
   const hasAssessment   = messages.some(m => m.role === "assistant");
+  const latestAssessment = [...messages].reverse().find(
+    (m): m is Extract<Message, { role: "assistant" }> => m.role === "assistant",
+  )?.assessment;
   const firstDisclaimerIndex = messages.findIndex(m =>
     m.role === "nora"
     || m.role === "chat"
@@ -1141,13 +1144,19 @@ function Home() {
     disabled: loading,
   });
 
+  const useFollowUpExamples = hasAssessment && !!(latestAssessment?.gaps?.length);
+
   const examplesControl = (
     <SampleQuestionsDropdown
-      context="assess"
+      context={useFollowUpExamples ? "assessment-followup" : "assess"}
       variant="icon"
       menuPlacement="top"
       onSelect={q => { void sendWithVoice(q); }}
       disabled={loading}
+      payload={useFollowUpExamples ? {
+        gaps: latestAssessment!.gaps ?? [],
+        assessmentTitle: latestAssessment!.title,
+      } : undefined}
     />
   );
 
