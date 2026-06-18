@@ -9961,34 +9961,42 @@ html:has(.public-shell--document) body {
   position: relative;
   display: inline-flex;
   align-items: center;
-  max-width: 100%;
   flex-shrink: 0;
 }
 
 .hover-tip-popup {
-  position: absolute;
   background: var(--card);
   border: 0.5px solid var(--bdr2);
   border-radius: 7px;
-  padding: 6px 10px;
-  max-width: 240px;
+  padding: 6px 12px;
   font-size: 11px;
   color: var(--fg2);
   line-height: 1.4;
   font-family: "Sora", sans-serif;
   letter-spacing: -0.01em;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s, visibility 0.15s;
   pointer-events: none;
-  z-index: 10000;
   box-shadow: var(--shadow-md);
   text-align: center;
-  white-space: normal;
+  white-space: nowrap;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 16px));
 }
 
-.hover-tip:hover .hover-tip-popup,
-.hover-tip:focus-within .hover-tip-popup {
+.hover-tip-popup--portal {
+  position: fixed;
+  z-index: 100000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s, visibility 0.12s;
+}
+
+.hover-tip-popup--portal.hover-tip-popup--visible {
   opacity: 1;
   visibility: visible;
+}
+
+.hover-tip-popup--wrap {
+  white-space: normal;
+  text-align: left;
+  line-height: 1.55;
 }
