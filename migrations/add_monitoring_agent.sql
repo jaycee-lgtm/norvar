@@ -163,7 +163,10 @@ grant all on public.monitoring_user_mapping to service_role;
 grant all on public.monitoring_signals      to service_role;
 grant all on public.monitoring_webhook_log  to service_role;
 
-grant select, insert, update, delete on public.org_monitoring_config   to authenticated;
-grant select, insert, update, delete on public.monitoring_connectors   to authenticated;
-grant select, insert, update, delete on public.monitoring_user_mapping to authenticated;
-grant select, update                 on public.monitoring_signals      to authenticated;
+-- Monitoring data is accessed through server API routes using the service role.
+-- Do not expose connector secrets or cross-org signals to Supabase client roles.
+revoke all privileges on table public.org_monitoring_config   from authenticated;
+revoke all privileges on table public.monitoring_connectors   from authenticated;
+revoke all privileges on table public.monitoring_user_mapping from authenticated;
+revoke all privileges on table public.monitoring_signals      from authenticated;
+revoke all privileges on table public.monitoring_webhook_log  from authenticated;
