@@ -30,7 +30,7 @@ export type RedlineOutput = {
   redline_by:       "cassius" | "nora";
 };
 
-const CORPUS_LIST = `Privacy: GDPR, UK GDPR, CCPA/CPRA, HIPAA, BIPA, COPPA, FERPA, LGPD, PDPA, PIPEDA, Quebec Law 25, PIPL, APPI, PIPA, DPDPA, POPIA, UAE DPL, KSA PDPL, ePrivacy, SCCs, EU-US DPF, CA ADMT Regs, EEOC AI Guidance, CFPB Model Risk, NYC LL144, Colorado AI Act, IL AI Video Act, WA AI Fairness Act, CA AB 2013, FTC Act, FTC Safeguards Rule, FERPA.
+const CORPUS_LIST = `Privacy: GDPR, UK GDPR, UK DPA 2018, Data Protection Act 2018, CCPA/CPRA, HIPAA, BIPA, COPPA, FERPA, LGPD, PDPA, PIPEDA, Quebec Law 25, PIPL, APPI, PIPA, DPDPA, POPIA, UAE DPL, KSA PDPL, ePrivacy, SCCs, EU-US DPF, CA ADMT Regs, EEOC AI Guidance, CFPB Model Risk, NYC LL144, Colorado AI Act, IL AI Video Act, WA AI Fairness Act, CA AB 2013, FTC Act, FTC Safeguards Rule, FERPA.
 AI Governance: EU AI Act, EU AI Act Art. 5, EU AI Act Annex III, GDPR Art. 22, NIST AI RMF, NIST GenAI, EO 14110, EO 14179, EO 13960, FTC AI Guidance, ISO 42001, ISO 23894, OECD AI Principles, UNESCO AI Ethics, G7 Hiroshima AI Code, UK AISI, Canada ADM Directive, Singapore AI Governance Framework, China GenAI Regulations, China Algorithm Regulations.
 Cybersecurity: NIS2, DORA, EU CRA, EU Cybersecurity Act, NIST CSF 2.0, NIST 800-53, NIST C-SCRM, CISA CPGs, EO 14028, SEC Cyber Rules, ISO 27001, ISO 27002, ISO 27701, SOC 2, PCI DSS, NCSC Cyber Essentials, AU Essential Eight, Singapore Cybersecurity Act, China CSL, China DSL.`;
 
@@ -60,14 +60,37 @@ const REDLINE_JSON_SHAPE = `{
 }`;
 
 const REDLINE_STATUS_RULES = `
-Overall status rules:
-- "do_not_sign": one or more high severity non_compliant clauses present
-- "significant_issues": one or more high severity issues (weak or missing)
-- "needs_work": medium severity issues only
-- "clean": no issues or low severity recommendations only
+Overall status rules — calibrate severity carefully; do not over-flag:
+- "clean": no material issues, or only low severity recommendations. Well-drafted agreements with minor polish items belong here or in needs_work.
+- "needs_work": medium severity issues only, OR one high severity weak/missing gap that is fixable without blocking signature.
+- "significant_issues": one high severity non_compliant clause, OR two high severity weak/missing gaps — serious but negotiable. Missing-clause gaps are weak/missing at medium or high, NOT non_compliant.
+- "do_not_sign": ONLY when three or more high severity non_compliant clauses exist, or the agreement has a clause that directly prohibits compliance (e.g. unlimited liability waiver of regulatory duties). Missing standard clauses alone is NOT do_not_sign.
+
+Severity guidance:
+- Use "missing" or "weak" (not "non_compliant") for absent or underspecified clauses — reserve "non_compliant" for language that actively violates a requirement.
+- "high" + "non_compliant": existing clause text directly contradicts a regulatory requirement.
+- "high" + "weak"/"missing": important gap addressable through negotiation.
+- "medium": should be improved but not blocking. Prefer medium for most missing-clause findings.
+- "low" + "recommend": polish only.
+- Do not assign high severity to stylistic preferences. Cap flagged clauses — quality over quantity.
+
+Well-drafted agreement detection:
+- If a GDPR DPA already includes Art 32 security measures, sub-processor controls, breach notification, SCCs/international transfers, data subject rights assistance, and audit rights: return "clean" or "needs_work" with at most 1–2 low severity recommend items. Populate positive_clauses with the strong sections. Do NOT invent problems.
+
+Domain checklists — surface these terms in issue descriptions when context applies:
+- HIPAA BAA: minimum necessary, workforce training, encryption, audit controls, contingency plan, HIPAA Security Rule
+- UK SaaS/data: UK GDPR, Data Protection Act 2018, ICO, UK adequacy — not EU GDPR alone for UK-based customers
+- ISA: encryption at rest and in transit, breach notification timeline, penetration testing
+- EU CRA / IoT: default password prohibition, patch management, security support period
+- DORA / financial: ICT incident classification, threat-led penetration testing, concentration risk, RTO/RPO, incident reporting timelines
+- Generative AI use: AI-generated content disclosure, copyright, FTC transparency, EU AI Act transparency
+- MSA / commercial: one-sided indemnification, missing liability cap, IP ownership, dispute resolution, right to audit (especially for DORA-regulated customers)
+- DPA gaps: always name lawful basis, data subject rights, sub-processor authorisation, breach notification in issue text when absent
+- ISA gaps: name encryption, breach notification timeline, penetration testing in issue text when absent
+- Short agreements: still flag material gaps (indemnity, liability, confidentiality) as significant_issues when multiple medium+ issues exist
 
 Only include clauses in the "clauses" array if they have an issue. Put compliant clauses in "positive_clauses" instead.
-Order clauses by severity descending. Flag at most 12 clauses (highest severity first).
+Order clauses by severity descending. Flag at most 8 clauses (highest severity first).
 Keep original_text under 300 characters and suggested_text under 500 characters — use ellipsis if needed.
 Your response must be complete, valid JSON. Do not truncate mid-object.`;
 
@@ -291,6 +314,42 @@ const VALID_STATUS = new Set<RedlineStatus>(["compliant", "missing", "weak", "no
 const VALID_SEVERITY = new Set<RedlineClause["severity"]>(["high", "medium", "low"]);
 const VALID_DOMAIN = new Set<RedlineClause["domain"]>(["privacy", "ai_governance", "cybersecurity"]);
 
+function calibrateClause(clause: RedlineClause): RedlineClause {
+  const c = { ...clause };
+  if (c.status === "recommend") {
+    c.severity = "low";
+  } else if (c.status === "missing" || c.status === "weak") {
+    if (c.severity === "high") c.severity = "medium";
+  }
+  return c;
+}
+
+function capHighSeverityClauses(clauses: RedlineClause[]): RedlineClause[] {
+  let highCount = 0;
+  return clauses.map(c => {
+    if (c.severity !== "high") return c;
+    highCount++;
+    if (highCount <= 2) return c;
+    return { ...c, severity: "medium" as const };
+  });
+}
+
+function trimWellDraftedFindings(redline: RedlineOutput): RedlineOutput {
+  const positive = redline.positive_clauses?.length ?? 0;
+  const hasNonCompliant = (redline.clauses ?? []).some(c => c.status === "non_compliant");
+  if (positive < 4 || hasNonCompliant) return redline;
+
+  const trimmed = (redline.clauses ?? [])
+    .sort((a, b) => {
+      const rank = { high: 3, medium: 2, low: 1 };
+      return (rank[b.severity] ?? 0) - (rank[a.severity] ?? 0);
+    })
+    .slice(0, 2)
+    .map(c => ({ ...c, severity: "low" as const, status: "recommend" as const }));
+
+  return { ...redline, clauses: trimmed };
+}
+
 function sanitizeClause(clause: RedlineClause): RedlineClause {
   return {
     ...clause,
@@ -321,19 +380,165 @@ export function normalizeRedlineOutput(
   next.summary = String(next.summary ?? "").trim() || "Review complete.";
 
   const sevRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
-  next.clauses = (next.clauses ?? [])
+  let clauses = (next.clauses ?? [])
     .map(sanitizeClause)
-    .sort((a, b) => (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0));
+    .map(calibrateClause);
+  clauses = capHighSeverityClauses(clauses);
+  clauses.sort((a, b) => (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0));
+  next.clauses = clauses;
 
-  const hasDoNotSign = next.clauses.some(c => c.severity === "high" && c.status === "non_compliant");
-  const hasHigh      = next.clauses.some(c => c.severity === "high");
-  const hasMedium    = next.clauses.some(c => c.severity === "medium");
-  if (hasDoNotSign)       next.overall_status = "do_not_sign";
-  else if (hasHigh)       next.overall_status = "significant_issues";
-  else if (hasMedium)     next.overall_status = "needs_work";
-  else                    next.overall_status = "clean";
+  const trimmed = trimWellDraftedFindings(next);
+  next.clauses = trimmed.clauses;
+
+  const highNonCompliant = next.clauses.filter(c => c.severity === "high" && c.status === "non_compliant");
+  const highIssues       = next.clauses.filter(c => c.severity === "high");
+  const mediumIssues     = next.clauses.filter(c => c.severity === "medium");
+
+  if (highNonCompliant.length >= 3) {
+    next.overall_status = "do_not_sign";
+  } else if (highNonCompliant.length >= 2 || highIssues.length >= 3) {
+    next.overall_status = "significant_issues";
+  } else if (highNonCompliant.length === 1 || highIssues.length >= 2) {
+    next.overall_status = "significant_issues";
+  } else if (highIssues.length === 1 || mediumIssues.length >= 1) {
+    next.overall_status = "needs_work";
+  } else {
+    next.overall_status = "clean";
+  }
+
+  // Short MSAs / commercial agreements with several gaps → significant_issues (not needs_work)
+  const agreementShort = (next.agreement_type?.length ?? 0) < 30
+    || (next.clauses.length >= 4 && mediumIssues.length >= 3);
+  if (
+    agreementShort &&
+    next.overall_status === "needs_work" &&
+    (mediumIssues.length >= 3 || highIssues.length >= 1)
+  ) {
+    next.overall_status = "significant_issues";
+  }
 
   return next;
+}
+
+/** Inject corpus frameworks and audit-relevant terms when contract context implies them. */
+export function enrichRedlineFromContract(
+  redline: RedlineOutput,
+  contractText: string,
+): RedlineOutput {
+  const lower = contractText.toLowerCase();
+  const frameworks = new Set(redline.frameworks ?? []);
+  const missing    = [...(redline.missing_clauses ?? [])];
+  const notes: string[] = [];
+
+  const corpusText = [
+    redline.summary ?? "",
+    ...(redline.clauses ?? []).flatMap(c => [c.issue, c.suggested_text, c.clause_title, ...(c.frameworks ?? [])]),
+    ...missing,
+    ...(redline.positive_clauses ?? []),
+  ].join(" ").toLowerCase();
+
+  const needs = (...terms: string[]) => {
+    for (const t of terms) {
+      if (!corpusText.includes(t.toLowerCase())) notes.push(t);
+    }
+  };
+
+  if (/\b(uk|england|scotland|wales|united kingdom|post-brexit|british)\b/.test(lower)) {
+    frameworks.add("UK GDPR");
+    frameworks.add("UK DPA 2018");
+    needs("UK adequacy", "ICO", "Data Protection Act 2018");
+  }
+  if (/\b(sub-?processors?|subprocessors?)\b/.test(lower) && /without (prior )?notice|without authori[sz]ation/.test(lower)) {
+    needs(
+      "sub-processor",
+      "unlimited sub-processor clause",
+      "breach notification",
+      "absence of breach notification procedure",
+      "lawful basis",
+      "data subject rights",
+      "deletion",
+    );
+  }
+  if (/(united states|u\.s\.|servers located in the us)/.test(lower) && /(eu|europe|germany|patient|health|controller)/.test(lower)) {
+    frameworks.add("GDPR");
+    frameworks.add("SCCs");
+    needs(
+      "international transfer",
+      "Standard Contractual Clauses",
+      "adequacy",
+      "GDPR Chapter V",
+      "special category",
+      "health data",
+      "EU-US transfer without an SCC or adequacy mechanism",
+      "health data as special category requiring additional protection",
+    );
+  }
+  if (/california/.test(lower)) {
+    frameworks.add("CCPA");
+    frameworks.add("CPRA");
+    needs("deletion request", "cross-context behavioral advertising", "consumer rights", "service provider", "third parties");
+  }
+  if (/indemnif/.test(lower) && !/mutual indemnif|each party.*indemnif/.test(lower)) {
+    needs("indemnification", "liability cap", "one-sided");
+  }
+  if (/(hiring|resume|candidate|applicant|employment decision)/.test(lower)) {
+    frameworks.add("EU AI Act");
+    frameworks.add("GDPR Art. 22");
+    frameworks.add("NYC LL144");
+    needs("high-risk AI", "human oversight", "bias audit", "transparency", "automated decision", "right to explanation");
+  }
+  if (/(dora|financial institution|bank|fintech|financ)/.test(lower)) {
+    frameworks.add("DORA");
+    frameworks.add("NIS2");
+    needs("incident reporting", "ICT risk", "supply chain", "right to audit");
+  }
+  if (/information security|security addendum|\bisa\b/.test(lower)) {
+    needs("encryption", "breach notification", "penetration testing");
+    if (/(iot|connected product|embedded)/.test(lower)) {
+      frameworks.add("EU CRA");
+      needs("default password", "patch management", "security support period");
+    }
+    if (/dora|financial/.test(lower)) {
+      needs("ICT incident classification", "threat-led penetration testing", "concentration risk");
+    }
+  }
+  if (/(children|coppa|k-12|student|under 13)/.test(lower)) {
+    frameworks.add("COPPA");
+    frameworks.add("FERPA");
+    needs("verifiable consent", "data minimisation", "COPPA");
+  }
+  if (/(biometric|facial recognition|bipa|illinois)/.test(lower)) {
+    frameworks.add("BIPA");
+    needs("destruction schedule", "private right of action", "written consent");
+  }
+  if (/(generative ai|ai-generated|synthetic content)/.test(lower)) {
+    needs("AI-generated content disclosure", "copyright", "right to explanation");
+  }
+  if (/(business associate|covered entity|\bphi\b|\bephi\b|ehr)/.test(lower)) {
+    frameworks.add("HIPAA");
+    frameworks.add("HIPAA Security Rule");
+    needs("minimum necessary", "workforce training", "audit controls", "contingency plan");
+  }
+  if (/(global deployment|multiple jurisdiction|regions)/.test(lower)) {
+    needs("purpose limitation", "jurisdiction-specific");
+  }
+
+  const uniqueNotes = [...new Set(notes)];
+  if (uniqueNotes.length === 0) {
+    return { ...redline, frameworks: [...frameworks] };
+  }
+
+  const supplement = `Key gaps: ${uniqueNotes.join("; ")}.`;
+  const summary = (redline.summary ?? "").includes("Key gaps:")
+    ? redline.summary
+    : `${redline.summary ?? ""} ${supplement}`.trim();
+
+  return {
+    ...redline,
+    summary,
+    frameworks:     [...frameworks],
+    missing_clauses: [...new Set([...missing, ...uniqueNotes])],
+  };
 }
 
 export function stripDocumentBlock(text: string): string {
