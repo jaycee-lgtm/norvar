@@ -38,6 +38,8 @@ const THOROUGH_DRAFT_CHOICES = new Set<RedlineReviewModelChoice>([
   "gemini-pro",
 ]);
 
+export const THOROUGH_WORKFLOW_CHOICES = THOROUGH_DRAFT_CHOICES;
+
 const COMPLEXITY_CONTEXT_RE =
   /hipaa|health|phi|medical|\bai\b|automated decision|cross-border|multi-jurisdiction|sub-processor|transfer mechanism/i;
 
@@ -72,6 +74,12 @@ export function scoreDraftComplexity(
 }
 
 function autoDraftChoice(score: number): Exclude<RedlineReviewModelChoice, "auto"> {
+  return autoWorkflowModelChoice(score);
+}
+
+export function autoWorkflowModelChoice(
+  score: number,
+): Exclude<RedlineReviewModelChoice, "auto"> {
   return score >= 2 ? "sonnet" : "gemini-flash";
 }
 

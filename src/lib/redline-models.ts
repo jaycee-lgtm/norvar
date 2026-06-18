@@ -27,7 +27,7 @@ export const REDLINE_REVIEW_MODELS: {
     id:      "auto",
     label:   "Auto",
     badge:   "",
-    tagline: "Picks speed or depth based on document size",
+    tagline: "Picks Gemini Flash or Sonnet based on agreement complexity",
     group:   "balanced",
   },
   {
@@ -112,10 +112,9 @@ export function normalizeRedlineReviewModelChoice(
 }
 
 /**
- * Auto mode:
- * - Documents > 12,000 chars → Claude Sonnet (fast, reliable on long agreements)
- * - Documents ≤ 12,000 chars → Claude Opus (deepest Claude pass for focused reviews)
- * Users can explicitly pick GPT or Gemini models for provider-specific quality.
+ * Auto mode (legacy char-count fallback — prefer resolveReviewReviewModel / resolveDraftReviewModel):
+ * - Documents > 12,000 chars → Sonnet
+ * - Shorter documents → Gemini Flash
  */
 const AUTO_OPUS_CHAR_LIMIT = 12_000;
 
@@ -215,10 +214,10 @@ export function resolveRedlineReviewModel(
   }
 
   return withChoice("auto", {
-    ...MODEL_SPECS.opus,
-    displayName: "Auto · Opus",
+    ...MODEL_SPECS["gemini-flash"],
+    displayName: "Auto · Gemini Flash",
     activityName: "Auto",
-    statusLead:  "Auto selected Opus for a focused deep review",
+    statusLead:  "Auto selected Gemini Flash for this review",
   });
 }
 

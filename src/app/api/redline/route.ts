@@ -8,6 +8,7 @@ import {
   CASSIUS_REDLINE_PROMPT,
   NORA_REDLINE_PROMPT,
   detectAgreementType,
+  enrichRedlineFromContract,
   normalizeRedlineOutput,
   parseRedlineJSON,
   stripDocumentBlock,
@@ -15,14 +16,14 @@ import {
 } from "@/lib/redline";
 import {
   normalizeRedlineReviewModelChoice,
-  resolveRedlineReviewModel,
 } from "@/lib/redline-models";
+import { resolveReviewReviewModel } from "@/lib/review-models";
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 function sse(data: object) {
   return `data: ${JSON.stringify(data)}\n\n`;
@@ -76,14 +77,20 @@ export async function POST(req: NextRequest) {
         return;
       }
 
+      const detectedType = agreement_type || detectAgreementType(text);
+
       const modelChoice = review_model !== undefined
         ? normalizeRedlineReviewModelChoice(review_model)
-        : agent === "nora"
-        ? "sonnet"
-        : agent === "cassius"
-        ? "opus"
-        : normalizeRedlineReviewModelChoice(undefined);
-      const resolved = resolveRedlineReviewModel(modelChoice, text.length);
+        : auditMode
+          ? "sonnet"
+          : "auto";
+
+      const resolved = resolveReviewReviewModel(modelChoice, {
+        agreementType:     detectedType,
+        jurisdictions,
+        contractCharCount: text.length,
+        contractText:      text,
+      });
       const {
         agent: resolvedAgent,
         provider,
@@ -95,7 +102,6 @@ export async function POST(req: NextRequest) {
         statusLead,
       } = resolved;
 
-      const detectedType = agreement_type || detectAgreementType(text);
       await send({ type: "status", text: `Identified this as a ${detectedType}.` });
 
       if (jurisdictions.length > 0) {
@@ -160,7 +166,10 @@ export async function POST(req: NextRequest) {
 
       let redline: RedlineOutput;
       try {
-        redline = normalizeRedlineOutput(parseRedlineJSON(rawText), resolvedAgent, detectedType);
+        redline = enrichRedlineFromContract(
+          normalizeRedlineOutput(parseRedlineJSON(rawText), resolvedAgent, detectedType),
+          text,
+        );
       } catch (parseErr) {
         console.error("Redline parse failed:", parseErr, {
           truncated: response.truncated,
@@ -194,7 +203,10 @@ export async function POST(req: NextRequest) {
               ].join("\n"),
             });
 
-            redline = normalizeRedlineOutput(parseRedlineJSON(repair.text), resolvedAgent, detectedType);
+            redline = enrichRedlineFromContract(
+              normalizeRedlineOutput(parseRedlineJSON(repair.text), resolvedAgent, detectedType),
+              text,
+            );
           } catch (repairErr) {
             console.error("Redline repair failed:", repairErr);
             await send({

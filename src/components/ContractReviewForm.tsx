@@ -20,6 +20,7 @@ import {
   redlineModelLabel,
   type RedlineReviewModelChoice,
 } from "@/lib/redline-models";
+import { REVIEW_AUTO_MODEL_TAGLINE } from "@/lib/review-models";
 
 type InputMode = "document" | "upload" | "paste";
 
@@ -235,6 +236,7 @@ export default function ContractReviewForm({
       onChange={setReviewModel}
       disabled={working || fileExtracting}
       menuPlacement="top"
+      autoTagline={REVIEW_AUTO_MODEL_TAGLINE}
     />
   );
 
