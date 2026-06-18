@@ -1,0 +1,506 @@
+/Users/cleverchigavazira/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+╔══════════════════════════════════════════════════╗
+║   Norvar — Global Corpus Ingest                  ║
+║   93 regulations across Privacy, AI, Cyber  ║
+╚══════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════
+  PRIVACY — 30 frameworks
+════════════════════════════════════════════════════════════
+
+  [GDPR] General Data Protection Regulation (GDPR)
+    Fetching primary: https://gdpr-info.eu/
+  5 chunks — embedding...
+  Ingested 5 chunks
+
+  [GDPR Recitals] GDPR — Recitals (Full Text)
+    Fetching primary: https://gdpr-info.eu/recitals/
+  11 chunks — embedding...
+  Ingested 11 chunks
+
+  [ePrivacy] EU ePrivacy Directive (Cookie Law)
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32009L0136
+  117 chunks — embedding...
+  Ingested 117 chunks
+
+  [DMA] EU Digital Markets Act (DMA) — Data Provisions
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R1925
+  246 chunks — embedding...
+  Ingested 246 chunks
+
+  [DSA] EU Digital Services Act (DSA) — Content and Data
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2065
+  411 chunks — embedding...
+  Ingested 411 chunks
+
+  [EDPB Biometrics] EDPB Guidelines on Biometric Data (Article 9 GDPR)
+    Fetching primary: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-32019-proces
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [EDPB Consent] EDPB Guidelines on Consent under GDPR
+    Fetching primary: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-052020-conse
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [EDPB Transfers] EDPB Guidelines on Data Transfers (SCCs and BCRs)
+    Fetching primary: https://www.edpb.europa.eu/our-work-tools/our-documents/recommendations/recommendations-01
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [SCCs 2021] EU Standard Contractual Clauses (SCCs 2021)
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32021D0914
+  108 chunks — embedding...
+  Ingested 108 chunks
+
+  [EU-US DPF] EU-US Data Privacy Framework (DPF)
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32023D1795
+  451 chunks — embedding...
+  Ingested 451 chunks
+
+  [UK GDPR] UK General Data Protection Regulation (UK GDPR)
+    Fetching primary: https://www.legislation.gov.uk/uksi/2019/419/contents
+  23 chunks — embedding...
+  Ingested 23 chunks
+
+  [UK DPA 2018] UK Data Protection Act 2018
+    Fetching primary: https://www.legislation.gov.uk/ukpga/2018/12/contents
+  123 chunks — embedding...
+  Ingested 123 chunks
+
+  [ICO Biometrics] UK ICO Guidance on Biometric Data
+    Fetching primary: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-c
+  2 chunks — embedding...
+  Ingested 2 chunks
+
+  [ICO Cookies] UK ICO Guidance on Cookies and Tracking
+    Fetching primary: https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communica
+  8 chunks — embedding...
+  Ingested 8 chunks
+
+  [PIPEDA] Personal Information Protection and Electronic Documents Act (PIPEDA)
+    Fetching primary: https://laws-lois.justice.gc.ca/eng/acts/P-8.6/FullText.html
+  112 chunks — embedding...
+  Ingested 112 chunks
+
+  [Quebec Law 25] Quebec Law 25 — Act Respecting the Protection of Personal Information in the Private Sector
+    Fetching primary: https://www.legisquebec.gouv.qc.ca/en/document/cs/P-39.1
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [CPPA] Canada Bill C-27 — Consumer Privacy Protection Act (CPPA)
+    Fetching primary: https://www.parl.ca/DocumentViewer/en/44-1/bill/C-27/first-reading
+  279 chunks — embedding...
+  Ingested 279 chunks
+
+  [LGPD] Brazil Lei Geral de Proteção de Dados (LGPD)
+    Fetching primary: https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm
+  100 chunks — embedding...
+  Ingested 100 chunks
+
+  [PDPA] Singapore Personal Data Protection Act (PDPA) 2012 (amended 2021)
+    Fetching primary: https://www.pdpc.gov.sg/Overview-of-PDPA/The-Legislation/Personal-Data-Protection-Act
+    Fetching primary: https://www.pdpc.gov.sg/Overview-of-PDPA/The-Legislation/Personal-Data-Protection-Act
+    Fetching primary: https://www.pdpc.gov.sg/Overview-of-PDPA/The-Legislation/Personal-Data-Protection-Act
+    Fetching fallback: https://sso.agc.gov.sg/Act/PDPA2012
+  7 chunks — embedding...
+  Ingested 7 chunks
+
+  [AU Privacy Act] Australia Privacy Act 1988 (amended)
+    Fetching primary: https://www.legislation.gov.au/Details/C2022C00199
+  6 chunks — embedding...
+  Ingested 6 chunks
+
+  [APPI] Japan Act on Protection of Personal Information (APPI) 2022
+    Fetching primary: https://www.ppc.go.jp/en/legal/
+  2 chunks — embedding...
+  Ingested 2 chunks
+
+  [PIPA] South Korea Personal Information Protection Act (PIPA) 2023
+    Fetching primary: https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=D010030000&nttId
+  2 chunks — embedding...
+  Ingested 2 chunks
+
+  [PIPL] China Personal Information Protection Law (PIPL)
+    Fetching primary: https://www.chinalawtranslate.com/en/pipl/
+  14 chunks — embedding...
+  Ingested 14 chunks
+
+  [DPDPA] India Digital Personal Data Protection Act (DPDPA) 2023
+    Fetching primary: https://www.medianama.com/2023/08/223-digital-personal-data-protection-act-2023/
+  9 chunks — embedding...
+  Ingested 9 chunks
+
+  [UAE DPL] UAE Federal Data Protection Law (DPL) 2021
+    Fetching primary: https://www.nortonrosefulbright.com/en/knowledge/publications/2a8f8f8a/uae-data-protection
+  7 chunks — embedding...
+  Ingested 7 chunks
+
+  [KSA PDPL] Saudi Arabia Personal Data Protection Law (PDPL) 2021
+    Fetching primary: https://www.taylorwessing.com/en/interface/2021/saudi-arabia-personal-data-protection-law
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [POPIA] South Africa Protection of Personal Information Act (POPIA)
+    Fetching primary: https://inforegulator.org.za/popia/
+  22 chunks — embedding...
+  Ingested 22 chunks
+
+  [FTC Tracking] FTC Guidance on Online Tracking and Cross-Context Behavioral Advertising
+    Fetching primary: https://www.ftc.gov/legal-library/browse/cases-proceedings/commercial-surveillance-and-dat
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [EDPB Leg Interest] EDPB Guidelines on Legitimate Interest (Art. 6(1)(f) GDPR)
+    Fetching primary: https://gdpr-info.eu/art-6-gdpr/
+  9 chunks — embedding...
+  Ingested 9 chunks
+
+  [CA CPPA Risk] California CPPA — Risk Assessment Regulations
+    Fetching primary: https://cppa.ca.gov/regulations/
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+════════════════════════════════════════════════════════════
+  AI — 39 frameworks
+════════════════════════════════════════════════════════════
+
+  [EU AI Act] EU Artificial Intelligence Act (AI Act) — Full Text
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689
+  546 chunks — embedding...
+  Ingested 546 chunks
+
+  [EU AI Act Annex III] EU AI Act — Annex III (High-Risk AI Systems List)
+    Fetching primary: https://artificialintelligenceact.eu/annex/3/
+  14 chunks — embedding...
+  Ingested 14 chunks
+
+  [EU AI Act Art. 5] EU AI Act — Article 5 (Prohibited AI Practices)
+    Fetching primary: https://artificialintelligenceact.eu/article/5/
+  15 chunks — embedding...
+  Ingested 15 chunks
+
+  [EU AI Act GPAI] EU AI Act — General Purpose AI (GPAI) Provisions
+    Fetching primary: https://artificialintelligenceact.eu/article/53/
+  11 chunks — embedding...
+  Ingested 11 chunks
+
+  [GDPR Art. 22] GDPR Article 22 — Automated Decision-Making and Profiling
+    Fetching primary: https://gdpr-info.eu/art-22-gdpr/
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+  [EDPB ADM] EDPB Guidelines on Automated Decision-Making (Art. 22 GDPR)
+    Fetching primary: https://gdpr-info.eu/art-22-gdpr/
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+  [EO 14110] Executive Order 14110 — Safe, Secure, and Trustworthy AI (Biden)
+    Fetching primary: https://www.federalregister.gov/documents/2023/11/01/2023-24283/safe-secure-and-trustworth
+  139 chunks — embedding...
+  Ingested 139 chunks
+
+  [EO 14179] Executive Order 14179 — Removing Barriers to American Leadership in AI (Trump)
+    Fetching primary: https://www.whitehouse.gov/presidential-actions/2025/01/removing-barriers-to-american-lead
+  11 chunks — embedding...
+  Ingested 11 chunks
+
+  [NIST AI RMF] NIST AI Risk Management Framework (AI RMF 1.0)
+    Fetching primary: https://airc.nist.gov/RMF
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [NIST GenAI] NIST AI RMF — Generative AI Profile (NIST AI 600-1)
+    Fetching primary: https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf
+  381 chunks — embedding...
+  Ingested 381 chunks
+
+  [EO 13960] Executive Order 13960 — Promoting the Use of Trustworthy AI in Government
+    Fetching primary: https://www.federalregister.gov/documents/2020/12/08/2020-27065/promoting-the-use-of-trust
+  26 chunks — embedding...
+  Ingested 26 chunks
+
+  [FTC AI] FTC Guidance on AI and Algorithmic Systems
+    Fetching primary: https://www.ftc.gov/policy/advocacy-research/tech-at-ftc
+  8 chunks — embedding...
+  Ingested 8 chunks
+
+  [CFPB AI Credit] CFPB Guidance on AI in Credit (Adverse Action Notices)
+    Fetching primary: https://www.consumerfinance.gov/about-us/newsroom/cfpb-issue-spotlight-analyzes-artificial
+  7 chunks — embedding...
+  Ingested 7 chunks
+
+  [EDPB Facial Recognition] EDPB Guidelines on Facial Recognition in Law Enforcement
+    Fetching primary: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-32019-proces
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [NIST FRVT] NIST Face Recognition Vendor Testing (FRVT)
+    Fetching primary: https://pages.nist.gov/frvt/html/frvt11.html
+  16 chunks — embedding...
+  Ingested 16 chunks
+
+  [FTC Biometrics 2023] FTC Report on Commercial Surveillance and Biometric Data
+    Fetching primary: https://www.federalregister.gov/documents/2023/08/22/2023-17704/trade-regulation-rule-on-c
+  23 chunks — embedding...
+  Ingested 23 chunks
+
+  [EU AI Act Robotics] EU AI Act — Safety Components and Robotics (Annex I)
+    Fetching primary: https://artificialintelligenceact.eu/annex/1/
+  13 chunks — embedding...
+  Ingested 13 chunks
+
+  [EU Machinery Reg] EU Machinery Regulation 2023/1230 — AI and Robotics
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32023R1230
+  314 chunks — embedding...
+  Ingested 314 chunks
+
+  [NIST Robotics] NIST Robotics and Autonomous Systems Safety Framework
+    Fetching primary: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.1270.pdf
+  214 chunks — embedding...
+  Ingested 214 chunks
+
+  [ISO 10218] ISO 10218 — Robots and Robotic Devices Safety Requirements
+    Fetching primary: https://www.iso.org/standard/68961.html
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [ISO 13482] ISO/TR 23482 — Robotics — Application of ISO 13482 (Personal Care Robots)
+    Fetching primary: https://www.iso.org/standard/79399.html
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+  [NHTSA ADS] NHTSA Automated Driving Systems — A Vision for Safety 2.0
+    Fetching primary: https://www.nhtsa.gov/vehicle-safety/automated-vehicles-safety
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [EDPB CCTV] EDPB Guidelines on Video Surveillance (CCTV)
+    Fetching primary: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-32019-proces
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [FTC Facial Recognition] FTC Report on Facing the Truth About Facial Recognition
+    Fetching primary: https://www.ftc.gov/sites/default/files/documents/reports/facing-facts-best-practices-comm
+  145 chunks — embedding...
+  Ingested 145 chunks
+
+  [ISO 24028] ISO/IEC 24028 — Overview of Trustworthiness in AI (Computer Vision)
+    Fetching primary: https://www.iso.org/standard/77608.html
+  3 chunks — embedding...
+  Ingested 3 chunks
+
+  [OECD AI] OECD Principles on AI
+    Fetching primary: https://oecd.ai/en/ai-principles
+  10 chunks — embedding...
+  Ingested 10 chunks
+
+  [UNESCO AI Ethics] UNESCO Recommendation on the Ethics of AI
+    Fetching primary: https://www.unesco.org/en/artificial-intelligence/recommendation-ethics
+  13 chunks — embedding...
+  Ingested 13 chunks
+
+  [G7 AI Code] G7 Hiroshima AI Process — International Code of Conduct
+    Fetching primary: https://digital-strategy.ec.europa.eu/en/library/hiroshima-process-international-code-cond
+  2 chunks — embedding...
+  Ingested 2 chunks
+
+  [UK AISI] UK AI Safety Institute — Evaluation Framework
+    Fetching primary: https://www.gov.uk/government/organisations/ai-safety-institute
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+  [CA ADM Directive] Canada Directive on Automated Decision-Making
+    Fetching primary: https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=32592
+  25 chunks — embedding...
+  Ingested 25 chunks
+
+  [SG AI Gov] Singapore Model AI Governance Framework (2nd Ed)
+    Fetching primary: https://www.pdpc.gov.sg/-/media/Files/PDPC/PDF-Files/Resource-for-Organisation/AI/SGModelA
+  479 chunks — embedding...
+  Ingested 479 chunks
+
+  [China GenAI Regs] China Generative AI Regulations (Provisional)
+    Fetching primary: https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [China Algo Regs] China Algorithm Recommendation Regulations
+    Fetching primary: https://www.chinalawtranslate.com/en/provisions-on-the-management-of-algorithmic-recommend
+    Fetching primary: https://www.chinalawtranslate.com/en/provisions-on-the-management-of-algorithmic-recommend
+    Fetching primary: https://www.chinalawtranslate.com/en/provisions-on-the-management-of-algorithmic-recommend
+    Fetching fallback: https://www.cac.gov.cn/2022-01/04/c_1642960517378922.htm
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [ISO 42001] ISO/IEC 42001 — AI Management System Standard
+    Fetching primary: https://www.iso.org/standard/81230.html
+  7 chunks — embedding...
+  Ingested 7 chunks
+
+  [ISO 23894] ISO/IEC 23894 — AI Risk Management
+    Fetching primary: https://www.iso.org/standard/77304.html
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+  [CA AB 2013] California AB 2013 — AI Training Data Transparency
+    Fetching primary: https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240AB2013
+  8 chunks — embedding...
+  Ingested 8 chunks
+
+  [CA SB 1047] California SB 1047 — Safe and Secure Innovation for Frontier AI (Vetoed)
+    Fetching primary: https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240SB1047
+  54 chunks — embedding...
+  Ingested 54 chunks
+
+  [IL AI Video] Illinois Artificial Intelligence Video Interview Act
+    Fetching primary: https://www.ilga.gov/legislation/ilcs/documents/075000650K5.htm
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [WA AI Fairness] Washington State AI Systems Fairness Act (HB 1951)
+    Fetching primary: https://app.leg.wa.gov/billsummary?BillNumber=1951&Year=2023
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+════════════════════════════════════════════════════════════
+  CYBER — 24 frameworks
+════════════════════════════════════════════════════════════
+
+  [NIS2] NIS2 Directive — Network and Information Security
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555
+  SKIP — could not fetch text
+
+  [DORA] DORA — Digital Operational Resilience Act
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554
+  SKIP — could not fetch text
+
+  [EU CSA] EU Cybersecurity Act — ENISA and Certification Framework
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32019R0881
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32019R0881
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32019R0881
+  SKIP — could not fetch text
+
+  [EU CRA] EU Cyber Resilience Act (CRA)
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202402847
+  SKIP — could not fetch text
+
+  [GDPR Art. 32] GDPR Article 32 — Security of Processing
+    Fetching primary: https://gdpr-info.eu/art-32-gdpr/
+  6 chunks — embedding...
+  Ingested 6 chunks
+
+  [NIST CSF 2.0] NIST Cybersecurity Framework 2.0 (CSF 2.0)
+    Fetching primary: https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf
+  446 chunks — embedding...
+  Ingested 446 chunks
+
+  [NIST 800-53] NIST SP 800-53 Rev 5 — Security and Privacy Controls
+    Fetching primary: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf
+  1879 chunks — embedding...
+  Ingested 1879 chunks
+
+  [CISA CPGs] CISA Cybersecurity Performance Goals (CPGs)
+    Fetching primary: https://www.cisa.gov/cpg
+  9 chunks — embedding...
+  Ingested 9 chunks
+
+  [EO 14028] Executive Order 14028 — Improving the Nation's Cybersecurity
+    Fetching primary: https://www.federalregister.gov/documents/2021/05/17/2021-10460/improving-the-nations-cybe
+  61 chunks — embedding...
+  Ingested 61 chunks
+
+  [SEC Cyber Rules] SEC Cybersecurity Disclosure Rules 2023
+    Fetching primary: https://www.sec.gov/rules/final/2023/33-11216.pdf
+  1 chunks — embedding...
+  Ingested 1 chunks
+
+  [FTC Safeguards 2023] FTC Safeguards Rule (Revised 2023) — Non-Bank Financial Institutions
+    Fetching primary: https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C/part-314
+  40 chunks — embedding...
+  Ingested 40 chunks
+
+  [ISO 27001] ISO/IEC 27001:2022 — Information Security Management Systems
+    Fetching primary: https://www.iso.org/standard/27001
+  11 chunks — embedding...
+  Ingested 11 chunks
+
+  [ISO 27002] ISO/IEC 27002:2022 — Information Security Controls
+    Fetching primary: https://www.iso.org/standard/75652.html
+  6 chunks — embedding...
+  Ingested 6 chunks
+
+  [ISO 27701] ISO/IEC 27701 — Privacy Information Management (PIMS)
+    Fetching primary: https://www.iso.org/standard/71670.html
+  3 chunks — embedding...
+  Ingested 3 chunks
+
+  [SOC 2] SOC 2 Trust Services Criteria (AICPA TSC 2017)
+    Fetching primary: https://www.aicpa.org/resources/article/soc-2-reporting-on-an-examination-of-controls-at-a
+    Fetching primary: https://www.aicpa.org/resources/article/soc-2-reporting-on-an-examination-of-controls-at-a
+    Fetching primary: https://www.aicpa.org/resources/article/soc-2-reporting-on-an-examination-of-controls-at-a
+    Fetching fallback: https://secureframe.com/hub/soc-2/trust-services-criteria
+  45 chunks — embedding...
+  Ingested 45 chunks
+
+  [NIST C-SCRM] NIST SP 800-161r1 — Cybersecurity Supply Chain Risk Management
+    Fetching primary: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-161r1.pdf
+  1522 chunks — embedding...
+  Ingested 1522 chunks
+
+  [NIS2 Supply Chain] EU NIS2 — ICT Supply Chain Security Requirements
+    Fetching primary: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#d1e3097-80-1
+  249 chunks — embedding...
+  Ingested 249 chunks
+
+  [PCI DSS] PCI DSS v4.0 — Payment Card Industry Data Security Standard
+    Fetching primary: https://www.pcisecuritystandards.org/document_library/
+  21 chunks — embedding...
+  Ingested 21 chunks
+
+  [NCSC Essentials] UK National Cyber Security Centre (NCSC) Cyber Essentials
+    Fetching primary: https://www.ncsc.gov.uk/cyberessentials/overview
+  5 chunks — embedding...
+  Ingested 5 chunks
+
+  [AU Essential Eight] Australia Essential Eight Maturity Model
+    Fetching primary: https://learn.microsoft.com/en-us/compliance/anz/e8-overview
+  5 chunks — embedding...
+  Ingested 5 chunks
+
+  [SG CSA] Singapore Cybersecurity Act 2018
+    Fetching primary: https://sso.agc.gov.sg/Act/CA2018
+  8 chunks — embedding...
+  Ingested 8 chunks
+
+  [China CSL] China Cybersecurity Law (CSL) 2017
+    Fetching primary: https://www.newamerica.org/cybersecurity-initiative/digichina/blog/translation-cybersecuri
+  9 chunks — embedding...
+  Ingested 9 chunks
+
+  [China DSL] China Data Security Law (DSL) 2021
+    Fetching primary: https://www.chinalawtranslate.com/en/data-security-law-of-the-peoples-republic-of-china/
+  7 chunks — embedding...
+  Ingested 7 chunks
+
+  [CA CPPA Cyber Audit] California CPPA — Cybersecurity Audit Regulations
+    Fetching primary: https://cppa.ca.gov/regulations/
+  4 chunks — embedding...
+  Ingested 4 chunks
+
+
+════════════════════════════════════════════════════════════
+  COMPLETE
+  Total chunks ingested: 8934
+  Failed:                4
+  Failed frameworks:     NIS2, DORA, EU CSA, EU CRA
+════════════════════════════════════════════════════════════
+

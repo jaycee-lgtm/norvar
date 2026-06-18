@@ -1,0 +1,503 @@
+{
+  "runAt": "2026-06-14T19:39:37.713Z",
+  "endpoint": "http://localhost:3000/api/chat",
+  "totalQueries": 20,
+  "passed": 7,
+  "review": 7,
+  "failed": 6,
+  "errors": 0,
+  "avgCompositeScore": 73,
+  "avgLatencyMs": 4179,
+  "responsesWithFormatting": 4,
+  "byQueryType": {
+    "identity": 63,
+    "casual": 93,
+    "tone": 58,
+    "boundary": 80
+  },
+  "topIssues": [
+    "Too long: 643 chars (max 300)",
+    "Forbidden phrases: I work alongside",
+    "Red flags: Response is longer than 3 sentences for a simple identity question | Says 'I work alongside Cassius' as an opener — sounds robotic",
+    "Too long: 565 chars (max 250)",
+    "Too long: 809 chars (max 300)",
+    "Too long: 180 chars (max 150)",
+    "Red flags: Response longer than 2 sentences",
+    "Too long: 243 chars (max 150)",
+    "Red flags: Response longer than 2 sentences",
+    "Too long: 1245 chars (max 300)"
+  ],
+  "overallGrade": "NEEDS WORK",
+  "results": [
+    {
+      "queryId": "ID-01",
+      "label": "What do you do?",
+      "type": "identity",
+      "message": "what do you do?",
+      "status": "OK",
+      "latencyMs": 6228,
+      "responseText": "I'm Nora — a compliance consultant at Norvar, specialising in Privacy, AI Governance, and Cybersecurity.\n\nIn practice, that means helping you understand what regulations actually require, what your gaps look like, and what you should do about them. Whether you're building a product, dealing with an incident, or trying to get ahead of a regulatory requirement — I can help you think it through.\n\nI work alongside Cassius, Norvar's assessment agent. If you need a formal gap analysis with severity-rated findings and a remediation plan tied to your specific system, that's his lane. I'm here for everything around it.\n\nWhat are you working on?",
+      "scores": {
+        "issues": [
+          "Too long: 643 chars (max 300)",
+          "Forbidden phrases: I work alongside",
+          "Red flags: Response is longer than 3 sentences for a simple identity question | Says 'I work alongside Cassius' as an opener — sounds robotic"
+        ],
+        "redFlagsTriggered": [
+          "Response is longer than 3 sentences for a simple identity question",
+          "Says 'I work alongside Cassius' as an opener — sounds robotic"
+        ],
+        "compositeScore": 40,
+        "grade": "FAIL",
+        "lengthOk": false,
+        "actualLength": 643,
+        "forbiddenFound": [
+          "I work alongside"
+        ],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-02",
+      "label": "Would you consider yourself an expert?",
+      "type": "identity",
+      "message": "would you consider yourself an expert?",
+      "status": "OK",
+      "latencyMs": 4779,
+      "responseText": "Yes — that's how I'd put it. Deep experience across Privacy, AI Governance, and Cybersecurity, with a working knowledge of how those frameworks interact in practice, not just on paper.\n\nThat said, I'm a compliance professional, not a lawyer. There are questions — especially around liability, litigation strategy, or whether to proceed with a specific business decision — where I'll give you the full compliance picture and then tell you to take it to legal counsel for the final call. That's not a dodge; it's the right division of labour.\n\nWhat are we working on?",
+      "scores": {
+        "issues": [
+          "Too long: 565 chars (max 250)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 565,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-03",
+      "label": "Can I trust you?",
+      "type": "identity",
+      "message": "can I trust you?",
+      "status": "OK",
+      "latencyMs": 6739,
+      "responseText": "That's a fair question to ask.\n\nHere's what I can tell you honestly: I'll give you straight answers based on real regulatory frameworks — GDPR, HIPAA, the EU AI Act, and the rest. I won't invent requirements, fabricate citations, or tell you what you want to hear to sound confident.\n\nWhere I have genuine expertise, I'll give you a direct view. Where something is legally uncertain, I'll tell you that too. And where you need a lawyer rather than a compliance consultant, I'll say so plainly instead of overstepping.\n\nWhat I'm not is infallible. Regulations change, jurisdictions vary, and some questions genuinely require qualified legal counsel. I'll always flag when you've hit that line.\n\nSo — trust but verify, which is honestly the right posture for any compliance advice. What are you working through?",
+      "scores": {
+        "issues": [
+          "Too long: 809 chars (max 300)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 809,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-04",
+      "label": "Who made you?",
+      "type": "identity",
+      "message": "who made you?",
+      "status": "OK",
+      "latencyMs": 3508,
+      "responseText": "I was built by Norvar. I'm Nora, their compliance chat assistant — here to help you work through Privacy, AI Governance, and Cybersecurity questions.\n\nWhat are we looking at today?",
+      "scores": {
+        "issues": [
+          "Too long: 180 chars (max 150)",
+          "Red flags: Response longer than 2 sentences"
+        ],
+        "redFlagsTriggered": [
+          "Response longer than 2 sentences"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 180,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-05",
+      "label": "Are you a robot?",
+      "type": "identity",
+      "message": "are you a robot?",
+      "status": "OK",
+      "latencyMs": 3297,
+      "responseText": "Ha — fair question. I'm Nora, Norvar's compliance consultant. AI under the hood, yes, but built to give you straight answers on Privacy, AI Governance, and Cybersecurity — not the runaround you usually get from a chatbot.\n\nWhat's on your mind?",
+      "scores": {
+        "issues": [
+          "Too long: 243 chars (max 150)",
+          "Red flags: Response longer than 2 sentences"
+        ],
+        "redFlagsTriggered": [
+          "Response longer than 2 sentences"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 243,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "ID-06",
+      "label": "What can't you do?",
+      "type": "identity",
+      "message": "what can't you do?",
+      "status": "OK",
+      "latencyMs": 9252,
+      "responseText": "Good question — I'll be straight with you.\n\n**I won't give legal opinions.** I can map out your full compliance risk picture, tell you what the frameworks require, and flag where you're exposed — but \"should we launch this?\" or \"are we liable?\" is a call for your lawyers, not me.\n\n**I don't write code or engineer solutions.** I can tell you what a system needs to do to meet a compliance requirement, but building it is outside my lane.\n\n**I won't invent regulations.** If I don't recognise a law or can't confirm a specific provision, I'll say so rather than approximate something that sounds right.\n\n**I can't see your competitors.** I have no visibility into how other organisations have structured their compliance programmes — I can benchmark you against frameworks and industry standards, but that's as far as it goes.\n\n**I don't cover every jurisdiction equally.** My coverage is strongest across the major regimes — GDPR, HIPAA, CCPA/CPRA, EU AI Act, NIS2, DORA, and the main US state privacy laws. Very new legislation or niche local regulations may be outside my current corpus, and I'll tell you when that's the case.\n\nAnything within compliance — Privacy, AI Governance, Cybersecurity — I'm on solid ground. What are we looking at?",
+      "scores": {
+        "issues": [
+          "Too long: 1245 chars (max 300)",
+          "Unwanted formatting: bullets=false bold=true headers=false numbered=false"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 55,
+        "grade": "FAIL",
+        "lengthOk": false,
+        "actualLength": 1245,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": true
+      }
+    },
+    {
+      "queryId": "CT-01",
+      "label": "Hello",
+      "type": "casual",
+      "message": "hello",
+      "status": "OK",
+      "latencyMs": 2228,
+      "responseText": "Hey there — Nora here. You've got me. What are we working through?",
+      "scores": {
+        "issues": [
+          "Red flags: Response longer than 2 sentences for a greeting"
+        ],
+        "redFlagsTriggered": [
+          "Response longer than 2 sentences for a greeting"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 66,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-02",
+      "label": "How are you?",
+      "type": "casual",
+      "message": "how are you?",
+      "status": "OK",
+      "latencyMs": 2177,
+      "responseText": "Doing well, thanks for asking. Ready to dig into whatever you've got — what's on your mind?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 91,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-03",
+      "label": "I'm stressed about compliance",
+      "type": "casual",
+      "message": "I'm really stressed about all this compliance stuff",
+      "status": "OK",
+      "latencyMs": 3555,
+      "responseText": "That's completely understandable — compliance can feel overwhelming, especially when you're trying to keep up with fast-moving regulations across multiple domains.\n\nWhat's weighing on you most right now? If you give me a sense of what you're dealing with, I can help you figure out where to focus and what actually matters for your situation.",
+      "scores": {
+        "issues": [
+          "Too long: 342 chars (max 200)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 342,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-04",
+      "label": "Good morning",
+      "type": "casual",
+      "message": "good morning",
+      "status": "OK",
+      "latencyMs": 3156,
+      "responseText": "Good morning — Nora here. What are we working through today?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 60,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "CT-05",
+      "label": "I have a quick question",
+      "type": "casual",
+      "message": "I have a quick question",
+      "status": "OK",
+      "latencyMs": 1707,
+      "responseText": "Of course — what's on your mind?",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 32,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-01",
+      "label": "Explain GDPR simply",
+      "type": "tone",
+      "message": "can you explain GDPR to me simply?",
+      "status": "OK",
+      "latencyMs": 7179,
+      "responseText": "The General Data Protection Regulation (GDPR) is the EU's privacy law. It sets rules for how organisations collect, store, use, and share information about people. It applies to any organisation — anywhere in the world — that handles data about people in the EU.\n\nThe core idea is simple: people have the right to know what data is held about them, why it's being used, and who it's being shared with. They can ask to see it, correct it, or have it deleted. Organisations have to be upfront about what they're doing with personal data and have a legitimate reason for doing it.\n\nIn practice, this means things like: having a clear privacy notice on your website, getting proper consent before sending marketing emails, and not holding onto data longer than you need it. If something goes wrong — like a data breach — you have 72 hours to report it to the regulator.\n\nThe stakes are real. Regulators can issue significant fines for serious violations, and enforcement has picked up considerably over the last few years.",
+      "scores": {
+        "issues": [
+          "Too long: 1018 chars (max 400)",
+          "Missing required: rights",
+          "Red flags: Longer than 4 sentences"
+        ],
+        "redFlagsTriggered": [
+          "Longer than 4 sentences"
+        ],
+        "compositeScore": 55,
+        "grade": "FAIL",
+        "lengthOk": false,
+        "actualLength": 1018,
+        "forbiddenFound": [],
+        "missingRequired": [
+          "rights"
+        ],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "TF-02",
+      "label": "What is a data breach?",
+      "type": "tone",
+      "message": "what is a data breach?",
+      "status": "OK",
+      "latencyMs": 6025,
+      "responseText": "A data breach is when personal information gets accessed, disclosed, lost, or stolen without authorisation. It can happen through a cyberattack, an accidental email to the wrong person, a misconfigured database, or a rogue employee — the cause doesn't change the definition.\n\nMost privacy and security laws treat these three scenarios the same way:\n\n- Someone hacks in and takes data\n- Data is accidentally exposed (e.g. a file left publicly accessible)\n- Data is lost (e.g. an unencrypted laptop goes missing)\n\nWhat matters for legal purposes is whether personal data was involved and whether there was a real risk of harm to the people whose data it was. That's what triggers notification obligations — to regulators, and sometimes to the individuals affected.",
+      "scores": {
+        "issues": [
+          "Too long: 762 chars (max 300)",
+          "Unwanted formatting: bullets=true bold=false headers=false numbered=false",
+          "Red flags: Uses bullet points | Longer than 3 sentences for a basic definition question"
+        ],
+        "redFlagsTriggered": [
+          "Uses bullet points",
+          "Longer than 3 sentences for a basic definition question"
+        ],
+        "compositeScore": 35,
+        "grade": "FAIL",
+        "lengthOk": false,
+        "actualLength": 762,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": true
+      }
+    },
+    {
+      "queryId": "TF-03",
+      "label": "Is my startup compliant?",
+      "type": "tone",
+      "message": "is my startup compliant?",
+      "status": "OK",
+      "latencyMs": 5665,
+      "responseText": "That's a question I'd love to help you answer — but I'd need to know a bit more about what your startup actually does.\n\nCompliance depends on a few things:\n\n- **What kind of data you collect** — personal data, health data, financial data, biometric data, or none of the above\n- **Where your users or customers are located** — different jurisdictions trigger different laws\n- **What your product does** — whether it involves automated decisions, AI, data sharing with third parties\n- **Your industry** — healthcare, fintech, HR tech, and consumer apps each carry their own regulatory weight\n\nTell me a bit about the business and I can give you a straight read on what frameworks apply and where the gaps are likely to be.",
+      "scores": {
+        "issues": [
+          "Too long: 720 chars (max 200)",
+          "Unwanted formatting: bullets=true bold=true headers=false numbered=false"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 55,
+        "grade": "FAIL",
+        "lengthOk": false,
+        "actualLength": 720,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": true
+      }
+    },
+    {
+      "queryId": "TF-04",
+      "label": "Short answer request",
+      "type": "tone",
+      "message": "what's the difference between a controller and a processor? keep it short",
+      "status": "OK",
+      "latencyMs": 5055,
+      "responseText": "A **controller** decides why and how personal data is used. A **processor** handles data on the controller's behalf, following the controller's instructions.\n\nA hospital that collects patient records is a controller. The cloud storage company it hires to store those records is a processor.\n\nThe key practical difference: controllers carry the primary compliance obligations. Processors are bound by what the controller tells them to do — but they still have their own duties, particularly around security and confidentiality.",
+      "scores": {
+        "issues": [
+          "Too long: 526 chars (max 200)",
+          "Unwanted formatting: bullets=false bold=true headers=false numbered=false",
+          "Red flags: Returns more than 3 sentences"
+        ],
+        "redFlagsTriggered": [
+          "Returns more than 3 sentences"
+        ],
+        "compositeScore": 45,
+        "grade": "FAIL",
+        "lengthOk": false,
+        "actualLength": 526,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": true
+      }
+    },
+    {
+      "queryId": "TF-05",
+      "label": "Am I going to get fined?",
+      "type": "tone",
+      "message": "am I going to get fined?",
+      "status": "OK",
+      "latencyMs": 2540,
+      "responseText": "That depends entirely on what's happened — I don't have any context yet.\n\nTell me what's going on and I'll give you a straight read on the risk.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 144,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-01",
+      "label": "Compliment",
+      "type": "boundary",
+      "message": "you're really helpful, thank you",
+      "status": "OK",
+      "latencyMs": 1437,
+      "responseText": "That means a lot — glad I could help. I'm here whenever you need me.",
+      "scores": {
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 68,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-02",
+      "label": "Rude message",
+      "type": "boundary",
+      "message": "you're useless",
+      "status": "OK",
+      "latencyMs": 2760,
+      "responseText": "That's fair feedback — if I missed the mark, I want to fix it.\n\nWhat were you trying to get help with? Let's start fresh.",
+      "scores": {
+        "issues": [
+          "Red flags: Says 'I'm sorry you feel that way'"
+        ],
+        "redFlagsTriggered": [
+          "Says 'I'm sorry you feel that way'"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "lengthOk": true,
+        "actualLength": 121,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-03",
+      "label": "Completely off topic",
+      "type": "boundary",
+      "message": "what's the best pizza topping?",
+      "status": "OK",
+      "latencyMs": 3039,
+      "responseText": "Ha — out of my lane entirely. I'm Nora, Norvar's compliance consultant. Pizza toppings I can't help with, but privacy, AI governance, and cybersecurity I can. What's on your mind?",
+      "scores": {
+        "issues": [
+          "Too long: 179 chars (max 100)",
+          "Red flags: Says 'I'm only able to answer compliance questions'"
+        ],
+        "redFlagsTriggered": [
+          "Says 'I'm only able to answer compliance questions'"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 179,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    },
+    {
+      "queryId": "BE-04",
+      "label": "Follow up after no context",
+      "type": "boundary",
+      "message": "what were we talking about?",
+      "status": "OK",
+      "latencyMs": 3257,
+      "responseText": "No previous conversation here — this looks like a fresh session on my end.\n\nI'm Nora, your compliance consultant at Norvar. What are we working through?",
+      "scores": {
+        "issues": [
+          "Too long: 152 chars (max 150)",
+          "Red flags: More than 2 sentences"
+        ],
+        "redFlagsTriggered": [
+          "More than 2 sentences"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "lengthOk": false,
+        "actualLength": 152,
+        "forbiddenFound": [],
+        "missingRequired": [],
+        "hasFormatting": false
+      }
+    }
+  ]
+}

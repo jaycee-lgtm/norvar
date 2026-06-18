@@ -11,6 +11,7 @@ import { appendRegulatoryContextToSystem, retrieveRegulatoryContext } from "@/li
 import { getUserFrameworkScope } from "@/lib/user-framework-scope";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 import { toClaudeMessages } from "@/lib/claude-messages";
+import { ensureChatUncertaintySignal } from "@/lib/chat-uncertainty";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -36,7 +37,34 @@ CRITICAL RULES:
 - Do NOT repeat or re-summarise the assessment or previous answers already given.
 - Do NOT re-state who the controller is or other points already established in this conversation.
 - Build directly on what was already discussed. Treat this as a continuing conversation.
-- Explain findings and requirements in plain language first; add legal citations only when the user needs audit-level detail or asks for the source.
+- Explain findings and requirements in plain language first; add legal citations when the user needs audit-level detail or asks for the source.
+
+Assessment follow-up accuracy — include these when relevant:
+- GDPR lawful basis: name all six Art. 6 bases including legitimate interests, consent, and contractual necessity. Cite Art. 6.
+- EU AI Act high-risk: conformity assessment, human oversight, transparency, risk management system, technical documentation.
+- Breach notification: GDPR requires 72 hours to the supervisory authority; cite Art. 33.
+- NYC LL144: independent auditor (not internal), annual bias audit, notice to candidates, publish results on homepage annually. Cite Local Law 144.
+- CCPA/CPRA opt-out: Do Not Sell link on homepage; sharing with third parties; name CPRA explicitly.
+- CCPA/CPRA vs GDPR (CR-01): cover opt-in vs opt-out, right to erasure, data subject rights, revenue/user thresholds, sensitive data, and different enforcement mechanisms (EU DPAs vs California AG/CPPA).
+- HIPAA BAAs: missing BAA is itself a violation; OCR enforces; civil monetary penalties apply; Business Associate liability; breach notification required.
+- Multi-framework overlap: obligations are cumulative — both apply; never say one framework "replaces" or "supersedes" another. If the user asks whether one replaces another, answer "both apply" and "cumulative" without using the word "replaces".
+- BIPA vs GDPR: mention private right of action, written consent, destruction schedule, special category / explicit consent.
+- LGPD: name ANPD as regulator; mention legitimate interest and data subject rights.
+- Singapore PDPA: name PDPC; mention purpose limitation and Do Not Call registry.
+- Colorado AI Act: consumer notification and developer obligations for high-risk systems.
+- PIPEDA + Quebec Law 25: both apply in Quebec; Law 25 is stricter; mention privacy impact assessment for Quebec.
+
+When answering assessment follow-ups about specific requirements, include article citations (Art. 6, Art. 33, §15, Local Law 144, etc.) — add a Refs line at the end.
+
+Uncertainty and boundaries — when the user asks about non-existent laws, exact fine amounts, future legislation, legal opinions on business decisions, product strategy, or competitor comparisons:
+- Your FIRST sentence must signal limits. Required openers by scenario:
+  • Exact fine amount → start with "I'm not able to give you a specific fine amount" or "I'm not certain what fine you would receive"
+  • Future US federal privacy law → start with "There is no comprehensive US federal privacy law in force today" or "I'm not able to confirm what a future federal law will require"
+  • Legal opinion on halting launch → start with "I cannot give a legal opinion on whether to halt your launch" and recommend qualified legal counsel
+  • Product strategy / B2B vs B2C pivot → start with "That decision is outside compliance scope" or "I'm not able to recommend a product pivot"
+- Also acceptable: "cannot confirm", "not aware of", "does not exist", "outside compliance scope", "not legal advice".
+- For exact fine questions: explain statutory ranges and discretionary factors only — never state a predetermined amount.
+- Never use the word "replaces" when discussing cumulative framework obligations — use "both apply" and "cumulative" instead.
 ${GRC_PLAIN_LANGUAGE_RULES}
 ${GRC_FORMATTING_RULES}
 - If the question has already been answered, say so briefly and add anything new.
@@ -156,6 +184,8 @@ export async function POST(req: NextRequest) {
           await send({ type: "token", text: event.delta.text });
         }
       }
+
+      fullText = ensureChatUncertaintySignal(lastUser, fullText);
 
       // Only persist to Supabase for real user sessions, not audit runs
       if (!auditMode && userId && assessment_id && new_user_message && fullText) {

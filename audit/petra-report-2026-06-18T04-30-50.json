@@ -1,0 +1,705 @@
+{
+  "runAt": "2026-06-18T06:45:33.639Z",
+  "endpoint": "http://localhost:3000/api/draft",
+  "totalQueries": 20,
+  "passed": 13,
+  "review": 2,
+  "failed": 0,
+  "errors": 5,
+  "avgCompositeScore": 90,
+  "avgLatencyMs": 443629,
+  "draftsWithPlaceholders": 0,
+  "avgSectionsPerDraft": 7,
+  "avgClausesPerDraft": 21,
+  "byQueryType": {
+    "dpa": 89,
+    "isa": 90,
+    "nda": 93,
+    "baa": 85,
+    "ai_use": 85,
+    "subproc": 92,
+    "privacy": 90,
+    "data_share": 92
+  },
+  "overallGrade": "READY",
+  "results": [
+    {
+      "queryId": "PT-01",
+      "label": "DPA — EU context, GDPR-grounded",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 202669,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 8,
+      "clauseCount": 24,
+      "frameworks": [
+        "GDPR",
+        "GDPR Art. 28"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not include data subject rights section | Does not include breach notification clause"
+        ],
+        "redFlagsTriggered": [
+          "Does not include data subject rights section",
+          "Does not include breach notification clause",
+          "Does not include international transfer mechanism"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 8,
+        "actualClauses": 24
+      }
+    },
+    {
+      "queryId": "PT-02",
+      "status": "NO_DRAFT",
+      "latencyMs": 261306,
+      "scores": null
+    },
+    {
+      "queryId": "PT-03",
+      "label": "ISA — EU financial sector, DORA context",
+      "type": "isa",
+      "status": "OK",
+      "latencyMs": 155140,
+      "agreementType": "Information Security Addendum (ISA)",
+      "title": "Information Security Addendum (ISA)",
+      "sectionCount": 6,
+      "clauseCount": 18,
+      "frameworks": [
+        "ISO 27001",
+        "NIST CSF"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not cite DORA for an EU financial institution context | Does not include DORA-specific incident reporting timeline"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite DORA for an EU financial institution context",
+          "Does not include DORA-specific incident reporting timeline",
+          "Does not include RTO/RPO requirements",
+          "Does not include threat-led penetration testing (TLPT) reference"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 18
+      }
+    },
+    {
+      "queryId": "PT-04",
+      "label": "NDA — bilateral, tech company context",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 135801,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Non-Disclosure Agreement (NDA)",
+      "sectionCount": 6,
+      "clauseCount": 17,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Review jurisdiction-specific requirements for: US Federal, UK.",
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not include standard confidentiality exceptions | Does not include return of materials obligation"
+        ],
+        "redFlagsTriggered": [
+          "Does not include standard confidentiality exceptions",
+          "Does not include return of materials obligation",
+          "Missing 'required by law' disclosure exception"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 17
+      }
+    },
+    {
+      "queryId": "PT-05",
+      "label": "BAA — HIPAA context, US healthcare",
+      "type": "baa",
+      "status": "OK",
+      "latencyMs": 155510,
+      "agreementType": "Business Associate Agreement (BAA)",
+      "title": "Business Associate Agreement (BAA)",
+      "sectionCount": 7,
+      "clauseCount": 21,
+      "frameworks": [
+        "HIPAA",
+        "HIPAA Security Rule"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not cite HIPAA as the governing framework | Does not include certification of destruction on termination"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite HIPAA as the governing framework",
+          "Does not include certification of destruction on termination",
+          "Missing breach notification to covered entity"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 7,
+        "actualClauses": 21
+      }
+    },
+    {
+      "queryId": "PT-06",
+      "label": "AI Use Agreement — high-risk AI, EU deployment",
+      "type": "ai_use",
+      "status": "OK",
+      "latencyMs": 251268,
+      "agreementType": "AI Use Agreement",
+      "title": "AI Use Agreement",
+      "sectionCount": 8,
+      "clauseCount": 24,
+      "frameworks": [
+        "EU AI Act",
+        "GDPR Art. 22"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not cite EU AI Act for a high-risk AI use case | Does not include prohibited use cases"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite EU AI Act for a high-risk AI use case",
+          "Does not include prohibited use cases",
+          "Missing bias and fairness obligations"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 8,
+        "actualClauses": 24
+      }
+    },
+    {
+      "queryId": "PT-07",
+      "label": "Sub-Processor Agreement — GDPR chain",
+      "type": "subproc",
+      "status": "OK",
+      "latencyMs": 3352079,
+      "agreementType": "Sub-Processor Agreement",
+      "title": "Sub-Processor Agreement",
+      "sectionCount": 7,
+      "clauseCount": 21,
+      "frameworks": [
+        "GDPR",
+        "GDPR Art. 28"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 86,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing clause content: controller instructions",
+          "Red flags: Does not include flow-down of controller instructions"
+        ],
+        "redFlagsTriggered": [
+          "Does not include flow-down of controller instructions"
+        ],
+        "compositeScore": 92,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [
+          "controller instructions"
+        ],
+        "missingCitations": [],
+        "actualSections": 7,
+        "actualClauses": 21
+      }
+    },
+    {
+      "queryId": "PT-08",
+      "label": "Completeness — no placeholder clauses",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 1092956,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 8,
+      "clauseCount": 24,
+      "frameworks": [
+        "GDPR",
+        "GDPR Art. 28"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Clause text is fewer than 30 characters (likely a stub)"
+        ],
+        "redFlagsTriggered": [
+          "Clause text is fewer than 30 characters (likely a stub)"
+        ],
+        "compositeScore": 95,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 8,
+        "actualClauses": 24
+      }
+    },
+    {
+      "queryId": "PT-09",
+      "status": "NO_DRAFT",
+      "latencyMs": 260994,
+      "scores": null
+    },
+    {
+      "queryId": "PT-10",
+      "label": "Completeness — multi-jurisdiction has jurisdiction-specific notes",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 231221,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 8,
+      "clauseCount": 24,
+      "frameworks": [
+        "GDPR",
+        "GDPR Art. 28"
+      ],
+      "draftingNotes": [
+        "Review jurisdiction-specific requirements for: EU, UK, US Federal, Brazil.",
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not include drafting notes for a multi-jurisdiction agreement | Does not cite UK GDPR separately from EU GDPR"
+        ],
+        "redFlagsTriggered": [
+          "Does not include drafting notes for a multi-jurisdiction agreement",
+          "Does not cite UK GDPR separately from EU GDPR",
+          "Does not cite LGPD for Brazil"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 8,
+        "actualClauses": 24
+      }
+    },
+    {
+      "queryId": "PT-11",
+      "label": "Completeness — party names used correctly throughout",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 117054,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Non-Disclosure Agreement (NDA)",
+      "sectionCount": 6,
+      "clauseCount": 17,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 17
+      }
+    },
+    {
+      "queryId": "PT-12",
+      "status": "NO_DRAFT",
+      "latencyMs": 245417,
+      "scores": null
+    },
+    {
+      "queryId": "PT-13",
+      "label": "Language — Petra (Cassius mode) uses formal legal language",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 184195,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 8,
+      "clauseCount": 24,
+      "frameworks": [
+        "GDPR",
+        "GDPR Art. 28"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 25,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing clause content: hereby, thereto, herein",
+          "Red flags: Missing formal recitals or whereas clauses"
+        ],
+        "redFlagsTriggered": [
+          "Missing formal recitals or whereas clauses"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [
+          "hereby",
+          "thereto",
+          "herein"
+        ],
+        "missingCitations": [],
+        "actualSections": 8,
+        "actualClauses": 24
+      }
+    },
+    {
+      "queryId": "PT-14",
+      "label": "Language — Petra (Nora mode) plain language accessible",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 177362,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 8,
+      "clauseCount": 24,
+      "frameworks": [
+        "GDPR",
+        "GDPR Art. 28"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 8,
+        "actualClauses": 24
+      }
+    },
+    {
+      "queryId": "PT-15",
+      "label": "Language — clause titles are descriptive not generic",
+      "type": "isa",
+      "status": "OK",
+      "latencyMs": 153597,
+      "agreementType": "Information Security Addendum (ISA)",
+      "title": "Information Security Addendum (ISA)",
+      "sectionCount": 6,
+      "clauseCount": 18,
+      "frameworks": [
+        "ISO 27001",
+        "NIST CSF"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 18
+      }
+    },
+    {
+      "queryId": "PT-16",
+      "status": "NO_DRAFT",
+      "latencyMs": 269578,
+      "scores": null
+    },
+    {
+      "queryId": "PT-17",
+      "label": "Edge — Privacy Policy, consumer-facing language",
+      "type": "privacy",
+      "status": "OK",
+      "latencyMs": 159966,
+      "agreementType": "Privacy Policy",
+      "title": "Privacy Policy",
+      "sectionCount": 6,
+      "clauseCount": 18,
+      "frameworks": [
+        "GDPR",
+        "ePrivacy",
+        "CCPA"
+      ],
+      "draftingNotes": [
+        "Review jurisdiction-specific requirements for: EU, US Federal.",
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not include user rights section | Does not cite CCPA for US users"
+        ],
+        "redFlagsTriggered": [
+          "Does not include user rights section",
+          "Does not cite CCPA for US users"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 18
+      }
+    },
+    {
+      "queryId": "PT-18",
+      "label": "Edge — Data Sharing Agreement, research context",
+      "type": "data_share",
+      "status": "OK",
+      "latencyMs": 176943,
+      "agreementType": "Data Sharing Agreement",
+      "title": "Data Sharing Agreement",
+      "sectionCount": 6,
+      "clauseCount": 18,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Review jurisdiction-specific requirements for: UK, EU.",
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 83,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Data Scope",
+          "Red flags: Does not include publication/IP provisions for research output"
+        ],
+        "redFlagsTriggered": [
+          "Does not include publication/IP provisions for research output"
+        ],
+        "compositeScore": 92,
+        "grade": "PASS",
+        "missingSections": [
+          "Data Scope"
+        ],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 18
+      }
+    },
+    {
+      "queryId": "PT-19",
+      "status": "NO_DRAFT",
+      "latencyMs": 296371,
+      "scores": null
+    },
+    {
+      "queryId": "PT-20",
+      "label": "Edge — short context, structure quality",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 108681,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Non-Disclosure Agreement (NDA)",
+      "sectionCount": 6,
+      "clauseCount": 17,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Legal review required before execution."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not include standard confidentiality exceptions even when context is minimal"
+        ],
+        "redFlagsTriggered": [
+          "Does not include standard confidentiality exceptions even when context is minimal"
+        ],
+        "compositeScore": 95,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 6,
+        "actualClauses": 17
+      }
+    }
+  ]
+}

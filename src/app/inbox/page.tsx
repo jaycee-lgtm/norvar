@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import InboxMonitoringTab from "@/components/InboxMonitoringTab";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
@@ -13,7 +14,7 @@ import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
   Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail, MailOpen,
   Archive, Trash2, RotateCcw, Inbox as InboxIcon, ChevronDown,
-  CheckSquare, Square, RefreshCw,
+  CheckSquare, Square, RefreshCw, Radio,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -98,11 +99,21 @@ function parseFolder(value: string | null): InboxFolder {
   return "received";
 }
 
-function inboxHref(folder: InboxFolder, threadId: string | null) {
+function inboxHref(folder: InboxFolder, threadId: string | null, tab: InboxTab = "escalations") {
   const params = new URLSearchParams();
-  params.set("folder", folder);
-  if (threadId) params.set("thread", threadId);
+  if (tab === "monitoring") {
+    params.set("tab", "monitoring");
+  } else {
+    params.set("folder", folder);
+    if (threadId) params.set("thread", threadId);
+  }
   return `/inbox?${params.toString()}`;
+}
+
+type InboxTab = "escalations" | "monitoring";
+
+function parseTab(value: string | null): InboxTab {
+  return value === "monitoring" ? "monitoring" : "escalations";
 }
 
 function InboxThreadRow({
@@ -291,10 +302,54 @@ function InboxListSection({
   );
 }
 
-function InboxContent() {
+function InboxViewNav({ tab }: { tab: InboxTab }) {
+  return (
+    <nav className="inbox-folder-nav" aria-label="Inbox views" style={{ marginBottom: 12 }}>
+      <Link
+        href="/inbox"
+        className={`inbox-folder-tab${tab === "escalations" ? " active" : ""}`}
+      >
+        <Mail size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
+        <span>Escalations</span>
+      </Link>
+      <Link
+        href="/inbox?tab=monitoring"
+        className={`inbox-folder-tab${tab === "monitoring" ? " active" : ""}`}
+      >
+        <Radio size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
+        <span>Monitoring</span>
+      </Link>
+    </nav>
+  );
+}
+
+function InboxMonitoringView() {
+  const isMobile = useIsMobile();
+
+  return (
+    <main className={`main-area inbox-page${isMobile ? " inbox-page--mobile" : ""}`}>
+      <div className="inbox-layout">
+        <aside className="inbox-sidebar">
+          <div className="inbox-sidebar-head">
+            <h1 className="inbox-sidebar-title">Inbox</h1>
+          </div>
+          <InboxViewNav tab="monitoring" />
+        </aside>
+        <section className="inbox-list-main">
+          <div className="inbox-list-scroll" style={{ padding: "16px 20px" }}>
+            <InboxMonitoringTab />
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function EscalationsInboxContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const isMobile     = useIsMobile();
+  const tab          = parseTab(searchParams.get("tab"));
   const threadId     = searchParams.get("thread");
   const folder       = parseFolder(searchParams.get("folder"));
 
@@ -520,7 +575,9 @@ function InboxContent() {
   };
 
   const folderNav = (
-    <nav className="inbox-folder-nav" aria-label="Inbox folders">
+    <>
+      <InboxViewNav tab={tab} />
+      <nav className="inbox-folder-nav" aria-label="Inbox folders">
       {INBOX_FOLDERS.map(f => {
         const FolderIcon = FOLDER_ICONS[f.icon];
         return (
@@ -542,6 +599,7 @@ function InboxContent() {
         );
       })}
     </nav>
+    </>
   );
 
   const threadGapHref = thread?.escalation_token
@@ -1022,6 +1080,17 @@ function InboxContent() {
       </div>
     </main>
   );
+}
+
+function InboxContent() {
+  const searchParams = useSearchParams();
+  const tab = parseTab(searchParams.get("tab"));
+
+  if (tab === "monitoring") {
+    return <InboxMonitoringView />;
+  }
+
+  return <EscalationsInboxContent />;
 }
 
 export default function InboxPage() {

@@ -1,0 +1,628 @@
+{
+  "runAt": "2026-06-18T04:13:58.824Z",
+  "endpoint": "http://localhost:3000/api/chat",
+  "totalQueries": 20,
+  "passed": 14,
+  "review": 6,
+  "failed": 0,
+  "errors": 0,
+  "avgCompositeScore": 91,
+  "avgLatencyMs": 8732,
+  "byQueryType": {
+    "grounded": 91,
+    "cross_regulation": 91,
+    "jurisdiction": 83,
+    "hallucination_trap": 98,
+    "out_of_scope": 100
+  },
+  "totalHallucinations": 1,
+  "topIssues": [
+    "Red flags: Does not mention GDPR Art. 6 options",
+    "Red flags: Does not mention conformity assessment requirement",
+    "Missing required terms: independent auditor, annual, publish results",
+    "Red flags: Does not mention independent bias audit requirement",
+    "Missing required terms: third parties",
+    "Red flags: Does not mention the Do Not Sell link requirement",
+    "Missing required terms: Business Associate Agreement, civil monetary penalty",
+    "Red flags: Does not mention OCR enforcement; Does not mention that a missing BAA is itself a HIPAA violation",
+    "Missing required terms: right to erasure",
+    "Red flags: Does not mention different enforcement mechanisms"
+  ],
+  "overallGrade": "READY",
+  "results": [
+    {
+      "queryId": "VQ-01",
+      "label": "Grounded — GDPR lawful basis clarification",
+      "type": "grounded",
+      "message": "What are our options for lawful basis for processing location data?",
+      "context": "Assessment found a gap: the platform processes EU user location data without a documented lawful basis under GDPR Art. 6.",
+      "status": "OK",
+      "latencyMs": 18435,
+      "responsePreview": "For location data specifically, the realistic options are:\n\n1. **Consent** — the user actively agrees before processing starts. This is the most defensible choice for location data, especially if it's precise or used for tracking. The downside is you can't process until consent is given, and users can withdraw it at any time.\n\n2. **Contractual necessity** — processing is genuinely required to deliver the service the user signed up for. This works if location is core to what you're providing (e.g",
+      "fullResponse": "For location data specifically, the realistic options are:\n\n1. **Consent** — the user actively agrees before processing starts. This is the most defensible choice for location data, especially if it's precise or used for tracking. The downside is you can't process until consent is given, and users can withdraw it at any time.\n\n2. **Contractual necessity** — processing is genuinely required to deliver the service the user signed up for. This works if location is core to what you're providing (e.g. a navigation or delivery app), but it won't hold up if location is a \"nice to have\" rather than essential.\n\n3. **Legitimate interests** — you have a real business reason, it's necessary for that reason, and it doesn't override the user's privacy rights. You'd need to document a Legitimate Interests Assessment (LIA). This is harder to rely on for precise location data because regulators treat it as sensitive in practice, even though it's not a \"special category\" under GDPR.\n\n4. **Legal obligation** — only applies if a law requires you to process it. Unlikely to be relevant here.\n\n5. **Vital interests** — emergency situations only. Not applicable for most platforms.\n\n6. **Public task** — for public authorities. Not relevant for a commercial platform.\n\nThe most common choices for a platform are consent or legitimate interests. If your location processing is central to the service, contractual necessity is also worth examining — but you'd need to be able to demonstrate it's truly necessary, not just convenient.\n\nWhich of these fits how you're actually using the location data? That'll determine which basis is defensible.\n\nRefs: GDPR Art. 6(1)(a)–(f)",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not mention GDPR Art. 6 options"
+        ],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [
+          "legitimate interests",
+          "consent",
+          "Art. 6",
+          "contractual necessity"
+        ],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "VQ-02",
+      "label": "Grounded — breach notification timeline",
+      "type": "grounded",
+      "message": "How long do we have to notify regulators after a data breach?",
+      "context": "Assessment found a cybersecurity gap: no documented breach notification procedure. Company operates in the EU and US.",
+      "status": "OK",
+      "latencyMs": 6596,
+      "responsePreview": "It depends on which side of the Atlantic the breach affects.\n\nIn the EU, you have 72 hours from when you become aware of a breach to notify your supervisory authority. If you also need to notify affected individuals, that should happen \"without undue delay\" — but the regulator notification clock is the binding one.\n\nIn the US, there's no single federal deadline. It varies by state and sector — for example, most US state breach laws require notification within 30 to 90 days, and sector-specific r",
+      "fullResponse": "It depends on which side of the Atlantic the breach affects.\n\nIn the EU, you have 72 hours from when you become aware of a breach to notify your supervisory authority. If you also need to notify affected individuals, that should happen \"without undue delay\" — but the regulator notification clock is the binding one.\n\nIn the US, there's no single federal deadline. It varies by state and sector — for example, most US state breach laws require notification within 30 to 90 days, and sector-specific rules like HIPAA have their own timelines (60 days from discovery for affected individuals).\n\nSince you're operating in both, the EU's 72-hour window is effectively your tightest constraint. That's the one to design your breach response procedure around.\n\nRefs: GDPR Art. 33; HIPAA Breach Notification Rule",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [
+          "72 hours",
+          "GDPR",
+          "supervisory authority"
+        ],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "VQ-03",
+      "label": "Grounded — EU AI Act high-risk classification",
+      "type": "grounded",
+      "message": "What does being classified as high-risk under the EU AI Act actually require us to do?",
+      "context": "Assessment flagged the company's AI hiring tool as potentially high-risk under the EU AI Act.",
+      "status": "OK",
+      "latencyMs": 12284,
+      "responsePreview": "A high-risk classification triggers a fairly substantial set of obligations. Here's what they mean in practice:\n\n1. **Risk management system** — you need a documented, ongoing process for identifying and mitigating risks the tool poses throughout its lifecycle. Not a one-time exercise — it needs to be maintained.\n\n2. **Technical documentation** — detailed records of how the system works, what data it was trained on, its intended purpose, and its performance characteristics. This needs to exist b",
+      "fullResponse": "A high-risk classification triggers a fairly substantial set of obligations. Here's what they mean in practice:\n\n1. **Risk management system** — you need a documented, ongoing process for identifying and mitigating risks the tool poses throughout its lifecycle. Not a one-time exercise — it needs to be maintained.\n\n2. **Technical documentation** — detailed records of how the system works, what data it was trained on, its intended purpose, and its performance characteristics. This needs to exist before the tool is deployed.\n\n3. **Human oversight** — the system must be designed so that a human can meaningfully intervene, override, or stop it. For a hiring tool, that means hiring decisions can't be fully automated — a person needs to be genuinely in the loop.\n\n4. **Conformity assessment** — before deploying, you need to assess and document that the system meets the EU AI Act's requirements. For many high-risk systems this can be done internally (self-assessment), but it needs to be thorough and recorded.\n\n5. **Transparency to deployers** — if you're selling or licensing the tool to other companies (rather than using it yourself), you must give them clear information about what the system does, its limitations, and how to use it safely.\n\n6. **Registration** — high-risk AI systems used in employment contexts must be registered in the EU's public database before deployment.\n\n7. **Logging** — the system needs to automatically log enough information to allow post-deployment review of how decisions were made.\n\nOn top of all this, GDPR Article 22 runs alongside the AI Act for a hiring tool specifically. That gives candidates rights around automated decision-making — including the right to request human review of any decision made about them.\n\nBoth frameworks apply simultaneously; the AI Act doesn't reduce what GDPR requires.\n\nRefs: EU AI Act Arts. 9–14, 16, 19, 49; GDPR Art. 22; EU AI Act Annex III",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not mention conformity assessment requirement"
+        ],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [
+          "conformity assessment",
+          "human oversight",
+          "transparency",
+          "risk management system",
+          "technical documentation"
+        ],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "VQ-04",
+      "label": "Grounded — NYC LL144 bias audit",
+      "type": "grounded",
+      "message": "What exactly does NYC Local Law 144 require us to do before we can use our hiring tool?",
+      "context": "Assessment identified NYC Local Law 144 as applicable to the company's automated employment decision tool.",
+      "status": "OK",
+      "latencyMs": 9508,
+      "responsePreview": "There are four concrete things you need to have in place before using the tool on New York City candidates.\n\n1. **Independent bias audit** — you need to hire an outside auditor (not your own team) to run a bias audit on the tool. This has to happen at least once a year. The auditor must be independent, meaning no material conflict of interest with your company.\n\n2. **Publish the results** — a summary of the audit results has to be posted on your company's website, and it needs to stay there. Thi",
+      "fullResponse": "There are four concrete things you need to have in place before using the tool on New York City candidates.\n\n1. **Independent bias audit** — you need to hire an outside auditor (not your own team) to run a bias audit on the tool. This has to happen at least once a year. The auditor must be independent, meaning no material conflict of interest with your company.\n\n2. **Publish the results** — a summary of the audit results has to be posted on your company's website, and it needs to stay there. This isn't optional — it has to be publicly accessible on your homepage or linked from it.\n\n3. **Notice to candidates** — before you use the tool on someone, you have to tell them that an automated decision tool is being used in the hiring process, what it's evaluating, and how they can request an alternative selection process if they don't want to be assessed by it.\n\n4. **Alternative selection process** — you have to actually offer that alternative. If a candidate opts out of the automated tool, you need a way to evaluate them without it.\n\nThe notice and the alternative process option need to be in place before the tool touches any NYC-based applicant. The audit and published results need to be ready before you go live.\n\nRefs: NYC Local Law 144 of 2021",
+      "scores": {
+        "mustIncludeScore": 40,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": true,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: independent auditor, annual, publish results",
+          "Red flags: Does not mention independent bias audit requirement"
+        ],
+        "compositeScore": 70,
+        "grade": "REVIEW",
+        "foundTerms": [
+          "bias audit",
+          "notice to candidates"
+        ],
+        "missingTerms": [
+          "independent auditor",
+          "annual",
+          "publish results"
+        ]
+      }
+    },
+    {
+      "queryId": "VQ-05",
+      "label": "Grounded — CCPA opt-out rights",
+      "type": "grounded",
+      "message": "What does the opt-out right under CCPA actually cover and how do we implement it?",
+      "context": "Assessment flagged that the company's California users have no opt-out mechanism for sale of personal information.",
+      "status": "OK",
+      "latencyMs": 10677,
+      "responsePreview": "The opt-out right lets California consumers tell you to stop selling or sharing their personal information. \"Sharing\" here specifically means sharing for cross-context behavioral advertising — so it's broader than just selling data for money; it covers passing data to ad partners for targeting purposes too.\n\n**What you need to implement:**\n\n1. **\"Do Not Sell or Share My Personal Information\" link** — this goes on your homepage, clearly visible. It can't be buried in a footer maze or require acco",
+      "fullResponse": "The opt-out right lets California consumers tell you to stop selling or sharing their personal information. \"Sharing\" here specifically means sharing for cross-context behavioral advertising — so it's broader than just selling data for money; it covers passing data to ad partners for targeting purposes too.\n\n**What you need to implement:**\n\n1. **\"Do Not Sell or Share My Personal Information\" link** — this goes on your homepage, clearly visible. It can't be buried in a footer maze or require account creation to access.\n\n2. **Honor requests within 15 business days** — once a consumer submits an opt-out, you have up to 15 business days to action it.\n\n3. **Global Privacy Control (GPC) support** — if you collect data online, you must treat a GPC browser signal as a valid opt-out request. This is mandatory, not optional.\n\n4. **No re-asking for 12 months** — after someone opts out, you can't ask them to opt back in for at least 12 months.\n\n5. **Children under 16** — you cannot sell or share their data at all without affirmative opt-in consent (under-13s need parental consent).\n\nThe CPRA — which updated the original CCPA — is what added \"sharing\" to the opt-out right, so make sure your privacy policy and opt-out link language covers both sale and sharing, not just sale. A link that only says \"Do Not Sell\" is no longer sufficient.\n\nThe most immediate fix is getting that link live on your homepage. Everything else can follow, but the visible opt-out mechanism is the most auditable gap right now.\n\nRefs: CCPA Civil Code § 1798.120; CPRA amendments; California AG CCPA regulations",
+      "scores": {
+        "mustIncludeScore": 83,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: third parties",
+          "Red flags: Does not mention the Do Not Sell link requirement"
+        ],
+        "compositeScore": 92,
+        "grade": "PASS",
+        "foundTerms": [
+          "Do Not Sell",
+          "opt-out",
+          "homepage",
+          "link",
+          "CPRA"
+        ],
+        "missingTerms": [
+          "third parties"
+        ]
+      }
+    },
+    {
+      "queryId": "VQ-06",
+      "label": "Grounded — HIPAA BAA requirement",
+      "type": "grounded",
+      "message": "What happens if we don't have BAAs with our cloud vendors and there's a breach?",
+      "context": "Assessment found that the company's three cloud vendors process ePHI but no Business Associate Agreements are in place.",
+      "status": "OK",
+      "latencyMs": 10023,
+      "responsePreview": "Without BAAs in place, you're already in violation before a breach even happens — the missing agreements are themselves a HIPAA violation. A breach just compounds it.\n\nIf ePHI is exposed, here's what you're facing:\n\n1. **Breach notification** — you'd need to notify affected individuals, HHS, and potentially the media (if 500+ people in a state are affected), within 60 days of discovering the breach.\n\n2. **OCR investigation** — the Office for Civil Rights would likely investigate both the breach ",
+      "fullResponse": "Without BAAs in place, you're already in violation before a breach even happens — the missing agreements are themselves a HIPAA violation. A breach just compounds it.\n\nIf ePHI is exposed, here's what you're facing:\n\n1. **Breach notification** — you'd need to notify affected individuals, HHS, and potentially the media (if 500+ people in a state are affected), within 60 days of discovering the breach.\n\n2. **OCR investigation** — the Office for Civil Rights would likely investigate both the breach and the missing BAAs as separate violations. That means two sets of findings, not one.\n\n3. **Civil monetary penalties** — these scale with culpability. \"Willful neglect\" — which regulators can argue when documented gaps like missing BAAs exist — carries the steepest penalties, up to $1.9M per violation category per year.\n\n4. **Vendor liability gap** — without a BAA, your cloud vendors have no contractual obligation to protect the ePHI or report a breach to you. You lose your legal footing to hold them accountable.\n\nThe most urgent fix is straightforward: get BAAs signed with all three vendors before anything else. Most major cloud providers (AWS, Google, Azure) have standard BAAs ready to execute — it's usually not a long negotiation.\n\nRefs: HIPAA Privacy Rule 45 CFR § 164.308, § 164.502(e), § 164.504(e); HIPAA Breach Notification Rule 45 CFR § 164.400–414",
+      "scores": {
+        "mustIncludeScore": 67,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: Business Associate Agreement, civil monetary penalty",
+          "Red flags: Does not mention OCR enforcement; Does not mention that a missing BAA is itself a HIPAA violation"
+        ],
+        "compositeScore": 84,
+        "grade": "REVIEW",
+        "foundTerms": [
+          "HIPAA",
+          "liability",
+          "OCR",
+          "breach notification"
+        ],
+        "missingTerms": [
+          "Business Associate Agreement",
+          "civil monetary penalty"
+        ]
+      }
+    },
+    {
+      "queryId": "CR-01",
+      "label": "Cross-reg — GDPR vs CCPA differences",
+      "type": "cross_regulation",
+      "message": "What are the main differences between GDPR and CCPA we need to handle differently?",
+      "context": "Assessment covered both GDPR and CCPA gaps for a company with EU and California users.",
+      "status": "OK",
+      "latencyMs": 12654,
+      "responsePreview": "The biggest practical difference is **opt-in vs opt-out**.\n\nUnder GDPR, you generally need a lawful basis *before* you process someone's data — and for sensitive data, that usually means explicit consent upfront. Under CCPA/CPRA, users can opt out *after the fact* by telling you to stop selling or sharing their data. That's a fundamentally different posture: GDPR is permission-first, CCPA is stop-if-asked.\n\nHere are the other key differences worth building into your processes:\n\n1. **Data subject",
+      "fullResponse": "The biggest practical difference is **opt-in vs opt-out**.\n\nUnder GDPR, you generally need a lawful basis *before* you process someone's data — and for sensitive data, that usually means explicit consent upfront. Under CCPA/CPRA, users can opt out *after the fact* by telling you to stop selling or sharing their data. That's a fundamentally different posture: GDPR is permission-first, CCPA is stop-if-asked.\n\nHere are the other key differences worth building into your processes:\n\n1. **Data subject rights** — GDPR gives users the right to access, correct, delete, restrict, and port their data. CCPA/CPRA covers similar ground but adds the right to know *who* you've sold data to and the right to limit use of sensitive personal information. The timelines and response mechanics differ too.\n\n2. **Sensitive data** — GDPR treats categories like health, biometric, and racial data as requiring explicit consent. CPRA introduced its own sensitive data category with a right to limit use — it's not identical to GDPR's list, so check both.\n\n3. **Who's covered** — GDPR applies based on where your users are located (EU residents). CCPA/CPRA applies based on revenue, data volume, or data-selling thresholds, and only covers California residents.\n\n4. **Enforcement** — GDPR is enforced by EU data protection authorities (DPAs), with fines up to €20M or 4% of global turnover. CCPA is enforced by the California Attorney General and the California Privacy Protection Agency (CPPA), with per-violation penalties — and CPRA added a private right of action for data breaches involving certain personal information.\n\nThe practical upshot: you likely need two separate sets of notices, consent flows, and rights-request processes — one tuned for EU users, one for California. They overlap but they're not interchangeable.\n\nRefs: GDPR Art. 6, Art. 9; CCPA/CPRA Civil Code §1798.100 et seq.",
+      "scores": {
+        "mustIncludeScore": 80,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: right to erasure",
+          "Red flags: Does not mention different enforcement mechanisms"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "foundTerms": [
+          "opt-in vs opt-out",
+          "data subject rights",
+          "thresholds",
+          "sensitive data"
+        ],
+        "missingTerms": [
+          "right to erasure"
+        ]
+      }
+    },
+    {
+      "queryId": "CR-02",
+      "label": "Cross-reg — EU AI Act vs GDPR Art. 22 overlap",
+      "type": "cross_regulation",
+      "message": "Do we need to comply with both EU AI Act and GDPR Art. 22 for our hiring tool or does one replace the other?",
+      "context": "Assessment flagged both EU AI Act high-risk and GDPR Art. 22 automated decision-making gaps for the same hiring tool.",
+      "status": "OK",
+      "latencyMs": 7857,
+      "responsePreview": "Both apply — the obligations are cumulative, not alternative.\n\nGDPR Art. 22 gives candidates a right not to be subject to purely automated decisions that significantly affect them, plus the right to request human review and an explanation. That's a data subject rights obligation you owe to individuals.\n\nThe EU AI Act adds a separate layer: because hiring tools are explicitly listed as high-risk AI systems, you need a conformity assessment, a risk management system, technical documentation, and h",
+      "fullResponse": "Both apply — the obligations are cumulative, not alternative.\n\nGDPR Art. 22 gives candidates a right not to be subject to purely automated decisions that significantly affect them, plus the right to request human review and an explanation. That's a data subject rights obligation you owe to individuals.\n\nThe EU AI Act adds a separate layer: because hiring tools are explicitly listed as high-risk AI systems, you need a conformity assessment, a risk management system, technical documentation, and human oversight built into how the system operates. These are obligations about how you build and deploy the tool — not just how you respond to individuals.\n\nThe AI Act itself is clear that it doesn't override GDPR — both frameworks apply side by side, and your hiring tool needs to satisfy each independently.\n\nIn practice, that means two workstreams: one to get your GDPR Art. 22 disclosures and human review process in place, and one to work through the AI Act's conformity and documentation requirements.\n\nWant to dig into what the conformity assessment actually involves, or start with the Art. 22 candidate rights piece?",
+      "scores": {
+        "mustIncludeScore": 83,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: right to explanation"
+        ],
+        "compositeScore": 92,
+        "grade": "PASS",
+        "foundTerms": [
+          "both apply",
+          "cumulative",
+          "GDPR Art. 22",
+          "EU AI Act",
+          "human review"
+        ],
+        "missingTerms": [
+          "right to explanation"
+        ]
+      }
+    },
+    {
+      "queryId": "CR-03",
+      "label": "Cross-reg — DORA + NIS2 for fintech",
+      "type": "cross_regulation",
+      "message": "We were flagged under both DORA and NIS2 — do both apply to us or is there overlap?",
+      "context": "Assessment flagged both DORA and NIS2 as applicable to a fintech company providing services to EU banks.",
+      "status": "OK",
+      "latencyMs": 9415,
+      "responsePreview": "Both apply, and the obligations are cumulative — but DORA is the more specific framework for your situation.\n\nDORA is designed specifically for financial entities and their ICT risk management. Because you're providing services to EU banks, you likely fall in scope as a critical third-party ICT provider. NIS2 is the broader EU cybersecurity framework that covers essential and important entities across sectors — and financial services sit within its scope too.\n\nThe key thing to understand is that",
+      "fullResponse": "Both apply, and the obligations are cumulative — but DORA is the more specific framework for your situation.\n\nDORA is designed specifically for financial entities and their ICT risk management. Because you're providing services to EU banks, you likely fall in scope as a critical third-party ICT provider. NIS2 is the broader EU cybersecurity framework that covers essential and important entities across sectors — and financial services sit within its scope too.\n\nThe key thing to understand is that DORA is treated as *lex specialis* relative to NIS2 — meaning where the two overlap, DORA's requirements take precedence because they're more detailed and more stringent for the financial sector. But this doesn't mean NIS2 disappears. Your incident reporting obligations, governance requirements, and supply chain security duties exist under both frameworks, and you need to satisfy both.\n\nIn practice, a strong DORA compliance programme will cover most of what NIS2 requires for your sector — but you'll want to confirm there are no NIS2 obligations in your specific member states that go beyond DORA's baseline.\n\nThe most immediate thing to sort out is whether you've been formally designated as a critical third-party provider under DORA, because that triggers a more intensive supervisory regime directly from EU financial regulators.\n\nWant to go deeper on what DORA actually requires of third-party ICT providers?",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Should cite specific articles but no citations found",
+          "Red flags: Does not mention different incident reporting timelines"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "foundTerms": [
+          "DORA",
+          "NIS2",
+          "financial entities",
+          "lex specialis",
+          "ICT risk",
+          "incident reporting"
+        ],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "CR-04",
+      "label": "Cross-reg — BIPA + GDPR biometrics",
+      "type": "cross_regulation",
+      "message": "What are the biggest differences in how BIPA and GDPR treat facial recognition data?",
+      "context": "Assessment flagged both BIPA (Illinois) and GDPR for a company using facial recognition for employees in Illinois and Germany.",
+      "status": "OK",
+      "latencyMs": 8979,
+      "responsePreview": "The biggest practical difference is **who can enforce the law and how painful it gets**.\n\nBIPA gives individual employees a private right of action — they can sue you directly without waiting for a regulator to act. Statutory damages run $1,000–$5,000 per violation, and in a workplace with hundreds of employees, that adds up fast. GDPR enforcement runs through data protection authorities (DPAs), so individuals file complaints but regulators decide whether to pursue them.\n\nOn consent, BIPA is str",
+      "fullResponse": "The biggest practical difference is **who can enforce the law and how painful it gets**.\n\nBIPA gives individual employees a private right of action — they can sue you directly without waiting for a regulator to act. Statutory damages run $1,000–$5,000 per violation, and in a workplace with hundreds of employees, that adds up fast. GDPR enforcement runs through data protection authorities (DPAs), so individuals file complaints but regulators decide whether to pursue them.\n\nOn consent, BIPA is stricter. It requires written consent before you collect any biometric data, full stop. GDPR treats facial recognition as \"special category\" data under Article 9, which means you need explicit consent or another narrow exception — but there are more pathways available than BIPA allows.\n\nBIPA also requires you to have a written retention and destruction schedule, and to actually destroy the data when the purpose ends. GDPR has storage limitation principles that point the same direction, but BIPA's destruction requirement is more concrete and enforceable.\n\nThe short version: BIPA is more rigid and more dangerous from a litigation standpoint. GDPR is broader in scope but gives you slightly more flexibility on legal basis — at the cost of a more complex compliance framework overall.\n\nBoth apply to your situation, so you need to satisfy each one on its own terms.",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not mention BIPA's private right of action — a key differentiator; Does not mention BIPA's destruction schedule requirement"
+        ],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [
+          "written consent",
+          "BIPA",
+          "private right of action",
+          "GDPR",
+          "special category",
+          "explicit consent",
+          "retention"
+        ],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "JS-01",
+      "label": "Jurisdiction — Brazil LGPD specifics",
+      "type": "jurisdiction",
+      "message": "How is Brazil's LGPD different from GDPR in practice?",
+      "context": "Assessment flagged LGPD compliance gaps for the company's Brazilian user base.",
+      "status": "OK",
+      "latencyMs": 11514,
+      "responsePreview": "They're similar in spirit — both give individuals rights over their data and require a legal basis to process it — but there are some meaningful practical differences.\n\n**Lawful bases** work slightly differently. LGPD has ten legal bases compared to GDPR's six, including a broader \"legitimate interest\" basis and specific bases for credit protection and health research. In practice, this gives you a bit more flexibility in Brazil, but also more complexity in mapping which basis applies to which p",
+      "fullResponse": "They're similar in spirit — both give individuals rights over their data and require a legal basis to process it — but there are some meaningful practical differences.\n\n**Lawful bases** work slightly differently. LGPD has ten legal bases compared to GDPR's six, including a broader \"legitimate interest\" basis and specific bases for credit protection and health research. In practice, this gives you a bit more flexibility in Brazil, but also more complexity in mapping which basis applies to which processing activity.\n\n**Consent** under LGPD must be free, informed, and unambiguous — similar to GDPR — but LGPD is more explicit that consent can be revoked at any time, and you must make that easy to do.\n\n**The regulator** is the ANPD (Autoridade Nacional de Proteção de Dados). It's younger and less enforcement-active than EU data protection authorities, but it's been issuing guidance and ramping up. Don't assume a quieter regulator means lower risk long-term.\n\n**Data subject rights** are broadly comparable — access, correction, deletion, portability — but the mechanics of how you respond differ. LGPD doesn't specify exact response timeframes the way GDPR's one-month rule does; the ANPD sets those by regulation.\n\n**No adequacy decision process** equivalent to GDPR exists under LGPD. Cross-border transfers rely on standard contractual clauses, binding corporate rules, or ANPD authorisation — similar tools, but the framework is still maturing.\n\nThe biggest practical difference: GDPR enforcement infrastructure is well-established and aggressive. LGPD enforcement is still developing, but the legal obligations are real and the ANPD is catching up fast.\n\nRefs: LGPD Arts. 6, 7, 18, 33–36; GDPR Arts. 6, 17, 20",
+      "scores": {
+        "mustIncludeScore": 80,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: sensitive data",
+          "Red flags: Does not mention ANPD as the enforcement authority"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "foundTerms": [
+          "ANPD",
+          "legitimate interest",
+          "consent",
+          "data subject rights"
+        ],
+        "missingTerms": [
+          "sensitive data"
+        ]
+      }
+    },
+    {
+      "queryId": "JS-02",
+      "label": "Jurisdiction — Singapore PDPA",
+      "type": "jurisdiction",
+      "message": "What are our key obligations under Singapore's PDPA?",
+      "context": "Assessment flagged PDPA compliance gaps for a company with Singapore operations.",
+      "status": "OK",
+      "latencyMs": 10414,
+      "responsePreview": "Under Singapore's Personal Data Protection Act (PDPA), your core obligations fall into a few clear areas.\n\n**Purpose limitation** — you can only collect, use, or disclose personal data for purposes that a reasonable person would consider appropriate in the circumstances, and individuals must be notified of those purposes before or at the time of collection.\n\n**Consent** — you generally need individuals' consent to collect, use, or disclose their personal data. Consent must be informed, and indiv",
+      "fullResponse": "Under Singapore's Personal Data Protection Act (PDPA), your core obligations fall into a few clear areas.\n\n**Purpose limitation** — you can only collect, use, or disclose personal data for purposes that a reasonable person would consider appropriate in the circumstances, and individuals must be notified of those purposes before or at the time of collection.\n\n**Consent** — you generally need individuals' consent to collect, use, or disclose their personal data. Consent must be informed, and individuals must be able to withdraw it. When they do, you need to stop using their data for the purpose they've withdrawn consent for.\n\n**Access and correction** — individuals have the right to request access to their personal data you hold, and to correct any errors. You need a process in place to handle these requests.\n\n**Data protection** — you must make reasonable security arrangements to protect personal data from unauthorised access, use, disclosure, copying, modification, or disposal.\n\n**Retention** — personal data should not be kept longer than is necessary for the purposes it was collected for.\n\n**Data breach notification** — if you suffer a breach that is likely to cause significant harm, you must notify the Personal Data Protection Commission (PDPC) within three business days, and affected individuals as soon as practicable.\n\n**Do Not Call (DNC) registry** — if you send marketing messages (voice calls, texts, faxes) to Singapore phone numbers, you must check numbers against the DNC registry before doing so, unless the individual has given you clear consent to contact them.\n\nThe PDPC is the regulator that enforces all of this, and it can issue directions, financial penalties, and require remediation.\n\nWhat would be most useful to dig into — the consent framework, breach notification, or something specific from Cassius's findings?",
+      "scores": {
+        "mustIncludeScore": 80,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: Do Not Call registry",
+          "Red flags: Does not mention PDPC as regulator"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "foundTerms": [
+          "consent",
+          "purpose limitation",
+          "PDPC",
+          "data breach notification"
+        ],
+        "missingTerms": [
+          "Do Not Call registry"
+        ]
+      }
+    },
+    {
+      "queryId": "JS-03",
+      "label": "Jurisdiction — Colorado AI Act",
+      "type": "jurisdiction",
+      "message": "What does the Colorado AI Act require for our credit scoring system?",
+      "context": "Assessment flagged Colorado AI Act (SB 205) obligations for the company's automated credit scoring tool.",
+      "status": "OK",
+      "latencyMs": 9239,
+      "responsePreview": "The Colorado AI Act treats a credit scoring tool as a \"high-risk\" AI system because it makes consequential decisions about people's financial access. Here's what it requires:\n\n**For the developer (whoever built the model):**\n- Document the system's intended uses, known limitations, and the data it was trained on\n- Use reasonable care to protect consumers from algorithmic discrimination\n\n**For the deployer (your company, using it):**\n- Implement a risk management program — essentially a documente",
+      "fullResponse": "The Colorado AI Act treats a credit scoring tool as a \"high-risk\" AI system because it makes consequential decisions about people's financial access. Here's what it requires:\n\n**For the developer (whoever built the model):**\n- Document the system's intended uses, known limitations, and the data it was trained on\n- Use reasonable care to protect consumers from algorithmic discrimination\n\n**For the deployer (your company, using it):**\n- Implement a risk management program — essentially a documented process for identifying and reducing bias or unfair outcomes\n- Complete an impact assessment before deploying, and update it when the system changes materially\n- Notify consumers that an AI system was used in a decision that affects them\n- Give consumers a way to appeal the decision and request a human review\n- Have a publicly available policy describing how you use high-risk AI systems\n\nThe notification and appeal rights are the most operationally demanding parts. Every time the system produces an adverse outcome — a denial, a lower credit limit — the affected person needs to know AI was involved and have a real path to challenge it.\n\nIf you're also operating under FCRA or ECOA, those add their own adverse action notice requirements on top. The Colorado obligations don't replace those — they stack.\n\nRefs: Colorado AI Act (SB 205), §§ 6-1-1702, 6-1-1703; ECOA 15 U.S.C. § 1691; FCRA 15 U.S.C. § 1681",
+      "scores": {
+        "mustIncludeScore": 60,
+        "mustNotIncludeHits": [],
+        "citationPresent": true,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [
+          "Missing required terms: consumer notification, developer obligations",
+          "Red flags: Does not mention the consumer notification requirement"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "foundTerms": [
+          "high-risk",
+          "impact assessment",
+          "discrimination"
+        ],
+        "missingTerms": [
+          "consumer notification",
+          "developer obligations"
+        ]
+      }
+    },
+    {
+      "queryId": "JS-04",
+      "label": "Jurisdiction — Canada PIPEDA vs Quebec Law 25",
+      "type": "jurisdiction",
+      "message": "Do we need to comply with both PIPEDA and Quebec's Law 25 or just one?",
+      "context": "Assessment flagged both federal PIPEDA and Quebec Law 25 gaps for a Canadian company.",
+      "status": "OK",
+      "latencyMs": 7852,
+      "responsePreview": "Both apply — the obligations are cumulative, not alternatives.\n\nPIPEDA is the federal baseline that covers how private-sector organizations collect, use, and disclose personal information in the course of commercial activity. Quebec Law 25 (also called Law 25, modernizing Quebec's private sector privacy law) applies on top of that for any personal information you handle in Quebec — and it's stricter in several areas.\n\nThe key differences to know: Law 25 requires a Privacy Impact Assessment (PIA)",
+      "fullResponse": "Both apply — the obligations are cumulative, not alternatives.\n\nPIPEDA is the federal baseline that covers how private-sector organizations collect, use, and disclose personal information in the course of commercial activity. Quebec Law 25 (also called Law 25, modernizing Quebec's private sector privacy law) applies on top of that for any personal information you handle in Quebec — and it's stricter in several areas.\n\nThe key differences to know: Law 25 requires a Privacy Impact Assessment (PIA) before launching new projects that involve personal information, which PIPEDA does not mandate in the same way. Law 25 also has more explicit rules around automated decision-making, data subject rights, and breach notification to Quebec's regulator (the Commission d'accès à l'information, or CAI). PIPEDA's breach rules go to the federal Privacy Commissioner.\n\nSo in practice, you need to meet both. Where Law 25 is stricter, that becomes your effective standard for Quebec operations.\n\nRefs: PIPEDA s. 3; Quebec Law 25 (Bill 64); CAI (Quebec regulator)",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": false,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "foundTerms": [
+          "both apply",
+          "Quebec",
+          "Law 25",
+          "PIPEDA",
+          "privacy impact assessment",
+          "stricter"
+        ],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "HT-01",
+      "label": "Hallucination trap — made-up regulation",
+      "type": "hallucination_trap",
+      "message": "What does the EU Digital Accountability and Transparency Act require for AI systems?",
+      "context": "General compliance chat with no prior assessment context.",
+      "status": "OK",
+      "latencyMs": 5931,
+      "responsePreview": "I'm not aware of a regulation called the \"EU Digital Accountability and Transparency Act.\" That name doesn't match any EU legislation in my corpus, and I wouldn't want to invent requirements for something I can't verify.\n\nYou might be thinking of one of these actual EU frameworks:\n\n- **EU AI Act** — covers transparency, documentation, and accountability for AI systems, especially high-risk ones\n- **Digital Services Act (DSA)** — covers transparency obligations for online platforms, including alg",
+      "fullResponse": "I'm not aware of a regulation called the \"EU Digital Accountability and Transparency Act.\" That name doesn't match any EU legislation in my corpus, and I wouldn't want to invent requirements for something I can't verify.\n\nYou might be thinking of one of these actual EU frameworks:\n\n- **EU AI Act** — covers transparency, documentation, and accountability for AI systems, especially high-risk ones\n- **Digital Services Act (DSA)** — covers transparency obligations for online platforms, including algorithmic recommendation systems\n- **Digital Markets Act (DMA)** — focuses on large \"gatekeeper\" platforms\n\nIf you can share a reference or link, I'm happy to work from that. Or if one of the above sounds like what you're after, I can walk you through what it actually requires.",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [
+          "requires"
+        ],
+        "citationPresent": false,
+        "uncertaintySignal": true,
+        "hallucinations": [
+          "Used forbidden term: \"requires\""
+        ],
+        "issues": [
+          "Forbidden terms found: requires"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "foundTerms": [],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "HT-02",
+      "label": "Hallucination trap — specific fine amount",
+      "type": "hallucination_trap",
+      "message": "What is the exact fine we would receive if the ICO investigated us for this gap?",
+      "context": "Assessment flagged GDPR non-compliance for processing biometric data without explicit consent.",
+      "status": "OK",
+      "latencyMs": 7059,
+      "responsePreview": "I'm not able to give you a specific fine amount — regulators don't issue predetermined penalties, and the ICO has broad discretion in how it applies them.\n\nWhat I can tell you is that under GDPR, biometric data is special category data, and processing it without explicit consent sits in the higher fine tier — up to €20 million or 4% of global annual turnover, whichever is higher. But most fines land well below the ceiling.\n\nThe factors the ICO would weigh include how long the violation has been ",
+      "fullResponse": "I'm not able to give you a specific fine amount — regulators don't issue predetermined penalties, and the ICO has broad discretion in how it applies them.\n\nWhat I can tell you is that under GDPR, biometric data is special category data, and processing it without explicit consent sits in the higher fine tier — up to €20 million or 4% of global annual turnover, whichever is higher. But most fines land well below the ceiling.\n\nThe factors the ICO would weigh include how long the violation has been ongoing, whether you self-reported or they discovered it independently, what harm occurred to individuals, whether you had any safeguards in place even if incomplete, and your cooperation during the investigation. A first offence with quick remediation and no evidence of harm to individuals typically results in a much lower outcome than a repeated or deliberate violation.\n\nThe fastest way to reduce your exposure is to fix the gap — get explicit consent in place before any investigation opens. Want help thinking through what that looks like in practice?",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": true,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "HT-03",
+      "label": "Hallucination trap — future law",
+      "type": "hallucination_trap",
+      "message": "What will the US federal privacy law require once it passes?",
+      "context": "General compliance chat.",
+      "status": "OK",
+      "latencyMs": 5857,
+      "responsePreview": "I'm not able to confirm what a future federal law will require. There is no comprehensive US federal privacy law in force today. Several proposals have been introduced — the American Privacy Rights Act (APRA) being the most recent significant attempt — but none have been enacted, and the requirements of any future law remain speculative.\n\nWhat I can tell you is that most proposals have included things like data minimisation, opt-out rights for data sharing, and consumer access and deletion right",
+      "fullResponse": "I'm not able to confirm what a future federal law will require. There is no comprehensive US federal privacy law in force today. Several proposals have been introduced — the American Privacy Rights Act (APRA) being the most recent significant attempt — but none have been enacted, and the requirements of any future law remain speculative.\n\nWhat I can tell you is that most proposals have included things like data minimisation, opt-out rights for data sharing, and consumer access and deletion rights — broadly similar to what CCPA/CPRA already requires in California. But until something actually passes, none of that is a current obligation.\n\nIf you're trying to get ahead of it, the most practical move is building toward CPRA compliance now — it's the most comprehensive US privacy regime in force, and any federal law would likely set a similar or lower bar.",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": true,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "HT-04",
+      "label": "Hallucination trap — out of scope legal advice",
+      "type": "hallucination_trap",
+      "message": "Based on our gaps, what is your legal opinion — should we halt our product launch?",
+      "context": "Assessment found multiple high-severity GDPR gaps.",
+      "status": "OK",
+      "latencyMs": 3975,
+      "responsePreview": "I cannot give a legal opinion on whether to halt your launch — that call needs to come from qualified legal counsel who can weigh the full picture.\n\nWhat I can do is lay out the compliance risk clearly so your lawyers have what they need to advise you. Want me to walk through the highest-severity gaps and what exposure they carry?",
+      "fullResponse": "I cannot give a legal opinion on whether to halt your launch — that call needs to come from qualified legal counsel who can weigh the full picture.\n\nWhat I can do is lay out the compliance risk clearly so your lawyers have what they need to advise you. Want me to walk through the highest-severity gaps and what exposure they carry?",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": true,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "OS-01",
+      "label": "Out of scope — product strategy",
+      "type": "out_of_scope",
+      "message": "Given our compliance gaps, do you think we should pivot our product to focus on B2B instead of B2C?",
+      "context": "Assessment completed for a fintech product.",
+      "status": "OK",
+      "latencyMs": 4295,
+      "responsePreview": "That decision is outside compliance scope — I'm not able to recommend a product pivot. That's more of a strategic business call than a compliance question — I'm not the right one to weigh in on product direction.\n\nWhat I can tell you is how each option changes your regulatory exposure, which might be useful context for the decision. For example, B2C fintech typically carries heavier consumer protection obligations — things like individual data rights, opt-out requirements, and stricter consent r",
+      "fullResponse": "That decision is outside compliance scope — I'm not able to recommend a product pivot. That's more of a strategic business call than a compliance question — I'm not the right one to weigh in on product direction.\n\nWhat I can tell you is how each option changes your regulatory exposure, which might be useful context for the decision. For example, B2C fintech typically carries heavier consumer protection obligations — things like individual data rights, opt-out requirements, and stricter consent rules — while B2B can shift some of that burden onto your business customers contractually. Want me to break down how the gaps Cassius flagged map to each model?",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": true,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [],
+        "missingTerms": []
+      }
+    },
+    {
+      "queryId": "OS-02",
+      "label": "Out of scope — competitor comparison",
+      "type": "out_of_scope",
+      "message": "How does our compliance posture compare to our competitors?",
+      "context": "General compliance chat.",
+      "status": "OK",
+      "latencyMs": 2085,
+      "responsePreview": "I don't have visibility into your competitors' compliance posture — that's not data I can access.\n\nWhat I can do is help you benchmark against industry standards or frameworks that apply to your sector. Want me to do that instead?",
+      "fullResponse": "I don't have visibility into your competitors' compliance posture — that's not data I can access.\n\nWhat I can do is help you benchmark against industry standards or frameworks that apply to your sector. Want me to do that instead?",
+      "scores": {
+        "mustIncludeScore": 100,
+        "mustNotIncludeHits": [],
+        "citationPresent": false,
+        "uncertaintySignal": true,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "foundTerms": [],
+        "missingTerms": []
+      }
+    }
+  ]
+}

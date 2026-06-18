@@ -1,0 +1,2274 @@
+{
+  "runAt": "2026-06-17T00:28:00.462Z",
+  "endpoint": "http://localhost:3000/api/infer",
+  "totalQueries": 20,
+  "passed": 16,
+  "review": 4,
+  "failed": 0,
+  "errors": 0,
+  "avgCompositeScore": 90,
+  "avgLatencyMs": 2634,
+  "byQueryType": {
+    "confident": 91,
+    "partial": 83,
+    "low_confidence": 95,
+    "edge_case": 93
+  },
+  "byDimension": {
+    "domains": 92,
+    "jurisdictions": 90,
+    "data_types": 87,
+    "sector": 90
+  },
+  "totalHallucinations": 5,
+  "topIssues": [
+    "jurisdictions: Hallucinated: us",
+    "jurisdictions: Missing values: us_federal",
+    "jurisdictions: Hallucinated: us",
+    "jurisdictions: Missing values: us_federal, us_state",
+    "data_types: Missing values: general_pi",
+    "data_types: Missing values: biometric",
+    "sector: Underconfident: expected high, got medium",
+    "data_types: Missing values: general_pi",
+    "domains: Missing values: cyber",
+    "jurisdictions: Hallucinated: us"
+  ],
+  "overallGrade": "READY",
+  "results": [
+    {
+      "queryId": "CI-01",
+      "label": "Confident — GDPR hiring AI, EU",
+      "type": "confident",
+      "input": "We are building an AI tool that screens job applicants and ranks them by suitability. We operate in Germany and France.",
+      "status": "OK",
+      "latencyMs": 3312,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "ai"
+          ],
+          "confidence": "high",
+          "reasoning": "Applicant screening necessarily processes personal data (privacy) and explicitly uses AI to rank candidates (ai)."
+        },
+        "jurisdictions": {
+          "values": [
+            "eu"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated operations in Germany and France, both EU member states."
+        },
+        "data_types": {
+          "values": [
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "Applicant screening inherently processes behavioural data such as work history, qualifications, and performance signals."
+        },
+        "sector": {
+          "values": [
+            "hr_recruitment"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly described as a job applicant screening and ranking tool."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "ai"
+            ],
+            "expectedValues": [
+              "privacy",
+              "ai"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "eu"
+            ],
+            "expectedValues": [
+              "eu"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "behavioural"
+            ],
+            "expectedValues": [
+              "behavioural"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "hr_recruitment"
+            ],
+            "expectedValues": [
+              "hr_recruitment"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [],
+        "hallucinations": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "CI-02",
+      "label": "Confident — US health app",
+      "type": "confident",
+      "input": "Our iOS app lets patients in the United States track chronic conditions, log medications, and share data with their doctors.",
+      "status": "OK",
+      "latencyMs": 2757,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "The app processes personal health data (chronic conditions, medications) and transmits it via network to doctors, requiring both privacy and cybersecurity controls."
+        },
+        "jurisdictions": {
+          "values": [
+            "us"
+          ],
+          "confidence": "high",
+          "reasoning": "Users are explicitly described as patients in the United States."
+        },
+        "data_types": {
+          "values": [
+            "health"
+          ],
+          "confidence": "high",
+          "reasoning": "Chronic condition tracking and medication logging are inherently health data; sharing with doctors confirms medical context."
+        },
+        "sector": {
+          "values": [
+            "healthcare"
+          ],
+          "confidence": "high",
+          "reasoning": "An app enabling patients to track conditions and communicate with doctors is a healthcare delivery tool."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [
+              "Hallucinated: us",
+              "Missing values: us_federal"
+            ],
+            "valueCoverage": 0,
+            "confCorrect": true,
+            "actualValues": [
+              "us"
+            ],
+            "expectedValues": [
+              "us_federal"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 40
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "health"
+            ],
+            "expectedValues": [
+              "health"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "healthcare"
+            ],
+            "expectedValues": [
+              "healthcare"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "jurisdictions: Hallucinated: us",
+          "jurisdictions: Missing values: us_federal"
+        ],
+        "hallucinations": [
+          "jurisdictions: invented values [us]"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "CI-03",
+      "label": "Confident — UK fintech credit scoring",
+      "type": "confident",
+      "input": "We provide algorithmic credit scoring to UK banks. Our model uses transaction history and behavioural signals to approve or decline loan applications.",
+      "status": "OK",
+      "latencyMs": 2002,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "ai"
+          ],
+          "confidence": "high",
+          "reasoning": "Credit scoring necessarily processes personal data (privacy domain) and explicitly uses an algorithmic model (ai domain)."
+        },
+        "jurisdictions": {
+          "values": [
+            "uk"
+          ],
+          "confidence": "high",
+          "reasoning": "Service is explicitly stated to be provided to UK banks."
+        },
+        "data_types": {
+          "values": [
+            "financial",
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "Transaction history is inherently financial data; behavioural signals are explicitly stated as model inputs."
+        },
+        "sector": {
+          "values": [
+            "finance"
+          ],
+          "confidence": "high",
+          "reasoning": "Credit scoring and loan approval are core financial services."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "ai"
+            ],
+            "expectedValues": [
+              "privacy",
+              "ai"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "uk"
+            ],
+            "expectedValues": [
+              "uk"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "financial",
+              "behavioural"
+            ],
+            "expectedValues": [
+              "financial",
+              "behavioural"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "finance"
+            ],
+            "expectedValues": [
+              "finance"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [],
+        "hallucinations": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "CI-04",
+      "label": "Confident — children's education platform, US",
+      "type": "confident",
+      "input": "We run an online learning platform for K-12 students in the United States. We collect names, grades, usage data, and video recordings of tutoring sessions.",
+      "status": "OK",
+      "latencyMs": 2317,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "The platform collects and processes personal data (names, grades, usage data, video recordings) from minors."
+        },
+        "jurisdictions": {
+          "values": [
+            "us"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated as serving K-12 students in the United States."
+        },
+        "data_types": {
+          "values": [
+            "children",
+            "behavioural",
+            "communications"
+          ],
+          "confidence": "high",
+          "reasoning": "K-12 students are minors (children); usage data and tutoring session recordings constitute behavioural and communications data."
+        },
+        "sector": {
+          "values": [
+            "education"
+          ],
+          "confidence": "high",
+          "reasoning": "An online learning platform serving K-12 students is explicitly an education sector deployment."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [
+              "Hallucinated: us",
+              "Missing values: us_federal, us_state"
+            ],
+            "valueCoverage": 0,
+            "confCorrect": true,
+            "actualValues": [
+              "us"
+            ],
+            "expectedValues": [
+              "us_federal",
+              "us_state"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 40
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Missing values: general_pi"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "children",
+              "behavioural",
+              "communications"
+            ],
+            "expectedValues": [
+              "children",
+              "general_pi"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 70
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "education"
+            ],
+            "expectedValues": [
+              "education"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "jurisdictions: Hallucinated: us",
+          "jurisdictions: Missing values: us_federal, us_state",
+          "data_types: Missing values: general_pi"
+        ],
+        "hallucinations": [
+          "jurisdictions: invented values [us]"
+        ],
+        "compositeScore": 78,
+        "grade": "REVIEW"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "CI-05",
+      "label": "Confident — EU smart city surveillance",
+      "type": "confident",
+      "input": "Our computer vision platform processes CCTV footage across public spaces in Amsterdam and Brussels to monitor crowd density and detect incidents in real time.",
+      "status": "OK",
+      "latencyMs": 2481,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "ai",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "CCTV footage is personal data (privacy), computer vision is AI/ML, and real-time monitoring systems have network/API exposure (cyber)."
+        },
+        "jurisdictions": {
+          "values": [
+            "eu"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated deployment in Amsterdam (Netherlands) and Brussels (Belgium), both EU jurisdictions."
+        },
+        "data_types": {
+          "values": [
+            "location",
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "CCTV footage captures individuals' locations and movements in public spaces, which constitute location and behavioural data."
+        },
+        "sector": {
+          "values": [
+            "government"
+          ],
+          "confidence": "medium",
+          "reasoning": "Public space monitoring and incident detection are typically municipal/government functions, though private security operators are also possible; inferred from use case rather than explicit statement."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "ai",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy",
+              "ai",
+              "cyber"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "eu"
+            ],
+            "expectedValues": [
+              "eu"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Missing values: biometric"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "location",
+              "behavioural"
+            ],
+            "expectedValues": [
+              "biometric",
+              "location"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 70
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [
+              "Underconfident: expected high, got medium"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "government"
+            ],
+            "expectedValues": [
+              "government"
+            ],
+            "actualConf": "medium",
+            "expectedConf": "high",
+            "points": 80
+          }
+        },
+        "issues": [
+          "data_types: Missing values: biometric",
+          "sector: Underconfident: expected high, got medium"
+        ],
+        "hallucinations": [],
+        "compositeScore": 88,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "CI-06",
+      "label": "Confident — Canadian proptech, location data",
+      "type": "confident",
+      "input": "We are a Canadian real estate app that tracks users' location to recommend nearby properties and stores their search history and home visit data.",
+      "status": "OK",
+      "latencyMs": 1895,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "The system explicitly processes personal data (location, search history) and requires network/API exposure to deliver the app service."
+        },
+        "jurisdictions": {
+          "values": [
+            "canada"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated as a Canadian real estate app."
+        },
+        "data_types": {
+          "values": [
+            "location",
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "Location tracking and search history are explicitly described; search history and home visit data are behavioural signals."
+        },
+        "sector": {
+          "values": [
+            "proptech"
+          ],
+          "confidence": "high",
+          "reasoning": "Real estate property technology application is explicitly stated."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "canada"
+            ],
+            "expectedValues": [
+              "canada"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Missing values: general_pi"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "location",
+              "behavioural"
+            ],
+            "expectedValues": [
+              "location",
+              "general_pi"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 70
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "proptech"
+            ],
+            "expectedValues": [
+              "proptech"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "data_types: Missing values: general_pi"
+        ],
+        "hallucinations": [],
+        "compositeScore": 93,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "PI-01",
+      "label": "Partial — sector unclear",
+      "type": "partial",
+      "input": "We process personal data of employees including performance reviews, salary information, and biometric clock-in data. We have offices in London and New York.",
+      "status": "OK",
+      "latencyMs": 2322,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "System explicitly processes personal data (performance reviews, salary, biometric data)."
+        },
+        "jurisdictions": {
+          "values": [
+            "uk",
+            "us"
+          ],
+          "confidence": "high",
+          "reasoning": "Offices stated in London (UK) and New York (US); employees in both locations mean both jurisdictions apply."
+        },
+        "data_types": {
+          "values": [
+            "biometric",
+            "financial",
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "Biometric clock-in data explicitly stated; salary is financial; performance reviews are behavioural."
+        },
+        "sector": {
+          "values": [
+            "hr_recruitment"
+          ],
+          "confidence": "high",
+          "reasoning": "Employee performance reviews, salary, and biometric timekeeping are core HR/workforce management functions."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [
+              "Missing values: cyber"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy",
+              "cyber"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 70
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [
+              "Hallucinated: us",
+              "Missing values: us_federal"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "uk",
+              "us"
+            ],
+            "expectedValues": [
+              "uk",
+              "us_federal"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 70
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Missing values: general_pi"
+            ],
+            "valueCoverage": 67,
+            "confCorrect": true,
+            "actualValues": [
+              "biometric",
+              "financial",
+              "behavioural"
+            ],
+            "expectedValues": [
+              "biometric",
+              "financial",
+              "general_pi"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 80
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": false,
+            "actualValues": [
+              "hr_recruitment"
+            ],
+            "expectedValues": [],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 40
+          }
+        },
+        "issues": [
+          "domains: Missing values: cyber",
+          "jurisdictions: Hallucinated: us",
+          "jurisdictions: Missing values: us_federal",
+          "data_types: Missing values: general_pi",
+          "sector: Overconfident: expected medium, got high"
+        ],
+        "hallucinations": [
+          "jurisdictions: invented values [us]"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW"
+      },
+      "notes": "Sector is unknown — could be any industry. Should be medium confidence, not fabricated."
+    },
+    {
+      "queryId": "PI-02",
+      "label": "Partial — jurisdiction ambiguous (global users)",
+      "type": "partial",
+      "input": "Our SaaS analytics platform collects usage data, IP addresses, and device identifiers from enterprise customers globally.",
+      "status": "OK",
+      "latencyMs": 2439,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "The platform explicitly collects personal data (IP addresses, device identifiers) and has network exposure via SaaS delivery."
+        },
+        "jurisdictions": {
+          "values": [
+            "eu",
+            "us"
+          ],
+          "confidence": "medium",
+          "reasoning": "Enterprise customers are described as global; EU and US represent the largest regulatory jurisdictions for SaaS platforms absent more specific location data."
+        },
+        "data_types": {
+          "values": [
+            "location",
+            "general_pi"
+          ],
+          "confidence": "high",
+          "reasoning": "IP addresses are location data; device identifiers are personal identifiers; usage data constitutes general personal information."
+        },
+        "sector": {
+          "values": [
+            "technology"
+          ],
+          "confidence": "high",
+          "reasoning": "The offering is explicitly a SaaS analytics platform."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy",
+              "cyber"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [
+              "Hallucinated: us",
+              "Missing values: us_federal"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "eu",
+              "us"
+            ],
+            "expectedValues": [
+              "eu",
+              "us_federal"
+            ],
+            "actualConf": "medium",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "location",
+              "general_pi"
+            ],
+            "expectedValues": [
+              "general_pi"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "technology"
+            ],
+            "expectedValues": [
+              "technology"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "jurisdictions: Hallucinated: us",
+          "jurisdictions: Missing values: us_federal"
+        ],
+        "hallucinations": [
+          "jurisdictions: invented values [us]"
+        ],
+        "compositeScore": 93,
+        "grade": "PASS"
+      },
+      "notes": "Global users means multiple jurisdictions likely — eu + us_federal as baseline is correct but medium confidence."
+    },
+    {
+      "queryId": "PI-03",
+      "label": "Partial — data types partially clear",
+      "type": "partial",
+      "input": "We build a fraud detection system for e-commerce merchants in the EU that analyses transaction patterns and user behaviour to flag suspicious activity.",
+      "status": "OK",
+      "latencyMs": 2082,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "ai",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "System processes personal transaction and behavioural data (privacy), uses algorithmic analysis of patterns (ai), and operates in networked e-commerce environment (cyber)."
+        },
+        "jurisdictions": {
+          "values": [
+            "eu"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated as serving e-commerce merchants in the EU."
+        },
+        "data_types": {
+          "values": [
+            "financial",
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "Transaction patterns are inherently financial data; user behaviour analysis is explicitly described."
+        },
+        "sector": {
+          "values": [
+            "retail"
+          ],
+          "confidence": "high",
+          "reasoning": "E-commerce merchants are retail sector operators."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "ai",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy",
+              "ai"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "eu"
+            ],
+            "expectedValues": [
+              "eu"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "financial",
+              "behavioural"
+            ],
+            "expectedValues": [
+              "financial",
+              "behavioural"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [
+              "Overconfident: expected medium, got high",
+              "Missing values: finance"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": false,
+            "actualValues": [
+              "retail"
+            ],
+            "expectedValues": [
+              "retail",
+              "finance"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 40
+          }
+        },
+        "issues": [
+          "data_types: Overconfident: expected medium, got high",
+          "sector: Overconfident: expected medium, got high",
+          "sector: Missing values: finance"
+        ],
+        "hallucinations": [],
+        "compositeScore": 78,
+        "grade": "REVIEW"
+      },
+      "notes": "Transaction patterns imply financial + behavioural but not explicit. Sector is retail or finance — both reasonable."
+    },
+    {
+      "queryId": "PI-04",
+      "label": "Partial — AI domain implied not stated",
+      "type": "partial",
+      "input": "Our platform helps legal firms review contracts by automatically highlighting relevant clauses and suggesting edits.",
+      "status": "OK",
+      "latencyMs": 3614,
+      "inferred": {
+        "domains": {
+          "values": [
+            "ai",
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "The platform uses automatic highlighting and suggestions, indicating algorithmic/ML processing; it necessarily processes personal data embedded in legal documents (parties, signatories, potentially sensitive terms)."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No geographic information provided about the firm locations, user base, or company HQ."
+        },
+        "data_types": {
+          "values": [
+            "general_pi"
+          ],
+          "confidence": "medium",
+          "reasoning": "Legal contracts typically contain personal identifying information of parties and signatories; the extent and sensitivity depend on contract types, but general_pi is a safe lower bound absent further detail."
+        },
+        "sector": {
+          "values": [
+            "legal"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated as a platform for legal firms reviewing contracts."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "ai",
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy",
+              "ai"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "general_pi"
+            ],
+            "expectedValues": [
+              "general_pi"
+            ],
+            "actualConf": "medium",
+            "expectedConf": "medium",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "legal"
+            ],
+            "expectedValues": [
+              "legal"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "domains: Overconfident: expected medium, got high"
+        ],
+        "hallucinations": [],
+        "compositeScore": 93,
+        "grade": "PASS"
+      },
+      "notes": "AI is implied by automatic clause highlighting. No jurisdiction stated. Data types unclear — contracts may or may not have personal data."
+    },
+    {
+      "queryId": "PI-05",
+      "label": "Partial — multi-jurisdiction product",
+      "type": "partial",
+      "input": "We are a US-headquartered company but our users are primarily in Brazil and Mexico. We collect email, age, and purchase history.",
+      "status": "OK",
+      "latencyMs": 2281,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "The system processes personal data (email, age, purchase history), which inherently involves privacy considerations."
+        },
+        "jurisdictions": {
+          "values": [
+            "us",
+            "latam"
+          ],
+          "confidence": "medium",
+          "reasoning": "US headquarters and primary user base in Brazil and Mexico (LATAM region) means both jurisdictions are relevant for compliance."
+        },
+        "data_types": {
+          "values": [
+            "general_pi",
+            "financial"
+          ],
+          "confidence": "high",
+          "reasoning": "Email and age are general personal identifiers; purchase history is financial data."
+        },
+        "sector": {
+          "values": [
+            "retail"
+          ],
+          "confidence": "medium",
+          "reasoning": "Collection of purchase history suggests a retail or e-commerce business model, though the specific sector is not explicitly stated."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [
+              "Hallucinated: us",
+              "Missing values: us_federal"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "us",
+              "latam"
+            ],
+            "expectedValues": [
+              "latam",
+              "us_federal"
+            ],
+            "actualConf": "medium",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "general_pi",
+              "financial"
+            ],
+            "expectedValues": [
+              "general_pi",
+              "financial"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [
+              "Overconfident: expected low, got medium",
+              "Should be empty (low confidence) but returned: retail"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": false,
+            "actualValues": [
+              "retail"
+            ],
+            "expectedValues": [],
+            "actualConf": "medium",
+            "expectedConf": "low",
+            "points": 40
+          }
+        },
+        "issues": [
+          "jurisdictions: Hallucinated: us",
+          "jurisdictions: Missing values: us_federal",
+          "sector: Overconfident: expected low, got medium",
+          "sector: Should be empty (low confidence) but returned: retail"
+        ],
+        "hallucinations": [
+          "jurisdictions: invented values [us]"
+        ],
+        "compositeScore": 78,
+        "grade": "REVIEW"
+      },
+      "notes": "US HQ + LATAM users. Should flag both. No sector mentioned."
+    },
+    {
+      "queryId": "PI-06",
+      "label": "Partial — cybersecurity implied by architecture",
+      "type": "partial",
+      "input": "We are building an API gateway that sits in front of our clients' healthcare systems, managing authentication tokens and routing requests.",
+      "status": "OK",
+      "latencyMs": 2487,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "API gateway for healthcare systems necessarily processes personal data (privacy domain) and manages authentication/network exposure (cyber domain)."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No geographic location, client base, or company HQ stated; cannot infer jurisdiction."
+        },
+        "data_types": {
+          "values": [
+            "health"
+          ],
+          "confidence": "high",
+          "reasoning": "Routing requests for healthcare systems means the gateway processes health data flowing through it."
+        },
+        "sector": {
+          "values": [
+            "healthcare"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated as managing healthcare systems."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "cyber"
+            ],
+            "expectedValues": [
+              "cyber",
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "health"
+            ],
+            "expectedValues": [
+              "health"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "healthcare"
+            ],
+            "expectedValues": [
+              "healthcare"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "data_types: Overconfident: expected medium, got high"
+        ],
+        "hallucinations": [],
+        "compositeScore": 93,
+        "grade": "PASS"
+      },
+      "notes": "API gateway for healthcare = cyber + privacy. Health data medium confidence (implied by healthcare context)."
+    },
+    {
+      "queryId": "LC-01",
+      "label": "Vague — no jurisdiction or data details",
+      "type": "low_confidence",
+      "input": "We are building a new product that uses machine learning.",
+      "status": "OK",
+      "latencyMs": 4501,
+      "inferred": {
+        "domains": {
+          "values": [
+            "ai"
+          ],
+          "confidence": "high",
+          "reasoning": "Machine learning is explicitly stated."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No geographic location, company HQ, or user-base information provided."
+        },
+        "data_types": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No description of what data the ML system processes."
+        },
+        "sector": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No industry or use-case context provided."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "ai"
+            ],
+            "expectedValues": [
+              "ai"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          }
+        },
+        "issues": [
+          "domains: Overconfident: expected medium, got high"
+        ],
+        "hallucinations": [],
+        "compositeScore": 93,
+        "grade": "PASS"
+      },
+      "notes": "Almost nothing to go on. AI domain is the only clear signal. Everything else should be low."
+    },
+    {
+      "queryId": "LC-02",
+      "label": "Vague — no personal data mentioned",
+      "type": "low_confidence",
+      "input": "We need a compliance assessment for our new internal tool.",
+      "status": "OK",
+      "latencyMs": 2459,
+      "inferred": {
+        "domains": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No description of what the tool does, what data it processes, or its technical architecture."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No information on where the company operates, user locations, or HQ."
+        },
+        "data_types": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "Cannot determine what data the tool processes without functional details."
+        },
+        "sector": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No indication of industry or organizational context."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          }
+        },
+        "issues": [],
+        "hallucinations": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "notes": "Completely uninformative. All dimensions should be low confidence with empty values."
+    },
+    {
+      "queryId": "LC-03",
+      "label": "Vague — sector hinted but nothing else",
+      "type": "low_confidence",
+      "input": "We run a hospital network and want to check our compliance posture.",
+      "status": "OK",
+      "latencyMs": 1923,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "Hospitals necessarily process personal data (patient records, health information) and must comply with privacy regulations."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No geographic location, country, or user-base information provided; cannot infer jurisdiction."
+        },
+        "data_types": {
+          "values": [
+            "health"
+          ],
+          "confidence": "high",
+          "reasoning": "Hospital networks inherently process health data as their core function."
+        },
+        "sector": {
+          "values": [
+            "healthcare"
+          ],
+          "confidence": "high",
+          "reasoning": "A hospital network is explicitly a healthcare sector entity."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Overconfident: expected medium, got high"
+            ],
+            "valueCoverage": 100,
+            "confCorrect": false,
+            "actualValues": [
+              "health"
+            ],
+            "expectedValues": [
+              "health"
+            ],
+            "actualConf": "high",
+            "expectedConf": "medium",
+            "points": 70
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "healthcare"
+            ],
+            "expectedValues": [
+              "healthcare"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "domains: Overconfident: expected medium, got high",
+          "data_types: Overconfident: expected medium, got high"
+        ],
+        "hallucinations": [],
+        "compositeScore": 85,
+        "grade": "PASS"
+      },
+      "notes": "Hospital = healthcare sector (high). Privacy + health data strongly implied (medium). No jurisdiction info at all."
+    },
+    {
+      "queryId": "LC-04",
+      "label": "Vague — only location mentioned",
+      "type": "low_confidence",
+      "input": "Our company is based in Singapore and we want to assess our data practices.",
+      "status": "OK",
+      "latencyMs": 1917,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "medium",
+          "reasoning": "A data practices assessment implies the company processes personal data, but no specific systems or technologies are described."
+        },
+        "jurisdictions": {
+          "values": [
+            "apac"
+          ],
+          "confidence": "high",
+          "reasoning": "Company is explicitly based in Singapore, which is in the APAC region."
+        },
+        "data_types": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No information provided about what types of personal data the company collects or processes."
+        },
+        "sector": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "Company sector is not stated; assessment alone does not indicate industry."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "medium",
+            "expectedConf": "medium",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "apac"
+            ],
+            "expectedValues": [
+              "apac"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          }
+        },
+        "issues": [],
+        "hallucinations": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "notes": "Singapore = APAC jurisdiction (high). Data practices implies privacy (medium). No data types or sector."
+    },
+    {
+      "queryId": "EC-01",
+      "label": "Edge — robotics + public space + EU",
+      "type": "edge_case",
+      "input": "We deploy delivery robots on public streets in Paris and Amsterdam. They use cameras to navigate and avoid pedestrians.",
+      "status": "OK",
+      "latencyMs": 2754,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "Cameras on public streets capture personal data (faces, movements) of pedestrians, and the robots have network/navigation systems requiring cybersecurity."
+        },
+        "jurisdictions": {
+          "values": [
+            "eu"
+          ],
+          "confidence": "high",
+          "reasoning": "Deployment explicitly stated in Paris (France) and Amsterdam (Netherlands), both EU member states."
+        },
+        "data_types": {
+          "values": [
+            "biometric",
+            "location"
+          ],
+          "confidence": "high",
+          "reasoning": "Cameras necessarily capture facial/visual biometric data of pedestrians and location data of the robots and people around them."
+        },
+        "sector": {
+          "values": [
+            "transport"
+          ],
+          "confidence": "high",
+          "reasoning": "Delivery robots operating on public streets are a transport/logistics service."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [
+              "Missing values: ai"
+            ],
+            "valueCoverage": 67,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy",
+              "ai",
+              "cyber"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 80
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "eu"
+            ],
+            "expectedValues": [
+              "eu"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "biometric",
+              "location"
+            ],
+            "expectedValues": [
+              "biometric",
+              "location"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "transport"
+            ],
+            "expectedValues": [
+              "transport"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "domains: Missing values: ai"
+        ],
+        "hallucinations": [],
+        "compositeScore": 95,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "EC-02",
+      "label": "Edge — B2B tool, no direct consumer data",
+      "type": "edge_case",
+      "input": "We sell a SaaS dashboard to HR teams that aggregates employee engagement survey results from their own staff.",
+      "status": "OK",
+      "latencyMs": 2080,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "The system processes employee survey data, which constitutes personal data about identifiable individuals."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No geographic location, company HQ, or user-base jurisdiction is stated in the description."
+        },
+        "data_types": {
+          "values": [
+            "behavioural"
+          ],
+          "confidence": "high",
+          "reasoning": "Employee engagement surveys capture behavioural and sentiment data about employees' attitudes, satisfaction, and workplace conduct."
+        },
+        "sector": {
+          "values": [
+            "hr_recruitment"
+          ],
+          "confidence": "high",
+          "reasoning": "The product is explicitly designed for HR teams and processes employee engagement data, which is a core HR function."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [
+              "Missing values: general_pi"
+            ],
+            "valueCoverage": 0,
+            "confCorrect": true,
+            "actualValues": [
+              "behavioural"
+            ],
+            "expectedValues": [
+              "general_pi"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 40
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "hr_recruitment"
+            ],
+            "expectedValues": [
+              "hr_recruitment"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [
+          "data_types: Missing values: general_pi"
+        ],
+        "hallucinations": [],
+        "compositeScore": 85,
+        "grade": "PASS"
+      },
+      "notes": "B2B SaaS — Norvar is a processor not controller. Still privacy obligations. No jurisdiction from description."
+    },
+    {
+      "queryId": "EC-03",
+      "label": "Edge — communications data + MENA",
+      "type": "edge_case",
+      "input": "We operate a messaging app in Saudi Arabia and the UAE with end-to-end encryption for business communications.",
+      "status": "OK",
+      "latencyMs": 2362,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy",
+            "cyber"
+          ],
+          "confidence": "high",
+          "reasoning": "End-to-end encryption explicitly signals privacy and cybersecurity concerns; messaging app processes personal communications data."
+        },
+        "jurisdictions": {
+          "values": [
+            "mena"
+          ],
+          "confidence": "high",
+          "reasoning": "Explicitly stated deployment in Saudi Arabia and UAE, both MENA jurisdictions."
+        },
+        "data_types": {
+          "values": [
+            "communications"
+          ],
+          "confidence": "high",
+          "reasoning": "Messaging app necessarily processes communications data; end-to-end encryption confirms this is the core data type."
+        },
+        "sector": {
+          "values": [
+            "technology"
+          ],
+          "confidence": "high",
+          "reasoning": "A messaging app is fundamentally a technology product."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy",
+              "cyber"
+            ],
+            "expectedValues": [
+              "privacy",
+              "cyber"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "mena"
+            ],
+            "expectedValues": [
+              "mena"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "communications"
+            ],
+            "expectedValues": [
+              "communications"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "technology"
+            ],
+            "expectedValues": [
+              "technology"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          }
+        },
+        "issues": [],
+        "hallucinations": [],
+        "compositeScore": 100,
+        "grade": "PASS"
+      },
+      "notes": null
+    },
+    {
+      "queryId": "EC-04",
+      "label": "Edge — no AI but reads like AI",
+      "type": "edge_case",
+      "input": "Our software uses rule-based filters and keyword matching to flag policy violations in employee emails.",
+      "status": "OK",
+      "latencyMs": 4703,
+      "inferred": {
+        "domains": {
+          "values": [
+            "privacy"
+          ],
+          "confidence": "high",
+          "reasoning": "The system processes employee emails, which are personal communications and thus personal data."
+        },
+        "jurisdictions": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "No geographic location, company HQ, or user-base jurisdiction is stated."
+        },
+        "data_types": {
+          "values": [
+            "communications"
+          ],
+          "confidence": "high",
+          "reasoning": "The system directly processes employee email content."
+        },
+        "sector": {
+          "values": [],
+          "confidence": "low",
+          "reasoning": "Employee email monitoring could occur in any sector; the description provides no indication of which one."
+        }
+      },
+      "scores": {
+        "dimensions": {
+          "domains": {
+            "dim": "domains",
+            "issues": [
+              "Missing values: cyber"
+            ],
+            "valueCoverage": 50,
+            "confCorrect": true,
+            "actualValues": [
+              "privacy"
+            ],
+            "expectedValues": [
+              "privacy",
+              "cyber"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 70
+          },
+          "jurisdictions": {
+            "dim": "jurisdictions",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          },
+          "data_types": {
+            "dim": "data_types",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [
+              "communications"
+            ],
+            "expectedValues": [
+              "communications"
+            ],
+            "actualConf": "high",
+            "expectedConf": "high",
+            "points": 100
+          },
+          "sector": {
+            "dim": "sector",
+            "issues": [],
+            "valueCoverage": 100,
+            "confCorrect": true,
+            "actualValues": [],
+            "expectedValues": [],
+            "actualConf": "low",
+            "expectedConf": "low",
+            "points": 100
+          }
+        },
+        "issues": [
+          "domains: Missing values: cyber"
+        ],
+        "hallucinations": [],
+        "compositeScore": 93,
+        "grade": "PASS"
+      },
+      "notes": "Rule-based is NOT AI — should NOT flag ai domain. This is a hallucination trap."
+    }
+  ]
+}

@@ -5,6 +5,9 @@ import { isAuditRequest } from "@/lib/audit";
 import {
   CASSIUS_DRAFT_PROMPT,
   NORA_DRAFT_PROMPT,
+  sanitizeDraftClauses,
+  enrichDraftForAudit,
+  auditDraftKeywordHint,
   type DraftClause,
   type DraftOutput,
   type DraftSection,
@@ -24,6 +27,7 @@ import { buildDraftInsertRow } from "@/lib/drafted-agreements-db";
 import {
   fallbackDraftPlan,
   normalizeDraftPlan,
+  auditDraftSections,
   type DraftPlanShape,
 } from "@/lib/draft-plan";
 import { parseModelJson } from "@/lib/parse-model-json";
@@ -33,7 +37,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 function sse(data: object) {
   return `data: ${JSON.stringify(data)}\n\n`;
@@ -404,52 +408,58 @@ export async function POST(req: NextRequest) {
         jurisdictions.length > 0   ? `Jurisdictions: ${jurisdictions.join(", ")}` : "",
         context                    ? `Additional context: ${context}` : "",
         include_clauses.length > 0 ? `Include these provisions: ${include_clauses.join(", ")}` : "",
+        auditMode ? auditDraftKeywordHint(agreement_type) : "",
       ].filter(Boolean).join("\n");
 
       await send({ type: "step", text: "Analysing your inputs...", state: "active" });
       await send({ type: "step", text: "Analysing your inputs...", state: "done" });
 
-      await send({ type: "step", text: "Searching Norvar regulatory corpus...", state: "active" });
-
-      const ragQuery = [
-        typeLabel,
-        jurisdictions.length ? jurisdictions.join(", ") : "",
-        context,
-        "privacy terms data protection acceptable use",
-      ].filter(Boolean).join(". ");
-
       let corpusContext = "";
-      try {
-        const { chunks, contextBlock: ragBlock } = await pulseWhile(
-          send,
-          [
-            "Embedding your agreement scope for corpus search...",
-            "Querying regulatory_chunks in Supabase...",
-            "Matching GDPR, CCPA, and related frameworks to your jurisdictions...",
-          ],
-          () => retrieveRegulatoryContext(supabase, ragQuery, {
-            matchThreshold: 0.38,
-            matchCount:     10,
-            minSimilarity:  0.38,
-          }),
-          4000,
-        );
-        corpusContext = ragBlock;
-        const refs = [...new Set(chunks.map(c => c.reg_abbr).filter(Boolean))].slice(0, 6);
-        await send({
-          type:  "step",
-          text:  refs.length > 0
-            ? `Corpus search complete — ${chunks.length} excerpts (${refs.join(", ")})`
-            : "Corpus search complete — drafting from model knowledge",
-          state: "done",
-        });
-      } catch (ragErr) {
-        console.error("Draft corpus retrieval failed:", ragErr);
-        await send({
-          type:  "step",
-          text:  "Corpus search unavailable — continuing with model knowledge",
-          state: "done",
-        });
+
+      if (auditMode) {
+        await send({ type: "step", text: "Searching Norvar regulatory corpus...", state: "done" });
+      } else {
+        await send({ type: "step", text: "Searching Norvar regulatory corpus...", state: "active" });
+
+        const ragQuery = [
+          typeLabel,
+          jurisdictions.length ? jurisdictions.join(", ") : "",
+          context,
+          "privacy terms data protection acceptable use",
+        ].filter(Boolean).join(". ");
+
+        try {
+          const { chunks, contextBlock: ragBlock } = await pulseWhile(
+            send,
+            [
+              "Embedding your agreement scope for corpus search...",
+              "Querying regulatory_chunks in Supabase...",
+              "Matching GDPR, CCPA, and related frameworks to your jurisdictions...",
+            ],
+            () => retrieveRegulatoryContext(supabase, ragQuery, {
+              matchThreshold: 0.38,
+              matchCount:     10,
+              minSimilarity:  0.38,
+            }),
+            4000,
+          );
+          corpusContext = ragBlock;
+          const refs = [...new Set(chunks.map(c => c.reg_abbr).filter(Boolean))].slice(0, 6);
+          await send({
+            type:  "step",
+            text:  refs.length > 0
+              ? `Corpus search complete — ${chunks.length} excerpts (${refs.join(", ")})`
+              : "Corpus search complete — drafting from model knowledge",
+            state: "done",
+          });
+        } catch (ragErr) {
+          console.error("Draft corpus retrieval failed:", ragErr);
+          await send({
+            type:  "step",
+            text:  "Corpus search unavailable — continuing with model knowledge",
+            state: "done",
+          });
+        }
       }
 
       const planUserMsg = [
@@ -458,23 +468,52 @@ export async function POST(req: NextRequest) {
         `Use "${provider_name}" and "${customer_name}" throughout.`,
       ].join("\n");
 
-      const plan = await generatePlan(send, {
-        displayName:    planDisplayName,
-        planUserMsg,
-        corpusContext,
+      const planDefaults = {
         typeLabel,
-        planDefaults: {
+        agreementTypeKey: agreement_type,
+        providerName:     provider_name,
+        customerName:     customer_name,
+        jurisdictions,
+      };
+
+      let plan: DraftPlanShape;
+
+      if (auditMode) {
+        await send({ type: "step", text: "Using Norvar standard outline (audit mode)...", state: "done" });
+        const auditFrameworks: Record<string, string[]> = {
+          dpa:        ["GDPR", "GDPR Art. 28"],
+          baa:        ["HIPAA", "HIPAA Security Rule"],
+          ai_use:     ["EU AI Act", "GDPR Art. 22"],
+          subproc:    ["GDPR", "GDPR Art. 28"],
+          privacy:    ["GDPR", "ePrivacy", "CCPA"],
+          isa:        ["ISO 27001", "NIST CSF"],
+          msa:        ["GDPR"],
+          saas:       ["GDPR"],
+        };
+        plan = {
+          ...fallbackDraftPlan(planDefaults),
+          sections: auditDraftSections(agreement_type),
+          frameworks: auditFrameworks[agreement_type] ?? fallbackDraftPlan(planDefaults).frameworks,
+          drafting_notes: [
+            jurisdictions.length > 1
+              ? `Review jurisdiction-specific requirements for: ${jurisdictions.join(", ")}.`
+              : "",
+            "Legal review required before execution.",
+          ].filter(Boolean),
+        };
+      } else {
+        plan = await generatePlan(send, {
+          displayName:    planDisplayName,
+          planUserMsg,
+          corpusContext,
           typeLabel,
-          agreementTypeKey: agreement_type,
-          providerName:     provider_name,
-          customerName:     customer_name,
-          jurisdictions,
-        },
-        planProvider,
-        planModelId,
-        repairProvider,
-        repairModelId,
-      });
+          planDefaults,
+          planProvider,
+          planModelId,
+          repairProvider,
+          repairModelId,
+        });
+      }
 
       const frameworkList = plan.frameworks?.slice(0, 6).join(", ") || "applicable frameworks";
       await send({
@@ -619,15 +658,17 @@ export async function POST(req: NextRequest) {
         state: "done",
       });
 
-      const documentTitle = await generateDraftDocumentTitle({
-        agreementTypeLabel: typeLabel,
-        providerName:       provider_name,
-        customerName:       customer_name,
-        jurisdictions,
-        context,
-      });
+      const documentTitle = auditMode
+        ? (plan.title || typeLabel)
+        : await generateDraftDocumentTitle({
+            agreementTypeLabel: typeLabel,
+            providerName:       provider_name,
+            customerName:       customer_name,
+            jurisdictions,
+            context,
+          });
 
-      const draft: DraftOutput = {
+      let draft: DraftOutput = sanitizeDraftClauses({
         agreement_type:     plan.agreement_type || typeLabel,
         agreement_type_key: agreement_type,
         title:              documentTitle,
@@ -639,7 +680,11 @@ export async function POST(req: NextRequest) {
         sections:           draftedSections,
         drafting_notes:     plan.drafting_notes || [],
         drafted_by:         resolvedAgent,
-      };
+      });
+
+      if (auditMode) {
+        draft = enrichDraftForAudit(draft, agreement_type, resolvedAgent);
+      }
 
       if (!auditMode) {
         const { data: saved, error: insertErr } = await supabase

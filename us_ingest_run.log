@@ -1,0 +1,619 @@
+/Users/cleverchigavazira/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+
+====================================================================
+  NORVAR — US Privacy Corpus Ingestion Pipeline v2
+====================================================================
+
+SETUP_SUPABASE.sql saved (v2 schema).
+
+Connecting...
+Corpus: 45 hand-curated + 54 PDF supplement = 99 total
+Starting ingestion of 99 regulations...
+
+--------------------------------------------------------------------
+
+▶  HIPAA Privacy
+   HIPAA Privacy Rule
+   OK 214,924 chars from https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-...
+   50 chunks — embedding and storing...
+   ...20/50
+   ...40/50
+   stored 50/50 chunks
+
+▶  HIPAA Security
+   HIPAA Security Rule
+   OK 34,791 chars from https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-...
+   7 chunks — embedding and storing...
+   stored 7/7 chunks
+
+▶  HIPAA Breach
+   HIPAA Breach Notification Rule
+   OK 19,879 chars from https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-...
+   5 chunks — embedding and storing...
+   stored 5/5 chunks
+
+▶  COPPA
+   Children's Online Privacy Protection Act (COPPA) Regulations
+   OK 51,686 chars from https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C...
+   12 chunks — embedding and storing...
+   stored 12/12 chunks
+
+▶  FCRA
+   Fair Credit Reporting Act (FCRA) — Regulation V
+   OK 259,091 chars from https://www.ecfr.gov/current/title-12/chapter-X/part-1022...
+   63 chunks — embedding and storing...
+   ...20/63
+   ...40/63
+   ...60/63
+   stored 63/63 chunks
+
+▶  GLBA Safeguards
+   Gramm-Leach-Bliley Act — FTC Safeguards Rule
+   OK 41,899 chars from https://www.ecfr.gov/current/title-16/chapter-I/subchapter-C...
+   10 chunks — embedding and storing...
+   stored 10/10 chunks
+
+▶  FERPA
+   Family Educational Rights and Privacy Act (FERPA)
+   OK 92,250 chars from https://www.ecfr.gov/current/title-34/subtitle-A/part-99...
+   22 chunks — embedding and storing...
+   ...20/22
+   stored 22/22 chunks
+
+▶  CFPB Model Risk
+   CFPB — Model Risk Management Guidance (Algorithmic Credit)
+   OK 12,182 chars from https://www.federalregister.gov/agencies/consumer-financial-...
+   3 chunks — embedding and storing...
+   stored 3/3 chunks
+
+▶  EO 14117
+   Executive Order 14117 — Bulk Sensitive Personal Data
+   OK 6,048 chars from https://www.federalregister.gov/documents/2024/03/01/2024-04...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  FTC Biometric Policy
+   FTC Policy Statement on Biometric Information
+   OK 11,985 chars from https://www.federalregister.gov/agencies/federal-trade-commi...
+   3 chunks — embedding and storing...
+   stored 3/3 chunks
+
+▶  EEOC AI Guidance
+   EEOC Guidance on AI and Algorithmic Tools in Employment
+   OK 32,648 chars from https://www.eeoc.gov/2023-annual-performance-report...
+   5 chunks — embedding and storing...
+   stored 5/5 chunks
+
+▶  CCPA/CPRA
+   California Consumer Privacy Act / California Privacy Rights Act
+   OK 40,681 chars from https://oag.ca.gov/privacy/ccpa...
+   10 chunks — embedding and storing...
+   stored 10/10 chunks
+
+▶  CA ADMT Regs
+   California CPPA ADMT Regulations
+   OK 25,265 chars from https://cppa.ca.gov/regulations/consumer_privacy_act.html...
+   5 chunks — embedding and storing...
+   stored 5/5 chunks
+
+▶  CA Delete Act
+   California Delete Act (SB 362)
+   OK 24,806 chars from https://leginfo.legislature.ca.gov/faces/billTextClient.xhtm...
+   4 chunks — embedding and storing...
+   stored 4/4 chunks
+
+▶  VCDPA
+   Virginia Consumer Data Protection Act
+   OK 1,772 chars from https://law.lis.virginia.gov/vacode/title59.1/chapter53/...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  CPA
+   Colorado Privacy Act
+   OK 55,943 chars from https://leg.colorado.gov/sites/default/files/documents/2021A...
+   16 chunks — embedding and storing...
+   stored 16/16 chunks
+
+▶  CPA Biometric
+   Colorado CPA Biometric Amendment (SB 41)
+   OK 9,802 chars from https://leg.colorado.gov/bills/sb25-041...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  CTDPA
+   Connecticut Data Privacy Act
+   OK 54,219 chars from https://www.cga.ct.gov/2022/act/pa/pdf/2022PA-00015-R00SB-00...
+   14 chunks — embedding and storing...
+   stored 14/14 chunks
+
+▶  UCPA
+   Utah Consumer Privacy Act
+   OK 2,399 chars from https://le.utah.gov/xcode/Title13/Chapter61/13-61.html...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  TDPSA
+   Texas Data Privacy and Security Act
+   OK 1,430 chars from https://statutes.capitol.texas.gov/Docs/BC/htm/BC.541.htm...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  CUBI
+   Texas Capture or Use of Biometric Identifiers (CUBI)
+   OK 1,430 chars from https://statutes.capitol.texas.gov/Docs/BC/htm/BC.503.htm...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  FDBR
+   Florida Digital Bill of Rights
+   OK 1,359 chars from https://www.flsenate.gov/Laws/Statutes/2023/Chapter501...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  OCPA
+   Oregon Consumer Privacy Act
+   OK 616,892 chars from https://www.oregonlegislature.gov/bills_laws/ors/ors646A.htm...
+   135 chunks — embedding and storing...
+   ...20/135
+   ...40/135
+   ...60/135
+   ...80/135
+   ...100/135
+   ...120/135
+   stored 135/135 chunks
+
+▶  MCDPA
+   Montana Consumer Data Privacy Act
+   OK 1,517 chars from https://leg.mt.gov/bills/mca/title_0300/chapter_0140/parts_i...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  ICDPA
+   Iowa Consumer Data Protection Act
+   OK 909 chars from https://www.legis.iowa.gov/law/iowaCode/sections?codeChapter...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  DPDPA
+   Delaware Personal Data Privacy Act
+   OK 3,477 chars from https://legis.delaware.gov/BillDetail?LegislationId=140388...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  NDPA
+   Nebraska Data Privacy Act
+   OK 1,442 chars from https://nebraskalegislature.gov/laws/statutes.php?statute=87...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  NH Privacy Act
+   New Hampshire Privacy Act (SB 255)
+   OK 244 chars from https://www.gencourt.state.nh.us/legislation/2024/SB0255.htm...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  NJDPA
+   New Jersey Data Privacy Act
+   OK 41,983 chars from https://pub.njleg.state.nj.us/Bills/2022/PL23/266_.PDF...
+   11 chunks — embedding and storing...
+   stored 11/11 chunks
+
+▶  TIPA
+   Tennessee Information Protection Act
+   OK 2,862 chars from https://publications.tnsosfiles.com/acts/113/pub/pc0375.pdf...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  MN MCDPA
+   Minnesota Consumer Data Privacy Act
+   OK 89,279 chars from https://www.revisor.mn.gov/statutes/cite/325M/full...
+   20 chunks — embedding and storing...
+   ...20/20
+   stored 20/20 chunks
+
+▶  MODPA
+   Maryland Online Data Privacy Act
+   OK 1,827 chars from https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?arti...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  INCDPA
+   Indiana Consumer Data Protection Act
+   OK 2,941 chars from https://www.billtrack50.com/BillDetail/1782341...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  KCDPA
+   Kentucky Consumer Data Protection Act
+   OK 48,865 chars from https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb...
+   13 chunks — embedding and storing...
+   stored 13/13 chunks
+
+▶  RIDTPPA
+   Rhode Island Data Transparency and Privacy Protection Act
+   OK 50,754 chars from https://webserver.rilegislature.gov/BillText/BillText24/Hous...
+   17 chunks — embedding and storing...
+   stored 17/17 chunks
+
+▶  OCDPA
+   Oklahoma Consumer Data Privacy Act (SB 546)
+   OK 490 chars from https://www.oscn.net/applications/oscn/DeliverDocument.asp?C...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  AR ADPPA
+   Arkansas Data Privacy and Protection Act
+   OK 4,587 chars from https://www.arkleg.state.ar.us/assembly/2023/2023R/Acts/611....
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  BIPA
+   Illinois Biometric Information Privacy Act
+   OK 14,622 chars from https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&C...
+   4 chunks — embedding and storing...
+   stored 4/4 chunks
+
+▶  WA MHMD
+   Washington My Health MY Data Act
+   OK 824 chars from https://app.leg.wa.gov/rcw/default.aspx?cite=19.373...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  NYC Biometric
+   NYC Commercial Establishments Biometric Surveillance Ordinance
+   OK 228,888 chars from https://intro.nyc/local-laws/2021-3...
+   11 chunks — embedding and storing...
+   stored 11/11 chunks
+
+▶  NYC LL144
+   NYC Local Law 144 — Automated Employment Decisions Tool
+   OK 33,818 chars from https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=4...
+   2 chunks — embedding and storing...
+   stored 2/2 chunks
+
+▶  CAIA
+   Colorado AI Act (CAIA) — Automated Decisioning Tech
+   OK 10,086 chars from https://leg.colorado.gov/bills/sb24-205...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  NV Health Data
+   Nevada Consumer Health Data Privacy Law (SB 370)
+   OK 41,615 chars from https://www.leg.state.nv.us/Session/82nd2023/Bills/SB/SB370_...
+   15 chunks — embedding and storing...
+   stored 15/15 chunks
+
+▶  NY HIPA
+   New York Health Information Privacy Act (Advancing)
+   OK 28,166 chars from https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=S929&...
+   6 chunks — embedding and storing...
+   stored 6/6 chunks
+
+▶  MD AADC
+   Maryland Age-Appropriate Design Code
+   OK 1,827 chars from https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?arti...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  coppa-official-source
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Official Source)
+   OK 7,077 chars from https://www.ftc.gov/legal-library/browse/rules/childrens-onl...
+   2 chunks — embedding and storing...
+   stored 2/2 chunks
+
+▶  coppa-official-source-2
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Official Source)
+   OK 4,090 chars from https://www.ftc.gov/legal-library/browse/rules/safeguards-ru...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  coppa-official-source-3
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Official Source)
+   OK 1,789 chars from https://www.ftc.gov/legal-library/browse/statutes/fair-credi...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  coppa-official-source-4
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Official Source)
+   OK 86,683 chars from https://studentprivacy.ed.gov/ferpa...
+   20 chunks — embedding and storing...
+   ...20/20
+   stored 20/20 chunks
+
+▶  coppa-official-source-5
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Official Source)
+   OK 2,221 chars from https://www.ftc.gov/legal-library/browse/statutes/federal-tr...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  coppa-full-text
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  coppa-full-text-2
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  coppa-full-text-3
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  coppa-full-text-4
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  coppa-full-text-5
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  coppa-full-text-6
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  coppa-regulations
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Regulations)
+   OK 268,028 chars from https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-...
+   62 chunks — embedding and storing...
+   ...20/62
+   ...40/62
+   ...60/62
+   stored 62/62 chunks
+
+▶  coppa-guidance
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Guidance)
+   FAILED — adding to manual download list
+
+▶  coppa-guidance-2
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Guidance)
+   FAILED — adding to manual download list
+
+▶  coppa-guidance-3
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Guidance)
+   FAILED — adding to manual download list
+
+▶  coppa-guidance-4
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Guidance)
+   FAILED — adding to manual download list
+
+▶  coppa-guidance-5
+   COPPA — Children's Online Privacy Protection Act (COPPA) (Guidance)
+   OK 548 chars from https://www.ftc.gov/business-guidance/privacy-security2...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  executive-order-14117-full-text
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Full Text)
+   FAILED — adding to manual download list
+
+▶  executive-order-14117-guidance
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)
+   FAILED — adding to manual download list
+
+▶  executive-order-14117-guidance-2
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)
+   FAILED — adding to manual download list
+
+▶  executive-order-14117-guidance-3
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)
+   FAILED — adding to manual download list
+
+▶  executive-order-14117-guidance-4
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)
+   OK 273 chars from https://cppa.ca.gov/data_broker_registry.html...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  executive-order-14117-source-url
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)
+   FAILED — adding to manual download list
+
+▶  executive-order-14117-source-url-2
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)
+   OK 526 chars from https://www.eeoc.gov/laws/guidance/questions-and-answers-cla...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  executive-order-14117-source-url-3
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)
+   FAILED — adding to manual download list
+
+▶  executive-order-14117-source-url-4
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)
+   OK 3,607 chars from https://cppa.ca.gov/regulations/...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  executive-order-14117-source-url-5
+   Executive Order 14117 — Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)
+   FAILED — adding to manual download list
+
+▶  vcdpa-full-text
+   VCDPA — Virginia Consumer Data Protection Act (VCDPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  vcdpa-guidance
+   VCDPA — Virginia Consumer Data Protection Act (VCDPA) (Guidance)
+   FAILED — adding to manual download list
+
+▶  cpa-source-url
+   CPA — Colorado Privacy Act (CPA) (Source Url)
+   FAILED — adding to manual download list
+
+▶  ctdpa-source-url
+   CTDPA — Connecticut Data Privacy Act (CTDPA) (Source Url)
+   OK 17,797 chars from https://portal.ct.gov/AG/Sections/Privacy/The-Connecticut-Da...
+   4 chunks — embedding and storing...
+   stored 4/4 chunks
+
+▶  ucpa-full-text
+   UCPA — Utah Consumer Privacy Act (UCPA) (Full Text)
+   OK 5,914 chars from https://le.utah.gov/~2022/bills/static/SB0227.html...
+   2 chunks — embedding and storing...
+   stored 2/2 chunks
+
+▶  tdpsa-guidance
+   TDPSA — Texas Data Privacy and Security Act (TDPSA) (Guidance)
+   FAILED — adding to manual download list
+
+▶  fdbr-full-text
+   FDBR — Florida Digital Bill of Rights (FDBR) (Full Text)
+   FAILED — adding to manual download list
+
+▶  dpdpa-full-text
+   DPDPA — Delaware Personal Data Privacy Act (DPDPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  ndpa-source-url
+   NDPA — Nebraska Data Privacy Act (NDPA) (Source Url)
+   FAILED — adding to manual download list
+
+▶  njdpa-source-url
+   NJDPA — New Jersey Data Privacy Act (SB 332 / P.L. 2023, c.266) (Source Url)
+   OK 41,983 chars from https://pub.njleg.state.nj.us/Bills/2022/PL23/266_.pdf...
+   11 chunks — embedding and storing...
+   stored 11/11 chunks
+
+▶  mn-mcdpa-full-text
+   MN MCDPA — Minnesota Consumer Data Privacy Act (MCDPA) (Full Text)
+   FAILED — adding to manual download list
+
+▶  modpa-full-text
+   MODPA — Maryland Online Data Privacy Act (MODPA) (Full Text)
+   OK 69,657 chars from https://mgaleg.maryland.gov/2024RS/bills/hb/hb0567E.pdf...
+   20 chunks — embedding and storing...
+   ...20/20
+   stored 20/20 chunks
+
+▶  modpa-source-url
+   MODPA — Maryland Online Data Privacy Act (MODPA) (Source Url)
+   OK 1,827 chars from https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?arti...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  incdpa-source-url
+   INCDPA — Indiana Consumer Data Protection Act (INCDPA) (Source Url)
+   FAILED — adding to manual download list
+
+▶  kcdpa-full-text
+   KCDPA — Kentucky Consumer Data Protection Act (KCDPA) (Full Text)
+   OK 49,460 chars from https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb...
+   13 chunks — embedding and storing...
+   stored 13/13 chunks
+
+▶  ocdpa-source-url
+   OCDPA — Oklahoma Consumer Data Privacy Act (SB 546 / OCDPA) (Source Url)
+   OK 490 chars from https://www.oscn.net/applications/oscn/DeliverDocument.asp?C...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  ar-adppa-source-url
+   AR ADPPA — Arkansas Data Privacy and Protection Act (ADPPA) (Source Url)
+   OK 645 chars from https://advance.lexis.com/documentpage/?pdmfid=1000516&crid=...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  bipa-full-text
+   BIPA — Illinois Biometric Information Privacy Act (BIPA) (Full Text)
+   OK 2,566 chars from https://app.leg.wa.gov/billsummary?BillNumber=1155&Year=2023...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  bipa-source-url
+   BIPA — Illinois Biometric Information Privacy Act (BIPA) (Source Url)
+   FAILED — adding to manual download list
+
+▶  bipa-source-url-2
+   BIPA — Illinois Biometric Information Privacy Act (BIPA) (Source Url)
+   OK 1,430 chars from https://statutes.capitol.texas.gov/Docs/BC/htm/BC.503.htmWA...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  ca-aadc-source-url
+   CA AADC — California Age-Appropriate Design Code (AB 2273) (Source Url)
+   OK 1,279 chars from https://leginfo.legislature.ca.gov/faces/billTextClient.xhtm...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  ca-aadc-source-url-2
+   CA AADC — California Age-Appropriate Design Code (AB 2273) (Source Url)
+   OK 1,827 chars from https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?arti...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  ca-aadc-source-url-3
+   CA AADC — California Age-Appropriate Design Code (AB 2273) (Source Url)
+   OK 1,430 chars from https://statutes.capitol.texas.gov/27...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  wa-mhmd-source-url
+   WA MHMD — Washington My Health MY Data Act (Source Url)
+   OK 324 chars from https://app.leg.wa.gov/rcw/default.aspx?cite=19.373NV...
+   1 chunks — embedding and storing...
+   stored 1/1 chunks
+
+▶  wa-mhmd-source-url-2
+   WA MHMD — Washington My Health MY Data Act (Source Url)
+   FAILED — adding to manual download list
+
+▶  state-guidance
+   State / Bill (Guidance)
+   FAILED — adding to manual download list
+
+▶  state-guidance-2
+   State / Bill (Guidance)
+   FAILED — adding to manual download list
+
+====================================================================
+  DONE — 69/99 regulations | 633 chunks | v20260613
+====================================================================
+
+30 still need manual download:
+   • coppa-full-text: https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter91&edition=prelimm
+   • coppa-full-text-2: https://uscode.house.gov/view.xhtml?path=/prelim@title42/chapter7/subchapterXI/partC&edition=prelimm
+   • coppa-full-text-3: https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter94/subchapterI&edition=prelimm
+   • coppa-full-text-4: https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter41/subchapterIII&edition=prelimm
+   • coppa-full-text-5: https://uscode.house.gov/view.xhtml?path=/prelim@title20/chapter31/subchapterIII/partD&edition=prelimm
+   • coppa-full-text-6: https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter2/subchapterI&edition=prelimm
+   • coppa-guidance: https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questionsHIPAA
+   • coppa-guidance-2: https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-knowFCRA
+   • coppa-guidance-3: https://www.consumerfinance.gov/compliance/supervisory-guidance/FERPA
+   • coppa-guidance-4: https://studentprivacy.ed.gov/resourcesFTC
+   • executive-order-14117-full-text: https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.∂=4.&lawCode=CIV&title=1.81.5
+   • executive-order-14117-guidance: https://www.consumerfinance.gov/compliance/supervisory-guidance/EEOC
+   • executive-order-14117-guidance-2: https://www.eeoc.gov/artificial-intelligence-and-algorithmic-fairnessHUD
+   • executive-order-14117-guidance-3: https://www.oag.ca.gov/privacy/ccpaADMT
+   • executive-order-14117-source-url: https://www.ftc.gov/legal-library/browse/policy-statements/policy-statement-biometric-informationCFPB
+   • executive-order-14117-source-url-3: https://www.hud.gov/program_offices/fair_housing_equal_opp3
+   • executive-order-14117-source-url-5: https://cppa.ca.gov/regulations/Regs
+   • vcdpa-full-text: https://lis.virginia.gov/cgi-bin/legp604.exe?212+ful+CHAP0035Ag
+   • vcdpa-guidance: https://www.oag.state.va.us/programs-initiatives/privacy5
+   • cpa-source-url: https://leg.colorado.gov/6
+   • tdpsa-guidance: https://www.texasattorneygeneral.gov/consumer-protection/data-privacyCUBI
+   • fdbr-full-text: https://laws.flrules.org/2023/610
+   • dpdpa-full-text: https://legis.delaware.gov/BillDetail/14038814
+   • ndpa-source-url: https://nebraskalegislature.gov/laws/statutes.php?statute=87-40115
+   • mn-mcdpa-full-text: https://www.revisor.mn.gov/bills/text.php?number=HF4757&session;_year=2024&session;_number=0&version=list
+   • incdpa-source-url: https://iga.in.gov/legislative/laws/2023/ic/titles/024/#24-1
+   • bipa-source-url: https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57CUBI
+   • wa-mhmd-source-url-2: https://www.nysenate.gov/legislation/bills/2025/S92928
+   • state-guidance: https://www.ftc.gov/legal-library/browse/rulesConsumer
+   • state-guidance-2: https://www.consumerfinance.gov/data-research/research-reports/State
+
+   List saved to failed_ingestions.json
+
+Running retrieval test...
+
+Query: 'What consent is required before collecting biometric data?'
+Top results:
+
+  [BIPA] score: 0.577
+  means any individual, partnership, corporation, limited liability company, association, or other group, however organized. A private entity does not include a State or local government agency. A priva...
+
+  [RIDTPPA] score: 0.560
+  generated by automatic measurements of an individual's 29 biological characteristics, such as a fingerprint, a voiceprint, eye retinas, irises or other unique 30 biological patterns or characteristics...
+
+  [modpa-full-text] score: 0.549
+  BY THE GENERAL ASSEMBLY OF MARYLAND, 23 That the Laws of Maryland read as follows: 24 Article – Commercial Law 25 13–301. 26 Unfair, abusive, or deceptive trade practices include any: 27 (14) Violatio...
+

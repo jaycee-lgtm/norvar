@@ -19,8 +19,32 @@ import { dirname, join } from "path";
 import { writeFileSync, mkdirSync, existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { spawn } from "child_process";
 import { sendAuditEmail } from "./email-notify.mjs";
+import {
+  buildSprintDetail,
+  formatSprintEmailBody,
+  formatFinalEmailBody,
+  buildDetailedMarkdown,
+  buildAgentsTestedSummary,
+} from "./report-detail.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function loadEnvFile(filename) {
+  const path = join(dirname(__dirname), filename);
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const i = trimmed.indexOf("=");
+    if (i <= 0) continue;
+    const key = trimmed.slice(0, i).trim();
+    const val = trimmed.slice(i + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
+
+loadEnvFile(".env.local");
+loadEnvFile(".env");
 
 const args = process.argv.slice(2);
 const get  = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
@@ -41,11 +65,11 @@ const THRESHOLDS = { PASS: 85, REVIEW: 70 };
 const SPRINTS = [
   { id: 1, name: "Cassius — Query Quality",           agent: "Cassius", script: "audit-runner.mjs",           reportPrefix: "audit-report-",  fastArgs: [] },
   { id: 2, name: "Context Inference",                 agent: "Infer",   script: "audit-runner-sprint2.mjs",   reportPrefix: "infer-report-",  fastArgs: [] },
-  { id: 3, name: "Nora — Chat Quality & Grounding",     agent: "Nora",    script: "audit-runner-sprint3.mjs",   reportPrefix: "nora-report-",   fastArgs: [] },
-  { id: 4, name: "Cassius — Risk Tier Accuracy",        agent: "Cassius", script: "audit-runner-sprint4.mjs",   reportPrefix: "tier-report-",   fastArgs: [] },
-  { id: 5, name: "Nora — Identity & Tone",              agent: "Nora",    script: "audit-runner-sprint5.mjs",   reportPrefix: "tone-report-",   fastArgs: [] },
-  { id: 6, name: "Varro — Redline Quality",             agent: "Varro",   script: "audit-runner-sprint6.mjs",   reportPrefix: "varro-report-",  fastArgs: [] },
-  { id: 7, name: "Petra — Draft Quality",               agent: "Petra",   script: "audit-runner-sprint7.mjs",   reportPrefix: "petra-report-",  fastArgs: [] },
+  { id: 3, name: "Nora — Chat Quality & Grounding",   agent: "Nora",    script: "audit-runner-sprint3.mjs",   reportPrefix: "nora-report-",   fastArgs: [] },
+  { id: 4, name: "Cassius — Risk Tier Accuracy",      agent: "Cassius", script: "audit-runner-sprint4.mjs",   reportPrefix: "tier-report-",   fastArgs: [] },
+  { id: 5, name: "Nora — Identity & Tone",            agent: "Nora",    script: "audit-runner-sprint5.mjs",   reportPrefix: "tone-report-",   fastArgs: [] },
+  { id: 6, name: "Varro — Redline Quality",           agent: "Varro",   script: "audit-runner-sprint6.mjs",   reportPrefix: "varro-report-",  fastArgs: [] },
+  { id: 7, name: "Petra — Draft Quality",             agent: "Petra",   script: "audit-runner-sprint7.mjs",   reportPrefix: "petra-report-",  fastArgs: [] },
 ];
 
 if (!SECRET) {
@@ -104,44 +128,7 @@ function runRunner(script, extraArgs = []) {
   });
 }
 
-function sprintEmailBody(sprint, result, durationSec) {
-  const icon = result.status === "PASS" ? "✅" : result.status === "REVIEW" ? "⚠️" : "🔴";
-  return `${icon} Sprint ${sprint.id} complete — ${sprint.name}
-
-Agent:    ${sprint.agent}
-Grade:    ${result.grade}
-Score:    ${result.score}/100
-Passed:   ${result.passed}/${result.total} queries
-Duration: ${durationSec}s
-Target:   ${BASE_URL}
-
-${result.status === "FAIL" ? "This sprint needs attention before the next scheduled run." : "Sprint finished successfully."}
-`;
-}
-
-function remediationHints(sprint, result) {
-  if (result.status === "PASS") return [];
-
-  const hints = [];
-  if (sprint.id === 2) {
-    hints.push({ agent: "Infer", description: "Review /api/infer prompt — jurisdiction detection and confidence thresholds." });
-  }
-  if (sprint.id === 3 || sprint.id === 5) {
-    hints.push({ agent: "Nora", description: `Nora score ${result.score}/100 — review GRC prompt tone, brevity, and corpus grounding rules.` });
-  }
-  if (sprint.id === 4) {
-    hints.push({ agent: "Cassius", description: "Review deriveRiskFromGaps() and Cassius severity calibration against regulatory high-risk categories." });
-  }
-  if (sprint.id === 6) {
-    hints.push({ agent: "Varro", description: "Review redline prompts — status derivation, corpus citations, and suggested clause text quality." });
-  }
-  if (sprint.id === 7) {
-    hints.push({ agent: "Petra", description: "Review draft prompts — section completeness, placeholder avoidance, and framework citations." });
-  }
-  return hints;
-}
-
-function buildSummary(sprintResults, allRemediation) {
+function buildSummary(sprintResults, sprintDetails) {
   const totalQueries = sprintResults.reduce((n, s) => n + s.total, 0);
   const totalPassed  = sprintResults.reduce((n, s) => n + s.passed, 0);
   const avgScore     = sprintResults.length
@@ -163,6 +150,8 @@ function buildSummary(sprintResults, allRemediation) {
     ]),
   );
 
+  const needsManualRemediation = sprintDetails.flatMap(d => d.detail.granularRemediation ?? []);
+
   return {
     runAt: new Date().toISOString(),
     baseUrl: BASE_URL,
@@ -172,71 +161,12 @@ function buildSummary(sprintResults, allRemediation) {
     totalQueries,
     totalPassed,
     sprintResults,
+    sprintDetails: sprintDetails.map(({ sprintId, detail }) => ({ sprintId, ...detail })),
     agentHealth,
-    remediationActions: allRemediation,
+    agentsTested: buildAgentsTestedSummary(sprintResults, sprintDetails),
+    autoRemediated: sprintDetails.flatMap(d => d.detail.autoRemediated),
+    needsManualRemediation,
   };
-}
-
-function buildMarkdown(summary) {
-  const gradeEmoji = { HEALTHY: "✅", DEGRADED: "⚠️", CRITICAL: "🔴" };
-  const lines = [
-    `# Norvar Auto Audit Report`,
-    `**${summary.runAt}**`,
-    ``,
-    `## Overall Health: ${gradeEmoji[summary.overallGrade] ?? ""} ${summary.overallGrade}`,
-    `**Avg score:** ${summary.avgScore}/100  |  **Passed:** ${summary.totalPassed}/${summary.totalQueries} queries`,
-    ``,
-    `## Agent Health`,
-    `| Agent | Score |`,
-    `|-------|-------|`,
-    ...Object.entries(summary.agentHealth).map(([agent, score]) => `| ${agent} | ${score}/100 |`),
-    ``,
-    `## Sprint Results`,
-    `| Sprint | Name | Score | Grade | Pass/Total |`,
-    `|--------|------|-------|-------|------------|`,
-    ...summary.sprintResults.map(s =>
-      `| S${s.sprintId} | ${s.name} | ${s.score}/100 | ${s.grade} | ${s.passed}/${s.total} |`,
-    ),
-  ];
-
-  if (summary.remediationActions.length > 0) {
-    lines.push("", "## Remediation", "");
-    for (const a of summary.remediationActions) {
-      lines.push(`- **[${a.agent}]** ${a.description}`);
-    }
-  }
-
-  lines.push("", "---", `*Norvar Auto Audit — ${summary.runAt}*`);
-  return lines.join("\n");
-}
-
-function buildFinalEmailBody(summary) {
-  const emoji = { HEALTHY: "✅", DEGRADED: "⚠️", CRITICAL: "🔴" }[summary.overallGrade] ?? "";
-  const agentLines = Object.entries(summary.agentHealth)
-    .map(([agent, score]) => `  ${agent.padEnd(10)} ${score}/100`)
-    .join("\n");
-  const sprintLines = summary.sprintResults
-    .map(s => `  S${s.sprintId} ${s.name.padEnd(35)} ${s.score}/100 (${s.passed}/${s.total}) ${s.grade}`)
-    .join("\n");
-  const remLines = summary.remediationActions.length
-    ? summary.remediationActions.map(a => `  [${a.agent}] ${a.description}`).join("\n")
-    : "  None required.";
-
-  return `${emoji} Norvar audit complete — ${summary.overallGrade} (${summary.avgScore}/100)
-
-AGENT HEALTH
-${agentLines}
-
-SPRINT RESULTS
-${sprintLines}
-
-REMEDIATION
-${remLines}
-
-Run at: ${summary.runAt}
-Queries: ${summary.totalPassed}/${summary.totalQueries} passed
-Target: ${summary.baseUrl}
-`;
 }
 
 async function main() {
@@ -252,7 +182,7 @@ async function main() {
   if (!existsSync(REPORT_DIR)) mkdirSync(REPORT_DIR, { recursive: true });
 
   const sprintResults  = [];
-  const allRemediation = [];
+  const sprintDetails  = [];
 
   for (const sprintId of RUN_SPRINTS) {
     const sprint = SPRINTS.find(s => s.id === sprintId);
@@ -294,15 +224,18 @@ async function main() {
     };
     sprintResults.push(entry);
 
+    const detail = buildSprintDetail(sprint, report);
+    sprintDetails.push({ sprintId: sprint.id, detail });
+
     const icon = normalized.status === "PASS" ? "✅" : normalized.status === "REVIEW" ? "⚠️" : "🔴";
     console.log(`\n  ${icon} Sprint ${sprint.id}: ${normalized.grade} (${normalized.score}/100) — ${durationSec}s`);
 
-    if (normalized.status !== "PASS") {
-      allRemediation.push(...remediationHints(sprint, normalized));
+    if (detail.needsManualRemediation.length) {
+      console.log(`  Manual remediation items: ${detail.needsManualRemediation.length}`);
     }
 
     const sprintSubject = `[Norvar Audit] Sprint ${sprint.id} — ${normalized.grade} (${normalized.score}/100)`;
-    const sprintBody    = sprintEmailBody(sprint, normalized, durationSec);
+    const sprintBody    = formatSprintEmailBody(sprint, entry, detail);
     await sendAuditEmail({
       to:        EMAIL,
       subject:   sprintSubject,
@@ -314,14 +247,14 @@ async function main() {
     });
   }
 
-  const summary  = buildSummary(sprintResults, allRemediation);
-  const markdown = buildMarkdown(summary);
+  const summary  = buildSummary(sprintResults, sprintDetails);
+  const markdown = buildDetailedMarkdown(summary, sprintDetails);
 
   writeFileSync(REPORT_JSON, JSON.stringify(summary, null, 2));
   writeFileSync(REPORT_MD, markdown);
 
   const finalSubject = `[Norvar Audit] ${summary.overallGrade} — ${summary.avgScore}/100 — ${new Date().toLocaleDateString()}`;
-  const finalBody    = buildFinalEmailBody(summary);
+  const finalBody    = formatFinalEmailBody(summary, sprintDetails);
   await sendAuditEmail({
     to:        EMAIL,
     subject:   finalSubject,
@@ -343,6 +276,22 @@ async function main() {
     const bar  = "█".repeat(Math.round(score / 10)) + "░".repeat(10 - Math.round(score / 10));
     const icon = score >= THRESHOLDS.PASS ? "✅" : score >= THRESHOLDS.REVIEW ? "⚠️" : "🔴";
     console.log(`  ${icon} ${agent.padEnd(12)} ${bar} ${score}/100`);
+  }
+  if (summary.needsManualRemediation.length > 0) {
+    console.log(`\nManual remediation items: ${summary.needsManualRemediation.length}`);
+    const byAgent = {};
+    for (const item of summary.needsManualRemediation) {
+      const key = item.norvarAgent ?? item.agent ?? "?";
+      byAgent[key] = (byAgent[key] ?? 0) + 1;
+    }
+    for (const [agent, count] of Object.entries(byAgent)) {
+      console.log(`  ${agent}: ${count} issue(s)`);
+    }
+  }
+  console.log(`\nAgents tested:`);
+  for (const a of summary.agentsTested ?? []) {
+    const icon = a.tested ? "✓" : "–";
+    console.log(`  ${icon} ${a.name.padEnd(8)} ${a.tested ? `${a.passedQueries}/${a.totalQueries} passed` : "not tested"}`);
   }
   console.log(`\nReports: ${REPORT_JSON}`);
   console.log(`         ${REPORT_MD}`);

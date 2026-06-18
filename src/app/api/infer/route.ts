@@ -3,16 +3,15 @@ import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isAuditRequest } from "@/lib/audit";
 import { ASSESS_AGENT } from "@/lib/agents";
-import {
-  VALID_INFER_JURISDICTIONS,
-  normalizeJurisdictionList,
-} from "@/lib/jurisdictions";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const VALID_DOMAINS    = ["privacy", "ai", "cyber"];
 const VALID_DATA_TYPES = ["biometric", "health", "children", "location", "financial", "behavioural", "communications", "general_pi"];
 const VALID_SECTORS    = ["government", "healthcare", "finance", "hr_recruitment", "education", "transport", "media_adtech", "legal", "retail", "proptech", "technology"];
+const VALID_INFER_JURISDICTIONS = [
+  "eu", "uk", "us_federal", "us_state", "canada", "apac", "latam", "mena",
+];
 
 const INFER_PROMPT = `
 You are ${ASSESS_AGENT.name}, a GRC analyst. A user has described a technology deployment.
@@ -44,10 +43,13 @@ Domain guidance:
 - cyber: any system with network, API, or security exposure
 
 Jurisdiction guidance:
+- Use us_federal for US federal scope; us_state when US state law is implicated (e.g. BIPA/Illinois, CCPA/California, NYC LL144).
+- Never return bare "us" — always us_federal and/or us_state.
 - Infer ONLY from stated countries/cities, user-base locations, or company HQ. If no location signal exists, return values: [] with "low" confidence — never guess.
-- Do NOT add us (or any jurisdiction) merely because a company might plausibly operate there. A Germany-only description means eu only.
-- If users are described as "global", include eu + us as the baseline with "medium" confidence.
+- Do NOT add jurisdictions merely because a company might plausibly operate there. A Germany-only description means eu only.
+- If users are described as "global", include eu + us_federal with "medium" confidence.
 - When HQ and user base differ (e.g. US company, Brazilian users), include both with "medium" confidence.
+- When the description is partial or ambiguous, prefer "medium" or "low" confidence — never "high" unless explicitly stated or unavoidably implied.
 
 Data type guidance:
 - hiring/recruitment → behavioural
@@ -55,12 +57,46 @@ Data type guidance:
 - payments/fintech → financial
 - children's product → children
 - location services → location
+- employee HR records without explicit health → general_pi (not health unless clinical data stated)
+- US K-12 / schools → children + general_pi
 `;
+
+// When US users are mentioned, include us_federal; add us_state if a US state is named.
+function expandUsJurisdictions(values: string[], description: string): string[] {
+  const out = [...values];
+  const lower = description.toLowerCase();
+  const usMentioned = /\b(united states|u\.s\.|usa|us-based|us company|in the us|k-12|california|illinois|texas|new york)\b/i.test(description);
+  if (usMentioned && !out.includes("us_federal")) out.push("us_federal");
+  if (/\b(illinois|california|texas|new york|bipa|ccpa|cpra|ll ?144)\b/i.test(lower) && !out.includes("us_state")) {
+    out.push("us_state");
+  }
+  return out;
+}
 
 function normalizeInferredJurisdictions(field: { values?: string[] } | undefined) {
   if (!field?.values?.length) return;
   const allowedSet = new Set<string>(VALID_INFER_JURISDICTIONS);
-  field.values = normalizeJurisdictionList(field.values).filter(v => allowedSet.has(v));
+  const expanded: string[] = [];
+  for (const raw of field.values) {
+    const v = raw.toLowerCase().trim();
+    if (v === "us" || v === "usa" || v === "united states" || v === "us federal") {
+      expanded.push("us_federal");
+      continue;
+    }
+    if (v === "us_state" || v === "state" || v === "us state") {
+      expanded.push("us_state");
+      continue;
+    }
+    if (allowedSet.has(v)) expanded.push(v);
+  }
+  field.values = [...new Set(expanded)];
+}
+
+function normalizeInferredField(field: { values?: string[]; confidence?: string } | undefined) {
+  if (!field) return;
+  if (Array.isArray(field.values)) {
+    field.values = field.values.map(v => v.toLowerCase().trim()).filter(Boolean);
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -97,6 +133,12 @@ export async function POST(req: NextRequest) {
       sector?: { values?: string[] };
     };
     normalizeInferredJurisdictions(inferred.jurisdictions);
+    if (inferred.jurisdictions?.values) {
+      inferred.jurisdictions.values = expandUsJurisdictions(inferred.jurisdictions.values, description);
+    }
+    normalizeInferredField(inferred.domains);
+    normalizeInferredField(inferred.data_types);
+    normalizeInferredField(inferred.sector);
     return Response.json({ inferred });
   } catch {
     return Response.json({ error: "Failed to parse inference" }, { status: 500 });

@@ -1,0 +1,622 @@
+{
+  "runAt": "2026-06-18T01:55:11.717Z",
+  "endpoint": "http://localhost:3000/api/redline",
+  "agent": "cassius",
+  "totalQueries": 20,
+  "passed": 2,
+  "review": 7,
+  "failed": 0,
+  "errors": 11,
+  "avgCompositeScore": 76,
+  "avgLatencyMs": 318783,
+  "statusAccuracy": {
+    "tooLenient": 0,
+    "tooSevere": 0,
+    "correct": 9
+  },
+  "avgFlagCoverage": 94,
+  "avgCitationCoverage": 96,
+  "byQueryType": {
+    "dpa": 80,
+    "msa": 72
+  },
+  "overallGrade": "NEEDS WORK",
+  "results": [
+    {
+      "queryId": "VR-01",
+      "label": "DPA — missing lawful basis and data subject rights",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 54805,
+      "actualStatus": "significant_issues",
+      "clauseCount": 8,
+      "missingClauses": [
+        "Breach Notification (GDPR Art. 28(3)(f) / Art. 33(2))",
+        "Data Subject Rights Assistance (GDPR Art. 28(3)(e))",
+        "Audit Rights (GDPR Art. 28(3)(h))",
+        "International Data Transfers / Safeguards (GDPR Chapter V)",
+        "Data Deletion/Return on Termination (GDPR Art. 28(3)(g))",
+        "Lawful Basis / Legal Basis for Processing",
+        "Governing Law and Jurisdiction",
+        "Confidentiality Obligations of Processor Personnel (GDPR Art. 28(3)(b))",
+        "DPIA / Accountability Assistance (GDPR Art. 28(3)(f))"
+      ],
+      "positiveClauses": [
+        "Clause 1 — Scope: correctly identifies controller-processor relationship and general purpose of processing"
+      ],
+      "frameworks": [
+        "GDPR Art. 28",
+        "GDPR Art. 32",
+        "GDPR Art. 33",
+        "GDPR Chapter III",
+        "GDPR Chapter V",
+        "UK GDPR Art. 28",
+        "UK GDPR Art. 32",
+        "UK GDPR Art. 33",
+        "UK GDPR Chapter V",
+        "SCCs",
+        "ISO 27001",
+        "NIST CSF 2.0"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 100,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not flag the unlimited sub-processor clause | Does not flag absence of breach notification procedure"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "missingFlags": [],
+        "missingCitations": [],
+        "actualIssues": 8,
+        "redFlagsTriggered": [
+          "Does not flag the unlimited sub-processor clause",
+          "Does not flag absence of breach notification procedure"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-02",
+      "label": "DPA — international transfer with no mechanism",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 58469,
+      "actualStatus": "significant_issues",
+      "clauseCount": 8,
+      "missingClauses": [
+        "Sub-processor authorisation and controls (Art. 28(2)(4) GDPR)",
+        "Data subject rights assistance (Art. 28(3)(e) GDPR)",
+        "Audit and inspection rights (Art. 28(3)(h) GDPR)",
+        "International transfer mechanism (SCCs / EU-US DPF / TIA)",
+        "Governing law and dispute resolution",
+        "Confidentiality obligations on Processor personnel (Art. 28(3)(b) GDPR)",
+        "DPIA and prior consultation assistance (Art. 28(3)(f) GDPR)",
+        "Return or deletion of data upon termination details and certification (Art. 28(3)(g) GDPR)",
+        "Liability and indemnification",
+        "Lawful basis and documented instructions requirement"
+      ],
+      "positiveClauses": [
+        "Data Retention — includes defined deletion timeline post-termination (Clause 4)"
+      ],
+      "frameworks": [
+        "GDPR",
+        "SCCs",
+        "EU-US DPF",
+        "ISO 27001",
+        "SOC 2",
+        "HIPAA"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 100,
+        "citationCoverage": 67,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Missing citations: GDPR Chapter V",
+          "Red flags: Does not flag the EU-US transfer without an SCC or adequacy mechanism | Does not flag health data as special category requiring additional protection"
+        ],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "missingFlags": [],
+        "missingCitations": [
+          "GDPR Chapter V"
+        ],
+        "actualIssues": 8,
+        "redFlagsTriggered": [
+          "Does not flag the EU-US transfer without an SCC or adequacy mechanism",
+          "Does not flag health data as special category requiring additional protection"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-03",
+      "label": "DPA — well drafted, minimal issues expected",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 30873,
+      "actualStatus": "clean",
+      "clauseCount": 2,
+      "missingClauses": [
+        "Description of Processing / Annex I (subject matter, duration, nature, purpose, data types, data subject categories)",
+        "DPIA and Prior Consultation Assistance (Art. 28(3)(f))",
+        "Governing Law and Jurisdiction",
+        "Liability and Indemnification"
+      ],
+      "positiveClauses": [
+        "Clause 2 — Scope and Instructions: properly limits processing to documented instructions including transfer restrictions per Art. 28(3)(a)",
+        "Clause 3 — Confidentiality: meets Art. 28(3)(b) confidentiality commitment requirement",
+        "Clause 4 — Security (Article 32): strong and specific — names AES-256, TLS 1.3, access controls, and regular testing, exceeding the typical Art. 32 minimum",
+        "Clause 5 — Sub-processors: compliant with Art. 28(2)/(4) — requires prior written authorisation, lists current sub-processors, and provides 30-day advance notice of changes",
+        "Clause 6 — Data Subject Rights: responsive assistance within 5 business days covering Arts. 15-22",
+        "Clause 7 — Breach Notification: 24-hour notification window is more protective than the GDPR's 'without undue delay' standard — well drafted",
+        "Clause 8 — International Transfers: correctly references Commission Decision 2021/914 SCCs for EEA transfers",
+        "Clause 9 — Deletion: compliant with Art. 28(3)(g) — 30-day deletion/return with written certification",
+        "Clause 10 — Audit Rights: meets Art. 28(3)(h) audit obligation with reasonable notice and frequency terms"
+      ],
+      "frameworks": [
+        "GDPR"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 100,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "missingFlags": [],
+        "missingCitations": [],
+        "actualIssues": 2,
+        "redFlagsTriggered": []
+      }
+    },
+    {
+      "queryId": "VR-04",
+      "label": "DPA — HIPAA context, missing BAA obligations",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 59723,
+      "actualStatus": "significant_issues",
+      "clauseCount": 8,
+      "missingClauses": [
+        "Sub-Contractor / Downstream Business Associate Obligations (45 CFR § 164.504(e)(2)(ii)(D))",
+        "Individual Rights — Access, Amendment, and Accounting of Disclosures (45 CFR §§ 164.524, 164.526, 164.528)",
+        "Audit Rights and HHS Access (45 CFR § 164.504(e)(2)(ii)(H))",
+        "Material Breach Cure and Termination Rights (45 CFR § 164.504(e)(2)(iii))",
+        "HIPAA Definitions (PHI, Breach, Security Incident, Unsecured PHI, Required by Law)",
+        "Indemnification for HIPAA Violations",
+        "Liability Provisions",
+        "Insurance Requirements",
+        "HIPAA Regulatory Updates / Amendment Clause",
+        "Governing Law and Dispute Resolution"
+      ],
+      "positiveClauses": [
+        "Section 1 — Services: Clearly identifies the nature of services (cloud-based EHR storage) and the categories of PHI processed"
+      ],
+      "frameworks": [
+        "HIPAA",
+        "NIST 800-53",
+        "FTC Safeguards Rule"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 100,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not flag missing HIPAA Security Rule technical safeguards"
+        ],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingFlags": [],
+        "missingCitations": [],
+        "actualIssues": 8,
+        "redFlagsTriggered": [
+          "Does not flag missing HIPAA Security Rule technical safeguards"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-05",
+      "label": "DPA — CCPA context, California users",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 50677,
+      "actualStatus": "significant_issues",
+      "clauseCount": 8,
+      "missingClauses": [
+        "Consumer Rights Assistance (CCPA/CPRA verifiable consumer request obligations)",
+        "Sub-Service Provider / Subcontractor Controls",
+        "Audit and Monitoring Rights",
+        "Breach Notification (timeline, content, cooperation)",
+        "Governing Law and Dispute Resolution",
+        "Data Retention and Return/Deletion on Termination",
+        "Indemnification and Liability",
+        "Confidentiality Obligations"
+      ],
+      "positiveClauses": [
+        "Data categories identification (Clause 1 identifies specific PI categories — purchase history, browsing behavior, device identifiers)",
+        "No-sale commitment (Clause 2 includes prohibition on sale, though incomplete)"
+      ],
+      "frameworks": [
+        "CCPA/CPRA",
+        "NIST CSF 2.0"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 83,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Missing flags: deletion request",
+          "Red flags: Does not flag that using consumer data to improve own models may constitute 'selling' under CCPA | Does not flag missing consumer rights obligations"
+        ],
+        "compositeScore": 71,
+        "grade": "REVIEW",
+        "missingFlags": [
+          "deletion request"
+        ],
+        "missingCitations": [],
+        "actualIssues": 8,
+        "redFlagsTriggered": [
+          "Does not flag that using consumer data to improve own models may constitute 'selling' under CCPA",
+          "Does not flag missing consumer rights obligations",
+          "Does not cite CCPA/CPRA for California consumer data"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-06",
+      "label": "MSA — one-sided indemnification, no liability cap",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 75566,
+      "actualStatus": "significant_issues",
+      "clauseCount": 8,
+      "missingClauses": [
+        "Limitation of Liability",
+        "Data Protection / Data Processing Addendum",
+        "Termination and Term",
+        "Security Requirements",
+        "Representations and Warranties",
+        "Dispute Resolution",
+        "Force Majeure",
+        "Audit Rights",
+        "Insurance Requirements",
+        "Payment Terms",
+        "Acceptance Criteria for Deliverables",
+        "Non-Solicitation"
+      ],
+      "positiveClauses": [
+        "Services — appropriately references Statements of Work for scope definition",
+        "Governing Law — clearly specifies jurisdiction"
+      ],
+      "frameworks": [
+        "GDPR",
+        "CCPA/CPRA",
+        "PIPEDA",
+        "LGPD",
+        "SCCs",
+        "FTC Act",
+        "DORA",
+        "NIST 800-53",
+        "NIST CSF 2.0",
+        "ISO 27001",
+        "ISO 27002",
+        "CISA CPGs"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 100,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not flag the one-sided indemnification covering Vendor only | Does not flag the absence of a mutual liability cap"
+        ],
+        "compositeScore": 70,
+        "grade": "REVIEW",
+        "missingFlags": [],
+        "missingCitations": [],
+        "actualIssues": 8,
+        "redFlagsTriggered": [
+          "Does not flag the one-sided indemnification covering Vendor only",
+          "Does not flag the absence of a mutual liability cap",
+          "Does not flag that work product IP staying with Vendor is unusual and unfavourable for Client",
+          "Does not flag the 1-year confidentiality term as insufficient"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-07",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 207805,
+      "scores": null
+    },
+    {
+      "queryId": "VR-08",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 2733,
+      "scores": null
+    },
+    {
+      "queryId": "VR-09",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 4967244,
+      "scores": null
+    },
+    {
+      "queryId": "VR-10",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 2017,
+      "scores": null
+    },
+    {
+      "queryId": "VR-11",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 1973,
+      "scores": null
+    },
+    {
+      "queryId": "VR-12",
+      "status": "NETWORK_ERROR",
+      "error": "Request timed out.",
+      "latencyMs": 1081604,
+      "scores": null
+    },
+    {
+      "queryId": "VR-13",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 4061,
+      "scores": null
+    },
+    {
+      "queryId": "VR-14",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 7354,
+      "scores": null
+    },
+    {
+      "queryId": "VR-15",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 3367,
+      "scores": null
+    },
+    {
+      "queryId": "VR-16",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 3226,
+      "scores": null
+    },
+    {
+      "queryId": "VR-17",
+      "status": "NETWORK_ERROR",
+      "error": "Connection error.",
+      "latencyMs": 1606,
+      "scores": null
+    },
+    {
+      "queryId": "VR-18",
+      "label": "Edge — children's platform, COPPA missing",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 165192,
+      "actualStatus": "significant_issues",
+      "clauseCount": 7,
+      "missingClauses": [
+        "Data Processing Agreement (DPA) with controller/processor roles and lawful basis",
+        "FERPA School Official designation and re-disclosure restrictions",
+        "Verifiable parental consent mechanism or COPPA school consent documentation",
+        "Breach notification obligations with defined timelines",
+        "Data retention period and deletion obligations on termination",
+        "Data subject / parent rights assistance",
+        "Sub-processor restrictions and approval process",
+        "Limitation of liability",
+        "Indemnification (especially for regulatory violations)",
+        "Governing law and dispute resolution",
+        "Confidentiality / NDA provisions",
+        "Prohibition on selling or commercially exploiting student data",
+        "Right to audit"
+      ],
+      "positiveClauses": [],
+      "frameworks": [
+        "COPPA",
+        "FERPA",
+        "FTC Act",
+        "FTC Safeguards Rule",
+        "NIST 800-53",
+        "CCPA/CPRA",
+        "GDPR"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 83,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": false,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Missing flags: verifiable consent",
+          "Red flags: Does not flag COPPA as mandatory for a children's platform collecting personal data | Does not flag FERPA for student educational records"
+        ],
+        "compositeScore": 71,
+        "grade": "REVIEW",
+        "missingFlags": [
+          "verifiable consent"
+        ],
+        "missingCitations": [],
+        "actualIssues": 7,
+        "redFlagsTriggered": [
+          "Does not flag COPPA as mandatory for a children's platform collecting personal data",
+          "Does not flag FERPA for student educational records",
+          "Does not flag that sharing 'anonymised' student data with research partners without parental consent may violate COPPA"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-19",
+      "label": "Edge — biometric data, BIPA context",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 1444498,
+      "actualStatus": "significant_issues",
+      "clauseCount": 6,
+      "missingClauses": [
+        "BIPA-compliant written informed consent/release mechanism (§15(b))",
+        "Publicly available written retention and destruction policy (§15(a))",
+        "Prohibition on sale, lease, trade, or profit from biometric data (§15(c))",
+        "Breach notification clause with specific timelines",
+        "Indemnification clause allocating BIPA liability between parties",
+        "Right to audit Provider's biometric data handling practices",
+        "Data subject rights and individual access/deletion provisions",
+        "Limitation of liability",
+        "Term, termination, and post-termination data destruction obligations",
+        "Dispute resolution and governing law clause"
+      ],
+      "positiveClauses": [
+        "Clause 3 references encryption and access controls — directionally correct though insufficient in detail"
+      ],
+      "frameworks": [
+        "BIPA",
+        "NIST 800-53",
+        "ISO 27001",
+        "GDPR"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 80,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": true,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Missing flags: private right of action",
+          "Red flags: Does not flag BIPA for biometric data collection in Illinois | Does not flag BIPA requirement for written policy and destruction schedule"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "missingFlags": [
+          "private right of action"
+        ],
+        "missingCitations": [],
+        "actualIssues": 6,
+        "redFlagsTriggered": [
+          "Does not flag BIPA for biometric data collection in Illinois",
+          "Does not flag BIPA requirement for written policy and destruction schedule",
+          "Does not flag that retaining biometric data 3 years post-employment may violate BIPA",
+          "Does not flag sharing biometric data with payroll partners without written consent as a BIPA violation"
+        ]
+      }
+    },
+    {
+      "queryId": "VR-20",
+      "label": "Edge — global deployment, multiple jurisdiction gaps",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 929244,
+      "actualStatus": "significant_issues",
+      "clauseCount": 5,
+      "missingClauses": [
+        "Data Processing Agreement (DPA) with full Art. 28 GDPR content",
+        "International Data Transfer mechanisms (EU SCCs, UK IDTA/Addendum, LGPD transfer safeguards)",
+        "Sub-processor controls and notification obligations",
+        "Data Subject Rights assistance procedures",
+        "Data Protection Impact Assessment (DPIA) cooperation clause",
+        "Breach/Security Incident notification clause with defined timeline",
+        "Confidentiality and NDA obligations",
+        "Liability cap and limitation of liability",
+        "Indemnification (including regulatory fines and data breach costs)",
+        "Governing law and dispute resolution",
+        "Audit and inspection rights",
+        "IP ownership and licence grants",
+        "Representations and warranties",
+        "Force majeure",
+        "ePrivacy / cookie consent allocation of responsibilities",
+        "CCPA/CPRA service provider terms (no selling/sharing, limited use restrictions)"
+      ],
+      "positiveClauses": [],
+      "frameworks": [
+        "GDPR",
+        "UK GDPR",
+        "UK DPA 2018",
+        "LGPD",
+        "PDPA",
+        "CCPA/CPRA",
+        "ePrivacy",
+        "SCCs",
+        "NIST CSF 2.0",
+        "SOC 2",
+        "ISO 27001"
+      ],
+      "scores": {
+        "statusCorrect": true,
+        "statusDirection": "correct",
+        "flagCoverage": 100,
+        "citationCoverage": 100,
+        "issueCountOk": true,
+        "hasMissingClauses": true,
+        "hasPositiveClauses": false,
+        "suggestedTextQuality": true,
+        "hallucinations": [],
+        "issues": [
+          "Red flags: Does not flag jurisdiction-specific obligations for each of the 5 regions | Does not flag 7-year retention as potentially disproportionate under GDPR purpose limitation"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "missingFlags": [],
+        "missingCitations": [],
+        "actualIssues": 5,
+        "redFlagsTriggered": [
+          "Does not flag jurisdiction-specific obligations for each of the 5 regions",
+          "Does not flag 7-year retention as potentially disproportionate under GDPR purpose limitation"
+        ]
+      }
+    }
+  ]
+}

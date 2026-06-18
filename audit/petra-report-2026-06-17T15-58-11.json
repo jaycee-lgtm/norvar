@@ -1,0 +1,979 @@
+{
+  "runAt": "2026-06-17T16:45:55.976Z",
+  "endpoint": "http://localhost:3000/api/draft",
+  "totalQueries": 20,
+  "passed": 9,
+  "review": 7,
+  "failed": 4,
+  "errors": 0,
+  "avgCompositeScore": 78,
+  "avgLatencyMs": 138469,
+  "draftsWithPlaceholders": 0,
+  "avgSectionsPerDraft": 5,
+  "avgClausesPerDraft": 15,
+  "byQueryType": {
+    "dpa": 81,
+    "msa": 68,
+    "isa": 88,
+    "nda": 87,
+    "baa": 75,
+    "ai_use": 60,
+    "subproc": 63,
+    "privacy": 80,
+    "data_share": 88,
+    "saas": 90
+  },
+  "overallGrade": "NEEDS WORK",
+  "results": [
+    {
+      "queryId": "PT-01",
+      "label": "DPA — EU context, GDPR-grounded",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 128100,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 67,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing framework citations: GDPR Art. 28",
+          "Too few sections: 5 (min 6)",
+          "Red flags: Does not include data subject rights section | Does not include breach notification clause"
+        ],
+        "redFlagsTriggered": [
+          "Does not include data subject rights section",
+          "Does not include breach notification clause",
+          "Does not cite GDPR Art. 28",
+          "Fewer than 6 sections for a full DPA"
+        ],
+        "compositeScore": 65,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [
+          "GDPR Art. 28"
+        ],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-02",
+      "label": "MSA — US context, SaaS product",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 129873,
+      "agreementType": "Master Services Agreement (MSA)",
+      "title": "Master Services Agreement (MSA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 63,
+        "clauseCoverage": 60,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": false,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Warranties, Limitation of Liability, Term and Termination",
+          "Missing clause content: liability cap, indemnification",
+          "Too few sections: 5 (min 7)",
+          "Too few clauses: 15 (min 18)",
+          "Red flags: Does not include a liability cap | Does not include indemnification clause"
+        ],
+        "redFlagsTriggered": [
+          "Does not include a liability cap",
+          "Does not include indemnification clause",
+          "Does not include IP ownership provisions",
+          "Fewer than 7 sections for a full MSA"
+        ],
+        "compositeScore": 45,
+        "grade": "FAIL",
+        "missingSections": [
+          "Warranties",
+          "Limitation of Liability",
+          "Term and Termination"
+        ],
+        "missingClauses": [
+          "liability cap",
+          "indemnification"
+        ],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-03",
+      "label": "ISA — EU financial sector, DORA context",
+      "type": "isa",
+      "status": "OK",
+      "latencyMs": 174678,
+      "agreementType": "Information Security Addendum (ISA)",
+      "title": "Information Security Addendum (ISA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 80,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Data Deletion",
+          "Red flags: Does not cite DORA for an EU financial institution context | Does not include DORA-specific incident reporting timeline"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite DORA for an EU financial institution context",
+          "Does not include DORA-specific incident reporting timeline",
+          "Does not include RTO/RPO requirements",
+          "Does not include threat-led penetration testing (TLPT) reference"
+        ],
+        "compositeScore": 76,
+        "grade": "REVIEW",
+        "missingSections": [
+          "Data Deletion"
+        ],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-04",
+      "label": "NDA — bilateral, tech company context",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 119489,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Non-Disclosure Agreement (NDA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 67,
+        "clauseCoverage": 57,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Exceptions, Return of Materials",
+          "Missing clause content: exceptions, required by law, injunctive relief",
+          "Red flags: Does not include standard confidentiality exceptions | Does not include return of materials obligation"
+        ],
+        "redFlagsTriggered": [
+          "Does not include standard confidentiality exceptions",
+          "Does not include return of materials obligation",
+          "Missing 'required by law' disclosure exception"
+        ],
+        "compositeScore": 70,
+        "grade": "REVIEW",
+        "missingSections": [
+          "Exceptions",
+          "Return of Materials"
+        ],
+        "missingClauses": [
+          "exceptions",
+          "required by law",
+          "injunctive relief"
+        ],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-05",
+      "label": "BAA — HIPAA context, US healthcare",
+      "type": "baa",
+      "status": "OK",
+      "latencyMs": 117687,
+      "agreementType": "Business Associate Agreement (BAA)",
+      "title": "Business Associate Agreement (BAA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 67,
+        "clauseCoverage": 83,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Term and Termination, Certification of Destruction",
+          "Missing clause content: return or destroy",
+          "Red flags: Does not cite HIPAA as the governing framework | Does not include certification of destruction on termination"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite HIPAA as the governing framework",
+          "Does not include certification of destruction on termination",
+          "Missing breach notification to covered entity"
+        ],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "missingSections": [
+          "Term and Termination",
+          "Certification of Destruction"
+        ],
+        "missingClauses": [
+          "return or destroy"
+        ],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-06",
+      "label": "AI Use Agreement — high-risk AI, EU deployment",
+      "type": "ai_use",
+      "status": "OK",
+      "latencyMs": 196711,
+      "agreementType": "AI Use Agreement",
+      "title": "AI Use Agreement",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 88,
+        "clauseCoverage": 86,
+        "frameworkCoverage": 67,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Liability",
+          "Missing clause content: explainability",
+          "Missing framework citations: GDPR Art. 22",
+          "Too few sections: 5 (min 6)",
+          "Red flags: Does not cite EU AI Act for a high-risk AI use case | Does not include human oversight obligations"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite EU AI Act for a high-risk AI use case",
+          "Does not include human oversight obligations",
+          "Does not include prohibited use cases",
+          "Missing bias and fairness obligations"
+        ],
+        "compositeScore": 60,
+        "grade": "FAIL",
+        "missingSections": [
+          "Liability"
+        ],
+        "missingClauses": [
+          "explainability"
+        ],
+        "missingCitations": [
+          "GDPR Art. 22"
+        ],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-07",
+      "label": "Sub-Processor Agreement — GDPR chain",
+      "type": "subproc",
+      "status": "OK",
+      "latencyMs": 146702,
+      "agreementType": "Sub-Processor Agreement",
+      "title": "Sub-Processor Agreement",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 57,
+        "clauseCoverage": 43,
+        "frameworkCoverage": 50,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Processing Obligations, Breach Notification, Deletion",
+          "Missing clause content: same obligations, breach notification, deletion, liability",
+          "Missing framework citations: GDPR Art. 28",
+          "Red flags: Does not cite GDPR Art. 28(4) | Does not include flow-down of controller instructions"
+        ],
+        "redFlagsTriggered": [
+          "Does not cite GDPR Art. 28(4)",
+          "Does not include flow-down of controller instructions"
+        ],
+        "compositeScore": 63,
+        "grade": "FAIL",
+        "missingSections": [
+          "Processing Obligations",
+          "Breach Notification",
+          "Deletion"
+        ],
+        "missingClauses": [
+          "same obligations",
+          "breach notification",
+          "deletion",
+          "liability"
+        ],
+        "missingCitations": [
+          "GDPR Art. 28"
+        ],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-08",
+      "label": "Completeness — no placeholder clauses",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 108489,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Clause text is fewer than 30 characters (likely a stub)"
+        ],
+        "redFlagsTriggered": [
+          "Clause text is fewer than 30 characters (likely a stub)"
+        ],
+        "compositeScore": 95,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-09",
+      "label": "Completeness — definitions section has real definitions",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 128198,
+      "agreementType": "Master Services Agreement (MSA)",
+      "title": "Master Services Agreement (MSA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Too few sections: 5 (min 6)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-10",
+      "label": "Completeness — multi-jurisdiction has jurisdiction-specific notes",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 158410,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Too few sections: 5 (min 6)",
+          "Red flags: Does not include drafting notes for a multi-jurisdiction agreement | Does not cite UK GDPR separately from EU GDPR"
+        ],
+        "redFlagsTriggered": [
+          "Does not include drafting notes for a multi-jurisdiction agreement",
+          "Does not cite UK GDPR separately from EU GDPR",
+          "Does not cite LGPD for Brazil"
+        ],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-11",
+      "label": "Completeness — party names used correctly throughout",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 106816,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Non-Disclosure Agreement (NDA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-12",
+      "label": "Completeness — general provisions fully drafted",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 130028,
+      "agreementType": "Master Services Agreement (MSA)",
+      "title": "Master Services Agreement (MSA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 0,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": false,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing clause content: governing law, force majeure, assignment, severability, entire agreement, notices",
+          "Too few sections: 5 (min 7)",
+          "Too few clauses: 15 (min 20)",
+          "Red flags: Missing governing law clause | Missing force majeure clause"
+        ],
+        "redFlagsTriggered": [
+          "Missing governing law clause",
+          "Missing force majeure clause",
+          "Missing severability clause"
+        ],
+        "compositeScore": 45,
+        "grade": "FAIL",
+        "missingSections": [],
+        "missingClauses": [
+          "governing law",
+          "force majeure",
+          "assignment",
+          "severability",
+          "entire agreement",
+          "notices"
+        ],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-13",
+      "label": "Language — Petra (Cassius mode) uses formal legal language",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 111923,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 25,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing clause content: hereby, thereto, herein",
+          "Too few sections: 5 (min 6)",
+          "Red flags: Missing formal recitals or whereas clauses"
+        ],
+        "redFlagsTriggered": [
+          "Missing formal recitals or whereas clauses"
+        ],
+        "compositeScore": 70,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [
+          "hereby",
+          "thereto",
+          "herein"
+        ],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-14",
+      "label": "Language — Petra (Nora mode) plain language accessible",
+      "type": "dpa",
+      "status": "OK",
+      "latencyMs": 113830,
+      "agreementType": "Data Processing Agreement (DPA)",
+      "title": "Data Processing Agreement (DPA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-15",
+      "label": "Language — clause titles are descriptive not generic",
+      "type": "isa",
+      "status": "OK",
+      "latencyMs": 132501,
+      "agreementType": "Information Security Addendum (ISA)",
+      "title": "Information Security Addendum (ISA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [],
+        "redFlagsTriggered": [],
+        "compositeScore": 100,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-16",
+      "label": "Language — summary is plain English, non-technical",
+      "type": "msa",
+      "status": "OK",
+      "latencyMs": 143160,
+      "agreementType": "Master Services Agreement (MSA)",
+      "title": "Master Services Agreement (MSA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Too few sections: 5 (min 6)"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-17",
+      "label": "Edge — Privacy Policy, consumer-facing language",
+      "type": "privacy",
+      "status": "OK",
+      "latencyMs": 155392,
+      "agreementType": "Privacy Policy",
+      "title": "Privacy Policy",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": false,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Too few sections: 5 (min 6)",
+          "Red flags: Does not include user rights section | Does not cite CCPA for US users"
+        ],
+        "redFlagsTriggered": [
+          "Does not include user rights section",
+          "Does not cite CCPA for US users"
+        ],
+        "compositeScore": 80,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-18",
+      "label": "Edge — Data Sharing Agreement, research context",
+      "type": "data_share",
+      "status": "OK",
+      "latencyMs": 161713,
+      "agreementType": "Data Sharing Agreement",
+      "title": "Data Sharing Agreement",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 67,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Data Scope, Permitted Use",
+          "Red flags: Does not include publication/IP provisions for research output"
+        ],
+        "redFlagsTriggered": [
+          "Does not include publication/IP provisions for research output"
+        ],
+        "compositeScore": 88,
+        "grade": "PASS",
+        "missingSections": [
+          "Data Scope",
+          "Permitted Use"
+        ],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-19",
+      "label": "Edge — SaaS Agreement with biometric features",
+      "type": "saas",
+      "status": "OK",
+      "latencyMs": 206353,
+      "agreementType": "SaaS / Subscription Agreement",
+      "title": "SaaS / Subscription Agreement",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Red flags: Does not include biometric-specific consent and deletion requirements | Does not cite CCPA for California users"
+        ],
+        "redFlagsTriggered": [
+          "Does not include biometric-specific consent and deletion requirements",
+          "Does not cite CCPA for California users"
+        ],
+        "compositeScore": 90,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    },
+    {
+      "queryId": "PT-20",
+      "label": "Edge — short context, structure quality",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 99326,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Non-Disclosure Agreement (NDA)",
+      "sectionCount": 5,
+      "clauseCount": 15,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 80,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": false,
+        "placeholders": [],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: Exceptions",
+          "Red flags: Does not include standard confidentiality exceptions even when context is minimal"
+        ],
+        "redFlagsTriggered": [
+          "Does not include standard confidentiality exceptions even when context is minimal"
+        ],
+        "compositeScore": 91,
+        "grade": "PASS",
+        "missingSections": [
+          "Exceptions"
+        ],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 5,
+        "actualClauses": 15
+      }
+    }
+  ]
+}

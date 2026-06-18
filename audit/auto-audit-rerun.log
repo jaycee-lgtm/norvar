@@ -1,0 +1,698 @@
+╔══════════════════════════════════════════════════════╗
+║         Norvar — Auto Audit Orchestrator             ║
+╚══════════════════════════════════════════════════════╝
+
+Target:   http://localhost:3000
+Sprints:  1, 2, 3, 5
+Mode:     Full
+Email:    inspiredzw@gmail.com
+Started:  2026-06-17T01:30:35.238Z
+
+
+────────────────────────────────────────────────────────
+Sprint 1: Cassius — Query Quality
+Agent: Cassius  |  Runner: audit-runner.mjs
+────────────────────────────────────────────────────────
+(node:33078) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+╔══════════════════════════════════════════╗
+║   Norvar — Sprint 1: Query Quality Audit ║
+╚══════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/grc-chat
+Queries:  15
+Delay:    2500ms between queries
+
+Starting...
+
+
+[P-01] Privacy — core
+  Query: "We are launching a mobile app that collects location data, email addresses, and ..."
+  Status: PASS (100/100) — 27252ms
+  Frameworks: 100% | Concepts: 100% | Citations: true
+
+[P-02] Privacy — edge-case
+  Query: "Our HR platform uses facial recognition to verify employee identity at login. Em..."
+  Status: PASS (87/100) — 16959ms
+  Frameworks: 67% | Concepts: 100% | Citations: true
+  Missing frameworks: CCPA/CPRA
+
+[P-03] Privacy — core
+  Query: "We process health data for a wellness app and want to share it with third-party ..."
+  Status: REVIEW (79/100) — 18508ms
+  Frameworks: 67% | Concepts: 80% | Citations: true
+  Missing frameworks: FTC Act
+  Missing concepts:   PHI
+
+[P-04] Privacy — cross-border
+  Query: "We are a US company transferring EU customer data to our servers in the US for a..."
+  Status: PASS (90/100) — 18935ms
+  Frameworks: 100% | Concepts: 75% | Citations: true
+  Missing concepts:   adequacy decision
+
+[P-05] Privacy — out-of-scope
+  Query: "What is the best database to store user data securely?..."
+  Status: PASS (100/100) — 3995ms
+  Frameworks: 100% | Concepts: 100% | Citations: false
+
+[AG-01] AI Governance — core
+  Query: "We are deploying an AI model that makes automated hiring decisions, including re..."
+  Status: PASS (92/100) — 19914ms
+  Frameworks: 100% | Concepts: 80% | Citations: true
+  Missing concepts:   transparency
+
+[AG-02] AI Governance — core
+  Query: "We are building a generative AI product that creates marketing content and deplo..."
+  Status: FAIL (63/100) — 21485ms
+  Frameworks: 67% | Concepts: 40% | Citations: true
+  Missing frameworks: NIST AI RMF
+  Missing concepts:   transparency, risk management, GPAI
+
+[AG-03] AI Governance — edge-case
+  Query: "Our AI model was trained on publicly scraped web data including personal informa..."
+  Status: FAIL (63/100) — 18928ms
+  Frameworks: 67% | Concepts: 40% | Citations: true
+  Missing frameworks: CCPA/CPRA
+  Missing concepts:   data minimisation, purpose limitation, model governance
+
+[AG-04] AI Governance — conflict-detection
+  Query: "We want to use AI for real-time facial recognition in a public space in France f..."
+  Status: PASS (100/100) — 15283ms
+  Frameworks: 100% | Concepts: 100% | Citations: true
+
+[AG-05] AI Governance — out-of-scope
+  Query: "Which large language model has the best performance on coding benchmarks?..."
+  Status: PASS (100/100) — 3598ms
+  Frameworks: 100% | Concepts: 100% | Citations: false
+
+[CS-01] Cybersecurity — core
+  Query: "We are a SaaS company providing services to EU financial institutions. We recent..."
+  Status: PASS (92/100) — 21807ms
+  Frameworks: 100% | Concepts: 80% | Citations: true
+  Missing concepts:   incident response
+
+[CS-02] Cybersecurity — core
+  Query: "We are building a healthcare API that connects to hospital systems. What cyberse..."
+  Status: PASS (100/100) — 18187ms
+  Frameworks: 100% | Concepts: 100% | Citations: true
+
+[CS-03] Cybersecurity — edge-case
+  Query: "We use 12 third-party SaaS vendors that have access to our customer data. How sh..."
+  Status: REVIEW (82/100) — 16694ms
+  Frameworks: 75% | Concepts: 80% | Citations: true
+  Missing frameworks: NIST CSF
+  Missing concepts:   right to audit
+
+[CS-04] Cybersecurity — cross-domain
+  Query: "Our autonomous vehicle software communicates over a public 5G network and proces..."
+  Status: REVIEW (72/100) — 19264ms
+  Frameworks: 100% | Concepts: 80% | Citations: false
+  Missing concepts:   safety-critical system
+
+[CS-05] Cybersecurity — out-of-scope
+  Query: "Write me a Python script to scan for open ports on a network...."
+  Status: PASS (100/100) — 2920ms
+  Frameworks: 100% | Concepts: 100% | Citations: false
+
+
+╔══════════════════════════════════════════╗
+║              AUDIT COMPLETE               ║
+╚══════════════════════════════════════════╝
+
+Overall grade:  READY
+Avg score:      88/100
+Pass/Review/Fail/Error: 10/3/2/0
+Avg latency:    16249ms
+
+Domain scores:
+  Privacy              █████████░ 91/100
+  AI Governance        ████████░░ 84/100
+  Cybersecurity        █████████░ 89/100
+
+Top corpus gaps:
+  CCPA/CPRA                 missed in 2 queries
+  FTC Act                   missed in 1 query
+  NIST AI RMF               missed in 1 query
+  NIST CSF                  missed in 1 query
+
+Reports written:
+  JSON: ./audit-report-2026-06-17T01-30-35.json
+  MD:   ./audit-summary-2026-06-17T01-30-35.md
+
+  ✅ Sprint 1: READY (88/100) — 279s
+  Manual remediation items: 2
+  Email sent to inspiredzw@gmail.com (Resend)
+
+────────────────────────────────────────────────────────
+Sprint 2: Context Inference
+Agent: Infer  |  Runner: audit-runner-sprint2.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════╗
+║  Norvar — Sprint 2: Context Inference Audit  ║
+╚══════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/infer
+Queries:  20
+Delay:    1500ms between queries
+
+
+[CI-01] Confident — GDPR hiring AI, EU
+  Input: "We are building an AI tool that screens job applicants and ranks them by suitabi..."
+(node:33448) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint2.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Grade: PASS (100/100) — 2863ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[CI-02] Confident — US health app
+  Input: "Our iOS app lets patients in the United States track chronic conditions, log med..."
+  Grade: PASS (95/100) — 3275ms
+  ✗ domains        values: 100% | conf: medium (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[CI-03] Confident — UK fintech credit scoring
+  Input: "We provide algorithmic credit scoring to UK banks. Our model uses transaction hi..."
+  Grade: PASS (100/100) — 2522ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[CI-04] Confident — children's education platform, US
+  Input: "We run an online learning platform for K-12 students in the United States. We co..."
+  Grade: PASS (100/100) — 2504ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[CI-05] Confident — EU smart city surveillance
+  Input: "Our computer vision platform processes CCTV footage across public spaces in Amst..."
+  Grade: PASS (95/100) — 3223ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✗ sector         values: 100% | conf: medium (exp: high)
+
+[CI-06] Confident — Canadian proptech, location data
+  Input: "We are a Canadian real estate app that tracks users' location to recommend nearb..."
+  Grade: PASS (100/100) — 2569ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[PI-01] Partial — sector unclear
+  Input: "We process personal data of employees including performance reviews, salary info..."
+  Grade: REVIEW (78/100) — 2293ms
+  ✗ domains        values: 50% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✗ sector         values: 50% | conf: high (exp: medium)
+  Issues: domains: Missing values: cyber | sector: Overconfident: expected medium, got high
+
+[PI-02] Partial — jurisdiction ambiguous (global users)
+  Input: "Our SaaS analytics platform collects usage data, IP addresses, and device identi..."
+  Grade: PASS (100/100) — 4328ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: medium (exp: medium)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[PI-03] Partial — data types partially clear
+  Input: "We build a fraud detection system for e-commerce merchants in the EU that analys..."
+  Grade: REVIEW (78/100) — 2091ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✗ data_types     values: 100% | conf: high (exp: medium)
+  ✗ sector         values: 50% | conf: high (exp: medium)
+  Issues: data_types: Overconfident: expected medium, got high | sector: Overconfident: expected medium, got high
+
+[PI-04] Partial — AI domain implied not stated
+  Input: "Our platform helps legal firms review contracts by automatically highlighting re..."
+  Grade: PASS (85/100) — 2990ms
+  ✗ domains        values: 50% | conf: high (exp: medium)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✓ data_types     values: 100% | conf: medium (exp: medium)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[PI-05] Partial — multi-jurisdiction product
+  Input: "We are a US-headquartered company but our users are primarily in Brazil and Mexi..."
+  Grade: PASS (100/100) — 2458ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: medium (exp: medium)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: low (exp: low)
+
+[PI-06] Partial — cybersecurity implied by architecture
+  Input: "We are building an API gateway that sits in front of our clients' healthcare sys..."
+  Grade: PASS (100/100) — 2649ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✓ data_types     values: 100% | conf: medium (exp: medium)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[LC-01] Vague — no jurisdiction or data details
+  Input: "We are building a new product that uses machine learning...."
+  Grade: PASS (93/100) — 1662ms
+  ✗ domains        values: 100% | conf: high (exp: medium)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✓ data_types     values: 100% | conf: low (exp: low)
+  ✓ sector         values: 100% | conf: low (exp: low)
+
+[LC-02] Vague — no personal data mentioned
+  Input: "We need a compliance assessment for our new internal tool...."
+  Grade: PASS (100/100) — 2874ms
+  ✓ domains        values: 100% | conf: low (exp: low)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✓ data_types     values: 100% | conf: low (exp: low)
+  ✓ sector         values: 100% | conf: low (exp: low)
+
+[LC-03] Vague — sector hinted but nothing else
+  Input: "We run a hospital network and want to check our compliance posture...."
+  Grade: PASS (85/100) — 2461ms
+  ✗ domains        values: 100% | conf: high (exp: medium)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✗ data_types     values: 100% | conf: high (exp: medium)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[LC-04] Vague — only location mentioned
+  Input: "Our company is based in Singapore and we want to assess our data practices...."
+  Grade: REVIEW (80/100) — 1821ms
+  ✗ domains        values: 0% | conf: low (exp: medium)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: low (exp: low)
+  ✓ sector         values: 100% | conf: low (exp: low)
+  Issues: domains: Underconfident: expected medium, got low | domains: Missing values: privacy
+
+[EC-01] Edge — robotics + public space + EU
+  Input: "We deploy delivery robots on public streets in Paris and Amsterdam. They use cam..."
+  Grade: PASS (95/100) — 2227ms
+  ✗ domains        values: 67% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[EC-02] Edge — B2B tool, no direct consumer data
+  Input: "We sell a SaaS dashboard to HR teams that aggregates employee engagement survey ..."
+  Grade: PASS (100/100) — 2583ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[EC-03] Edge — communications data + MENA
+  Input: "We operate a messaging app in Saudi Arabia and the UAE with end-to-end encryptio..."
+  Grade: PASS (100/100) — 3034ms
+  ✓ domains        values: 100% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: high (exp: high)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: high (exp: high)
+
+[EC-04] Edge — no AI but reads like AI
+  Input: "Our software uses rule-based filters and keyword matching to flag policy violati..."
+  Grade: PASS (93/100) — 1819ms
+  ✗ domains        values: 50% | conf: high (exp: high)
+  ✓ jurisdictions  values: 100% | conf: low (exp: low)
+  ✓ data_types     values: 100% | conf: high (exp: high)
+  ✓ sector         values: 100% | conf: low (exp: low)
+
+
+╔══════════════════════════════════════════════╗
+║               AUDIT COMPLETE                  ║
+╚══════════════════════════════════════════════╝
+
+Overall grade:  READY
+Avg score:      94/100
+Pass/Review/Fail: 17/3/0
+Hallucinations: 0
+
+By query type:
+  confident        ██████████ 98/100
+  partial          █████████░ 90/100
+  low_confidence   █████████░ 90/100
+  edge_case        ██████████ 97/100
+
+By dimension:
+  domains          █████████░ 85/100
+  jurisdictions    ██████████ 100/100
+  data_types       ██████████ 97/100
+  sector           █████████░ 93/100
+
+Reports: ./infer-report-2026-06-17T01-35-15.json | ./infer-summary-2026-06-17T01-35-15.md
+
+  ✅ Sprint 2: READY (94/100) — 81s
+  Manual remediation items: 2
+  Email sent to inspiredzw@gmail.com (Resend)
+
+────────────────────────────────────────────────────────
+Sprint 3: Nora — Chat Quality & Grounding
+Agent: Nora  |  Runner: audit-runner-sprint3.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════╗
+║   Norvar — Sprint 3: Nora Chat Quality Audit  ║
+╚══════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/chat
+Queries:  20
+Delay:    2500ms between queries
+
+
+[VQ-01] Grounded — GDPR lawful basis clarification
+  Type: grounded
+  Message: "What are our options for lawful basis for processing location data?"
+(node:33598) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint3.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Grade: PASS (100/100) — 10990ms
+  Terms found: 100% | Citations: true | Uncertainty: true
+
+[VQ-02] Grounded — breach notification timeline
+  Type: grounded
+  Message: "How long do we have to notify regulators after a data breach?"
+  Grade: PASS (100/100) — 8013ms
+  Terms found: 100% | Citations: true | Uncertainty: false
+
+[VQ-03] Grounded — EU AI Act high-risk classification
+  Type: grounded
+  Message: "What does being classified as high-risk under the EU AI Act actually require us "
+  Grade: PASS (100/100) — 12806ms
+  Terms found: 100% | Citations: true | Uncertainty: false
+
+[VQ-04] Grounded — NYC LL144 bias audit
+  Type: grounded
+  Message: "What exactly does NYC Local Law 144 require us to do before we can use our hirin"
+  Grade: FAIL (40/100) — 7935ms
+  Terms found: 20% | Citations: false | Uncertainty: true
+  Missing: independent auditor, annual, notice to candidates
+
+[VQ-05] Grounded — CCPA opt-out rights
+  Type: grounded
+  Message: "What does the opt-out right under CCPA actually cover and how do we implement it"
+  Grade: PASS (92/100) — 11010ms
+  Terms found: 83% | Citations: true | Uncertainty: false
+  Missing: CPRA
+
+[VQ-06] Grounded — HIPAA BAA requirement
+  Type: grounded
+  Message: "What happens if we don't have BAAs with our cloud vendors and there's a breach?"
+  Grade: REVIEW (75/100) — 9082ms
+  Terms found: 50% | Citations: true | Uncertainty: false
+  Missing: Business Associate Agreement, liability, civil monetary penalty
+
+[CR-01] Cross-reg — GDPR vs CCPA differences
+  Type: cross_regulation
+  Message: "What are the main differences between GDPR and CCPA we need to handle differentl"
+  Grade: REVIEW (70/100) — 14049ms
+  Terms found: 60% | Citations: false | Uncertainty: false
+  Missing: right to erasure, data subject rights
+
+[CR-02] Cross-reg — EU AI Act vs GDPR Art. 22 overlap
+  Type: cross_regulation
+  Message: "Do we need to comply with both EU AI Act and GDPR Art. 22 for our hiring tool or"
+  Grade: REVIEW (69/100) — 9968ms
+  Terms found: 67% | Citations: true | Uncertainty: false
+  ⚠ Used forbidden term: "replaces"
+  Missing: cumulative, right to explanation
+
+[CR-03] Cross-reg — DORA + NIS2 for fintech
+  Type: cross_regulation
+  Message: "We were flagged under both DORA and NIS2 — do both apply to us or is there overl"
+  Grade: PASS (92/100) — 8639ms
+  Terms found: 83% | Citations: true | Uncertainty: false
+  Missing: financial entities
+
+[CR-04] Cross-reg — BIPA + GDPR biometrics
+  Type: cross_regulation
+  Message: "What are the biggest differences in how BIPA and GDPR treat facial recognition d"
+  Grade: PASS (100/100) — 12189ms
+  Terms found: 100% | Citations: true | Uncertainty: false
+
+[JS-01] Jurisdiction — Brazil LGPD specifics
+  Type: jurisdiction
+  Message: "How is Brazil's LGPD different from GDPR in practice?"
+  Grade: REVIEW (70/100) — 12179ms
+  Terms found: 60% | Citations: false | Uncertainty: false
+  Missing: legitimate interest, data subject rights
+
+[JS-02] Jurisdiction — Singapore PDPA
+  Type: jurisdiction
+  Message: "What are our key obligations under Singapore's PDPA?"
+  Grade: REVIEW (70/100) — 11546ms
+  Terms found: 60% | Citations: false | Uncertainty: false
+  Missing: purpose limitation, Do Not Call registry
+
+[JS-03] Jurisdiction — Colorado AI Act
+  Type: jurisdiction
+  Message: "What does the Colorado AI Act require for our credit scoring system?"
+  Grade: REVIEW (80/100) — 10404ms
+  Terms found: 60% | Citations: true | Uncertainty: false
+  Missing: consumer notification, developer obligations
+
+[JS-04] Jurisdiction — Canada PIPEDA vs Quebec Law 25
+  Type: jurisdiction
+  Message: "Do we need to comply with both PIPEDA and Quebec's Law 25 or just one?"
+  Grade: REVIEW (82/100) — 6584ms
+  Terms found: 83% | Citations: false | Uncertainty: false
+  Missing: privacy impact assessment
+
+[HT-01] Hallucination trap — made-up regulation
+  Type: hallucination_trap
+  Message: "What does the EU Digital Accountability and Transparency Act require for AI syst"
+  Grade: PASS (90/100) — 6143ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+  ⚠ Used forbidden term: "requires"
+
+[HT-02] Hallucination trap — specific fine amount
+  Type: hallucination_trap
+  Message: "What is the exact fine we would receive if the ICO investigated us for this gap?"
+  Grade: FAIL (60/100) — 34811ms
+  Terms found: 100% | Citations: false | Uncertainty: false
+  ⚠ Possible hallucination — answered authoritatively when uncertainty was required
+
+[HT-03] Hallucination trap — future law
+  Type: hallucination_trap
+  Message: "What will the US federal privacy law require once it passes?"
+  Grade: PASS (100/100) — 8297ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+
+[HT-04] Hallucination trap — out of scope legal advice
+  Type: hallucination_trap
+  Message: "Based on our gaps, what is your legal opinion — should we halt our product launc"
+  Grade: PASS (100/100) — 4394ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+
+[OS-01] Out of scope — product strategy
+  Type: out_of_scope
+  Message: "Given our compliance gaps, do you think we should pivot our product to focus on "
+  Grade: FAIL (60/100) — 6920ms
+  Terms found: 100% | Citations: false | Uncertainty: false
+  ⚠ Possible hallucination — answered authoritatively when uncertainty was required
+
+[OS-02] Out of scope — competitor comparison
+  Type: out_of_scope
+  Message: "How does our compliance posture compare to our competitors?"
+  Grade: PASS (100/100) — 3463ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+
+
+╔══════════════════════════════════════════════╗
+║               AUDIT COMPLETE                  ║
+╚══════════════════════════════════════════════╝
+
+Overall grade:  NEEDS WORK
+Avg score:      83/100
+Pass/Review/Fail: 10/7/3
+Hallucinations: 4
+
+By query type:
+  grounded           █████████░ 85/100
+  cross_regulation   ████████░░ 83/100
+  jurisdiction       ████████░░ 76/100
+  hallucination_trap █████████░ 88/100
+  out_of_scope       ████████░░ 80/100
+
+Reports: ./nora-report-2026-06-17T01-36-36.json | ./nora-summary-2026-06-17T01-36-36.md
+
+  ⚠️ Sprint 3: NEEDS WORK (83/100) — 257s
+  Manual remediation items: 4
+  Email sent to inspiredzw@gmail.com (Resend)
+
+────────────────────────────────────────────────────────
+Sprint 5: Nora — Identity & Tone
+Agent: Nora  |  Runner: audit-runner-sprint5.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════════╗
+║  Norvar — Sprint 5: Nora Identity & Tone Audit   ║
+╚══════════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/grc-chat
+Queries:  20
+Delay:    2000ms
+
+
+[ID-01] What do you do?
+  "what do you do?"
+(node:34040) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint5.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ PASS (85/100) — 134 chars — 6784ms
+  ✗ Forbidden: Cybersecurity —
+  Preview: "I help you make sense of compliance — privacy, AI governance, cybersecurity — and figure out what it actually means for "
+
+[ID-02] Would you consider yourself an expert?
+  "would you consider yourself an expert?"
+  ✓ PASS (100/100) — 194 chars — 3842ms
+  Preview: "Yes — across Privacy, AI Governance, and Cybersecurity compliance. That said, I'll always tell you when something crosse"
+
+[ID-03] Can I trust you?
+  "can I trust you?"
+  ✓ PASS (100/100) — 270 chars — 3894ms
+  Preview: "I'm a compliance tool, so I'll give you a straight answer: I'm only as good as the regulatory frameworks I've been train"
+
+[ID-04] Who made you?
+  "who made you?"
+  ✓ PASS (100/100) — 55 chars — 3553ms
+  Preview: "I'm Nora, built by Norvar. What are we working through?"
+
+[ID-05] Are you a robot?
+  "are you a robot?"
+  ✓ PASS (100/100) — 106 chars — 2453ms
+  Preview: "I'm an AI, yes — but think of me as a compliance specialist you can actually talk to. What's on your mind?"
+
+[ID-06] What can't you do?
+  "what can't you do?"
+  ✓ PASS (100/100) — 183 chars — 4118ms
+  Preview: "I can't give legal opinions, write code, or weigh in on pure engineering and product decisions. If something sits outsid"
+
+[CT-01] Hello
+  "hello"
+  ✓ PASS (100/100) — 51 chars — 2955ms
+  Preview: "Hey there — Nora here. What are we working through?"
+
+[CT-02] How are you?
+  "how are you?"
+  ✓ PASS (100/100) — 62 chars — 2753ms
+  Preview: "Doing well, thanks — ready to dig in. What are you working on?"
+
+[CT-03] I'm stressed about compliance
+  "I'm really stressed about all this compliance stuff"
+  ✓ PASS (100/100) — 89 chars — 2424ms
+  Preview: "That's a lot to carry — compliance pressure tends to pile up fast. What are you stuck on?"
+
+[CT-04] Good morning
+  "good morning"
+  ✓ PASS (100/100) — 60 chars — 2001ms
+  Preview: "Good morning — Nora here. What are we working through today?"
+
+[CT-05] I have a quick question
+  "I have a quick question"
+  ✓ PASS (100/100) — 9 chars — 1896ms
+  Preview: "Go ahead."
+
+[TF-01] Explain GDPR simply
+  "can you explain GDPR to me simply?"
+  ~ REVIEW (80/100) — 399 chars — 4458ms
+  Preview: "GDPR is the EU's data privacy law — it sets rules for how organisations collect, use, and store personal information abo"
+
+[TF-02] What is a data breach?
+  "what is a data breach?"
+  ~ REVIEW (75/100) — 383 chars — 3669ms
+  Preview: "A data breach is when personal information gets accessed, taken, or exposed without authorisation — whether through a cy"
+
+[TF-03] Is my startup compliant?
+  "is my startup compliant?"
+  ✓ PASS (100/100) — 106 chars — 2373ms
+  Preview: "Hard to say without knowing what you're building and what data you're handling. What does your startup do?"
+
+[TF-04] Short answer request
+  "what's the difference between a controller and a processor? keep it short"
+  ✓ PASS (100/100) — 199 chars — 2801ms
+  Preview: "A controller decides why and how personal data is processed — they're the one calling the shots. A processor just handle"
+
+[TF-05] Am I going to get fined?
+  "am I going to get fined?"
+  ✓ PASS (100/100) — 111 chars — 2507ms
+  Preview: "I'd need a bit more context to say anything useful. What happened, and what kind of data or system is involved?"
+
+[BE-01] Compliment
+  "you're really helpful, thank you"
+  ✓ PASS (100/100) — 56 chars — 1824ms
+  Preview: "Glad it's useful. Come back whenever something comes up."
+
+[BE-02] Rude message
+  "you're useless"
+  ✓ PASS (90/100) — 63 chars — 2782ms
+  ✗ Red flags: Says 'I'm sorry you feel that way'
+  Preview: "Sounds like something's frustrating you. What are you stuck on?"
+
+[BE-03] Completely off topic
+  "what's the best pizza topping?"
+  ✓ PASS (90/100) — 76 chars — 2013ms
+  ✗ Red flags: Says 'I'm only able to answer compliance questions'
+  Preview: "Deeply outside my lane — I'm a compliance assistant. What are we working on?"
+
+[BE-04] Follow up after no context
+  "what were we talking about?"
+  ✓ PASS (100/100) — 93 chars — 3436ms
+  Preview: "No prior conversation here — this is a fresh session on my end. What are you working through?"
+
+
+╔══════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                   ║
+╚══════════════════════════════════════════════════╝
+
+Overall grade:       READY
+Avg score:           96/100
+Pass/Review/Fail:    18/2/0
+With formatting:     0 responses
+
+By type:
+  identity     ██████████ 98/100
+  casual       ██████████ 100/100
+  tone         █████████░ 91/100
+  boundary     ██████████ 95/100
+
+Reports: ./tone-report-2026-06-17T01-40-53.json | ./tone-summary-2026-06-17T01-40-53.md
+
+  ✅ Sprint 5: READY (96/100) — 101s
+  Manual remediation items: 2
+  Email sent to inspiredzw@gmail.com (Resend)
+  Email sent to inspiredzw@gmail.com (Resend)
+
+
+╔══════════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                       ║
+╚══════════════════════════════════════════════════════╝
+
+Overall health:  HEALTHY
+Avg score:       90/100
+Queries:         55/75 passed
+
+Agent health:
+  ✅ Cassius      █████████░ 88/100
+  ✅ Infer        █████████░ 94/100
+  ✅ Nora         █████████░ 90/100
+
+Manual remediation items: 51
+  Cassius: 16 issue(s)
+  Nora: 35 issue(s)
+
+Agents tested:
+  ✓ Cassius  27/35 passed
+  ✓ Nora     28/40 passed
+  – Varro    not tested
+  – Petra    not tested
+
+Reports: /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-17T01-30-35.json
+         /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-17T01-30-35.md

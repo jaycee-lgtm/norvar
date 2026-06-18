@@ -1,0 +1,181 @@
+╔══════════════════════════════════════════════════════╗
+║         Norvar — Auto Audit Orchestrator             ║
+╚══════════════════════════════════════════════════════╝
+
+Target:   http://localhost:3000
+Sprints:  6
+Mode:     Full
+Email:    inspiredzw@gmail.com
+Started:  2026-06-17T03:07:23.342Z
+
+
+────────────────────────────────────────────────────────
+Sprint 6: Varro — Redline Quality
+Agent: Varro  |  Runner: audit-runner-sprint6.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════════╗
+║  Norvar — Sprint 6: Varro Redline Quality Audit   ║
+╚══════════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/redline
+Agent:    cassius
+Queries:  20
+Delay:    4000ms
+
+
+[VR-01] DPA — missing lawful basis and data subject rights
+  Type: dpa | Expected: [needs_work, significant_issues, do_not_sign]
+(node:95328) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint6.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ~ REVIEW (75/100) | status: do_not_sign | clauses: 12 | 70209ms
+    Missing flags: lawful basis
+
+[VR-02] DPA — international transfer with no mechanism
+  Type: dpa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (80/100) | status: do_not_sign | clauses: 10 | 71620ms
+
+[VR-03] DPA — well drafted, minimal issues expected
+  Type: dpa | Expected: [clean, needs_work]
+  ✗ FAIL (60/100) | status: significant_issues | clauses: 8 | 61511ms
+    Status: got "significant_issues" — too_severe
+
+[VR-04] DPA — HIPAA context, missing BAA obligations
+  Type: dpa | Expected: [needs_work, significant_issues]
+  ✗ FAIL (57/100) | status: do_not_sign | clauses: 9 | 67534ms
+    Missing flags: audit controls, contingency plan
+    Status: got "do_not_sign" — too_severe
+
+[VR-05] DPA — CCPA context, California users
+  Type: dpa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (71/100) | status: do_not_sign | clauses: 5 | 41934ms
+    Missing flags: deletion request
+
+[VR-06] MSA — one-sided indemnification, no liability cap
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (70/100) | status: do_not_sign | clauses: 9 | 62812ms
+
+[VR-07] MSA — AI product, missing AI governance obligations
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (75/100) | status: do_not_sign | clauses: 11 | 98587ms
+
+[VR-08] MSA — SaaS, UK post-Brexit data terms
+  Type: msa | Expected: [needs_work, significant_issues]
+  ✗ FAIL (45/100) | status: do_not_sign | clauses: 10 | 55241ms
+    Missing flags: Data Protection Act 2018, UK adequacy
+    Missing citations: UK DPA 2018
+    Status: got "do_not_sign" — too_severe
+
+[VR-09] MSA — cybersecurity product, missing incident response
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (71/100) | status: do_not_sign | clauses: 12 | 85767ms
+    Missing flags: right to audit
+
+[VR-10] ISA — missing encryption and breach notification
+  Type: isa | Expected: [needs_work, significant_issues]
+  ✗ FAIL (55/100) | status: do_not_sign | clauses: 12 | 75163ms
+    Status: got "do_not_sign" — too_severe
+
+[VR-11] ISA — IoT product, EU CRA context
+  Type: isa | Expected: [significant_issues, do_not_sign]
+  ✗ FAIL (60/100) | status: do_not_sign | clauses: 9 | 57244ms
+    Missing flags: patch management, security support period
+
+[VR-12] ISA — financial sector, missing DORA controls
+  Type: isa | Expected: [needs_work, significant_issues]
+  ✗ FAIL (47/100) | status: do_not_sign | clauses: 8 | 57046ms
+    Missing flags: ICT incident classification, threat-led penetration testing
+    Status: got "do_not_sign" — too_severe
+
+[VR-13] NDA — perpetual confidentiality, no standard exceptions
+  Type: nda | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (71/100) | status: do_not_sign | clauses: 9 | 60993ms
+    Missing flags: required by law
+
+[VR-14] NDA — one-way, protects discloser only
+  Type: nda | Expected: [needs_work, significant_issues]
+  ~ REVIEW (70/100) | status: significant_issues | clauses: 10 | 63704ms
+    Missing flags: required by law, residuals
+
+[VR-15] AI Use Agreement — no human oversight or transparency
+  Type: ai_use | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (72/100) | status: do_not_sign | clauses: 10 | 85870ms
+    Missing flags: right to explanation
+
+[VR-16] AI Use Agreement — generative AI, no content disclosure
+  Type: ai_use | Expected: [needs_work, significant_issues]
+  ✗ FAIL (51/100) | status: do_not_sign | clauses: 11 | 85339ms
+    Missing flags: AI-generated content disclosure
+    Status: got "do_not_sign" — too_severe
+
+[VR-17] Edge — very short contract, limited redline scope
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ✓ PASS (85/100) | status: significant_issues | clauses: 7 | 44108ms
+
+[VR-18] Edge — children's platform, COPPA missing
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (67/100) | status: do_not_sign | clauses: 9 | 72447ms
+    Missing flags: verifiable consent, data minimisation
+
+[VR-19] Edge — biometric data, BIPA context
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (65/100) | status: do_not_sign | clauses: 8 | 59911ms
+    Missing flags: destruction schedule
+
+[VR-20] Edge — global deployment, multiple jurisdiction gaps
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (77/100) | status: do_not_sign | clauses: 11 | 82017ms
+    Missing flags: purpose limitation
+
+
+╔══════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                   ║
+╚══════════════════════════════════════════════════╝
+
+Overall grade:    NOT READY
+Avg score:        66/100
+Pass/Review/Fail: 1/12/7
+Status accuracy:  14/20
+  Too lenient:    0
+  Too severe:     6
+Avg flag coverage:     82%
+Avg citation coverage: 98%
+
+By contract type:
+  dpa          ███████░░░ 69/100
+  msa          ███████░░░ 69/100
+  isa          █████░░░░░ 54/100
+  nda          ███████░░░ 71/100
+  ai_use       ██████░░░░ 62/100
+
+Reports: ./varro-report-2026-06-17T03-07-23.json | ./varro-summary-2026-06-17T03-07-23.md
+
+  🔴 Sprint 6: NOT READY (66/100) — 1435s
+  Manual remediation items: 4
+  Email sent to inspiredzw@gmail.com (Resend)
+  Email sent to inspiredzw@gmail.com (Resend)
+
+
+╔══════════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                       ║
+╚══════════════════════════════════════════════════════╝
+
+Overall health:  CRITICAL
+Avg score:       66/100
+Queries:         1/20 passed
+
+Agent health:
+  🔴 Varro        ███████░░░ 66/100
+
+Manual remediation items: 62
+  Varro: 62 issue(s)
+
+Agents tested:
+  – Cassius  not tested
+  – Nora     not tested
+  ✓ Varro    1/20 passed
+  – Petra    not tested
+
+Reports: /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-17T03-07-23.json
+         /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-17T03-07-23.md

@@ -1,8 +1,182 @@
 [
   {
+    "abbr": "coppa-full-text",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Full Text)",
+    "url": "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter91&edition=prelimm",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-full-text-2",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Full Text)",
+    "url": "https://uscode.house.gov/view.xhtml?path=/prelim@title42/chapter7/subchapterXI/partC&edition=prelimm",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-full-text-3",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Full Text)",
+    "url": "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter94/subchapterI&edition=prelimm",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-full-text-4",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Full Text)",
+    "url": "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter41/subchapterIII&edition=prelimm",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-full-text-5",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Full Text)",
+    "url": "https://uscode.house.gov/view.xhtml?path=/prelim@title20/chapter31/subchapterIII/partD&edition=prelimm",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-full-text-6",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Full Text)",
+    "url": "https://uscode.house.gov/view.xhtml?path=/prelim@title15/chapter2/subchapterI&edition=prelimm",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-guidance",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Guidance)",
+    "url": "https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questionsHIPAA",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-guidance-2",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Guidance)",
+    "url": "https://www.ftc.gov/business-guidance/resources/ftc-safeguards-rule-what-your-business-needs-knowFCRA",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-guidance-3",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Guidance)",
+    "url": "https://www.consumerfinance.gov/compliance/supervisory-guidance/FERPA",
+    "fallback": "none"
+  },
+  {
+    "abbr": "coppa-guidance-4",
+    "name": "COPPA \u2014 Children's Online Privacy Protection Act (COPPA) (Guidance)",
+    "url": "https://studentprivacy.ed.gov/resourcesFTC",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-full-text",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Full Text)",
+    "url": "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.\u2202=4.&lawCode=CIV&title=1.81.5",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-guidance",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)",
+    "url": "https://www.consumerfinance.gov/compliance/supervisory-guidance/EEOC",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-guidance-2",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)",
+    "url": "https://www.eeoc.gov/artificial-intelligence-and-algorithmic-fairnessHUD",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-guidance-3",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Guidance)",
+    "url": "https://www.oag.ca.gov/privacy/ccpaADMT",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-source-url",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)",
+    "url": "https://www.ftc.gov/legal-library/browse/policy-statements/policy-statement-biometric-informationCFPB",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-source-url-3",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)",
+    "url": "https://www.hud.gov/program_offices/fair_housing_equal_opp3",
+    "fallback": "none"
+  },
+  {
+    "abbr": "executive-order-14117-source-url-5",
+    "name": "Executive Order 14117 \u2014 Preventing Access to Americans' Bulk Sensitive Personal Data (Source Url)",
+    "url": "https://cppa.ca.gov/regulations/Regs",
+    "fallback": "none"
+  },
+  {
+    "abbr": "vcdpa-full-text",
+    "name": "VCDPA \u2014 Virginia Consumer Data Protection Act (VCDPA) (Full Text)",
+    "url": "https://lis.virginia.gov/cgi-bin/legp604.exe?212+ful+CHAP0035Ag",
+    "fallback": "none"
+  },
+  {
+    "abbr": "vcdpa-guidance",
+    "name": "VCDPA \u2014 Virginia Consumer Data Protection Act (VCDPA) (Guidance)",
+    "url": "https://www.oag.state.va.us/programs-initiatives/privacy5",
+    "fallback": "none"
+  },
+  {
+    "abbr": "cpa-source-url",
+    "name": "CPA \u2014 Colorado Privacy Act (CPA) (Source Url)",
+    "url": "https://leg.colorado.gov/6",
+    "fallback": "none"
+  },
+  {
+    "abbr": "tdpsa-guidance",
+    "name": "TDPSA \u2014 Texas Data Privacy and Security Act (TDPSA) (Guidance)",
+    "url": "https://www.texasattorneygeneral.gov/consumer-protection/data-privacyCUBI",
+    "fallback": "none"
+  },
+  {
+    "abbr": "fdbr-full-text",
+    "name": "FDBR \u2014 Florida Digital Bill of Rights (FDBR) (Full Text)",
+    "url": "https://laws.flrules.org/2023/610",
+    "fallback": "none"
+  },
+  {
+    "abbr": "dpdpa-full-text",
+    "name": "DPDPA \u2014 Delaware Personal Data Privacy Act (DPDPA) (Full Text)",
+    "url": "https://legis.delaware.gov/BillDetail/14038814",
+    "fallback": "none"
+  },
+  {
+    "abbr": "ndpa-source-url",
+    "name": "NDPA \u2014 Nebraska Data Privacy Act (NDPA) (Source Url)",
+    "url": "https://nebraskalegislature.gov/laws/statutes.php?statute=87-40115",
+    "fallback": "none"
+  },
+  {
+    "abbr": "mn-mcdpa-full-text",
+    "name": "MN MCDPA \u2014 Minnesota Consumer Data Privacy Act (MCDPA) (Full Text)",
+    "url": "https://www.revisor.mn.gov/bills/text.php?number=HF4757&session;_year=2024&session;_number=0&version=list",
+    "fallback": "none"
+  },
+  {
     "abbr": "incdpa-source-url",
     "name": "INCDPA \u2014 Indiana Consumer Data Protection Act (INCDPA) (Source Url)",
     "url": "https://iga.in.gov/legislative/laws/2023/ic/titles/024/#24-1",
+    "fallback": "none"
+  },
+  {
+    "abbr": "bipa-source-url",
+    "name": "BIPA \u2014 Illinois Biometric Information Privacy Act (BIPA) (Source Url)",
+    "url": "https://www.ilga.gov/legislation/ilcs/ilcs3.asp?ActID=3004&ChapterID=57CUBI",
+    "fallback": "none"
+  },
+  {
+    "abbr": "wa-mhmd-source-url-2",
+    "name": "WA MHMD \u2014 Washington My Health MY Data Act (Source Url)",
+    "url": "https://www.nysenate.gov/legislation/bills/2025/S92928",
+    "fallback": "none"
+  },
+  {
+    "abbr": "state-guidance",
+    "name": "State / Bill (Guidance)",
+    "url": "https://www.ftc.gov/legal-library/browse/rulesConsumer",
+    "fallback": "none"
+  },
+  {
+    "abbr": "state-guidance-2",
+    "name": "State / Bill (Guidance)",
+    "url": "https://www.consumerfinance.gov/data-research/research-reports/State",
     "fallback": "none"
   }
 ]

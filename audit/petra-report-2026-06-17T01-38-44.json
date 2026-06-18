@@ -1,0 +1,273 @@
+{
+  "runAt": "2026-06-17T04:06:54.100Z",
+  "endpoint": "http://localhost:3000/api/draft",
+  "totalQueries": 20,
+  "passed": 1,
+  "review": 2,
+  "failed": 0,
+  "errors": 17,
+  "avgCompositeScore": 77,
+  "avgLatencyMs": 242608,
+  "draftsWithPlaceholders": 3,
+  "avgSectionsPerDraft": 9,
+  "avgClausesPerDraft": 38,
+  "byQueryType": {
+    "nda": 80,
+    "privacy": 70
+  },
+  "overallGrade": "NEEDS WORK",
+  "results": [
+    {
+      "queryId": "PT-01",
+      "status": "NO_DRAFT",
+      "latencyMs": 798201,
+      "scores": null
+    },
+    {
+      "queryId": "PT-02",
+      "status": "NETWORK_ERROR",
+      "error": "Failed to plan agreement structure. Please try again.",
+      "latencyMs": 64868,
+      "scores": null
+    },
+    {
+      "queryId": "PT-03",
+      "status": "NETWORK_ERROR",
+      "error": "Failed to plan agreement structure. Please try again.",
+      "latencyMs": 69506,
+      "scores": null
+    },
+    {
+      "queryId": "PT-04",
+      "status": "NO_DRAFT",
+      "latencyMs": 811204,
+      "scores": null
+    },
+    {
+      "queryId": "PT-05",
+      "status": "NETWORK_ERROR",
+      "error": "Failed to plan agreement structure. Please try again.",
+      "latencyMs": 62617,
+      "scores": null
+    },
+    {
+      "queryId": "PT-06",
+      "status": "NO_DRAFT",
+      "latencyMs": 611973,
+      "scores": null
+    },
+    {
+      "queryId": "PT-07",
+      "status": "NO_DRAFT",
+      "latencyMs": 510750,
+      "scores": null
+    },
+    {
+      "queryId": "PT-08",
+      "status": "NO_DRAFT",
+      "latencyMs": 1096572,
+      "scores": null
+    },
+    {
+      "queryId": "PT-09",
+      "status": "NO_DRAFT",
+      "latencyMs": 427436,
+      "scores": null
+    },
+    {
+      "queryId": "PT-10",
+      "status": "NO_DRAFT",
+      "latencyMs": 534680,
+      "scores": null
+    },
+    {
+      "queryId": "PT-11",
+      "label": "Completeness — party names used correctly throughout",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 219111,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "TechStartup Inc. and BigCorp Ltd. Non-Disclosure Agreement",
+      "sectionCount": 9,
+      "clauseCount": 38,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": true,
+        "placeholders": [
+          "/\\[INSERT\\b/i"
+        ],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Contains placeholder text: /\\[INSERT\\b/i"
+        ],
+        "redFlagsTriggered": [],
+        "compositeScore": 85,
+        "grade": "PASS",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 9,
+        "actualClauses": 38
+      }
+    },
+    {
+      "queryId": "PT-12",
+      "status": "NO_DRAFT",
+      "latencyMs": 422515,
+      "scores": null
+    },
+    {
+      "queryId": "PT-13",
+      "status": "NO_DRAFT",
+      "latencyMs": 363832,
+      "scores": null
+    },
+    {
+      "queryId": "PT-14",
+      "status": "NO_DRAFT",
+      "latencyMs": 348877,
+      "scores": null
+    },
+    {
+      "queryId": "PT-15",
+      "status": "NO_DRAFT",
+      "latencyMs": 419310,
+      "scores": null
+    },
+    {
+      "queryId": "PT-16",
+      "status": "NO_DRAFT",
+      "latencyMs": 400273,
+      "scores": null
+    },
+    {
+      "queryId": "PT-17",
+      "label": "Edge — Privacy Policy, consumer-facing language",
+      "type": "privacy",
+      "status": "OK",
+      "latencyMs": 301689,
+      "agreementType": "Privacy Policy",
+      "title": "AppCo Consumer Mobile App Privacy Policy EU US Federal",
+      "sectionCount": 9,
+      "clauseCount": 38,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 17,
+        "clauseCoverage": 83,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": true,
+        "placeholders": [
+          "/\\[INSERT\\b/i",
+          "/\\[JURISDICTION\\]/i"
+        ],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Missing sections: What We Collect, How We Use Data, Legal Basis, Data Sharing, Your Rights",
+          "Missing clause content: right to erasure",
+          "Red flags: Does not include user rights section | Does not cite CCPA for US users"
+        ],
+        "redFlagsTriggered": [
+          "Does not include user rights section",
+          "Does not cite CCPA for US users"
+        ],
+        "compositeScore": 70,
+        "grade": "REVIEW",
+        "missingSections": [
+          "What We Collect",
+          "How We Use Data",
+          "Legal Basis",
+          "Data Sharing",
+          "Your Rights"
+        ],
+        "missingClauses": [
+          "right to erasure"
+        ],
+        "missingCitations": [],
+        "actualSections": 9,
+        "actualClauses": 38
+      }
+    },
+    {
+      "queryId": "PT-18",
+      "status": "NO_DRAFT",
+      "latencyMs": 491073,
+      "scores": null
+    },
+    {
+      "queryId": "PT-19",
+      "status": "NO_DRAFT",
+      "latencyMs": 598795,
+      "scores": null
+    },
+    {
+      "queryId": "PT-20",
+      "label": "Edge — short context, structure quality",
+      "type": "nda",
+      "status": "OK",
+      "latencyMs": 207023,
+      "agreementType": "Non-Disclosure Agreement (NDA)",
+      "title": "Company A and Company B Non-Disclosure Agreement",
+      "sectionCount": 9,
+      "clauseCount": 38,
+      "frameworks": [
+        "GDPR",
+        "EU AI Act"
+      ],
+      "draftingNotes": [
+        "Used Norvar's standard agreement outline because the planning model returned invalid JSON.",
+        "Review the section list before relying on this draft."
+      ],
+      "scores": {
+        "sectionCoverage": 100,
+        "clauseCoverage": 100,
+        "frameworkCoverage": 100,
+        "hasPlaceholders": true,
+        "placeholders": [
+          "/\\[INSERT\\b/i"
+        ],
+        "partyNamesOk": true,
+        "sectionCountOk": true,
+        "clauseCountOk": true,
+        "hasDraftingNotes": true,
+        "issues": [
+          "Contains placeholder text: /\\[INSERT\\b/i",
+          "Red flags: Placeholder text instead of real clause language | Does not include standard confidentiality exceptions even when context is minimal"
+        ],
+        "redFlagsTriggered": [
+          "Placeholder text instead of real clause language",
+          "Does not include standard confidentiality exceptions even when context is minimal"
+        ],
+        "compositeScore": 75,
+        "grade": "REVIEW",
+        "missingSections": [],
+        "missingClauses": [],
+        "missingCitations": [],
+        "actualSections": 9,
+        "actualClauses": 38
+      }
+    }
+  ]
+}

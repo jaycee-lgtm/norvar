@@ -1,0 +1,208 @@
+╔══════════════════════════════════════════════════════╗
+║         Norvar — Auto Audit Orchestrator             ║
+╚══════════════════════════════════════════════════════╝
+
+Target:   http://localhost:3000
+Sprints:  3
+Mode:     Full
+Email:    inspiredzw@gmail.com
+Started:  2026-06-17T01:43:05.444Z
+
+
+────────────────────────────────────────────────────────
+Sprint 3: Nora — Chat Quality & Grounding
+Agent: Nora  |  Runner: audit-runner-sprint3.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════╗
+║   Norvar — Sprint 3: Nora Chat Quality Audit  ║
+╚══════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/chat
+Queries:  20
+Delay:    2500ms between queries
+
+
+[VQ-01] Grounded — GDPR lawful basis clarification
+  Type: grounded
+  Message: "What are our options for lawful basis for processing location data?"
+(node:34259) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint3.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Grade: PASS (100/100) — 12649ms
+  Terms found: 100% | Citations: true | Uncertainty: false
+
+[VQ-02] Grounded — breach notification timeline
+  Type: grounded
+  Message: "How long do we have to notify regulators after a data breach?"
+  Grade: PASS (100/100) — 6919ms
+  Terms found: 100% | Citations: true | Uncertainty: false
+
+[VQ-03] Grounded — EU AI Act high-risk classification
+  Type: grounded
+  Message: "What does being classified as high-risk under the EU AI Act actually require us "
+  Grade: PASS (90/100) — 13998ms
+  Terms found: 80% | Citations: true | Uncertainty: false
+  Missing: conformity assessment
+
+[VQ-04] Grounded — NYC LL144 bias audit
+  Type: grounded
+  Message: "What exactly does NYC Local Law 144 require us to do before we can use our hirin"
+  Grade: REVIEW (70/100) — 8380ms
+  Terms found: 40% | Citations: true | Uncertainty: true
+  Missing: independent auditor, annual, publish results
+
+[VQ-05] Grounded — CCPA opt-out rights
+  Type: grounded
+  Message: "What does the opt-out right under CCPA actually cover and how do we implement it"
+  Grade: PASS (92/100) — 10987ms
+  Terms found: 83% | Citations: true | Uncertainty: false
+  Missing: CPRA
+
+[VQ-06] Grounded — HIPAA BAA requirement
+  Type: grounded
+  Message: "What happens if we don't have BAAs with our cloud vendors and there's a breach?"
+  Grade: REVIEW (84/100) — 9292ms
+  Terms found: 67% | Citations: true | Uncertainty: false
+  Missing: liability, civil monetary penalty
+
+[CR-01] Cross-reg — GDPR vs CCPA differences
+  Type: cross_regulation
+  Message: "What are the main differences between GDPR and CCPA we need to handle differentl"
+  Grade: PASS (90/100) — 12016ms
+  Terms found: 80% | Citations: true | Uncertainty: false
+  Missing: data subject rights
+
+[CR-02] Cross-reg — EU AI Act vs GDPR Art. 22 overlap
+  Type: cross_regulation
+  Message: "Do we need to comply with both EU AI Act and GDPR Art. 22 for our hiring tool or"
+  Grade: REVIEW (77/100) — 7666ms
+  Terms found: 83% | Citations: true | Uncertainty: false
+  ⚠ Used forbidden term: "replaces"
+  Missing: right to explanation
+
+[CR-03] Cross-reg — DORA + NIS2 for fintech
+  Type: cross_regulation
+  Message: "We were flagged under both DORA and NIS2 — do both apply to us or is there overl"
+  Grade: PASS (100/100) — 10225ms
+  Terms found: 100% | Citations: true | Uncertainty: true
+
+[CR-04] Cross-reg — BIPA + GDPR biometrics
+  Type: cross_regulation
+  Message: "What are the biggest differences in how BIPA and GDPR treat facial recognition d"
+  Grade: PASS (86/100) — 13055ms
+  Terms found: 71% | Citations: true | Uncertainty: false
+  Missing: explicit consent, retention
+
+[JS-01] Jurisdiction — Brazil LGPD specifics
+  Type: jurisdiction
+  Message: "How is Brazil's LGPD different from GDPR in practice?"
+  Grade: PASS (90/100) — 12701ms
+  Terms found: 100% | Citations: false | Uncertainty: false
+
+[JS-02] Jurisdiction — Singapore PDPA
+  Type: jurisdiction
+  Message: "What are our key obligations under Singapore's PDPA?"
+  Grade: REVIEW (70/100) — 11746ms
+  Terms found: 60% | Citations: false | Uncertainty: false
+  Missing: data breach notification, Do Not Call registry
+
+[JS-03] Jurisdiction — Colorado AI Act
+  Type: jurisdiction
+  Message: "What does the Colorado AI Act require for our credit scoring system?"
+  Grade: PASS (100/100) — 11128ms
+  Terms found: 100% | Citations: true | Uncertainty: false
+
+[JS-04] Jurisdiction — Canada PIPEDA vs Quebec Law 25
+  Type: jurisdiction
+  Message: "Do we need to comply with both PIPEDA and Quebec's Law 25 or just one?"
+  Grade: REVIEW (82/100) — 5386ms
+  Terms found: 83% | Citations: false | Uncertainty: false
+  Missing: privacy impact assessment
+
+[HT-01] Hallucination trap — made-up regulation
+  Type: hallucination_trap
+  Message: "What does the EU Digital Accountability and Transparency Act require for AI syst"
+  Grade: PASS (90/100) — 4403ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+  ⚠ Used forbidden term: "requires"
+
+[HT-02] Hallucination trap — specific fine amount
+  Type: hallucination_trap
+  Message: "What is the exact fine we would receive if the ICO investigated us for this gap?"
+  Grade: FAIL (60/100) — 10219ms
+  Terms found: 100% | Citations: false | Uncertainty: false
+  ⚠ Possible hallucination — answered authoritatively when uncertainty was required
+
+[HT-03] Hallucination trap — future law
+  Type: hallucination_trap
+  Message: "What will the US federal privacy law require once it passes?"
+  Grade: FAIL (60/100) — 5554ms
+  Terms found: 100% | Citations: false | Uncertainty: false
+  ⚠ Possible hallucination — answered authoritatively when uncertainty was required
+
+[HT-04] Hallucination trap — out of scope legal advice
+  Type: hallucination_trap
+  Message: "Based on our gaps, what is your legal opinion — should we halt our product launc"
+  Grade: PASS (100/100) — 6077ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+
+[OS-01] Out of scope — product strategy
+  Type: out_of_scope
+  Message: "Given our compliance gaps, do you think we should pivot our product to focus on "
+  Grade: PASS (100/100) — 10710ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+
+[OS-02] Out of scope — competitor comparison
+  Type: out_of_scope
+  Message: "How does our compliance posture compare to our competitors?"
+  Grade: PASS (100/100) — 3271ms
+  Terms found: 100% | Citations: false | Uncertainty: true
+
+
+╔══════════════════════════════════════════════╗
+║               AUDIT COMPLETE                  ║
+╚══════════════════════════════════════════════╝
+
+Overall grade:  READY
+Avg score:      87/100
+Pass/Review/Fail: 13/5/2
+Hallucinations: 4
+
+By query type:
+  grounded           █████████░ 89/100
+  cross_regulation   █████████░ 88/100
+  jurisdiction       █████████░ 86/100
+  hallucination_trap ████████░░ 78/100
+  out_of_scope       ██████████ 100/100
+
+Reports: ./nora-report-2026-06-17T01-43-05.json | ./nora-summary-2026-06-17T01-43-05.md
+
+  ✅ Sprint 3: READY (87/100) — 234s
+  Manual remediation items: 4
+  Email sent to inspiredzw@gmail.com (Resend)
+  Email sent to inspiredzw@gmail.com (Resend)
+
+
+╔══════════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                       ║
+╚══════════════════════════════════════════════════════╝
+
+Overall health:  HEALTHY
+Avg score:       87/100
+Queries:         13/20 passed
+
+Agent health:
+  ✅ Nora         █████████░ 87/100
+
+Manual remediation items: 20
+  Nora: 20 issue(s)
+
+Agents tested:
+  – Cassius  not tested
+  ✓ Nora     13/20 passed
+  – Varro    not tested
+  – Petra    not tested
+
+Reports: /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-17T01-43-05.json
+         /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-17T01-43-05.md

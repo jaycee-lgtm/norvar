@@ -2,6 +2,7 @@ import AppShell from "@/components/AppShell";
 import AiSettingsPanel from "@/components/AiSettingsPanel";
 import AppearanceSettingsPanel from "@/components/AppearanceSettingsPanel";
 import GapOwnerRolesPanel from "@/components/GapOwnerRolesPanel";
+import MonitoringSettingsPanel from "@/components/MonitoringSettingsPanel";
 import OrgSettingsPanel from "@/components/OrgSettingsPanel";
 import SettingsAccountSection from "@/components/SettingsAccountSection";
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
           <AppearanceSettingsPanel />
           <AiSettingsPanel />
           <OrgSettingsPanel />
+          <MonitoringSettingsPanel />
           <GapOwnerRolesPanel />
           <SettingsAccountSection />
         </div>

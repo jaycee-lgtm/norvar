@@ -1,0 +1,294 @@
+╔══════════════════════════════════════════════════════╗
+║         Norvar — Auto Audit Orchestrator             ║
+╚══════════════════════════════════════════════════════╝
+
+Target:   http://localhost:3000
+Sprints:  6, 7
+Mode:     Full
+Email:    inspiredzw@gmail.com
+Started:  2026-06-18T04:15:22.949Z
+
+
+────────────────────────────────────────────────────────
+Sprint 6: Varro — Redline Quality
+Agent: Varro  |  Runner: audit-runner-sprint6.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════════╗
+║  Norvar — Sprint 6: Varro Redline Quality Audit   ║
+╚══════════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/redline
+Agent:    cassius
+Queries:  20
+Delay:    4000ms
+
+
+[VR-01] DPA — missing lawful basis and data subject rights
+  Type: dpa | Expected: [needs_work, significant_issues, do_not_sign]
+(node:24132) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint6.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ PASS (85/100) | status: significant_issues | clauses: 8 | 41784ms
+
+[VR-02] DPA — international transfer with no mechanism
+  Type: dpa | Expected: [significant_issues, do_not_sign]
+  ✓ PASS (85/100) | status: significant_issues | clauses: 8 | 49280ms
+
+[VR-03] DPA — well drafted, minimal issues expected
+  Type: dpa | Expected: [clean, needs_work]
+  ✓ PASS (90/100) | status: clean | clauses: 2 | 30833ms
+
+[VR-04] DPA — HIPAA context, missing BAA obligations
+  Type: dpa | Expected: [needs_work, significant_issues]
+  ✓ PASS (85/100) | status: significant_issues | clauses: 4 | 32531ms
+
+[VR-05] DPA — CCPA context, California users
+  Type: dpa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (75/100) | status: significant_issues | clauses: 5 | 38217ms
+
+[VR-06] MSA — one-sided indemnification, no liability cap
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (70/100) | status: significant_issues | clauses: 7 | 42347ms
+
+[VR-07] MSA — AI product, missing AI governance obligations
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (75/100) | status: significant_issues | clauses: 8 | 69754ms
+
+[VR-08] MSA — SaaS, UK post-Brexit data terms
+  Type: msa | Expected: [needs_work, significant_issues]
+  ✓ PASS (85/100) | status: significant_issues | clauses: 6 | 37027ms
+
+[VR-09] MSA — cybersecurity product, missing incident response
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (75/100) | status: significant_issues | clauses: 8 | 46147ms
+
+[VR-10] ISA — missing encryption and breach notification
+  Type: isa | Expected: [needs_work, significant_issues]
+  ~ REVIEW (70/100) | status: significant_issues | clauses: 6 | 39231ms
+    Missing flags: patch management
+
+[VR-11] ISA — IoT product, EU CRA context
+  Type: isa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (65/100) | status: significant_issues | clauses: 7 | 44309ms
+    Missing flags: EU Cyber Resilience Act
+
+[VR-12] ISA — financial sector, missing DORA controls
+  Type: isa | Expected: [needs_work, significant_issues]
+  ~ REVIEW (71/100) | status: significant_issues | clauses: 4 | 32999ms
+    Missing flags: ICT incident classification
+
+[VR-13] NDA — perpetual confidentiality, no standard exceptions
+  Type: nda | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (67/100) | status: significant_issues | clauses: 4 | 29560ms
+    Missing flags: no exceptions, required by law
+
+[VR-14] NDA — one-way, protects discloser only
+  Type: nda | Expected: [needs_work, significant_issues]
+  ✗ FAIL (20/100) | status: clean | clauses: 0 | 33096ms
+    Missing flags: one-way, independently developed, required by law, residuals
+    Status: got "clean" — too_lenient
+
+[VR-15] AI Use Agreement — no human oversight or transparency
+  Type: ai_use | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (72/100) | status: significant_issues | clauses: 8 | 52077ms
+    Missing flags: right to explanation
+
+[VR-16] AI Use Agreement — generative AI, no content disclosure
+  Type: ai_use | Expected: [needs_work, significant_issues]
+  ~ REVIEW (71/100) | status: significant_issues | clauses: 8 | 50698ms
+    Missing flags: transparency
+
+[VR-17] Edge — very short contract, limited redline scope
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ✓ PASS (85/100) | status: significant_issues | clauses: 8 | 39520ms
+
+[VR-18] Edge — children's platform, COPPA missing
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (75/100) | status: significant_issues | clauses: 8 | 50513ms
+
+[VR-19] Edge — biometric data, BIPA context
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (70/100) | status: significant_issues | clauses: 5 | 36174ms
+
+[VR-20] Edge — global deployment, multiple jurisdiction gaps
+  Type: msa | Expected: [significant_issues, do_not_sign]
+  ~ REVIEW (77/100) | status: significant_issues | clauses: 8 | 54574ms
+    Missing flags: purpose limitation
+
+
+╔══════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                   ║
+╚══════════════════════════════════════════════════╝
+
+Overall grade:    NEEDS WORK
+Avg score:        73/100
+Pass/Review/Fail: 6/13/1
+Status accuracy:  19/20
+  Too lenient:    1
+  Too severe:     0
+Avg flag coverage:     89%
+Avg citation coverage: 100%
+
+By contract type:
+  dpa          ████████░░ 84/100
+  msa          ████████░░ 77/100
+  isa          ███████░░░ 69/100
+  nda          ████░░░░░░ 44/100
+  ai_use       ███████░░░ 72/100
+
+Reports: ./varro-report-2026-06-18T04-15-22.json | ./varro-summary-2026-06-18T04-15-22.md
+
+  ⚠️ Sprint 6: NEEDS WORK (73/100) — 927s
+  Manual remediation items: 3
+  Email sent to inspiredzw@gmail.com (Resend)
+
+────────────────────────────────────────────────────────
+Sprint 7: Petra — Draft Quality
+Agent: Petra  |  Runner: audit-runner-sprint7.mjs
+────────────────────────────────────────────────────────
+╔══════════════════════════════════════════════════╗
+║  Norvar — Sprint 7: Petra Draft Quality Audit     ║
+╚══════════════════════════════════════════════════╝
+
+Endpoint: http://localhost:3000/api/draft
+Queries:  20
+Delay:    5000ms (two-pass drafting takes time)
+
+
+[PT-01] DPA — EU context, GDPR-grounded
+  Type: dpa
+(node:25085) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/cleverchigavazira/Desktop/Norvar.io/audit/queries-sprint7.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/cleverchigavazira/Desktop/Norvar.io/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ PASS (85/100) | 8 sections, 24 clauses | 202669ms
+
+[PT-02] MSA — US context, SaaS product
+  Type: msa
+
+[PT-03] ISA — EU financial sector, DORA context
+  Type: isa
+  ~ REVIEW (80/100) | 6 sections, 18 clauses | 155140ms
+
+[PT-04] NDA — bilateral, tech company context
+  Type: nda
+  ✓ PASS (85/100) | 6 sections, 17 clauses | 135801ms
+
+[PT-05] BAA — HIPAA context, US healthcare
+  Type: baa
+  ✓ PASS (85/100) | 7 sections, 21 clauses | 155510ms
+
+[PT-06] AI Use Agreement — high-risk AI, EU deployment
+  Type: ai_use
+  ✓ PASS (85/100) | 8 sections, 24 clauses | 251268ms
+
+[PT-07] Sub-Processor Agreement — GDPR chain
+  Type: subproc
+  ✓ PASS (92/100) | 7 sections, 21 clauses | 3352079ms
+    Missing clauses: controller instructions
+
+[PT-08] Completeness — no placeholder clauses
+  Type: dpa
+  ✓ PASS (95/100) | 8 sections, 24 clauses | 1092956ms
+
+[PT-09] Completeness — definitions section has real definitions
+  Type: msa
+
+[PT-10] Completeness — multi-jurisdiction has jurisdiction-specific notes
+  Type: dpa
+  ✓ PASS (85/100) | 8 sections, 24 clauses | 231221ms
+
+[PT-11] Completeness — party names used correctly throughout
+  Type: nda
+  ✓ PASS (100/100) | 6 sections, 17 clauses | 117054ms
+
+[PT-12] Completeness — general provisions fully drafted
+  Type: msa
+
+[PT-13] Language — Petra (Cassius mode) uses formal legal language
+  Type: dpa
+  ~ REVIEW (80/100) | 8 sections, 24 clauses | 184195ms
+    Missing clauses: hereby, thereto, herein
+
+[PT-14] Language — Petra (Nora mode) plain language accessible
+  Type: dpa
+  ✓ PASS (100/100) | 8 sections, 24 clauses | 177362ms
+
+[PT-15] Language — clause titles are descriptive not generic
+  Type: isa
+  ✓ PASS (100/100) | 6 sections, 18 clauses | 153597ms
+
+[PT-16] Language — summary is plain English, non-technical
+  Type: msa
+
+[PT-17] Edge — Privacy Policy, consumer-facing language
+  Type: privacy
+  ✓ PASS (90/100) | 6 sections, 18 clauses | 159966ms
+
+[PT-18] Edge — Data Sharing Agreement, research context
+  Type: data_share
+  ✓ PASS (92/100) | 6 sections, 18 clauses | 176943ms
+    Missing sections: Data Scope
+
+[PT-19] Edge — SaaS Agreement with biometric features
+  Type: saas
+
+[PT-20] Edge — short context, structure quality
+  Type: nda
+  ✓ PASS (95/100) | 6 sections, 17 clauses | 108681ms
+
+
+╔══════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                   ║
+╚══════════════════════════════════════════════════╝
+
+Overall grade:          READY
+Avg score:              90/100
+Pass/Review/Fail:       13/2/0
+Avg sections per draft: 7
+Avg clauses per draft:  21
+With placeholders:      0
+
+By agreement type:
+  dpa          █████████░ 89/100
+  isa          █████████░ 90/100
+  nda          █████████░ 93/100
+  baa          █████████░ 85/100
+  ai_use       █████████░ 85/100
+  subproc      █████████░ 92/100
+  privacy      █████████░ 90/100
+  data_share   █████████░ 92/100
+
+Reports: ./petra-report-2026-06-18T04-30-50.json | ./petra-summary-2026-06-18T04-30-50.md
+
+  ✅ Sprint 7: READY (90/100) — 8083s
+  Manual remediation items: 2
+  Email sent to inspiredzw@gmail.com (Resend)
+  Email sent to inspiredzw@gmail.com (Resend)
+
+
+╔══════════════════════════════════════════════════════╗
+║                  AUDIT COMPLETE                       ║
+╚══════════════════════════════════════════════════════╝
+
+Overall health:  DEGRADED
+Avg score:       82/100
+Queries:         19/40 passed
+
+Agent health:
+  ⚠️ Varro        ███████░░░ 73/100
+  ✅ Petra        █████████░ 90/100
+
+Manual remediation items: 43
+  Varro: 34 issue(s)
+  Petra: 9 issue(s)
+
+Agents tested:
+  – Cassius  not tested
+  – Nora     not tested
+  ✓ Varro    6/20 passed
+  ✓ Petra    13/20 passed
+
+Reports: /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-18T04-15-22.json
+         /Users/cleverchigavazira/Desktop/Norvar.io/audit/auto-audit-2026-06-18T04-15-22.md

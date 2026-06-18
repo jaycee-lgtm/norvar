@@ -166,7 +166,7 @@ function scoreRedline(query, redline) {
 
 // ─── REQUEST ─────────────────────────────────────────────────────────────────
 
-async function runQuery(query) {
+async function runQuery(query, attempt = 1) {
   console.log(`\n[${query.id}] ${query.label}`);
   console.log(`  Type: ${query.type} | Expected: [${query.expected.overall_status?.join(", ")}]`);
 
@@ -180,6 +180,7 @@ async function runQuery(query) {
         contract_text: query.contract,
         agent:         AGENT,
       }),
+      signal: AbortSignal.timeout(600_000),
     });
 
     if (!res.ok) {
@@ -230,6 +231,11 @@ async function runQuery(query) {
     };
 
   } catch (err) {
+    if (attempt < 2 && /connection|timeout|fetch failed|aborted/i.test(err.message ?? "")) {
+      console.log(`  Retry ${attempt + 1}/2 after: ${err.message}`);
+      await new Promise(r => setTimeout(r, 5000));
+      return runQuery(query, attempt + 1);
+    }
     console.log(`  ERROR: ${err.message}`);
     return { queryId: query.id, status: "NETWORK_ERROR", error: err.message, latencyMs: Date.now() - startTime, scores: null };
   }
