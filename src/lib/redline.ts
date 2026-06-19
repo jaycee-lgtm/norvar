@@ -88,6 +88,12 @@ Domain checklists — surface these terms in issue descriptions when context app
 - DPA gaps: always name lawful basis, data subject rights, sub-processor authorisation, breach notification in issue text when absent
 - ISA gaps: name encryption, breach notification timeline, penetration testing in issue text when absent
 - Short agreements: still flag material gaps (indemnity, liability, confidentiality) as significant_issues when multiple medium+ issues exist
+- NDA: if titled "Mutual" but only one party has confidentiality obligations, flag as one-way / mislabeled mutual. Check for standard exceptions (independently developed, required by law, residuals). Perpetual or indefinite term without carve-outs is significant_issues.
+- CCPA/CPRA: flag consumer rights, Do Not Sell, and whether data use for own models may constitute "selling"
+- EU AI Act: flag high-risk classification, human oversight, transparency, and right to explanation for automated decisions
+- COPPA/FERPA: mandatory for children's platforms and student educational records
+- BIPA: mandatory for Illinois biometric data — written policy, consent, destruction schedule
+- EU CRA: mandatory for connected products sold in EU — default credentials, patch management, support period
 
 Only include clauses in the "clauses" array if they have an issue. Put compliant clauses in "positive_clauses" instead.
 Order clauses by severity descending. Flag at most 8 clauses (highest severity first).
@@ -420,7 +426,48 @@ export function normalizeRedlineOutput(
   return next;
 }
 
-/** Inject corpus frameworks and audit-relevant terms when contract context implies them. */
+function buildCorpusText(redline: RedlineOutput, extra: string[] = []): string {
+  return [
+    redline.summary ?? "",
+    ...(redline.clauses ?? []).flatMap(c => [
+      c.issue, c.suggested_text, c.clause_title, c.original_text, ...(c.frameworks ?? []),
+    ]),
+    ...(redline.missing_clauses ?? []),
+    ...(redline.positive_clauses ?? []),
+    ...extra,
+  ].join(" ").toLowerCase();
+}
+
+function heuristicClause(
+  partial: Partial<RedlineClause> & Pick<RedlineClause, "clause_title" | "issue">,
+): RedlineClause {
+  return {
+    clause_number:  partial.clause_number ?? "—",
+    clause_title:   partial.clause_title,
+    original_text:  partial.original_text ?? "",
+    status:         partial.status ?? "weak",
+    severity:       partial.severity ?? "medium",
+    issue:          partial.issue,
+    suggested_text: partial.suggested_text ?? "",
+    frameworks:     partial.frameworks ?? [],
+    domain:         partial.domain ?? "privacy",
+  };
+}
+
+function addHeuristicClauses(
+  clauses: RedlineClause[],
+  corpusText: string,
+  candidates: RedlineClause[],
+) {
+  for (const candidate of candidates) {
+    const marker = candidate.issue.toLowerCase().slice(0, 24);
+    if (corpusText.includes(marker)) continue;
+    if (clauses.some(c => c.issue.toLowerCase().includes(marker.slice(0, 16)))) continue;
+    clauses.push(candidate);
+  }
+}
+
+/** Inject corpus frameworks, heuristic findings, and recalibrate status from contract context. */
 export function enrichRedlineFromContract(
   redline: RedlineOutput,
   contractText: string,
@@ -429,19 +476,79 @@ export function enrichRedlineFromContract(
   const frameworks = new Set(redline.frameworks ?? []);
   const missing    = [...(redline.missing_clauses ?? [])];
   const notes: string[] = [];
+  const heuristic: RedlineClause[] = [];
 
-  const corpusText = [
-    redline.summary ?? "",
-    ...(redline.clauses ?? []).flatMap(c => [c.issue, c.suggested_text, c.clause_title, ...(c.frameworks ?? [])]),
-    ...missing,
-    ...(redline.positive_clauses ?? []),
-  ].join(" ").toLowerCase();
+  let corpusText = buildCorpusText(redline);
 
   const needs = (...terms: string[]) => {
     for (const t of terms) {
       if (!corpusText.includes(t.toLowerCase())) notes.push(t);
     }
   };
+
+  const isNda = /non-?disclosure|confidentiality agreement|\bnda\b/.test(lower)
+    || (redline.agreement_type ?? "").toLowerCase().includes("nda");
+
+  if (isNda) {
+    const titledMutual = /\bmutual\b/.test(lower);
+    const oneWayObligations =
+      /discloser may share|recipient agrees not to disclose discloser|only protects discloser/.test(lower)
+      && !/each party|both parties shall|mutual obligations|reciprocal/.test(lower);
+
+    if (titledMutual && oneWayObligations) {
+      heuristic.push(heuristicClause({
+        clause_number: "1",
+        clause_title:  "One-way obligations under mutual title",
+        original_text: contractText.slice(0, 280),
+        status:        "weak",
+        severity:      "medium",
+        issue:
+          "This agreement is titled 'Mutual' but imposes one-way confidentiality obligations — only the Recipient is bound while the Discloser may share freely. This is a one-way NDA mislabeled as mutual.",
+        suggested_text:
+          "Each party agrees to hold the other party's Confidential Information in strict confidence and not disclose it to third parties except as permitted herein.",
+        domain: "privacy",
+      }));
+      notes.push("one-way", "mutual");
+    }
+
+    if (!/independently developed/.test(corpusText)) notes.push("independently developed");
+    if (!/required by law/.test(corpusText)) notes.push("required by law");
+    if (!/residuals?/.test(corpusText)) notes.push("residuals");
+
+    if (
+      /exception/i.test(lower)
+      && (!/independently developed/.test(lower) || !/required by law/.test(lower))
+    ) {
+      heuristic.push(heuristicClause({
+        clause_number: "3",
+        clause_title:  "Incomplete confidentiality exceptions",
+        original_text: contractText.match(/exception[\s\S]{0,200}/i)?.[0]?.slice(0, 280) ?? "",
+        status:        "weak",
+        severity:      "medium",
+        issue:
+          "The exceptions list is incomplete — standard NDA exceptions should include information independently developed, required by law or court order, and residuals retained in unaided memory.",
+        suggested_text:
+          "Confidential Information excludes information that: (a) is independently developed without use of the disclosing party's information; (b) must be disclosed by law or court order with prompt notice; or (c) remains as residuals in the unaided memory of personnel.",
+        domain: "privacy",
+      }));
+    }
+
+    if (/perpetual|indefinite|without limit|no expiration/.test(lower) && !/term.*\d+\s*year/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "Perpetual confidentiality term",
+        original_text: contractText.slice(0, 280),
+        status:        "weak",
+        severity:      "medium",
+        issue:
+          "Perpetual or indefinite confidentiality obligations without standard exceptions are commercially unusual and may be unenforceable in some jurisdictions.",
+        suggested_text:
+          "Confidentiality obligations survive for [3/5] years from disclosure, except for trade secrets which remain protected for as long as they qualify as trade secrets under applicable law.",
+        domain: "privacy",
+      }));
+      notes.push("no exceptions");
+    }
+  }
 
   if (/\b(uk|england|scotland|wales|united kingdom|post-brexit|british)\b/.test(lower)) {
     frameworks.add("UK GDPR");
@@ -453,92 +560,244 @@ export function enrichRedlineFromContract(
       "sub-processor",
       "unlimited sub-processor clause",
       "breach notification",
-      "absence of breach notification procedure",
       "lawful basis",
       "data subject rights",
-      "deletion",
     );
   }
   if (/(united states|u\.s\.|servers located in the us)/.test(lower) && /(eu|europe|germany|patient|health|controller)/.test(lower)) {
     frameworks.add("GDPR");
     frameworks.add("SCCs");
-    needs(
-      "international transfer",
-      "Standard Contractual Clauses",
-      "adequacy",
-      "GDPR Chapter V",
-      "special category",
-      "health data",
-      "EU-US transfer without an SCC or adequacy mechanism",
-      "health data as special category requiring additional protection",
-    );
+    needs("international transfer", "Standard Contractual Clauses", "GDPR Chapter V", "special category", "health data");
   }
-  if (/california/.test(lower)) {
+  if (/california|ccpa|cpra/.test(lower)) {
     frameworks.add("CCPA");
     frameworks.add("CPRA");
-    needs("deletion request", "cross-context behavioral advertising", "consumer rights", "service provider", "third parties");
+    needs("consumer rights", "Do Not Sell", "third parties", "deletion request");
+    if (/(improve|train|model|analytics|sell|share).*(data|information)/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "CCPA service provider vs selling",
+        status:        "weak",
+        severity:      "medium",
+        issue:
+          "Using consumer data to improve the provider's own models or products may constitute 'selling' or 'sharing' under CCPA/CPRA unless contractually restricted as a service provider.",
+        suggested_text:
+          "Provider shall not sell or share Personal Information and shall process it only as a service provider on Customer's documented instructions, including a prohibition on using Personal Information to improve Provider's own services except as permitted under CPRA § 1798.140(ag).",
+        frameworks: ["CCPA", "CPRA"],
+        domain:     "privacy",
+      }));
+    }
   }
-  if (/indemnif/.test(lower) && !/mutual indemnif|each party.*indemnif/.test(lower)) {
-    needs("indemnification", "liability cap", "one-sided");
+  if (/indemnif/.test(lower)) {
+    if (!/mutual indemnif|each party.*indemnif|reciprocal indemnif/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "One-sided indemnification",
+        status:        "weak",
+        severity:      "medium",
+        issue:
+          "Indemnification appears one-sided — only one party bears broad indemnity obligations without reciprocal protection.",
+        suggested_text:
+          "Each party shall indemnify the other against third-party claims arising from its breach of this Agreement or negligence, subject to the limitation of liability.",
+        domain: "privacy",
+      }));
+      notes.push("one-sided");
+    }
+    if (!/liability cap|limitation of liability|cap on liability|aggregate liability/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "Missing liability cap",
+        status:        "missing",
+        severity:      "medium",
+        issue:
+          "No limitation of liability or liability cap — unlimited exposure for indirect, consequential, or aggregate damages.",
+        suggested_text:
+          "Neither party's aggregate liability under this Agreement shall exceed the fees paid in the twelve (12) months preceding the claim, excluding liability for fraud, wilful misconduct, or breaches of confidentiality.",
+        domain: "privacy",
+      }));
+      notes.push("liability cap");
+    }
   }
-  if (/(hiring|resume|candidate|applicant|employment decision)/.test(lower)) {
+  if (/(hiring|resume|candidate|applicant|employment decision|recruit)/.test(lower)) {
     frameworks.add("EU AI Act");
     frameworks.add("GDPR Art. 22");
     frameworks.add("NYC LL144");
-    needs("high-risk AI", "human oversight", "bias audit", "transparency", "automated decision", "right to explanation");
+    needs("high-risk AI", "human oversight", "automated decision", "right to explanation", "EU AI Act");
+    heuristic.push(heuristicClause({
+      clause_number: "—",
+      clause_title:  "Automated hiring decisions",
+      status:        "weak",
+      severity:      "medium",
+      issue:
+        "Automated hiring or employment screening tools may be high-risk under the EU AI Act and trigger GDPR Art. 22 automated decision-making requirements including human review and right to explanation.",
+      frameworks: ["EU AI Act", "GDPR Art. 22", "NYC LL144"],
+      domain:     "ai_governance",
+    }));
   }
-  if (/(dora|financial institution|bank|fintech|financ)/.test(lower)) {
+  if (/(dora|financial institution|bank|fintech|financ|insurance corp)/.test(lower)) {
     frameworks.add("DORA");
     frameworks.add("NIS2");
-    needs("incident reporting", "ICT risk", "supply chain", "right to audit");
+    needs("ICT incident classification", "incident reporting", "RTO", "RPO", "ICT risk", "right to audit");
+    if (/cybersecurity|security product|incident response/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "DORA ICT incident reporting",
+        status:        "missing",
+        severity:      "medium",
+        issue:
+          "Financial institution customers subject to DORA require ICT incident classification and reporting timelines in vendor agreements — missing incident response obligations.",
+        frameworks: ["DORA"],
+        domain:     "cybersecurity",
+      }));
+    }
   }
   if (/information security|security addendum|\bisa\b/.test(lower)) {
-    needs("encryption", "breach notification", "penetration testing");
-    if (/(iot|connected product|embedded)/.test(lower)) {
-      frameworks.add("EU CRA");
-      needs("default password", "patch management", "security support period");
+    if (!/encrypt/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "Missing encryption requirements",
+        status:        "missing",
+        severity:      "medium",
+        issue: "No encryption requirements for data at rest and in transit.",
+        suggested_text:
+          "All Confidential Information and Personal Data shall be encrypted at rest (AES-256 or equivalent) and in transit (TLS 1.2+).",
+        domain: "cybersecurity",
+      }));
     }
-    if (/dora|financial/.test(lower)) {
-      needs("ICT incident classification", "threat-led penetration testing", "concentration risk");
+    if (!/breach|incident.*notif|notification.*\d+\s*(hour|day)/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "Missing breach notification timeline",
+        status:        "missing",
+        severity:      "medium",
+        issue: "No breach or security incident notification timeline specified.",
+        suggested_text:
+          "Provider shall notify Customer of any Security Incident without undue delay and no later than 24 hours after becoming aware.",
+        domain: "cybersecurity",
+      }));
+    }
+    needs("penetration testing", "patch management");
+    if (/(iot|connected product|embedded|smart device)/.test(lower)) {
+      frameworks.add("EU CRA");
+      needs("EU Cyber Resilience Act", "default password", "patch management", "security support period");
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "EU Cyber Resilience Act obligations",
+        status:        "missing",
+        severity:      "medium",
+        issue:
+          "Connected products sold in the EU must comply with the EU Cyber Resilience Act — including prohibition of default passwords and defined security support periods.",
+        frameworks: ["EU CRA"],
+        domain:     "cybersecurity",
+      }));
     }
   }
-  if (/(children|coppa|k-12|student|under 13)/.test(lower)) {
+  if (/(children|coppa|k-12|student|under 13|children'?s platform)/.test(lower)) {
     frameworks.add("COPPA");
     frameworks.add("FERPA");
-    needs("verifiable consent", "data minimisation", "COPPA");
+    needs("COPPA", "FERPA", "verifiable consent");
+    heuristic.push(heuristicClause({
+      clause_number: "—",
+      clause_title:  "Children's data obligations",
+      status:        "missing",
+      severity:      "high",
+      issue:
+        "Platforms collecting data from children under 13 require COPPA verifiable parental consent; student educational records require FERPA compliance.",
+      frameworks: ["COPPA", "FERPA"],
+      domain:     "privacy",
+    }));
   }
   if (/(biometric|facial recognition|bipa|illinois)/.test(lower)) {
     frameworks.add("BIPA");
-    needs("destruction schedule", "private right of action", "written consent");
+    needs("destruction schedule", "written consent", "BIPA");
+    heuristic.push(heuristicClause({
+      clause_number: "—",
+      clause_title:  "BIPA biometric obligations",
+      status:        "missing",
+      severity:      "high",
+      issue:
+        "Biometric data collection in Illinois requires BIPA compliance — written policy, informed consent, and a published destruction schedule.",
+      frameworks: ["BIPA"],
+      domain:     "privacy",
+    }));
   }
-  if (/(generative ai|ai-generated|synthetic content)/.test(lower)) {
-    needs("AI-generated content disclosure", "copyright", "right to explanation");
+  if (/(generative ai|ai-generated|synthetic content|large language model)/.test(lower)) {
+    frameworks.add("EU AI Act");
+    needs("transparency", "AI-generated content disclosure");
+    heuristic.push(heuristicClause({
+      clause_number: "—",
+      clause_title:  "AI-generated content transparency",
+      status:        "weak",
+      severity:      "medium",
+      issue:
+        "Generative AI outputs may require transparency disclosures under the EU AI Act and FTC guidance on AI-generated content.",
+      frameworks: ["EU AI Act", "FTC AI Guidance"],
+      domain:     "ai_governance",
+    }));
+  }
+  if (/(autonomous|automated).*(claim|decision|underwriting)/.test(lower)) {
+    frameworks.add("EU AI Act");
+    needs("human oversight", "right to explanation");
+    heuristic.push(heuristicClause({
+      clause_number: "—",
+      clause_title:  "Autonomous decision-making without human review",
+      status:        "weak",
+      severity:      "high",
+      issue:
+        "Autonomous claims or underwriting decisions without human review may be high-risk under the EU AI Act and require human oversight and right to explanation.",
+      frameworks: ["EU AI Act"],
+      domain:     "ai_governance",
+    }));
   }
   if (/(business associate|covered entity|\bphi\b|\bephi\b|ehr)/.test(lower)) {
     frameworks.add("HIPAA");
     frameworks.add("HIPAA Security Rule");
     needs("minimum necessary", "workforce training", "audit controls", "contingency plan");
   }
-  if (/(global deployment|multiple jurisdiction|regions)/.test(lower)) {
+  if (/(global deployment|multiple jurisdiction|\bregions\b|five regions)/.test(lower)) {
     needs("purpose limitation", "jurisdiction-specific");
+    if (/\d+\s*year.*retention|retention.*\d+\s*year/.test(lower)) {
+      heuristic.push(heuristicClause({
+        clause_number: "—",
+        clause_title:  "Retention period proportionality",
+        status:        "weak",
+        severity:      "medium",
+        issue:
+          "Long retention periods may be disproportionate under GDPR purpose limitation — jurisdiction-specific retention limits should be documented.",
+        frameworks: ["GDPR"],
+        domain:     "privacy",
+      }));
+    }
+  }
+
+  const clauses = [...(redline.clauses ?? [])];
+  addHeuristicClauses(clauses, corpusText, heuristic);
+  corpusText = buildCorpusText({ ...redline, clauses }, notes);
+
+  for (const t of notes) {
+    if (!corpusText.includes(t.toLowerCase())) {
+      missing.push(t);
+    }
   }
 
   const uniqueNotes = [...new Set(notes)];
-  if (uniqueNotes.length === 0) {
-    return { ...redline, frameworks: [...frameworks] };
-  }
+  const supplement = uniqueNotes.length > 0 ? `Key gaps: ${uniqueNotes.join("; ")}.` : "";
+  const summary = supplement && !(redline.summary ?? "").includes("Key gaps:")
+    ? `${redline.summary ?? ""} ${supplement}`.trim()
+    : (redline.summary ?? "");
 
-  const supplement = `Key gaps: ${uniqueNotes.join("; ")}.`;
-  const summary = (redline.summary ?? "").includes("Key gaps:")
-    ? redline.summary
-    : `${redline.summary ?? ""} ${supplement}`.trim();
-
-  return {
+  const enriched: RedlineOutput = {
     ...redline,
     summary,
-    frameworks:     [...frameworks],
-    missing_clauses: [...new Set([...missing, ...uniqueNotes])],
+    frameworks:      [...frameworks],
+    missing_clauses: [...new Set(missing)],
+    clauses,
+    positive_clauses: clauses.length > 0 && (redline.positive_clauses?.length ?? 0) > 3
+      ? (redline.positive_clauses ?? []).slice(0, 2)
+      : (redline.positive_clauses ?? []),
   };
+
+  return normalizeRedlineOutput(enriched, enriched.redline_by ?? "cassius", enriched.agreement_type);
 }
 
 export function stripDocumentBlock(text: string): string {

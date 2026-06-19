@@ -122,13 +122,13 @@ export function auditDraftKeywordHint(agreementType: string): string {
 
 const AUDIT_DRAFT_REQUIRED: Record<string, string[]> = {
   dpa:        ["lawful basis", "data subject", "sub-processor", "breach notification", "deletion", "encryption"],
-  msa:        ["liability cap", "indemnification", "payment terms", "intellectual property", "confidentiality", "force majeure", "governing law", "notices", "severability"],
-  isa:        ["breach notification", "encryption", "incident response", "DORA", "penetration testing"],
+  msa:        ["liability cap", "indemnification", "payment terms", "intellectual property", "confidentiality", "force majeure", "governing law", "notices", "severability", "confidential information", "services", "effective date", "assignment", "entire agreement"],
+  isa:        ["breach notification", "encryption", "incident response", "DORA", "penetration testing", "RTO", "RPO"],
   nda:        ["mutual", "required by law", "injunctive relief", "residuals", "return or destroy"],
   baa:        ["HIPAA", "minimum necessary", "breach notification", "return or destroy", "certification of destruction"],
   ai_use:     ["EU AI Act", "high-risk", "human oversight", "prohibited use", "explainability", "transparency"],
   subproc:    ["GDPR Art. 28", "data processing", "same obligations", "flow-down", "audit rights"],
-  saas:       ["BIPA", "biometric", "data minimisation", "lawful basis", "breach notification"],
+  saas:       ["BIPA", "biometric", "facial recognition", "consent", "retention", "deletion", "data minimisation", "lawful basis", "breach notification", "CCPA"],
   privacy:    ["location", "health", "consent", "right to erasure", "cookies", "CCPA", "GDPR", "ePrivacy"],
   data_share: ["permitted use", "anonymisation", "research ethics", "retention", "lawful basis"],
 };

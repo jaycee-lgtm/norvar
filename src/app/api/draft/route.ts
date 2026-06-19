@@ -278,6 +278,24 @@ async function generatePlan(
   }
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index], index);
+    }
+  }
+  const workers = Math.min(concurrency, items.length);
+  await Promise.all(Array.from({ length: workers }, () => worker()));
+  return results;
+}
+
 async function draftSection(
   sectionNumber: string,
   sectionTitle:  string,
@@ -376,7 +394,9 @@ export async function POST(req: NextRequest) {
         includeClauses: include_clauses,
       };
 
-      const draftModels = resolveDraftReviewModel(modelChoice, complexityInput);
+      const draftModels = auditMode
+        ? resolveDraftReviewModel("gemini-flash", complexityInput)
+        : resolveDraftReviewModel(modelChoice, complexityInput);
       const {
         agent: resolvedAgent,
         provider,
@@ -480,15 +500,20 @@ export async function POST(req: NextRequest) {
 
       if (auditMode) {
         await send({ type: "step", text: "Using Norvar standard outline (audit mode)...", state: "done" });
+        const contextLower = context.toLowerCase();
         const auditFrameworks: Record<string, string[]> = {
           dpa:        ["GDPR", "GDPR Art. 28"],
           baa:        ["HIPAA", "HIPAA Security Rule"],
           ai_use:     ["EU AI Act", "GDPR Art. 22"],
           subproc:    ["GDPR", "GDPR Art. 28"],
           privacy:    ["GDPR", "ePrivacy", "CCPA"],
-          isa:        ["ISO 27001", "NIST CSF"],
+          isa:        /dora|financial|bank|fintech/.test(contextLower)
+            ? ["DORA", "ISO 27001", "NIS2"]
+            : ["ISO 27001", "NIST CSF"],
           msa:        ["GDPR"],
-          saas:       ["GDPR"],
+          saas:       /biometric|bipa|facial|illinois|california/.test(contextLower)
+            ? ["BIPA", "CCPA", "GDPR"]
+            : ["GDPR"],
         };
         plan = {
           ...fallbackDraftPlan(planDefaults),
@@ -497,6 +522,12 @@ export async function POST(req: NextRequest) {
           drafting_notes: [
             jurisdictions.length > 1
               ? `Review jurisdiction-specific requirements for: ${jurisdictions.join(", ")}.`
+              : "",
+            /dora|financial|bank/.test(contextLower)
+              ? "DORA incident reporting timelines and ICT risk management obligations apply."
+              : "",
+            /biometric|bipa|facial/.test(contextLower)
+              ? "BIPA written consent and destruction schedule required for Illinois biometric data."
               : "",
             "Legal review required before execution.",
           ].filter(Boolean),
@@ -580,69 +611,76 @@ export async function POST(req: NextRequest) {
 
       const draftedSections: DraftSection[] = [];
 
-      for (const section of plan.sections) {
-        await send({
-          type:    "section_start",
-          section: { number: section.number, title: section.title },
-        });
+      const ping = setInterval(() => {
+        void send({ type: "ping" });
+      }, 12000);
 
-        let clauses: DraftClause[];
-        try {
-          clauses = await draftSection(
-            section.number,
-            section.title,
-            section.clause_count ?? 4,
-            contextBlock,
-            draftProvider,
-            draftModelId,
-            sectionSystemPrompt,
-            Math.min(maxTokens, 4000),
-            send,
-            draftDisplayName,
-          );
-        } catch (sectionErr) {
-          console.error(`Section ${section.number} draft failed:`, sectionErr);
+      try {
+        const draftOneSection = async (section: DraftPlanShape["sections"][number]) => {
           await send({
-            type: "status",
-            text: `Section ${section.number} failed — retrying with repair model...`,
+            type:    "section_start",
+            section: { number: section.number, title: section.title },
           });
+
+          let clauses: DraftClause[];
           try {
             clauses = await draftSection(
               section.number,
               section.title,
               section.clause_count ?? 4,
               contextBlock,
-              repairProvider,
-              repairModelId,
+              draftProvider,
+              draftModelId,
               sectionSystemPrompt,
-              3000,
+              Math.min(maxTokens, auditMode ? 2500 : 4000),
               send,
-              `${draftDisplayName} (repair)`,
+              draftDisplayName,
             );
-            await send({
-              type: "status",
-              text: `Section ${section.number} recovered on second attempt`,
-            });
-          } catch {
-            await send({
-              type: "status",
-              text: `Section ${section.number} could not be drafted — inserting placeholder`,
-            });
-            clauses = [{
-              number: `${section.number}.1`,
-              title:  "Placeholder",
-              text:   `[This section (${section.title}) could not be drafted. Please redraft manually.]`,
-            }];
+          } catch (sectionErr) {
+            console.error(`Section ${section.number} draft failed:`, sectionErr);
+            try {
+              clauses = await draftSection(
+                section.number,
+                section.title,
+                section.clause_count ?? 4,
+                contextBlock,
+                repairProvider,
+                repairModelId,
+                sectionSystemPrompt,
+                2500,
+                send,
+                `${draftDisplayName} (repair)`,
+              );
+            } catch {
+              clauses = [{
+                number: `${section.number}.1`,
+                title:  section.title,
+                text:   `[Section ${section.title} — draft pending manual review.]`,
+              }];
+            }
+          }
+
+          await send({
+            type:    "section_done",
+            section: { number: section.number, title: section.title },
+            clauses,
+          });
+
+          return { number: section.number, title: section.title, clauses };
+        };
+
+        if (auditMode) {
+          const results = await mapWithConcurrency(plan.sections, 3, draftOneSection);
+          draftedSections.push(...results.sort((a, b) =>
+            Number(a.number) - Number(b.number) || a.number.localeCompare(b.number),
+          ));
+        } else {
+          for (const section of plan.sections) {
+            draftedSections.push(await draftOneSection(section));
           }
         }
-
-        draftedSections.push({ number: section.number, title: section.title, clauses });
-
-        await send({
-          type:    "section_done",
-          section: { number: section.number, title: section.title },
-          clauses,
-        });
+      } finally {
+        clearInterval(ping);
       }
 
       await send({ type: "step", text: "Validating clauses against corpus...", state: "active" });

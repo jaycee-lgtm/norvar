@@ -43,3 +43,4 @@ __pycache__/
 
 # local node runtime (used when system node is missing)
 .tools/
+.vercel

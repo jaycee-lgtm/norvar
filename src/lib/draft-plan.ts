@@ -106,10 +106,33 @@ const SUBPROC_SECTIONS: DraftPlanSection[] = [
   { number: "7", title: "DELETION AND RETURN",          clause_count: 3 },
 ];
 
+const MSA_SECTIONS: DraftPlanSection[] = [
+  { number: "1", title: "DEFINITIONS",                    clause_count: 3 },
+  { number: "2", title: "SERVICES",                       clause_count: 3 },
+  { number: "3", title: "FEES AND PAYMENT",             clause_count: 3 },
+  { number: "4", title: "INTELLECTUAL PROPERTY",          clause_count: 3 },
+  { number: "5", title: "CONFIDENTIALITY",                clause_count: 3 },
+  { number: "6", title: "WARRANTIES",                     clause_count: 3 },
+  { number: "7", title: "LIMITATION OF LIABILITY",        clause_count: 3 },
+  { number: "8", title: "TERM AND TERMINATION",           clause_count: 3 },
+  { number: "9", title: "GENERAL PROVISIONS",             clause_count: 3 },
+];
+
+const SAAS_SECTIONS: DraftPlanSection[] = [
+  { number: "1", title: "DEFINITIONS",                    clause_count: 3 },
+  { number: "2", title: "SERVICES AND SUBSCRIPTION",      clause_count: 3 },
+  { number: "3", title: "DATA PROTECTION",                clause_count: 3 },
+  { number: "4", title: "SECURITY",                       clause_count: 3 },
+  { number: "5", title: "FEES AND PAYMENT",               clause_count: 3 },
+  { number: "6", title: "LIMITATION OF LIABILITY",        clause_count: 3 },
+  { number: "7", title: "TERM AND TERMINATION",           clause_count: 3 },
+  { number: "8", title: "GENERAL PROVISIONS",             clause_count: 3 },
+];
+
 const AUDIT_SECTION_LIMITS: Record<string, number> = {
   dpa:        8,
-  msa:        9,
-  saas:       9,
+  msa:        8,
+  saas:       7,
   isa:        6,
   nda:        6,
   baa:        7,
@@ -128,6 +151,8 @@ function defaultSections(agreementTypeKey?: string): DraftPlanSection[] {
   if (agreementTypeKey === "isa")       return ISA_SECTIONS;
   if (agreementTypeKey === "nda")       return NDA_SECTIONS;
   if (agreementTypeKey === "subproc")   return SUBPROC_SECTIONS;
+  if (agreementTypeKey === "msa")       return MSA_SECTIONS;
+  if (agreementTypeKey === "saas")      return SAAS_SECTIONS;
   return DEFAULT_SECTIONS;
 }
 
