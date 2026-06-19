@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { getActiveOrganizationId } from "@/lib/clerk-org";
+import { getActiveOrganizationId, getOrganizationMembershipRole } from "@/lib/clerk-org";
 
 type OrgContext = { userId: string; orgId: string };
 type OrgContextError = { error: Response };
@@ -17,7 +17,11 @@ export async function requireOrgContext(
     return { error: Response.json({ error: "Select an organization first" }, { status: 400 }) };
   }
 
-  if (requireAdmin && orgRole && orgRole !== "org:admin" && orgRole !== "admin") {
+  const resolvedOrgRole = requireAdmin
+    ? orgRole ?? await getOrganizationMembershipRole(activeOrgId, userId)
+    : null;
+
+  if (requireAdmin && resolvedOrgRole !== "org:admin" && resolvedOrgRole !== "admin") {
     return { error: Response.json({ error: "Org admin access required" }, { status: 403 }) };
   }
 

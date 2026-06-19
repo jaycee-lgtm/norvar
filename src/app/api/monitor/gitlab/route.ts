@@ -23,6 +23,10 @@ const SKIP_FILE_PATTERNS = [
   /^dist\//, /^build\//, /^node_modules\//,
 ];
 
+function hasWebhookSecret(secret: unknown): secret is string {
+  return typeof secret === "string" && secret.trim().length > 0;
+}
+
 function isLikelyRelevantFile(filename: string): boolean {
   return !SKIP_FILE_PATTERNS.some(p => p.test(filename));
 }
@@ -186,13 +190,20 @@ export async function POST(req: NextRequest) {
   const project = payload.project as Record<string, unknown> | undefined;
   const projectPath = project?.path_with_namespace as string | undefined;
 
+  if (!hasWebhookSecret(token)) {
+    await logWebhook("gitlab", null, event ?? "unknown", payload, false, "Missing webhook token");
+    return Response.json({ error: "Invalid token or connector not configured" }, { status: 401 });
+  }
+
   const { data: connectors } = await supabase
     .from("monitoring_connectors")
     .select("*")
     .eq("provider", "gitlab")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c => c.webhook_secret === token);
+  const connector = (connectors ?? []).find(c =>
+    hasWebhookSecret(c.webhook_secret) && c.webhook_secret === token,
+  );
 
   if (!connector) {
     await logWebhook("gitlab", null, event ?? "unknown", payload, false, "No matching connector / invalid token");

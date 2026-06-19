@@ -61,6 +61,24 @@ create table if not exists monitoring_connectors (
 
 create index if not exists monitoring_connectors_org_idx on monitoring_connectors (org_id, provider);
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'monitoring_connectors_active_webhook_secret_chk'
+  ) then
+    alter table monitoring_connectors
+      add constraint monitoring_connectors_active_webhook_secret_chk
+      check (
+        status <> 'active'
+        or provider not in ('gitlab', 'jira')
+        or nullif(btrim(webhook_secret), '') is not null
+      )
+      not valid;
+  end if;
+end $$;
+
 -- ─── GIT USER MAPPING ─────────────────────────────────────────────────────────
 -- Maps git/Jira identities to Norvar users for repo-owner notification
 
