@@ -8,8 +8,8 @@ import InboxMonitoringTab from "@/components/InboxMonitoringTab";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
-import type { EscalationInboxFolder, InboxFolder, InboxFolderCounts, InboxListItem, InboxViewFolder } from "@/lib/inbox";
-import { INBOX_FOLDERS, stripInboxMessageBody } from "@/lib/inbox";
+import type { EscalationInboxFolder, InboxFolderCounts, InboxListItem, InboxViewFolder } from "@/lib/inbox";
+import { daysUntilPurge, INBOX_FOLDERS, stripInboxMessageBody } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
   Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail, MailOpen,
@@ -334,8 +334,10 @@ function InboxContent() {
   }, [router, searchParams]);
 
   useEffect(() => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    queueMicrotask(() => {
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    });
   }, [folder]);
 
   useEffect(() => {
@@ -360,13 +362,15 @@ function InboxContent() {
 
   useEffect(() => {
     if (!groupByRead) return;
-    if (unreadItems.length > 0) {
-      setUnreadOpen(true);
-      setReadOpen(false);
-    } else {
-      setUnreadOpen(false);
-      setReadOpen(true);
-    }
+    queueMicrotask(() => {
+      if (unreadItems.length > 0) {
+        setUnreadOpen(true);
+        setReadOpen(false);
+      } else {
+        setUnreadOpen(false);
+        setReadOpen(true);
+      }
+    });
   }, [groupByRead, unreadItems.length]);
 
   const loadList = useCallback(async (opts?: { silent?: boolean }) => {
@@ -414,7 +418,7 @@ function InboxContent() {
 
   useEffect(() => {
     if (isMonitoring) {
-      setLoadingList(false);
+      queueMicrotask(() => setLoadingList(false));
       return;
     }
     void loadList();
@@ -422,7 +426,7 @@ function InboxContent() {
 
   useEffect(() => {
     if (isMonitoring || !threadId) {
-      if (!threadId) setThread(null);
+      if (!threadId) queueMicrotask(() => setThread(null));
       return;
     }
     void loadThread(threadId, folder as EscalationInboxFolder);
@@ -1031,7 +1035,7 @@ function InboxContent() {
                           </div>
                             {msg.deleted_at && folder === "trash" && (
                               <p className="inbox-chat-purge">
-                                Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
+                                Permanently removed in {daysUntilPurge(msg.deleted_at)} days
                               </p>
                             )}
                           </div>
