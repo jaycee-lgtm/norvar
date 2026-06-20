@@ -36,10 +36,13 @@ import {
   ASSESSMENT_CONFIRM_OPTIONS,
   ASSESSMENT_CONFIRM_YES,
   buildAssessmentConfirmationText,
+  buildAssessmentDetailRequestText,
+  buildAssessmentNotYetText,
   buildAssessmentScopingIntroText,
   buildConversationDescription,
   conversationLooksLikeAssessment,
   isAffirmativeAssessmentConfirm,
+  isAssessmentDetailRequest,
   isNegativeAssessmentConfirm,
   looksLikeAssessmentDescription,
 } from "@/lib/cassius-prescope";
@@ -1243,8 +1246,9 @@ function Home() {
     }
 
     setPreScopePhase("chat");
-    setPendingDesc("");
-    const reply = "No problem — tell me more about what you're working on. When you're ready for a formal assessment, just describe it and we'll take it from there.";
+    const desc = (descOverride ?? pendingDesc).trim();
+    if (desc) setPendingDesc(desc);
+    const reply = buildAssessmentNotYetText(desc);
     setMessages(prev => [...prev, { role: "chat", text: reply }]);
     return reply;
   };
@@ -1659,6 +1663,13 @@ function Home() {
     const fullDesc = buildConversationDescription(messages, text);
 
     if (fullDesc) setPendingDesc(fullDesc);
+
+    if (preScopePhase === "chat" && priorDesc && isAssessmentDetailRequest(text)) {
+      const reply = buildAssessmentDetailRequestText(priorDesc);
+      setMessages(prev => [...prev, { role: "user", content: text }, { role: "chat", text: reply }]);
+      setPendingDesc(priorDesc);
+      return reply;
+    }
 
     if (preScopePhase === "chat" && priorDesc && isAffirmativeAssessmentConfirm(text)) {
       setMessages(prev => [...prev, { role: "user", content: text }]);

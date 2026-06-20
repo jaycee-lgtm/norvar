@@ -9,6 +9,8 @@ export const ASSESSMENT_CONFIRM_OPTIONS = [
 const GREETING_RE = /^(hi|hello|hey|good morning|good afternoon|good evening|howdy|yo|sup|hiya|thanks|thank you)(\s+there)?$/i;
 
 const ASSESSMENT_SIGNAL_RE = /\b(build|building|deploy|launch|process|processing|collect|collecting|store|storing|cctv|camera|biometric|surveillance|app|application|platform|system|data|users?|customers?|employees?|ai\b|ml\b|model|vendor|cloud|saas|privacy|gdpr|hipaa|compliance|office|offices|product|service|website|api|tool|database|tracking|monitoring|children|health|finance|fintech|robot|iot|device)\b/i;
+const ASSISTANT_IDENTITY_RE = /^(are|r)\s+(you|u)\s+(an?\s+)?(ai|bot|robot)\??$/i;
+const DETAIL_REQUEST_RE = /\b(what\s+(do\s+you\s+need|else\s+do\s+you\s+need|information\s+do\s+you\s+need|details\s+do\s+you\s+need|should\s+i\s+(share|provide|tell\s+you))|what\s+(else|next)|what\s+questions|how\s+do\s+we\s+(scope|assess)|how\s+would\s+you\s+(scope|assess))\b/i;
 
 export function isCasualGreeting(text: string): boolean {
   const trimmed = text.trim().replace(/[!?.]+$/, "");
@@ -19,8 +21,9 @@ export function isCasualGreeting(text: string): boolean {
 
 export function looksLikeAssessmentDescription(text: string): boolean {
   const trimmed = text.trim();
-  if (trimmed.length < 15) return false;
+  if (ASSISTANT_IDENTITY_RE.test(trimmed)) return false;
   if (isCasualGreeting(trimmed)) return false;
+  if (trimmed.length < 15) return ASSESSMENT_SIGNAL_RE.test(trimmed);
   return ASSESSMENT_SIGNAL_RE.test(trimmed) || trimmed.length >= 45;
 }
 
@@ -34,12 +37,12 @@ export function buildConversationDescription(
   for (const m of messages) {
     if (m.role !== "user" || !m.content) continue;
     const t = m.content.trim();
-    if (!t || isCasualGreeting(t)) continue;
+    if (!t || isCasualGreeting(t) || isAssessmentDetailRequest(t)) continue;
     parts.push(t);
   }
   if (latestText) {
     const t = latestText.trim();
-    if (t && !isCasualGreeting(t) && !parts.includes(t)) parts.push(t);
+    if (t && !isCasualGreeting(t) && !isAssessmentDetailRequest(t) && !parts.includes(t)) parts.push(t);
   }
   return parts.join(" ").trim();
 }
@@ -61,6 +64,22 @@ export function isAssessmentReadyReply(text: string): boolean {
 
 export function buildAssessmentConfirmationText(): string {
   return "It sounds like you're describing something that needs a formal compliance assessment — is that right?";
+}
+
+export function isAssessmentDetailRequest(text: string): boolean {
+  return DETAIL_REQUEST_RE.test(text.trim().toLowerCase());
+}
+
+export function buildAssessmentDetailRequestText(description?: string): string {
+  const subject = description?.toLowerCase().includes("robot") ? "the robot" : "it";
+  return `To scope ${subject}, I need the practical basics: what it does, where it will operate, who will interact with it, what sensors or data it collects, whether it makes autonomous decisions, and where you plan to deploy it. A sentence or a few bullets is enough.`;
+}
+
+export function buildAssessmentNotYetText(description?: string): string {
+  if (!description?.trim()) {
+    return "No problem — tell me a bit more about what you're working on, and we can shape it before a formal assessment.";
+  }
+  return `No problem. ${buildAssessmentDetailRequestText(description)}`;
 }
 
 export function buildAssessmentScopingIntroText(): string {
