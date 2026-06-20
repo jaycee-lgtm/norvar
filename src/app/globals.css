@@ -5232,18 +5232,49 @@ input, textarea, select, button {
   -webkit-overflow-scrolling: touch;
 }
 
-.inbox-page:not(.inbox-page--mobile) .inbox-monitoring-scroll {
-  padding: 16px 20px;
-}
-
 .inbox-page--mobile .inbox-monitoring-scroll {
   padding: 0 0 16px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-list-main--monitoring .inbox-list-scroll {
+  overflow-y: auto;
 }
 
 .inbox-monitoring-feed {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+.inbox-monitoring-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 0.5px solid var(--bdr);
+  flex-shrink: 0;
+  background: var(--card);
+}
+
+.inbox-monitoring-head {
+  flex-shrink: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitoring-head {
+  border-bottom: 0.5px solid var(--bdr);
+  background: var(--card);
+}
+
+.inbox-monitoring-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.inbox-page--mobile .inbox-monitoring-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .inbox-monitoring-stats {
@@ -5251,6 +5282,10 @@ input, textarea, select, button {
   flex-wrap: wrap;
   gap: 12px 20px;
   padding: 4px 0 8px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitoring-stats {
+  display: none;
 }
 
 .inbox-monitoring-stat {
@@ -5268,6 +5303,14 @@ input, textarea, select, button {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitoring-filters {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 8px 14px;
 }
 
 .inbox-monitoring-filter-group {
@@ -5288,6 +5331,13 @@ input, textarea, select, button {
   display: none;
 }
 
+.inbox-monitoring-filter-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--bdr2);
+  flex-shrink: 0;
+}
+
 .inbox-monitoring-filter {
   padding: 5px 11px;
   border-radius: 999px;
@@ -5302,10 +5352,19 @@ input, textarea, select, button {
   flex-shrink: 0;
 }
 
+.inbox-page:not(.inbox-page--mobile) .inbox-monitoring-filter {
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
 .inbox-monitoring-filter.active {
   background: var(--lift);
   border-color: var(--bdr3);
   color: var(--fg);
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitoring-filter.active {
+  font-weight: 600;
 }
 
 .inbox-monitoring-empty {
@@ -5328,9 +5387,23 @@ input, textarea, select, button {
 .inbox-monitor-card {
   border: 0.5px solid var(--bdr2);
   border-left-width: 3px;
+  border-left-color: var(--monitor-sev, var(--bdr2));
   border-radius: 8px;
   background: var(--card);
   overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-card {
+  border: none;
+  border-radius: 0;
+  border-bottom: 0.5px solid var(--bdr);
+  background: transparent;
+  margin-bottom: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-card.expanded {
+  background: var(--lift);
 }
 
 .inbox-monitor-card.dismissed {
@@ -5338,7 +5411,9 @@ input, textarea, select, button {
 }
 
 .inbox-monitor-card-head {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   width: 100%;
   padding: 12px 14px;
   border: none;
@@ -5348,16 +5423,47 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
 }
 
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-card-head {
+  padding: 10px 14px;
+  align-items: center;
+}
+
 .inbox-page--mobile .inbox-monitor-card-head {
+  display: block;
   padding: 12px 16px;
 }
 
-.inbox-monitor-card-badges {
+.inbox-monitor-provider--row {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card2);
+  color: var(--fg3);
+}
+
+.inbox-monitor-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.inbox-monitor-card-top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 8px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+}
+
+.inbox-monitor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
 }
 
 .inbox-monitor-provider {
@@ -5372,31 +5478,61 @@ input, textarea, select, button {
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  flex-shrink: 0;
 }
 
 .inbox-monitor-kind {
   font-size: 10px;
   color: var(--fg3);
   font-weight: 500;
+  flex-shrink: 0;
 }
 
-.inbox-monitor-date {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--fg3);
-}
-
-.inbox-page--mobile .inbox-monitor-date {
-  margin-left: 0;
-  width: 100%;
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-kind {
+  flex: 0 0 clamp(88px, 12%, 120px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .inbox-monitor-title {
-  margin: 0 0 2px;
+  margin: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--fg);
   line-height: 1.35;
+  min-width: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-title {
+  flex: 0 1 auto;
+  max-width: min(28vw, 240px);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inbox-monitor-date {
+  font-size: 10px;
+  color: var(--fg3);
+  flex-shrink: 0;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-date {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inbox-page--mobile .inbox-monitor-date {
+  margin-left: auto;
+}
+
+.inbox-monitor-sev-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .inbox-monitor-meta {
@@ -5407,9 +5543,25 @@ input, textarea, select, button {
   word-break: break-word;
 }
 
+.inbox-monitor-snippet {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .inbox-monitor-card-body {
   border-top: 0.5px solid var(--bdr);
   padding: 14px 16px;
+}
+
+.inbox-page:not(.inbox-page--mobile) .inbox-monitor-card-body {
+  padding: 12px 14px 14px 58px;
+  background: transparent;
 }
 
 .inbox-monitor-summary {
@@ -5417,6 +5569,12 @@ input, textarea, select, button {
   font-size: 13px;
   color: var(--fg2);
   line-height: 1.6;
+}
+
+.inbox-monitor-source {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--fg3);
 }
 
 .inbox-monitor-gaps {
@@ -5510,6 +5668,10 @@ input, textarea, select, button {
 
 .inbox-page--mobile .inbox-monitoring-stats {
   padding-top: 0;
+}
+
+.inbox-page--mobile .inbox-monitoring-head {
+  padding: 0 16px 8px;
 }
 
 .remediation-escalation-reply {

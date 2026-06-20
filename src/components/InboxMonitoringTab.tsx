@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Github, Gitlab, Trello, AlertTriangle, ExternalLink, Check, Loader2 } from "lucide-react";
+import { Github, Gitlab, Trello, AlertTriangle, ExternalLink, Check, Loader2, RefreshCw } from "lucide-react";
+import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 type Signal = {
@@ -52,19 +53,20 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment }: {
+function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment, isMobile }: {
   signal:          Signal;
   onDismiss:       (id: string) => void;
   onAskNora:       (signal: Signal) => void;
   onRunAssessment: (signal: Signal) => void;
+  isMobile:        boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const sev = SEVERITY_META[signal.severity];
 
   return (
     <article
-      className={`inbox-monitor-card${signal.user_dismissed ? " dismissed" : ""}`}
-      style={{ borderLeftColor: sev.color }}
+      className={`inbox-monitor-card${signal.user_dismissed ? " dismissed" : ""}${expanded ? " expanded" : ""}`}
+      style={{ "--monitor-sev": sev.color } as React.CSSProperties}
     >
       <button
         type="button"
@@ -72,24 +74,60 @@ function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment }: {
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="inbox-monitor-card-badges">
-          <span className="inbox-monitor-provider">{PROVIDER_ICON[signal.provider]}</span>
-          <span className="inbox-monitor-severity" style={{ background: sev.bg, color: sev.color }}>
-            {sev.label}
+        {!isMobile && (
+          <span className="inbox-monitor-provider inbox-monitor-provider--row" aria-hidden>
+            {PROVIDER_ICON[signal.provider]}
           </span>
-          <span className="inbox-monitor-kind">{KIND_LABEL[signal.signal_kind]}</span>
-          <time className="inbox-monitor-date" dateTime={signal.created_at}>
-            {fmtDate(signal.created_at)}
-          </time>
+        )}
+
+        <div className="inbox-monitor-card-main">
+          {isMobile ? (
+            <>
+              <div className="inbox-monitor-card-top">
+                <span className="inbox-monitor-provider" aria-hidden>
+                  {PROVIDER_ICON[signal.provider]}
+                </span>
+                <span className="inbox-monitor-severity" style={{ background: sev.bg, color: sev.color }}>
+                  {sev.label}
+                </span>
+                <span className="inbox-monitor-kind">{KIND_LABEL[signal.signal_kind]}</span>
+                <time className="inbox-monitor-date" dateTime={signal.created_at}>
+                  {fmtDate(signal.created_at)}
+                </time>
+              </div>
+              <h3 className="inbox-monitor-title">{signal.title}</h3>
+              <p className="inbox-monitor-meta">
+                {signal.repo_or_project} · {signal.author_external_name}
+              </p>
+            </>
+          ) : (
+            <div className="inbox-monitor-row">
+              <span className="inbox-monitor-kind">{KIND_LABEL[signal.signal_kind]}</span>
+              <h3 className="inbox-monitor-title">{signal.title}</h3>
+              {!expanded && (
+                <p className="inbox-monitor-snippet">{signal.summary}</p>
+              )}
+              <time className="inbox-monitor-date" dateTime={signal.created_at}>
+                {fmtDate(signal.created_at)}
+              </time>
+              <span
+                className="inbox-monitor-sev-dot"
+                style={{ background: sev.color }}
+                title={`${sev.label} severity`}
+                aria-hidden
+              />
+            </div>
+          )}
         </div>
-        <h3 className="inbox-monitor-title">{signal.title}</h3>
-        <p className="inbox-monitor-meta">
-          {signal.repo_or_project} · {signal.author_external_name}
-        </p>
       </button>
 
       {expanded && (
         <div className="inbox-monitor-card-body">
+          {!isMobile && (
+            <p className="inbox-monitor-source">
+              {signal.repo_or_project} · {signal.author_external_name}
+            </p>
+          )}
           <p className="inbox-monitor-summary">{signal.summary}</p>
 
           {signal.gaps_identified?.length > 0 && (
@@ -112,7 +150,7 @@ function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment }: {
               Ask Nora
             </button>
             <button type="button" className="inbox-monitor-btn primary" onClick={() => onRunAssessment(signal)}>
-              Run assessment with Cassius
+              Run assessment
             </button>
             {!signal.user_dismissed && (
               <button type="button" className="inbox-monitor-btn ghost" onClick={() => onDismiss(signal.id)}>
@@ -181,59 +219,91 @@ export default function InboxMonitoringTab() {
 
   return (
     <div className={`inbox-monitoring-feed${isMobile ? " inbox-monitoring-feed--mobile" : ""}`}>
-      <div className="inbox-monitoring-stats">
-        {Object.entries(counts).map(([sev, count]) => {
-          const meta = SEVERITY_META[sev as keyof typeof SEVERITY_META];
-          return (
-            <div key={sev} className="inbox-monitoring-stat">
-              <span className="inbox-monitoring-stat-count" style={{ color: meta.color }}>{count}</span>
-              {meta.label}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="inbox-monitoring-filters">
-        <div className="inbox-monitoring-filter-group">
-          {["", "high", "medium", "low"].map(s => (
+      {!isMobile && (
+        <div className="inbox-monitoring-toolbar">
+          <HoverTip label="Refresh">
             <button
-              key={s}
               type="button"
-              className={`inbox-monitoring-filter${filterSeverity === s ? " active" : ""}`}
-              onClick={() => setFilterSeverity(s)}
+              className="inbox-toolbar-btn"
+              aria-label="Refresh"
+              disabled={loading}
+              onClick={() => { void load(); }}
             >
-              {s ? SEVERITY_META[s as keyof typeof SEVERITY_META].label : "All severities"}
+              <RefreshCw size={16} strokeWidth={1.75} className={loading ? "spin" : undefined} />
             </button>
-          ))}
-        </div>
-        <div className="inbox-monitoring-filter-group">
-          {["", "privacy", "ai_governance", "cybersecurity"].map(d => (
-            <button
-              key={d}
-              type="button"
-              className={`inbox-monitoring-filter${filterDomain === d ? " active" : ""}`}
-              onClick={() => setFilterDomain(d)}
-            >
-              {d ? DOMAIN_LABEL[d] : "All domains"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {loading && (
-        <div className="inbox-monitoring-empty">
-          <Loader2 size={16} className="spin" />
+          </HoverTip>
+          <span className="inbox-list-toolbar-spacer" />
+          <span className="inbox-list-range">
+            {filtered.length > 0 ? `1–${filtered.length}` : "0"} of {filtered.length}
+          </span>
         </div>
       )}
-      {!loading && filtered.length === 0 && (
-        <div className="inbox-monitoring-empty">
-          <AlertTriangle size={24} color="var(--fg4)" />
-          <p>No monitoring signals match this filter</p>
+
+      <div className="inbox-monitoring-head">
+        <div className="inbox-monitoring-stats">
+          {Object.entries(counts).map(([sev, count]) => {
+            const meta = SEVERITY_META[sev as keyof typeof SEVERITY_META];
+            return (
+              <div key={sev} className="inbox-monitoring-stat">
+                <span className="inbox-monitoring-stat-count" style={{ color: meta.color }}>{count}</span>
+                {meta.label}
+              </div>
+            );
+          })}
         </div>
-      )}
-      {!loading && filtered.map(s => (
-        <SignalCard key={s.id} signal={s} onDismiss={dismiss} onAskNora={askNora} onRunAssessment={runAssessment} />
-      ))}
+
+        <div className="inbox-monitoring-filters">
+          <div className="inbox-monitoring-filter-group">
+            {["", "high", "medium", "low"].map(s => (
+              <button
+                key={s}
+                type="button"
+                className={`inbox-monitoring-filter${filterSeverity === s ? " active" : ""}`}
+                onClick={() => setFilterSeverity(s)}
+              >
+                {s ? SEVERITY_META[s as keyof typeof SEVERITY_META].label : "All severities"}
+              </button>
+            ))}
+          </div>
+          {!isMobile && <span className="inbox-monitoring-filter-divider" aria-hidden />}
+          <div className="inbox-monitoring-filter-group">
+            {["", "privacy", "ai_governance", "cybersecurity"].map(d => (
+              <button
+                key={d}
+                type="button"
+                className={`inbox-monitoring-filter${filterDomain === d ? " active" : ""}`}
+                onClick={() => setFilterDomain(d)}
+              >
+                {d ? DOMAIN_LABEL[d] : "All domains"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="inbox-monitoring-list">
+        {loading && (
+          <div className="inbox-monitoring-empty">
+            <Loader2 size={16} className="spin" />
+          </div>
+        )}
+        {!loading && filtered.length === 0 && (
+          <div className="inbox-monitoring-empty">
+            <AlertTriangle size={24} color="var(--fg4)" />
+            <p>No monitoring signals match this filter</p>
+          </div>
+        )}
+        {!loading && filtered.map(s => (
+          <SignalCard
+            key={s.id}
+            signal={s}
+            isMobile={isMobile}
+            onDismiss={dismiss}
+            onAskNora={askNora}
+            onRunAssessment={runAssessment}
+          />
+        ))}
+      </div>
     </div>
   );
 }

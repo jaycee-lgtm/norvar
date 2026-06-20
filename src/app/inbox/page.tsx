@@ -619,11 +619,7 @@ function InboxContent() {
     </div>
   ) : null;
 
-  const monitoringFeed = (
-    <div className="inbox-monitoring-scroll">
-      <InboxMonitoringTab />
-    </div>
-  );
+  const monitoringFeed = <InboxMonitoringTab />;
 
   const escalationFolder = folder as InboxFolder;
 
@@ -769,7 +765,7 @@ function InboxContent() {
         )}
 
         {showList && !isMobile && (
-            <section className="inbox-list-main">
+            <section className={`inbox-list-main${isMonitoring ? " inbox-list-main--monitoring" : ""}`}>
               {listToolbar}
               <div className="inbox-list-scroll">{listScroll}</div>
               {!isMonitoring && selectMode && selectedIds.size > 0 && (
