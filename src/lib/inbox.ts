@@ -5,16 +5,18 @@ import {
   type EscalationInboxMessage,
 } from "@/lib/escalation";
 
-export type InboxFolder = "received" | "sent" | "archived" | "trash";
+export type InboxFolder = "received" | "sent" | "archived" | "trash" | "monitoring";
+export type EscalationInboxFolder = Exclude<InboxFolder, "monitoring">;
 
 /** Escalation folders plus the monitoring feed view. */
-export type InboxViewFolder = InboxFolder | "monitoring";
+export type InboxViewFolder = InboxFolder;
 
-export const INBOX_FOLDERS: Array<{ id: InboxFolder; label: string; icon: "inbox" | "send" | "archive" | "trash" }> = [
-  { id: "received", label: "Received",   icon: "inbox" },
-  { id: "sent",     label: "Sent",       icon: "send" },
-  { id: "archived", label: "Archived",   icon: "archive" },
-  { id: "trash",    label: "Recycle bin", icon: "trash" },
+export const INBOX_FOLDERS: Array<{ id: InboxFolder; label: string; icon: "inbox" | "send" | "archive" | "trash" | "shield" }> = [
+  { id: "received",   label: "Received",    icon: "inbox" },
+  { id: "sent",       label: "Sent",        icon: "send" },
+  { id: "monitoring", label: "Monitoring",  icon: "shield" },
+  { id: "archived",   label: "Archived",    icon: "archive" },
+  { id: "trash",      label: "Recycle bin", icon: "trash" },
 ];
 
 export const INBOX_RETENTION_DAYS = 90;
@@ -54,7 +56,7 @@ export type InboxListItem = {
   is_read:           boolean;
 };
 
-export type InboxFolderCounts = Record<InboxFolder, number> & {
+export type InboxFolderCounts = Record<EscalationInboxFolder, number> & {
   unread_received: number;
 };
 
@@ -121,7 +123,7 @@ export function stripInboxMessageBody(text: string): string {
 
 export function messageMatchesFolder(
   msg: EscalationInboxMessage,
-  folder: InboxFolder,
+  folder: EscalationInboxFolder,
   cutoffIso = trashRetentionCutoffIso(),
 ): boolean {
   const deleted  = msg.deleted_at ?? null;
@@ -143,7 +145,7 @@ export function messageMatchesArchivedFolder(msg: EscalationInboxMessage): boole
 
 export function filterMessagesForFolder(
   messages: EscalationInboxMessage[],
-  folder: InboxFolder,
+  folder: EscalationInboxFolder,
 ): EscalationInboxMessage[] {
   if (folder === "archived") {
     return messages.filter(messageMatchesArchivedFolder);

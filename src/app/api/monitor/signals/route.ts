@@ -12,7 +12,8 @@ const SIGNAL_COLUMNS = [
   "author_external_name", "title", "domains", "severity", "signal_kind",
   "summary", "gaps_identified", "frameworks_cited",
   "notified_admin", "notified_author", "notified_compliance",
-  "user_dismissed", "assessment_triggered", "created_at",
+  "user_dismissed", "user_marked_false_positive", "assessment_id",
+  "assessment_triggered", "created_at",
 ].join(", ");
 
 export async function GET(req: NextRequest) {
@@ -20,6 +21,12 @@ export async function GET(req: NextRequest) {
   if (isOrgContextError(ctx)) return ctx.error;
 
   const signalId = req.nextUrl.searchParams.get("signal");
+  const severity = req.nextUrl.searchParams.get("severity");
+  const domain = req.nextUrl.searchParams.get("domain");
+  const requestedLimit = Number.parseInt(req.nextUrl.searchParams.get("limit") ?? "100", 10);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(requestedLimit, 1), 500)
+    : 100;
 
   if (signalId) {
     const { data, error } = await supabase
@@ -34,13 +41,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ signal: data });
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("monitoring_signals")
     .select(SIGNAL_COLUMNS)
     .eq("org_id", ctx.orgId)
     .neq("severity", "none")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(limit);
+
+  if (severity) query = query.eq("severity", severity);
+  if (domain) query = query.contains("domains", [domain]);
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ signals: data ?? [] });
@@ -51,12 +63,16 @@ export async function PATCH(req: NextRequest) {
   if (isOrgContextError(ctx)) return ctx.error;
 
   const body = await req.json();
-  const { id, user_dismissed, user_marked_false_positive } = body;
+  const { id, user_dismissed, user_marked_false_positive, assessment_id } = body;
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const updates: Record<string, unknown> = {};
   if (user_dismissed !== undefined)             updates.user_dismissed = user_dismissed;
   if (user_marked_false_positive !== undefined) updates.user_marked_false_positive = user_marked_false_positive;
+  if (assessment_id !== undefined) {
+    updates.assessment_id = assessment_id;
+    updates.assessment_triggered = true;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No updates provided" }, { status: 400 });

@@ -8,13 +8,13 @@ import InboxMonitoringTab from "@/components/InboxMonitoringTab";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
-import type { InboxFolder, InboxFolderCounts, InboxListItem, InboxViewFolder } from "@/lib/inbox";
-import { INBOX_FOLDERS, stripInboxMessageBody } from "@/lib/inbox";
+import type { EscalationInboxFolder, InboxFolderCounts, InboxListItem, InboxViewFolder } from "@/lib/inbox";
+import { daysUntilPurge, INBOX_FOLDERS, stripInboxMessageBody } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
   Inbox, ArrowLeft, Loader2, Send, ExternalLink, Mail, MailOpen,
   Archive, Trash2, RotateCcw, Inbox as InboxIcon, ChevronDown,
-  CheckSquare, Square, RefreshCw, Radio,
+  CheckSquare, Square, RefreshCw, Shield,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -25,6 +25,7 @@ const FOLDER_ICONS: Record<(typeof INBOX_FOLDERS)[number]["icon"], LucideIcon> =
   send:    Send,
   archive: Archive,
   trash:   Trash2,
+  shield:  Shield,
 };
 
 type ThreadDetail = {
@@ -41,7 +42,7 @@ type ThreadDetail = {
   recipient_email:     string | null;
   escalation_question: string | null;
   escalation_note:     string | null;
-  folder:              InboxFolder;
+  folder:              EscalationInboxFolder;
   counts:              FolderCounts;
   messages:            EscalationInboxMessage[];
 };
@@ -118,7 +119,7 @@ function InboxThreadRow({
   onToggleSelect,
 }: {
   item:           InboxListItem;
-  folder:         InboxFolder;
+  folder:         EscalationInboxFolder;
   active:         boolean;
   selected:       boolean;
   selectMode:     boolean;
@@ -243,7 +244,7 @@ function InboxListSection({
   title:          string;
   icon:           LucideIcon;
   items:          InboxListItem[];
-  folder:         InboxFolder;
+  folder:         EscalationInboxFolder;
   threadId:       string | null;
   open:           boolean;
   onToggle:       () => void;
@@ -306,6 +307,7 @@ function InboxContent() {
   const [counts, setCounts]           = useState<FolderCounts>({
     received: 0, sent: 0, archived: 0, trash: 0, unread_received: 0,
   });
+  const [monitoringCount, setMonitoringCount] = useState(0);
   const [thread, setThread]           = useState<ThreadDetail | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingThread, setLoadingThread] = useState(false);
@@ -332,19 +334,43 @@ function InboxContent() {
   }, [router, searchParams]);
 
   useEffect(() => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    queueMicrotask(() => {
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    });
   }, [folder]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/monitor/signals?limit=200")
+      .then(res => res.json())
+      .then(({ signals }) => {
+        if (cancelled) return;
+        const unhandled = ((signals ?? []) as Array<{ user_dismissed?: boolean }>)
+          .filter(signal => !signal.user_dismissed).length;
+        setMonitoringCount(unhandled);
+      })
+      .catch(() => {
+        if (!cancelled) setMonitoringCount(0);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!groupByRead) return;
-    if (unreadItems.length > 0) {
-      setUnreadOpen(true);
-      setReadOpen(false);
-    } else {
-      setUnreadOpen(false);
-      setReadOpen(true);
-    }
+    queueMicrotask(() => {
+      if (unreadItems.length > 0) {
+        setUnreadOpen(true);
+        setReadOpen(false);
+      } else {
+        setUnreadOpen(false);
+        setReadOpen(true);
+      }
+    });
   }, [groupByRead, unreadItems.length]);
 
   const loadList = useCallback(async (opts?: { silent?: boolean }) => {
@@ -363,7 +389,7 @@ function InboxContent() {
     }
   }, [folder, isMonitoring]);
 
-  const loadThread = useCallback(async (id: string, activeFolder: InboxFolder) => {
+  const loadThread = useCallback(async (id: string, activeFolder: EscalationInboxFolder) => {
     setLoadingThread(true);
     setError("");
     try {
@@ -392,18 +418,22 @@ function InboxContent() {
 
   useEffect(() => {
     if (isMonitoring) {
-      setLoadingList(false);
+      queueMicrotask(() => setLoadingList(false));
       return;
     }
-    void loadList();
+    queueMicrotask(() => {
+      void loadList();
+    });
   }, [loadList, isMonitoring]);
 
   useEffect(() => {
     if (isMonitoring || !threadId) {
-      if (!threadId) setThread(null);
+      if (!threadId) queueMicrotask(() => setThread(null));
       return;
     }
-    void loadThread(threadId, folder as InboxFolder);
+    queueMicrotask(() => {
+      void loadThread(threadId, folder as EscalationInboxFolder);
+    });
   }, [threadId, folder, loadThread, isMonitoring]);
 
   const toggleMessageSelect = (messageId: string) => {
@@ -539,7 +569,7 @@ function InboxContent() {
     router.replace(listHref);
   };
 
-  const emptyCopy: Record<InboxFolder, { title: string; sub: string }> = {
+  const emptyCopy: Record<EscalationInboxFolder, { title: string; sub: string }> = {
     received: { title: "No received messages", sub: "Replies to escalations appear here." },
     sent:     { title: "No sent messages", sub: "Messages you send from Norvar appear here." },
     archived: { title: "No archived messages", sub: "Archive messages to keep threads tidy." },
@@ -558,24 +588,18 @@ function InboxContent() {
           >
             <FolderIcon size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
             <span>{f.label}</span>
-            {f.id === "received" && counts.unread_received > 0 ? (
+            {f.id === "monitoring" && monitoringCount > 0 ? (
+              <span className="inbox-folder-count">{monitoringCount}</span>
+            ) : f.id === "received" && counts.unread_received > 0 ? (
               <span className="inbox-folder-count inbox-folder-count--unread">
                 {counts.unread_received}
               </span>
-            ) : counts[f.id] > 0 ? (
+            ) : f.id !== "monitoring" && counts[f.id] > 0 ? (
               <span className="inbox-folder-count">{counts[f.id]}</span>
             ) : null}
           </Link>
         );
       })}
-      <div className="inbox-folder-divider" role="separator" aria-hidden />
-      <Link
-        href={inboxHref("monitoring", null)}
-        className={`inbox-folder-tab${isMonitoring ? " active" : ""}`}
-      >
-        <Radio size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
-        <span>Monitoring</span>
-      </Link>
     </nav>
   );
 
@@ -621,7 +645,7 @@ function InboxContent() {
 
   const monitoringFeed = <InboxMonitoringTab />;
 
-  const escalationFolder = folder as InboxFolder;
+  const escalationFolder = folder as EscalationInboxFolder;
 
   const listScroll = isMonitoring ? monitoringFeed : (
     <>
@@ -1011,7 +1035,7 @@ function InboxContent() {
                           </div>
                             {msg.deleted_at && folder === "trash" && (
                               <p className="inbox-chat-purge">
-                                Permanently removed in {Math.max(0, Math.ceil((new Date(msg.deleted_at).getTime() + 90 * 86_400_000 - Date.now()) / 86_400_000))} days
+                                Permanently removed in {daysUntilPurge(msg.deleted_at)} days
                               </p>
                             )}
                           </div>

@@ -9,7 +9,7 @@ import {
 } from "@/lib/escalation";
 import { loadEscalationById, sendTeamEscalationReply } from "@/lib/escalation-thread-server";
 import {
-  type InboxFolder,
+  type EscalationInboxFolder,
   type InboxActivityRow,
   attachInboxReadState,
   buildInboxListItem,
@@ -51,7 +51,7 @@ type ItemRow = {
   remediation_activity?: InboxActivityRow[];
 };
 
-function parseFolder(value: string | null): InboxFolder {
+function parseFolder(value: string | null): EscalationInboxFolder {
   if (value === "sent" || value === "archived" || value === "trash") return value;
   return "received";
 }
@@ -127,7 +127,7 @@ function activeThreadMessages(messages: EscalationInboxMessage[]) {
 function serializeThread(
   item: ItemRow,
   messages: EscalationInboxMessage[],
-  folder: InboxFolder,
+  folder: EscalationInboxFolder,
   readIds: Set<string>,
 ) {
   const withRead = attachInboxReadState(messages, readIds);
