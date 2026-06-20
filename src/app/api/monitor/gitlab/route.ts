@@ -34,7 +34,7 @@ async function fetchMRDiffSummary(
 ): Promise<string> {
   const res = await fetch(
     `https://gitlab.com/api/v4/projects/${projectId}/merge_requests/${mrIid}/diffs?per_page=100`,
-    { headers: { "PRIVATE-TOKEN": accessToken } },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   if (!res.ok) return "";
 
@@ -55,7 +55,7 @@ async function fetchCompareDiffSummary(
 ): Promise<string> {
   const res = await fetch(
     `https://gitlab.com/api/v4/projects/${projectId}/repository/compare?from=${before}&to=${after}`,
-    { headers: { "PRIVATE-TOKEN": accessToken } },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   if (!res.ok) return "";
 

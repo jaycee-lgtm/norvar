@@ -129,6 +129,7 @@ async function handleIssueEvent(payload: Record<string, unknown>, orgId: string,
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-norvar-jira-signature");
+  const cloudId = req.nextUrl.searchParams.get("cloudId");
 
   let payload: Record<string, unknown>;
   try {
@@ -142,24 +143,38 @@ export async function POST(req: NextRequest) {
   const project = fields?.project as Record<string, unknown> | undefined;
   const projectKey = project?.key as string | undefined;
 
-  const { data: connectors } = await supabase
-    .from("monitoring_connectors")
-    .select("*")
-    .eq("provider", "jira")
-    .eq("status", "active");
+  const connector = cloudId
+    ? (await supabase
+      .from("monitoring_connectors")
+      .select("*")
+      .eq("provider", "jira")
+      .eq("status", "active")
+      .eq("installation_id", cloudId)
+      .maybeSingle()).data
+    : (() => null)();
 
-  const connector = (connectors ?? []).find(c =>
-    ((c.watched_projects as string[] | undefined) ?? []).length === 0
-    || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? ""),
-  );
+  let resolvedConnector = connector;
 
-  if (!connector) {
+  if (!resolvedConnector) {
+    const { data: connectors } = await supabase
+      .from("monitoring_connectors")
+      .select("*")
+      .eq("provider", "jira")
+      .eq("status", "active");
+
+    resolvedConnector = (connectors ?? []).find(c =>
+      ((c.watched_projects as string[] | undefined) ?? []).length === 0
+      || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? ""),
+    ) ?? null;
+  }
+
+  if (!resolvedConnector) {
     await logWebhook("jira", null, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "No matching connector found");
     return Response.json({ error: "Connector not configured" }, { status: 404 });
   }
 
-  if (connector.webhook_secret && !verifyJiraSignature(rawBody, signature, connector.webhook_secret)) {
-    await logWebhook("jira", connector.org_id, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
+  if (signature && resolvedConnector.webhook_secret && !verifyJiraSignature(rawBody, signature, resolvedConnector.webhook_secret)) {
+    await logWebhook("jira", resolvedConnector.org_id, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -169,19 +184,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await handleIssueEvent(payload, connector.org_id, connector);
+    const result = await handleIssueEvent(payload, resolvedConnector.org_id, resolvedConnector);
 
     await supabase
       .from("monitoring_connectors")
       .update({ last_event_at: new Date().toISOString(), status: "active" })
-      .eq("id", connector.id);
+      .eq("id", resolvedConnector.id);
 
-    await logWebhook("jira", connector.org_id, eventType, { result }, true);
+    await logWebhook("jira", resolvedConnector.org_id, eventType, { result }, true);
 
     return Response.json({ ok: true, ...result });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    await logWebhook("jira", connector.org_id, eventType, payload, false, message);
+    await logWebhook("jira", resolvedConnector.org_id, eventType, payload, false, message);
     console.error("Jira webhook processing error:", err);
     return Response.json({ error: message }, { status: 500 });
   }
