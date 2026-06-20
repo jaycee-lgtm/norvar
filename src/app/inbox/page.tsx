@@ -448,7 +448,7 @@ function InboxContent() {
       if (!res.ok) throw new Error(data.error || "Could not update messages");
       exitSelectMode();
       await loadList();
-      if (threadId) await loadThread(threadId, folder);
+      if (threadId && !isMonitoring) await loadThread(threadId, folder);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not update messages");
     } finally {
@@ -487,7 +487,7 @@ function InboxContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not update message");
       await loadList();
-      if (threadId) await loadThread(threadId, folder);
+      if (threadId && !isMonitoring) await loadThread(threadId, folder);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not update message");
     } finally {
@@ -509,7 +509,10 @@ function InboxContent() {
       if (!res.ok) throw new Error(data.error || "Could not send reply");
 
       setReply("");
-      await Promise.all([loadThread(threadId, folder), loadList()]);
+      await Promise.all([
+        !isMonitoring ? loadThread(threadId, folder) : Promise.resolve(),
+        loadList(),
+      ]);
 
       if (data.email_sent === false && data.email_error) {
         setError(`Saved in Norvar, but email failed: ${data.email_error}`);
