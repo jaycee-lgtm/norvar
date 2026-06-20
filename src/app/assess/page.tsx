@@ -1255,6 +1255,14 @@ function Home() {
 
   const handleAssessmentConfirmText = async (text: string): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "user", content: text }]);
+    const desc = (pendingDesc || buildConversationDescription(messages)).trim();
+    if (desc && isAssessmentDetailRequest(text)) {
+      const reply = buildAssessmentDetailRequestText(desc);
+      setPreScopePhase("chat");
+      setPendingDesc(desc);
+      setMessages(prev => [...prev, { role: "chat", text: reply }]);
+      return reply;
+    }
     if (isAffirmativeAssessmentConfirm(text)) {
       return handleAssessmentConfirm(ASSESSMENT_CONFIRM_YES, true);
     }
