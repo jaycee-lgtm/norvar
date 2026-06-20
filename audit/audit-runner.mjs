@@ -12,6 +12,7 @@ import { dirname, join } from "path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const { TEST_QUERIES }  = await import(join(__dirname, "queries.js"));
 const { scoreResponse } = await import(join(__dirname, "scoring.mjs"));
+const { collectChatTextFromStream } = await import(join(__dirname, "sse-parse.mjs"));
 import { writeFileSync } from "fs";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -63,27 +64,12 @@ async function runQuery(query) {
       };
     }
 
-    // Collect SSE stream
     let responseText = "";
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      for (const line of chunk.split("\n")) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data && data !== "[DONE]") {
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.type === "token" && parsed.text) responseText += parsed.text;
-              else if (parsed.type === "done"  && parsed.text) responseText = parsed.text;
-            } catch { responseText += data; }
-          }
-        }
-      }
+    try {
+      responseText = await collectChatTextFromStream(response.body);
+    } catch (streamErr) {
+      console.log(`  ERROR: ${streamErr.message}`);
+      return { queryId: query.id, status: "STREAM_ERROR", error: streamErr.message, latencyMs: Date.now() - startTime, scores: null };
     }
 
     const latencyMs = Date.now() - startTime;

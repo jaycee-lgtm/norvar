@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Github, Gitlab, Trello, AlertTriangle, ExternalLink, Check } from "lucide-react";
+import { Github, Gitlab, Trello, AlertTriangle, ExternalLink, Check, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type Signal = {
   id:                  string;
@@ -61,99 +62,78 @@ function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment }: {
   const sev = SEVERITY_META[signal.severity];
 
   return (
-    <div style={{
-      border: "0.5px solid var(--bdr2)", borderLeft: `3px solid ${sev.color}`,
-      borderRadius: 8, background: "var(--card)", marginBottom: 8, overflow: "hidden",
-      opacity: signal.user_dismissed ? 0.5 : 1,
-    }}>
-      <div onClick={() => setExpanded(!expanded)} style={{ padding: "12px 16px", cursor: "pointer" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <span style={{ color: "var(--fg3)" }}>{PROVIDER_ICON[signal.provider]}</span>
-          <span style={{
-            fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
-            background: sev.bg, color: sev.color, textTransform: "uppercase", letterSpacing: "0.4px",
-          }}>
+    <article
+      className={`inbox-monitor-card${signal.user_dismissed ? " dismissed" : ""}`}
+      style={{ borderLeftColor: sev.color }}
+    >
+      <button
+        type="button"
+        className="inbox-monitor-card-head"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="inbox-monitor-card-badges">
+          <span className="inbox-monitor-provider">{PROVIDER_ICON[signal.provider]}</span>
+          <span className="inbox-monitor-severity" style={{ background: sev.bg, color: sev.color }}>
             {sev.label}
           </span>
-          <span style={{ fontSize: 10, color: "var(--fg3)", fontWeight: 500 }}>
-            {KIND_LABEL[signal.signal_kind]}
-          </span>
-          <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--fg3)" }}>
+          <span className="inbox-monitor-kind">{KIND_LABEL[signal.signal_kind]}</span>
+          <time className="inbox-monitor-date" dateTime={signal.created_at}>
             {fmtDate(signal.created_at)}
-          </span>
+          </time>
         </div>
-
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", marginBottom: 2 }}>
-          {signal.title}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--fg3)" }}>
+        <h3 className="inbox-monitor-title">{signal.title}</h3>
+        <p className="inbox-monitor-meta">
           {signal.repo_or_project} · {signal.author_external_name}
-        </div>
-      </div>
+        </p>
+      </button>
 
       {expanded && (
-        <div style={{ borderTop: "0.5px solid var(--bdr)", padding: "14px 16px" }}>
-          <p style={{ fontSize: 13, color: "var(--fg2)", lineHeight: 1.6, marginBottom: 14 }}>
-            {signal.summary}
-          </p>
+        <div className="inbox-monitor-card-body">
+          <p className="inbox-monitor-summary">{signal.summary}</p>
 
           {signal.gaps_identified?.length > 0 && (
-            <div style={{ marginBottom: 14, padding: "10px 12px", background: "var(--card2)", borderRadius: 6 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", marginBottom: 6 }}>
-                Gaps identified
-              </div>
+            <div className="inbox-monitor-gaps">
+              <div className="inbox-monitor-gaps-label">Gaps identified</div>
               {signal.gaps_identified.map((g, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--fg)", marginBottom: 4 }}>
+                <div key={i} className="inbox-monitor-gap-row">
                   <strong>{g.gap}</strong>
-                  <span style={{ color: "var(--fg3)", fontSize: 11 }}> — {g.framework} · {DOMAIN_LABEL[g.domain] ?? g.domain}</span>
+                  <span> — {g.framework} · {DOMAIN_LABEL[g.domain] ?? g.domain}</span>
                 </div>
               ))}
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-            <a href={signal.source_url} target="_blank" rel="noreferrer" style={{
-              display: "flex", alignItems: "center", gap: 4,
-              padding: "5px 10px", borderRadius: 5, fontSize: 11,
-              border: "0.5px solid var(--bdr2)", color: "var(--fg2)", textDecoration: "none",
-            }}>
+          <div className="inbox-monitor-actions">
+            <a href={signal.source_url} target="_blank" rel="noreferrer" className="inbox-monitor-btn">
               View source <ExternalLink size={10} />
             </a>
-            <button onClick={() => onAskNora(signal)} style={{
-              padding: "5px 10px", borderRadius: 5, fontSize: 11, fontWeight: 500,
-              border: "0.5px solid var(--bdr2)", background: "transparent", color: "var(--fg2)", cursor: "pointer",
-            }}>
+            <button type="button" className="inbox-monitor-btn" onClick={() => onAskNora(signal)}>
               Ask Nora
             </button>
-            <button onClick={() => onRunAssessment(signal)} style={{
-              padding: "5px 10px", borderRadius: 5, fontSize: 11, fontWeight: 500,
-              border: "none", background: "var(--fg)", color: "var(--bg)", cursor: "pointer",
-            }}>
+            <button type="button" className="inbox-monitor-btn primary" onClick={() => onRunAssessment(signal)}>
               Run assessment with Cassius
             </button>
             {!signal.user_dismissed && (
-              <button onClick={() => onDismiss(signal.id)} style={{
-                padding: "5px 10px", borderRadius: 5, fontSize: 11,
-                border: "none", background: "transparent", color: "var(--fg3)", cursor: "pointer",
-                marginLeft: "auto",
-              }}>
+              <button type="button" className="inbox-monitor-btn ghost" onClick={() => onDismiss(signal.id)}>
                 Dismiss
               </button>
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--fg3)" }}>
-            {signal.notified_admin      && <span><Check size={9} style={{ verticalAlign: "middle" }} /> Admin notified</span>}
-            {signal.notified_author     && <span><Check size={9} style={{ verticalAlign: "middle" }} /> Author notified</span>}
-            {signal.notified_compliance && <span><Check size={9} style={{ verticalAlign: "middle" }} /> Compliance notified</span>}
+          <div className="inbox-monitor-notify">
+            {signal.notified_admin      && <span><Check size={9} /> Admin notified</span>}
+            {signal.notified_author     && <span><Check size={9} /> Author notified</span>}
+            {signal.notified_compliance && <span><Check size={9} /> Compliance notified</span>}
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
 export default function InboxMonitoringTab() {
+  const isMobile = useIsMobile();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState("");
@@ -200,47 +180,55 @@ export default function InboxMonitoringTab() {
   };
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: 16, marginBottom: 16, padding: "10px 0" }}>
+    <div className={`inbox-monitoring-feed${isMobile ? " inbox-monitoring-feed--mobile" : ""}`}>
+      <div className="inbox-monitoring-stats">
         {Object.entries(counts).map(([sev, count]) => {
           const meta = SEVERITY_META[sev as keyof typeof SEVERITY_META];
           return (
-            <div key={sev} style={{ fontSize: 12, color: "var(--fg3)" }}>
-              <span style={{ fontWeight: 700, color: meta.color, marginRight: 4 }}>{count}</span>{meta.label}
+            <div key={sev} className="inbox-monitoring-stat">
+              <span className="inbox-monitoring-stat-count" style={{ color: meta.color }}>{count}</span>
+              {meta.label}
             </div>
           );
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-        {["", "high", "medium", "low"].map(s => (
-          <button key={s} onClick={() => setFilterSeverity(s)} style={{
-            padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500,
-            border: `0.5px solid ${filterSeverity === s ? "var(--bdr3)" : "var(--bdr2)"}`,
-            background: filterSeverity === s ? "var(--lift)" : "transparent",
-            color: filterSeverity === s ? "var(--fg)" : "var(--fg3)", cursor: "pointer",
-          }}>
-            {s ? SEVERITY_META[s as keyof typeof SEVERITY_META].label : "All severities"}
-          </button>
-        ))}
-        <span style={{ width: 1, background: "var(--bdr)", margin: "0 4px" }} />
-        {["", "privacy", "ai_governance", "cybersecurity"].map(d => (
-          <button key={d} onClick={() => setFilterDomain(d)} style={{
-            padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500,
-            border: `0.5px solid ${filterDomain === d ? "var(--bdr3)" : "var(--bdr2)"}`,
-            background: filterDomain === d ? "var(--lift)" : "transparent",
-            color: filterDomain === d ? "var(--fg)" : "var(--fg3)", cursor: "pointer",
-          }}>
-            {d ? DOMAIN_LABEL[d] : "All domains"}
-          </button>
-        ))}
+      <div className="inbox-monitoring-filters">
+        <div className="inbox-monitoring-filter-group">
+          {["", "high", "medium", "low"].map(s => (
+            <button
+              key={s}
+              type="button"
+              className={`inbox-monitoring-filter${filterSeverity === s ? " active" : ""}`}
+              onClick={() => setFilterSeverity(s)}
+            >
+              {s ? SEVERITY_META[s as keyof typeof SEVERITY_META].label : "All severities"}
+            </button>
+          ))}
+        </div>
+        <div className="inbox-monitoring-filter-group">
+          {["", "privacy", "ai_governance", "cybersecurity"].map(d => (
+            <button
+              key={d}
+              type="button"
+              className={`inbox-monitoring-filter${filterDomain === d ? " active" : ""}`}
+              onClick={() => setFilterDomain(d)}
+            >
+              {d ? DOMAIN_LABEL[d] : "All domains"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {loading && <p style={{ fontSize: 12, color: "var(--fg3)", textAlign: "center", padding: 30 }}>Loading...</p>}
+      {loading && (
+        <div className="inbox-monitoring-empty">
+          <Loader2 size={16} className="spin" />
+        </div>
+      )}
       {!loading && filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: 40 }}>
-          <AlertTriangle size={24} color="var(--fg4)" style={{ margin: "0 auto 10px" }} />
-          <p style={{ fontSize: 12, color: "var(--fg3)" }}>No monitoring signals match this filter</p>
+        <div className="inbox-monitoring-empty">
+          <AlertTriangle size={24} color="var(--fg4)" />
+          <p>No monitoring signals match this filter</p>
         </div>
       )}
       {!loading && filtered.map(s => (

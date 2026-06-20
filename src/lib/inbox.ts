@@ -7,6 +7,9 @@ import {
 
 export type InboxFolder = "received" | "sent" | "archived" | "trash";
 
+/** Escalation folders plus the monitoring feed view. */
+export type InboxViewFolder = InboxFolder | "monitoring";
+
 export const INBOX_FOLDERS: Array<{ id: InboxFolder; label: string; icon: "inbox" | "send" | "archive" | "trash" }> = [
   { id: "received", label: "Received",   icon: "inbox" },
   { id: "sent",     label: "Sent",       icon: "send" },

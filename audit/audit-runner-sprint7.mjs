@@ -8,6 +8,7 @@ import { writeFileSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const { DRAFT_QUERIES } = await import(join(__dirname, "queries-sprint7.js"));
+const { collectDraftFromStream } = await import(join(__dirname, "sse-parse.mjs"));
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -207,23 +208,13 @@ async function runQuery(query) {
       return { queryId: query.id, status: "HTTP_ERROR", httpStatus: res.status, error: err.slice(0, 300), latencyMs: Date.now() - startTime, scores: null };
     }
 
-    // Collect SSE stream
+    // Collect SSE stream (buffer partial lines — done payloads are 40KB+)
     let draft = null;
-    const reader  = res.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      for (const line of decoder.decode(value).split("\n")) {
-        if (!line.startsWith("data: ")) continue;
-        try {
-          const parsed = JSON.parse(line.slice(6).trim());
-          if (parsed.type === "done"  && parsed.draft) draft = parsed.draft;
-          if (parsed.type === "error") throw new Error(parsed.text);
-        } catch (e) {
-          if (e.message && !e.message.includes("JSON")) throw e;
-        }
-      }
+    try {
+      draft = await collectDraftFromStream(res.body);
+    } catch (streamErr) {
+      console.log(`  ERROR: ${streamErr.message}`);
+      return { queryId: query.id, status: "STREAM_ERROR", error: streamErr.message, latencyMs: Date.now() - startTime, scores: null };
     }
 
     const latencyMs = Date.now() - startTime;

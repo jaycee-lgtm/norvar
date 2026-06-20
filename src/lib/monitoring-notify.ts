@@ -75,7 +75,7 @@ export function buildMonitoringEmailBody(payload: MonitoringEmailPayload): { htm
     summary: classification.summary,
     domains: classification.domains,
   }))}`;
-  const signalUrl = `${APP_URL}/inbox?tab=monitoring&signal=${payload.signalId}`;
+  const signalUrl = `${APP_URL}/inbox?folder=monitoring&signal=${payload.signalId}`;
 
   const gapsListHtml = classification.gaps_identified.map(g =>
     `<li style="margin-bottom:8px;"><strong>${escapeHtml(g.gap)}</strong><br/><span style="color:#6b5e55;font-size:12px;">${escapeHtml(g.framework)} · ${DOMAIN_LABELS[g.domain] ?? g.domain}</span></li>`

@@ -127,7 +127,7 @@ const AUDIT_DRAFT_REQUIRED: Record<string, string[]> = {
   nda:        ["mutual", "required by law", "injunctive relief", "residuals", "return or destroy"],
   baa:        ["HIPAA", "minimum necessary", "breach notification", "return or destroy", "certification of destruction"],
   ai_use:     ["EU AI Act", "high-risk", "human oversight", "prohibited use", "explainability", "transparency"],
-  subproc:    ["GDPR Art. 28", "data processing", "same obligations", "flow-down", "audit rights"],
+  subproc:    ["GDPR Art. 28", "data processing", "same obligations", "flow-down", "audit rights", "controller instructions"],
   saas:       ["BIPA", "biometric", "facial recognition", "consent", "retention", "deletion", "data minimisation", "lawful basis", "breach notification", "CCPA"],
   privacy:    ["location", "health", "consent", "right to erasure", "cookies", "CCPA", "GDPR", "ePrivacy"],
   data_share: ["permitted use", "anonymisation", "research ethics", "retention", "lawful basis"],

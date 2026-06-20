@@ -8,6 +8,7 @@ import { writeFileSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const { IDENTITY_QUERIES } = await import(join(__dirname, "queries-sprint5.js"));
+const { collectChatTextFromStream } = await import(join(__dirname, "sse-parse.mjs"));
 
 const args = process.argv.slice(2);
 const get  = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
@@ -120,20 +121,11 @@ async function runQuery(query) {
     }
 
     let text = "";
-    const reader = response.body.getReader();
-    const dec    = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      for (const line of dec.decode(value).split("\n")) {
-        if (line.startsWith("data: ")) {
-          try {
-            const p = JSON.parse(line.slice(6).trim());
-            if (p.type === "token") text += p.text ?? "";
-            if (p.type === "done" && p.text) text = p.text;
-          } catch {}
-        }
-      }
+    try {
+      text = await collectChatTextFromStream(response.body);
+    } catch (streamErr) {
+      console.log(`  ERROR: ${streamErr.message}`);
+      return { queryId: query.id, status: "STREAM_ERROR", error: streamErr.message, latencyMs: Date.now() - startTime, scores: null };
     }
 
     const latencyMs = Date.now() - startTime;

@@ -892,9 +892,12 @@ export function formatSprintEmailBody(sprint, entry, detail) {
   sections.push("AUTO-REMEDIATED");
   sections.push("───────────────");
   if (detail.autoRemediated.length) {
-    for (const a of detail.autoRemediated) sections.push(`  ✓ [${a.agent}] ${a.action}`);
+    for (const a of detail.autoRemediated) {
+      const deploy = a.pendingDeploy ? " [deploy required]" : "";
+      sections.push(`  ✓ [${a.agent}] ${a.action}${deploy}`);
+    }
   } else {
-    sections.push("  None — this orchestrator logs issues but does not mutate prompts or code automatically.");
+    sections.push("  None this sprint.");
   }
   sections.push("");
 
@@ -965,9 +968,12 @@ export function formatFinalEmailBody(summary, sprintDetails) {
   sections.push("AUTO-REMEDIATED");
   sections.push("───────────────");
   if (allAuto.length) {
-    for (const a of allAuto) sections.push(`  ✓ [${a.agent}] ${a.action}`);
+    for (const a of allAuto) {
+      const deploy = a.pendingDeploy ? " [deploy required]" : "";
+      sections.push(`  ✓ [${a.agent}] ${a.action}${deploy}`);
+    }
   } else {
-    sections.push("  None — no automatic prompt or code changes were applied this run.");
+    sections.push("  None this run.");
   }
   sections.push("");
 

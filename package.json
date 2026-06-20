@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint src audit",
     "audit:auto": "node audit/auto-audit.mjs",
-    "audit:auto:fast": "node audit/auto-audit.mjs --fast"
+    "audit:auto:fast": "node audit/auto-audit.mjs --fast",
+    "audit:auto:prod": "node audit/auto-audit.mjs --url https://www.norvar.io",
+    "audit:auto:prod:fast": "node audit/auto-audit.mjs --url https://www.norvar.io --fast",
+    "audit:remediate": "node audit/auto-remediate.mjs"
   },
   "dependencies": {
     "@ai-sdk/elevenlabs": "^2.0.34",

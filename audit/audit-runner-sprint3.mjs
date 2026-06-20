@@ -8,6 +8,7 @@ import { writeFileSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const { CHAT_QUERIES } = await import(join(__dirname, "queries-sprint3.js"));
+const { collectChatTextFromStream } = await import(join(__dirname, "sse-parse.mjs"));
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -168,23 +169,11 @@ async function runQuery(query) {
     }
 
     let responseText = "";
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      for (const line of decoder.decode(value).split("\n")) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data && data !== "[DONE]") {
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.type === "token" && parsed.text) responseText += parsed.text;
-              if (parsed.type === "done"  && parsed.text) responseText = parsed.text;
-            } catch { responseText += data; }
-          }
-        }
-      }
+    try {
+      responseText = await collectChatTextFromStream(response.body);
+    } catch (streamErr) {
+      console.log(`  ERROR: ${streamErr.message}`);
+      return { queryId: query.id, status: "STREAM_ERROR", error: streamErr.message, latencyMs: Date.now() - startTime, scores: null };
     }
 
     const latencyMs = Date.now() - startTime;

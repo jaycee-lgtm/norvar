@@ -8,7 +8,7 @@ import InboxMonitoringTab from "@/components/InboxMonitoringTab";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EscalationInboxMessage } from "@/lib/escalation";
-import type { InboxFolder, InboxFolderCounts, InboxListItem } from "@/lib/inbox";
+import type { InboxFolder, InboxFolderCounts, InboxListItem, InboxViewFolder } from "@/lib/inbox";
 import { INBOX_FOLDERS, stripInboxMessageBody } from "@/lib/inbox";
 import { normalizeGapSeverity } from "@/lib/risk-tiers";
 import {
@@ -94,26 +94,18 @@ function avatarMeta(name: string | null | undefined, email: string) {
   return { initial, color: AVATAR_COLORS[hash] ?? AVATAR_COLORS[0] };
 }
 
-function parseFolder(value: string | null): InboxFolder {
+function parseFolder(value: string | null, tab: string | null): InboxViewFolder {
+  if (value === "monitoring" || tab === "monitoring") return "monitoring";
   if (value === "sent" || value === "archived" || value === "trash") return value;
   return "received";
 }
 
-function inboxHref(folder: InboxFolder, threadId: string | null, tab: InboxTab = "escalations") {
+function inboxHref(folder: InboxViewFolder, threadId: string | null) {
   const params = new URLSearchParams();
-  if (tab === "monitoring") {
-    params.set("tab", "monitoring");
-  } else {
-    params.set("folder", folder);
-    if (threadId) params.set("thread", threadId);
-  }
-  return `/inbox?${params.toString()}`;
-}
-
-type InboxTab = "escalations" | "monitoring";
-
-function parseTab(value: string | null): InboxTab {
-  return value === "monitoring" ? "monitoring" : "escalations";
+  if (folder !== "received") params.set("folder", folder);
+  if (threadId && folder !== "monitoring") params.set("thread", threadId);
+  const q = params.toString();
+  return q ? `/inbox?${q}` : "/inbox";
 }
 
 function InboxThreadRow({
@@ -302,56 +294,13 @@ function InboxListSection({
   );
 }
 
-function InboxViewNav({ tab }: { tab: InboxTab }) {
-  return (
-    <nav className="inbox-folder-nav" aria-label="Inbox views" style={{ marginBottom: 12 }}>
-      <Link
-        href="/inbox"
-        className={`inbox-folder-tab${tab === "escalations" ? " active" : ""}`}
-      >
-        <Mail size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
-        <span>Escalations</span>
-      </Link>
-      <Link
-        href="/inbox?tab=monitoring"
-        className={`inbox-folder-tab${tab === "monitoring" ? " active" : ""}`}
-      >
-        <Radio size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
-        <span>Monitoring</span>
-      </Link>
-    </nav>
-  );
-}
-
-function InboxMonitoringView() {
-  const isMobile = useIsMobile();
-
-  return (
-    <main className={`main-area inbox-page${isMobile ? " inbox-page--mobile" : ""}`}>
-      <div className="inbox-layout">
-        <aside className="inbox-sidebar">
-          <div className="inbox-sidebar-head">
-            <h1 className="inbox-sidebar-title">Inbox</h1>
-          </div>
-          <InboxViewNav tab="monitoring" />
-        </aside>
-        <section className="inbox-list-main">
-          <div className="inbox-list-scroll" style={{ padding: "16px 20px" }}>
-            <InboxMonitoringTab />
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function EscalationsInboxContent() {
+function InboxContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const isMobile     = useIsMobile();
-  const tab          = parseTab(searchParams.get("tab"));
   const threadId     = searchParams.get("thread");
-  const folder       = parseFolder(searchParams.get("folder"));
+  const folder       = parseFolder(searchParams.get("folder"), searchParams.get("tab"));
+  const isMonitoring = folder === "monitoring";
 
   const [items, setItems]             = useState<InboxListItem[]>([]);
   const [counts, setCounts]           = useState<FolderCounts>({
@@ -375,6 +324,14 @@ function EscalationsInboxContent() {
   const groupByRead = folder === "received";
 
   useEffect(() => {
+    if (searchParams.get("tab") !== "monitoring") return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("tab");
+    params.set("folder", "monitoring");
+    router.replace(`/inbox?${params.toString()}`);
+  }, [router, searchParams]);
+
+  useEffect(() => {
     setSelectMode(false);
     setSelectedIds(new Set());
   }, [folder]);
@@ -391,6 +348,7 @@ function EscalationsInboxContent() {
   }, [groupByRead, unreadItems.length]);
 
   const loadList = useCallback(async (opts?: { silent?: boolean }) => {
+    if (isMonitoring) return;
     if (!opts?.silent) setLoadingList(true);
     try {
       const res  = await fetch(`/api/escalation-inbox?folder=${folder}`);
@@ -403,7 +361,7 @@ function EscalationsInboxContent() {
     } finally {
       if (!opts?.silent) setLoadingList(false);
     }
-  }, [folder]);
+  }, [folder, isMonitoring]);
 
   const loadThread = useCallback(async (id: string, activeFolder: InboxFolder) => {
     setLoadingThread(true);
@@ -432,12 +390,21 @@ function EscalationsInboxContent() {
     }
   }, [loadList, router]);
 
-  useEffect(() => { void loadList(); }, [loadList]);
+  useEffect(() => {
+    if (isMonitoring) {
+      setLoadingList(false);
+      return;
+    }
+    void loadList();
+  }, [loadList, isMonitoring]);
 
   useEffect(() => {
-    if (threadId) void loadThread(threadId, folder);
-    else setThread(null);
-  }, [threadId, folder, loadThread]);
+    if (isMonitoring || !threadId) {
+      if (!threadId) setThread(null);
+      return;
+    }
+    void loadThread(threadId, folder as InboxFolder);
+  }, [threadId, folder, loadThread, isMonitoring]);
 
   const toggleMessageSelect = (messageId: string) => {
     setSelectedIds(prev => {
@@ -554,11 +521,13 @@ function EscalationsInboxContent() {
     }
   };
 
-  const showList  = !threadId;
-  const showPanel = !!threadId;
-  const canCompose = folder === "received" || folder === "sent";
+  const showList  = isMonitoring || !threadId;
+  const showPanel = !isMonitoring && !!threadId;
+  const canCompose = !isMonitoring && (folder === "received" || folder === "sent");
   const listHref = inboxHref(folder, null);
-  const activeFolderLabel = INBOX_FOLDERS.find(f => f.id === folder)?.label ?? "Inbox";
+  const activeFolderLabel = isMonitoring
+    ? "Monitoring"
+    : INBOX_FOLDERS.find(f => f.id === folder)?.label ?? "Inbox";
 
   const closeThread = () => {
     setThread(null);
@@ -575,9 +544,7 @@ function EscalationsInboxContent() {
   };
 
   const folderNav = (
-    <>
-      <InboxViewNav tab={tab} />
-      <nav className="inbox-folder-nav" aria-label="Inbox folders">
+    <nav className="inbox-folder-nav" aria-label="Inbox folders">
       {INBOX_FOLDERS.map(f => {
         const FolderIcon = FOLDER_ICONS[f.icon];
         return (
@@ -598,8 +565,15 @@ function EscalationsInboxContent() {
           </Link>
         );
       })}
+      <div className="inbox-folder-divider" role="separator" aria-hidden />
+      <Link
+        href={inboxHref("monitoring", null)}
+        className={`inbox-folder-tab${isMonitoring ? " active" : ""}`}
+      >
+        <Radio size={14} strokeWidth={1.75} className="inbox-folder-tab-icon" />
+        <span>Monitoring</span>
+      </Link>
     </nav>
-    </>
   );
 
   const threadGapHref = thread?.escalation_token
@@ -608,7 +582,7 @@ function EscalationsInboxContent() {
       ? `/remediation?gap=${threadId}`
       : "/remediation";
 
-  const listToolbar = !isMobile ? (
+  const listToolbar = !isMobile && !isMonitoring ? (
     <div className="inbox-list-toolbar">
       <HoverTip label={selectMode ? "Exit selection mode" : "Select messages"}>
         <button
@@ -642,7 +616,15 @@ function EscalationsInboxContent() {
     </div>
   ) : null;
 
-  const listScroll = (
+  const monitoringFeed = (
+    <div className="inbox-monitoring-scroll">
+      <InboxMonitoringTab />
+    </div>
+  );
+
+  const escalationFolder = folder as InboxFolder;
+
+  const listScroll = isMonitoring ? monitoringFeed : (
     <>
       {loadingList && (
         <div className="inbox-empty">
@@ -653,8 +635,8 @@ function EscalationsInboxContent() {
       {!loadingList && items.length === 0 && (
         <div className="inbox-empty">
           <Mail size={22} color="var(--fg4)" />
-          <p>{emptyCopy[folder].title}</p>
-          <p className="inbox-empty-sub">{emptyCopy[folder].sub}</p>
+          <p>{emptyCopy[escalationFolder].title}</p>
+          <p className="inbox-empty-sub">{emptyCopy[escalationFolder].sub}</p>
         </div>
       )}
 
@@ -664,7 +646,7 @@ function EscalationsInboxContent() {
             title="Unread"
             icon={Mail}
             items={unreadItems}
-            folder={folder}
+            folder={escalationFolder}
             threadId={threadId}
             open={unreadOpen}
             onToggle={() => setUnreadOpen(v => !v)}
@@ -678,7 +660,7 @@ function EscalationsInboxContent() {
             title="Everything else"
             icon={MailOpen}
             items={readItems}
-            folder={folder}
+            folder={escalationFolder}
             threadId={threadId}
             open={readOpen}
             onToggle={() => setReadOpen(v => !v)}
@@ -697,7 +679,7 @@ function EscalationsInboxContent() {
             <InboxThreadRow
               key={item.message_id}
               item={item}
-              folder={folder}
+              folder={escalationFolder}
               active={item.remediation_id === threadId}
               selected={selectedIds.has(item.message_id)}
               selectMode={selectMode}
@@ -713,7 +695,7 @@ function EscalationsInboxContent() {
   const listBody = (
     <>
       {listScroll}
-      {selectedIds.size > 0 && (
+      {!isMonitoring && selectedIds.size > 0 && (
         <div className="inbox-bulk-bar">
           <button
             type="button"
@@ -764,7 +746,7 @@ function EscalationsInboxContent() {
               <h1 className="inbox-list-title">Inbox</h1>
             </div>
             {folderNav}
-            {folder === "trash" && (
+            {folder === "trash" && !isMonitoring && (
               <p className="inbox-trash-note">Deleted messages are kept for 90 days, then removed permanently.</p>
             )}
             {listBody}
@@ -777,7 +759,7 @@ function EscalationsInboxContent() {
               <h1 className="inbox-sidebar-title">Inbox</h1>
             </div>
             {folderNav}
-            {folder === "trash" && (
+            {folder === "trash" && !isMonitoring && (
               <p className="inbox-trash-note">Deleted messages are kept for 90 days, then removed permanently.</p>
             )}
           </aside>
@@ -787,7 +769,7 @@ function EscalationsInboxContent() {
             <section className="inbox-list-main">
               {listToolbar}
               <div className="inbox-list-scroll">{listScroll}</div>
-              {selectMode && selectedIds.size > 0 && (
+              {!isMonitoring && selectMode && selectedIds.size > 0 && (
                 <div className="inbox-bulk-bar">
                   <button
                     type="button"
@@ -1080,17 +1062,6 @@ function EscalationsInboxContent() {
       </div>
     </main>
   );
-}
-
-function InboxContent() {
-  const searchParams = useSearchParams();
-  const tab = parseTab(searchParams.get("tab"));
-
-  if (tab === "monitoring") {
-    return <InboxMonitoringView />;
-  }
-
-  return <EscalationsInboxContent />;
 }
 
 export default function InboxPage() {

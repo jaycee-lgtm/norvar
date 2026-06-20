@@ -6,9 +6,8 @@
 // Usage:
 //   node auto-audit.mjs --url https://norvar.io --secret norvar-audit-2026 --email jesse@norvar.io
 //
-// Schedule (cron examples):
-//   0 6  * * * cd /path/to/audit && node auto-audit.mjs --url ... --secret ... --email ...
-//   0 18 * * * cd /path/to/audit && node auto-audit.mjs --url ... --secret ... --email ...
+// Schedule (cron examples — 6× daily, every 4 hours):
+//   0 0,4,8,12,16,20 * * * cd /path/to/repo && node audit/auto-audit.mjs
 //
 // Environment (optional):
 //   RESEND_API_KEY  — send email directly via Resend
@@ -19,6 +18,7 @@ import { dirname, join } from "path";
 import { writeFileSync, mkdirSync, existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { spawn } from "child_process";
 import { sendAuditEmail } from "./email-notify.mjs";
+import { runAutoRemediation, filterManualAfterAuto } from "./auto-remediate.mjs";
 import {
   buildSprintDetail,
   formatSprintEmailBody,
@@ -49,11 +49,12 @@ loadEnvFile(".env");
 const args = process.argv.slice(2);
 const get  = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : null; };
 
-const BASE_URL    = get("--url")    || "http://localhost:3000";
+const BASE_URL    = get("--url")    || process.env.AUDIT_URL || "http://localhost:3000";
 const SECRET      = get("--secret") || process.env.AUDIT_SECRET || "";
 const EMAIL       = get("--email")  || process.env.AUDIT_EMAIL  || "";
 const RUN_SPRINTS = (get("--sprints") || "1,2,3,4,5,6,7").split(",").map(Number);
 const FAST_MODE   = args.includes("--fast");
+const NO_REMEDIATE = args.includes("--no-remediate");
 const REPORT_DIR  = get("--report-dir") || __dirname;
 
 const TIMESTAMP   = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -175,7 +176,7 @@ async function main() {
   console.log("╚══════════════════════════════════════════════════════╝");
   console.log(`\nTarget:   ${BASE_URL}`);
   console.log(`Sprints:  ${RUN_SPRINTS.join(", ")}`);
-  console.log(`Mode:     ${FAST_MODE ? "Fast" : "Full"}`);
+  console.log(`Mode:     ${FAST_MODE ? "Fast" : "Full"}${NO_REMEDIATE ? " | remediation off" : ""}`);
   console.log(`Email:    ${EMAIL || "not configured"}`);
   console.log(`Started:  ${new Date().toISOString()}\n`);
 
@@ -225,6 +226,22 @@ async function main() {
     sprintResults.push(entry);
 
     const detail = buildSprintDetail(sprint, report);
+
+    if (!NO_REMEDIATE && report) {
+      const autoRemediated = await runAutoRemediation({
+        repoRoot: dirname(__dirname),
+        sprintId: sprint.id,
+        sprint,
+        report,
+        detail,
+      });
+      detail.autoRemediated = autoRemediated;
+      if (autoRemediated.length) {
+        detail.needsManualRemediation = filterManualAfterAuto(detail.needsManualRemediation, autoRemediated);
+        console.log(`  Auto-remediated: ${autoRemediated.length} fix(es)`);
+      }
+    }
+
     sprintDetails.push({ sprintId: sprint.id, detail });
 
     const icon = normalized.status === "PASS" ? "✅" : normalized.status === "REVIEW" ? "⚠️" : "🔴";
