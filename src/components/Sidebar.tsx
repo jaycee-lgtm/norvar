@@ -350,7 +350,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           className={`sidebar-nav-item${isFrameworks ? " active" : ""}`}
         >
           <Layers size={14} strokeWidth={isFrameworks ? 2 : 1.75} />
-          Browse frameworks
+          Browse
         </Link>
       </div>
     </>
