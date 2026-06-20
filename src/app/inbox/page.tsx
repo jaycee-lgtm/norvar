@@ -421,7 +421,9 @@ function InboxContent() {
       queueMicrotask(() => setLoadingList(false));
       return;
     }
-    void loadList();
+    queueMicrotask(() => {
+      void loadList();
+    });
   }, [loadList, isMonitoring]);
 
   useEffect(() => {
@@ -429,7 +431,9 @@ function InboxContent() {
       if (!threadId) queueMicrotask(() => setThread(null));
       return;
     }
-    void loadThread(threadId, folder as EscalationInboxFolder);
+    queueMicrotask(() => {
+      void loadThread(threadId, folder as EscalationInboxFolder);
+    });
   }, [threadId, folder, loadThread, isMonitoring]);
 
   const toggleMessageSelect = (messageId: string) => {
