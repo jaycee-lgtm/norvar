@@ -192,7 +192,12 @@ export async function POST(req: NextRequest) {
     .eq("provider", "gitlab")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c => c.webhook_secret === token);
+  const connector = token
+    ? (connectors ?? []).find(c =>
+      typeof c.webhook_secret === "string"
+      && c.webhook_secret.length > 0
+      && c.webhook_secret === token)
+    : null;
 
   if (!connector) {
     await logWebhook("gitlab", null, event ?? "unknown", payload, false, "No matching connector / invalid token");

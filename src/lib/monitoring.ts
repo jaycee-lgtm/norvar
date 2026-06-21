@@ -201,9 +201,10 @@ export async function saveSignal(
 
   if (error) {
     console.error("Failed to save monitoring signal:", error);
-    return null;
+    throw new Error(`Failed to save monitoring signal: ${error.message}`);
   }
-  return data?.id ?? null;
+  if (!data?.id) throw new Error("Failed to save monitoring signal");
+  return data.id;
 }
 
 // ─── LOG RAW WEBHOOK (for debugging / replay) ────────────────────────────────

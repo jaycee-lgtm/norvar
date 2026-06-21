@@ -349,6 +349,9 @@ async function applyMessagePatch(
   if (!(await canAccessItem(item, userId, activeOrgId))) {
     throw new Error("Forbidden");
   }
+  if (!canManageItem(item, userId)) {
+    throw new Error("Forbidden");
+  }
 
   if (action === "purge") {
     if (!activity.deleted_at) throw new Error("Only deleted messages can be purged");

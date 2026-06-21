@@ -17,7 +17,7 @@ export async function requireOrgContext(
     return { error: Response.json({ error: "Select an organization first" }, { status: 400 }) };
   }
 
-  if (requireAdmin && orgRole && orgRole !== "org:admin" && orgRole !== "admin") {
+  if (requireAdmin && orgRole !== "org:admin" && orgRole !== "admin") {
     return { error: Response.json({ error: "Org admin access required" }, { status: 403 }) };
   }
 

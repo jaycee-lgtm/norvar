@@ -148,19 +148,19 @@ export async function POST(req: NextRequest) {
     .eq("provider", "jira")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c =>
-    ((c.watched_projects as string[] | undefined) ?? []).length === 0
-    || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? ""),
-  );
+  const connector = (connectors ?? []).find(c => {
+    const watchedProjects = (c.watched_projects as string[] | undefined) ?? [];
+    const watchesProject = watchedProjects.length === 0 || watchedProjects.includes(projectKey ?? "");
+    const secret = c.webhook_secret;
+    return watchesProject
+      && typeof secret === "string"
+      && secret.length > 0
+      && verifyJiraSignature(rawBody, signature, secret);
+  });
 
   if (!connector) {
-    await logWebhook("jira", null, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "No matching connector found");
-    return Response.json({ error: "Connector not configured" }, { status: 404 });
-  }
-
-  if (connector.webhook_secret && !verifyJiraSignature(rawBody, signature, connector.webhook_secret)) {
-    await logWebhook("jira", connector.org_id, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
-    return Response.json({ error: "Invalid signature" }, { status: 401 });
+    await logWebhook("jira", null, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "No matching connector / invalid signature");
+    return Response.json({ error: "Invalid signature or connector not configured" }, { status: 401 });
   }
 
   const eventType = payload.webhookEvent as string;
