@@ -176,6 +176,11 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get("x-gitlab-token");
   const event = req.headers.get("x-gitlab-event");
 
+  if (!token) {
+    await logWebhook("gitlab", null, event ?? "unknown", {}, false, "Missing webhook token");
+    return Response.json({ error: "Invalid token or connector not configured" }, { status: 401 });
+  }
+
   let payload: Record<string, unknown>;
   try {
     payload = JSON.parse(rawBody);
@@ -192,7 +197,11 @@ export async function POST(req: NextRequest) {
     .eq("provider", "gitlab")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c => c.webhook_secret === token);
+  const connector = (connectors ?? []).find(c =>
+    typeof c.webhook_secret === "string"
+    && c.webhook_secret.length > 0
+    && c.webhook_secret === token,
+  );
 
   if (!connector) {
     await logWebhook("gitlab", null, event ?? "unknown", payload, false, "No matching connector / invalid token");

@@ -141,6 +141,12 @@ export async function POST(req: NextRequest) {
   const fields = issue?.fields as Record<string, unknown> | undefined;
   const project = fields?.project as Record<string, unknown> | undefined;
   const projectKey = project?.key as string | undefined;
+  const eventType = payload.webhookEvent as string;
+
+  if (!signature) {
+    await logWebhook("jira", null, eventType ?? "unknown", payload, false, "Missing signature");
+    return Response.json({ error: "Invalid signature" }, { status: 401 });
+  }
 
   const { data: connectors } = await supabase
     .from("monitoring_connectors")
@@ -148,7 +154,18 @@ export async function POST(req: NextRequest) {
     .eq("provider", "jira")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c =>
+  const signedConnectors = (connectors ?? []).filter(c =>
+    typeof c.webhook_secret === "string"
+    && c.webhook_secret.length > 0
+    && verifyJiraSignature(rawBody, signature, c.webhook_secret),
+  );
+
+  if (signedConnectors.length === 0) {
+    await logWebhook("jira", null, eventType ?? "unknown", payload, false, "Signature verification failed");
+    return Response.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  const connector = signedConnectors.find(c =>
     ((c.watched_projects as string[] | undefined) ?? []).length === 0
     || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? ""),
   );
@@ -158,12 +175,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Connector not configured" }, { status: 404 });
   }
 
-  if (connector.webhook_secret && !verifyJiraSignature(rawBody, signature, connector.webhook_secret)) {
-    await logWebhook("jira", connector.org_id, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
-    return Response.json({ error: "Invalid signature" }, { status: 401 });
-  }
-
-  const eventType = payload.webhookEvent as string;
   if (!["jira:issue_created", "jira:issue_updated", "comment_created"].includes(eventType)) {
     return Response.json({ skipped: true, reason: `event ${eventType} not handled` });
   }
