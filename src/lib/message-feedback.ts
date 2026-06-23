@@ -23,12 +23,16 @@ export function assistantText(msg: FeedbackableMessage): string {
 export async function appendLikedFramingExamples(
   supabase: SupabaseClient,
   system: string,
+  userId: string | null | undefined,
 ): Promise<string> {
+  if (!userId) return system;
+
   try {
     const { data } = await supabase
       .from("message_feedback")
       .select("user_message, message_content")
       .eq("rating", "up")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(2);
 

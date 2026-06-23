@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
         // RAG is best-effort
       }
 
-      system = await appendLikedFramingExamples(supabase, system);
+      system = await appendLikedFramingExamples(supabase, system, userId);
 
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",

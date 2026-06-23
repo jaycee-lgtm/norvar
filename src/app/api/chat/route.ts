@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
         // RAG is best-effort
       }
 
-      systemPrompt = await appendLikedFramingExamples(supabase, systemPrompt);
+      systemPrompt = await appendLikedFramingExamples(supabase, systemPrompt, userId);
 
       const stream = await claude.messages.create({
         model:      "claude-sonnet-4-6",
@@ -202,10 +202,15 @@ export async function POST(req: NextRequest) {
             { role: "user", content: new_user_message },
             { role: "chat", text: fullText, id: messageId },
           ];
-          await supabase.from("assessments")
+          const { error: updateError } = await supabase.from("assessments")
             .update({ messages: updated })
             .eq("id", assessment_id)
             .eq("user_id", userId);
+          if (updateError) {
+            console.error("Failed to update assessment chat:", updateError);
+            await send({ type: "error", text: `Could not save chat: ${updateError.message}` });
+            return;
+          }
           await send({ type: "done", text: fullText, conversation_id: assessment_id, message_id: messageId });
         } else {
           await send({ type: "done", text: fullText, conversation_id: assessment_id ?? null });

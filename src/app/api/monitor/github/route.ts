@@ -205,6 +205,7 @@ export async function POST(req: NextRequest) {
     .from("monitoring_connectors")
     .select("*")
     .eq("provider", "github")
+    .eq("status", "active")
     .eq("installation_id", installationId ?? "")
     .maybeSingle();
 
@@ -213,7 +214,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Connector not configured" }, { status: 404 });
   }
 
-  if (!verifyGithubSignature(rawBody, signature, connector.webhook_secret)) {
+  if (
+    typeof connector.webhook_secret !== "string"
+    || connector.webhook_secret.length === 0
+    || !verifyGithubSignature(rawBody, signature, connector.webhook_secret)
+  ) {
     await logWebhook("github", connector.org_id, event ?? "unknown", payload, false, "Signature verification failed");
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
