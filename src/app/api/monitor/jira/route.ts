@@ -27,6 +27,10 @@ function verifyJiraSignature(payload: string, signature: string | null, secret: 
   }
 }
 
+function hasWebhookSecret(secret: unknown): secret is string {
+  return typeof secret === "string" && secret.trim().length > 0;
+}
+
 function adfToText(node: unknown): string {
   if (!node) return "";
   if (typeof node === "string") return node;
@@ -149,8 +153,11 @@ export async function POST(req: NextRequest) {
     .eq("status", "active");
 
   const connector = (connectors ?? []).find(c =>
-    ((c.watched_projects as string[] | undefined) ?? []).length === 0
-    || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? ""),
+    hasWebhookSecret(c.webhook_secret)
+    && (
+      ((c.watched_projects as string[] | undefined) ?? []).length === 0
+      || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? "")
+    ),
   );
 
   if (!connector) {
@@ -158,7 +165,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Connector not configured" }, { status: 404 });
   }
 
-  if (connector.webhook_secret && !verifyJiraSignature(rawBody, signature, connector.webhook_secret)) {
+  if (!verifyJiraSignature(rawBody, signature, connector.webhook_secret)) {
     await logWebhook("jira", connector.org_id, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }

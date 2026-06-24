@@ -14,6 +14,25 @@ export async function getActiveOrganizationId(
   return data[0]?.organization.id ?? null;
 }
 
+export async function getOrganizationMembershipRole(
+  orgId: string,
+  userId: string,
+): Promise<string | null> {
+  const client = await clerkClient();
+  const { data } = await client.organizations.getOrganizationMembershipList({
+    organizationId: orgId,
+    userId:         [userId],
+    limit:          1,
+  });
+  const role = (data[0] as { role?: unknown } | undefined)?.role;
+  if (typeof role === "string") return role;
+  if (role && typeof role === "object" && "key" in role) {
+    const key = (role as { key?: unknown }).key;
+    return typeof key === "string" ? key : null;
+  }
+  return null;
+}
+
 export async function getOrganizationSummary(orgId: string): Promise<OrgSummary | null> {
   try {
     const client = await clerkClient();
