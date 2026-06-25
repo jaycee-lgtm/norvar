@@ -17,7 +17,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-function verifyJiraSignature(payload: string, signature: string | null, secret: string): boolean {
+function verifyJiraSignature(payload: string, signature: string | null, secret: unknown): boolean {
+  if (typeof secret !== "string" || secret.length === 0) return false;
   if (!signature) return false;
   const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
   try {
@@ -148,18 +149,21 @@ export async function POST(req: NextRequest) {
     .eq("provider", "jira")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c =>
+  const matchingProjectConnectors = (connectors ?? []).filter(c =>
     ((c.watched_projects as string[] | undefined) ?? []).length === 0
     || ((c.watched_projects as string[] | undefined) ?? []).includes(projectKey ?? ""),
   );
+  const connector = matchingProjectConnectors.find(c =>
+    verifyJiraSignature(rawBody, signature, c.webhook_secret),
+  );
 
-  if (!connector) {
+  if (matchingProjectConnectors.length === 0) {
     await logWebhook("jira", null, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "No matching connector found");
     return Response.json({ error: "Connector not configured" }, { status: 404 });
   }
 
-  if (connector.webhook_secret && !verifyJiraSignature(rawBody, signature, connector.webhook_secret)) {
-    await logWebhook("jira", connector.org_id, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
+  if (!connector) {
+    await logWebhook("jira", null, (payload.webhookEvent as string | undefined) ?? "unknown", payload, false, "Signature verification failed");
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 

@@ -3,6 +3,7 @@
 
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 import {
   classifySignal,
   resolveNorvarUser,
@@ -25,6 +26,13 @@ const SKIP_FILE_PATTERNS = [
 
 function isLikelyRelevantFile(filename: string): boolean {
   return !SKIP_FILE_PATTERNS.some(p => p.test(filename));
+}
+
+function matchesWebhookSecret(secret: unknown, token: string | null): boolean {
+  if (typeof secret !== "string" || secret.length === 0 || !token) return false;
+  const secretBuffer = Buffer.from(secret);
+  const tokenBuffer = Buffer.from(token);
+  return secretBuffer.length === tokenBuffer.length && crypto.timingSafeEqual(secretBuffer, tokenBuffer);
 }
 
 async function fetchMRDiffSummary(
@@ -192,7 +200,7 @@ export async function POST(req: NextRequest) {
     .eq("provider", "gitlab")
     .eq("status", "active");
 
-  const connector = (connectors ?? []).find(c => c.webhook_secret === token);
+  const connector = (connectors ?? []).find(c => matchesWebhookSecret(c.webhook_secret, token));
 
   if (!connector) {
     await logWebhook("gitlab", null, event ?? "unknown", payload, false, "No matching connector / invalid token");
