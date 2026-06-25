@@ -246,7 +246,13 @@ export async function POST(req: NextRequest) {
           const { followups: _f, source_text: _s, ...fallbackRow } = row;
           ({ error: insertErr } = await supabase.from("redlines").insert(fallbackRow));
         }
-        if (insertErr) throw new Error(insertErr.message);
+        if (insertErr) {
+          console.error("Redline save error:", insertErr);
+          await send({
+            type: "status",
+            text: `Review completed but could not be saved: ${insertErr.message}`,
+          });
+        }
       }
 
       const issueCount = redline.clauses?.length ?? 0;
