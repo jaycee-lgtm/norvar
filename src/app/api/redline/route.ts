@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
       await send({ type: "status", text: "Parsing findings and suggested language..." });
 
-      let rawText = response.text;
+      const rawText = response.text;
 
       let redline: RedlineOutput;
       try {
