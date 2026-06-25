@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
       await send({ type: "status", text: "Parsing findings and suggested language..." });
 
-      let rawText = response.text;
+      const rawText = response.text;
 
       let redline: RedlineOutput;
       try {
@@ -246,7 +246,13 @@ export async function POST(req: NextRequest) {
           const { followups: _f, source_text: _s, ...fallbackRow } = row;
           ({ error: insertErr } = await supabase.from("redlines").insert(fallbackRow));
         }
-        if (insertErr) throw new Error(insertErr.message);
+        if (insertErr) {
+          console.error("Redline save error:", insertErr);
+          await send({
+            type: "status",
+            text: `Review completed but could not be saved: ${insertErr.message}`,
+          });
+        }
       }
 
       const issueCount = redline.clauses?.length ?? 0;

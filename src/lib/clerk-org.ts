@@ -68,3 +68,13 @@ export async function isOrgMember(orgId: string, targetUserId: string): Promise<
   });
   return data.length > 0;
 }
+
+export async function getOrganizationMembershipRole(orgId: string, targetUserId: string): Promise<string | null> {
+  const client = await clerkClient();
+  const { data } = await client.organizations.getOrganizationMembershipList({
+    organizationId: orgId,
+    userId:         [targetUserId],
+    limit:          1,
+  });
+  return data[0]?.role ?? null;
+}
