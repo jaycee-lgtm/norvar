@@ -63,15 +63,6 @@ function canManageItem(item: { created_by: string; assigned_to: string[] | null 
   return item.created_by === userId || (item.assigned_to ?? []).includes(userId);
 }
 
-async function canAccessRemediationItem(
-  item: RemediationAccessRow,
-  userId: string,
-  orgId: string | null,
-): Promise<boolean> {
-  const orgMemberIds = await getOrgMemberIds(orgId);
-  return canViewRemediationItem(item, userId, orgMemberIds);
-}
-
 async function loadRemediationItem(id: string) {
   const { data, error } = await supabase
     .from("remediation_items")
@@ -257,11 +248,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "assessment_id and gaps required" }, { status: 400 });
   }
 
-  const { data: assessment } = await supabase
+  const { data: assessment, error: assessmentError } = await supabase
     .from("assessments")
     .select("title, assessment_number, gap_chats")
     .eq("id", assessment_id)
-    .single();
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (assessmentError) return Response.json({ error: assessmentError.message }, { status: 500 });
+  if (!assessment) {
+    return Response.json({ error: "Assessment not found" }, { status: 404 });
+  }
 
   const gapChats = (assessment?.gap_chats && typeof assessment.gap_chats === "object")
     ? assessment.gap_chats as Record<string, unknown[]>
@@ -369,7 +366,7 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: "No gaps found for this project" }, { status: 404 });
     }
 
-    const canManage = projectItems.some(i => canManageItem(i, userId));
+    const canManage = projectItems.every(i => canManageItem(i, userId));
     if (!canManage) return Response.json({ error: "Forbidden" }, { status: 403 });
 
     let targetId: string | null = null;
@@ -461,7 +458,7 @@ export async function PATCH(req: NextRequest) {
     step_checklist: RemediationStepItem[] | null;
   };
 
-  const canManage = async () => canAccessRemediationItem(current, userId, activeOrgId);
+  const canManage = async () => canManageItem(current, userId);
 
   // ── Renotify escalation recipient ─────────────────────────────────────────
   if (renotify) {
@@ -857,7 +854,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE — remove a remediation item
 export async function DELETE(req: NextRequest) {
-  const { userId, orgId } = await auth();
+  const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorised" }, { status: 401 });
 
   const { id } = await req.json();
@@ -868,9 +865,8 @@ export async function DELETE(req: NextRequest) {
     return Response.json({ error: loadError ?? "Remediation item not found" }, { status: loadError === "Remediation item not found" ? 404 : 500 });
   }
   const item = loaded as { created_by: string; assigned_to: string[] | null };
-  const activeOrgId = await getActiveOrganizationId(userId, orgId);
 
-  if (!(await canAccessRemediationItem(item, userId, activeOrgId))) {
+  if (!canManageItem(item, userId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
