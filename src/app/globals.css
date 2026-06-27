@@ -1350,31 +1350,12 @@ input, textarea, select, button {
   }
 
   .agent-composer--home .agent-composer-prompt {
-    display: flex;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .agent-composer--home .agent-composer-prompt .mode-selector--home-prompt {
-    width: auto;
-    align-self: center;
-    text-align: center;
+    margin-top: 14px;
   }
 
   .agent-composer--home .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger {
-    justify-content: center;
-    text-align: center;
-    width: auto;
-    align-self: center;
-  }
-
-  .agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt {
-    width: auto;
-  }
-
-  .agent-composer--home .agent-composer-prompt .contracts-selected-bar--home {
-    justify-content: center;
-    text-align: center;
+    min-height: 36px;
+    padding-top: 2px;
   }
 
   .agent-composer-toolbar {
