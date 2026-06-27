@@ -393,15 +393,12 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           <span className="new-assess-label">{newAction.label}</span>
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
+        <ModeSelector current={sidebarMode} sidebar />
       </div>
       )}
 
       {!isMobileView && (
       <>
-      <div style={{ padding: "0 10px 8px" }}>
-        <ModeSelector current={sidebarMode} compact />
-      </div>
-
       <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
       </>
       )}

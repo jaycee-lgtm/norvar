@@ -54,6 +54,7 @@ export const MODES: {
 export default function ModeSelector({
   current,
   compact = false,
+  sidebar = false,
   embedded = false,
   menuPlacement = "bottom",
   menuAlign = "start",
@@ -65,6 +66,7 @@ export default function ModeSelector({
 }: {
   current: Mode;
   compact?: boolean;
+  sidebar?: boolean;
   embedded?: boolean;
   menuPlacement?: "bottom" | "top";
   menuAlign?:     "start" | "end";
@@ -89,12 +91,13 @@ export default function ModeSelector({
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  const isCompact = compact || sidebar;
   const menuUp = menuPlacement === "top";
   const useFloatingMenu = isMobileView || homePrompt;
   const floatingMenuStyle = useFloatingMenuStyles(open && useFloatingMenu, ref, {
     placement: menuUp ? "top" : "bottom",
     align:     menuAlign,
-    width:     compact ? 0 : 260,
+    width:     isCompact ? 0 : 260,
   });
 
   const triggerTitle = homePrompt
@@ -106,8 +109,8 @@ export default function ModeSelector({
   return (
     <div
       ref={ref}
-      className={`mode-selector${compact ? " mode-selector--compact" : ""}${embedded ? " mode-selector--embedded" : ""}${homePrompt ? " mode-selector--home-prompt" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
-      style={{ position: "relative", display: (compact && !embedded) ? "block" : homePrompt ? "block" : "inline-block", width: (compact && !embedded) || homePrompt ? "100%" : undefined }}
+      className={`mode-selector${isCompact ? " mode-selector--compact" : ""}${sidebar ? " mode-selector--sidebar" : ""}${embedded ? " mode-selector--embedded" : ""}${homePrompt ? " mode-selector--home-prompt" : ""}${menuUp ? " mode-selector--menu-up" : ""}`}
+      style={{ position: "relative", display: (isCompact && !embedded) || sidebar ? "block" : homePrompt ? "block" : "inline-block", width: (isCompact && !embedded) || sidebar || homePrompt ? "100%" : undefined }}
     >
       <HoverTip label={triggerTitle}>
         <button
@@ -118,16 +121,16 @@ export default function ModeSelector({
           aria-label={triggerTitle}
           disabled={disabled}
           onClick={() => !disabled && setOpen(o => !o)}
-        style={homePrompt ? {
-          display:    "inline-flex",
-          alignItems: "center",
+        style={homePrompt || sidebar ? {
+          display:    sidebar ? undefined : "inline-flex",
+          alignItems: sidebar ? undefined : "center",
           cursor:     disabled ? "not-allowed" : "pointer",
           fontFamily: "'Sora', sans-serif",
         } : {
           display:        "inline-flex",
           alignItems:     "center",
           gap:            embedded ? 5 : 7,
-          padding:        embedded ? "4px 8px" : compact ? "7px 12px" : "6px 12px",
+          padding:        embedded ? "4px 8px" : isCompact ? "7px 12px" : "6px 12px",
           borderRadius:   embedded ? 7 : 8,
           border:         embedded ? "none" : "0.5px solid var(--bdr2)",
           background:     embedded ? (open ? "var(--card2)" : "transparent") : open ? "var(--lift)" : "var(--card)",
@@ -135,43 +138,63 @@ export default function ModeSelector({
           fontFamily:     "'Sora', sans-serif",
           letterSpacing:  "-0.01em",
           transition:     "background 0.15s, border-color 0.15s",
-          width:          (compact && !embedded) ? "100%" : "auto",
+          width:          (isCompact && !embedded) ? "100%" : "auto",
         }}
-        onMouseEnter={homePrompt ? undefined : e => {
+        onMouseEnter={homePrompt || sidebar ? undefined : e => {
           if (!open) e.currentTarget.style.background = embedded ? "var(--card2)" : "var(--card2)";
         }}
-        onMouseLeave={homePrompt ? undefined : e => {
+        onMouseLeave={homePrompt || sidebar ? undefined : e => {
           if (!open) e.currentTarget.style.background = embedded ? "transparent" : "var(--card)";
         }}
       >
-        {!embedded && (
-          <span style={{ color: "var(--fg2)", display: "flex", alignItems: "center" }}>
-            {active.icon}
-          </span>
+        {sidebar ? (
+          <>
+            <span className="mode-selector-trigger-start">
+              <span className="mode-selector-trigger-icon">{active.icon}</span>
+              <span className="mode-selector-trigger-label">{active.label}</span>
+            </span>
+            <span className="mode-selector-trigger-end">
+              <span className="mode-selector-trigger-version">{active.version}</span>
+              <ChevronDown
+                size={12}
+                strokeWidth={2}
+                className="mode-selector-trigger-chevron"
+                style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              />
+            </span>
+          </>
+        ) : (
+          <>
+            {!embedded && (
+              <span style={{ color: "var(--fg2)", display: "flex", alignItems: "center" }}>
+                {active.icon}
+              </span>
+            )}
+            <span style={homePrompt ? undefined : { fontSize: isCompact ? 13 : 12, fontWeight: 500, color: embedded ? "var(--fg2)" : isCompact ? "var(--fg)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
+              {embedded
+                ? askPrefix
+                  ? `Ask ${active.label} ${active.version}`
+                  : `${active.label} ${active.version}`
+                : active.label}
+            </span>
+            {!embedded && (
+            <span style={{
+              fontSize: isCompact ? 11 : 10, color: "var(--fg3)",
+              background: "var(--card2)",
+              padding: "1px 6px",
+              borderRadius: 4,
+              border: "0.5px solid var(--bdr)",
+              fontWeight: 400,
+            }}>
+              {active.version}
+            </span>
+            )}
+            <ChevronDown
+              size={isCompact ? 14 : 12} strokeWidth={2} color="var(--fg3)"
+              style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+            />
+          </>
         )}
-        <span style={homePrompt ? undefined : { fontSize: compact ? 13 : 12, fontWeight: 500, color: embedded ? "var(--fg2)" : compact ? "var(--fg)" : "var(--fg3)", letterSpacing: "-0.02em" }}>
-          {embedded
-            ? askPrefix
-              ? `Ask ${active.label} ${active.version}`
-              : `${active.label} ${active.version}`
-            : active.label}
-        </span>
-        {!embedded && (
-        <span style={{
-          fontSize: compact ? 11 : 10, color: "var(--fg3)",
-          background: "var(--card2)",
-          padding: "1px 6px",
-          borderRadius: 4,
-          border: "0.5px solid var(--bdr)",
-          fontWeight: 400,
-        }}>
-          {active.version}
-        </span>
-        )}
-        <ChevronDown
-          size={compact ? 14 : 12} strokeWidth={2} color="var(--fg3)"
-          style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-        />
       </button>
       </HoverTip>
 
@@ -190,10 +213,10 @@ export default function ModeSelector({
           top:          menuUp ? undefined : "calc(100% + 6px)",
           bottom:       menuUp ? "calc(100% + 6px)" : undefined,
           left:         menuAlign === "end" ? undefined : 0,
-          right:        menuAlign === "end" ? 0 : compact ? 0 : undefined,
-          minWidth:     compact ? undefined : 260,
-          width:        compact ? "100%" : undefined,
-          maxWidth:     compact ? "100%" : undefined,
+          right:        menuAlign === "end" ? 0 : isCompact ? 0 : undefined,
+          minWidth:     isCompact ? undefined : 260,
+          width:        isCompact ? "100%" : undefined,
+          maxWidth:     isCompact ? "100%" : undefined,
           background:   "var(--card)",
           border:       "0.5px solid var(--bdr2)",
           borderRadius: 9,
@@ -233,7 +256,7 @@ export default function ModeSelector({
                   </div>
 
                   {isActive && (
-                    <Check size={compact ? 14 : 12} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
+                    <Check size={isCompact ? 14 : 12} strokeWidth={2.5} color="var(--fg3)" className="mode-selector-option-check" />
                   )}
                 </div>
 
