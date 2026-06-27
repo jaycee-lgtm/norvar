@@ -668,11 +668,11 @@ input, textarea, select, button {
 }
 
 .home-hero-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Sora', sans-serif;
   font-size: clamp(30px, 3.5vw, 40px);
-  font-weight: 400;
+  font-weight: 500;
   color: var(--fg);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   line-height: 1.15;
   margin: 0;
 }
