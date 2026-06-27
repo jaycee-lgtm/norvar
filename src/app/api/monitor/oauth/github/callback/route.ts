@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   createGithubInstallationToken,
   fetchGithubInstallation,
-  githubWebhookSecret,
+  githubWebhookSecretForStorage,
 } from "@/lib/github-app";
 import { appBaseUrl, verifyMonitoringOAuthState } from "@/lib/monitoring-oauth-state";
 
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       installation_id:  String(installationId),
       access_token:     token.token,
       token_expires_at: token.expires_at,
-      webhook_secret:   githubWebhookSecret(),
+      webhook_secret:   githubWebhookSecretForStorage(),
       account_name:     installation.account.login,
       watched_repos:    [],
       watched_projects: [],
@@ -93,6 +93,11 @@ export async function GET(req: NextRequest) {
       .upsert(row, { onConflict: "org_id,provider,installation_id" });
 
     if (error) throw new Error(error.message);
+
+    await supabase
+      .from("monitoring_oauth_sessions")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("state_token", stateToken);
 
     return redirectSettings(base, {
       monitor_connected: "github",

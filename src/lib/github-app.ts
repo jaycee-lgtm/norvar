@@ -32,12 +32,47 @@ function requireEnv(name: string): string {
 }
 
 export function normalizeGithubPrivateKey(raw: string): string {
-  return raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
+  let key = raw.trim().replace(/^\uFEFF/, "");
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1).trim();
+  }
+  key = key.replace(/\r\n/g, "\n");
+  if (key.includes("\\n")) {
+    key = key.replace(/\\n/g, "\n");
+  }
+  if (key.includes("\\\\n")) {
+    key = key.replace(/\\\\n/g, "\n");
+  }
+  if (key.includes("-----BEGIN") && !key.includes("\n")) {
+    const begin = key.match(/-----BEGIN [^-]+-----/)?.[0];
+    const end = key.match(/-----END [^-]+-----/)?.[0];
+    if (begin && end) {
+      const body = key.slice(begin.length, key.length - end.length).replace(/\s+/g, "");
+      const lines = body.match(/.{1,64}/g) ?? [body];
+      key = `${begin}\n${lines.join("\n")}\n${end}\n`;
+    }
+  }
+  if (!key.endsWith("\n")) key += "\n";
+  return key;
+}
+
+export function loadGithubPrivateKey(raw: string): crypto.KeyObject {
+  const normalized = normalizeGithubPrivateKey(raw);
+  try {
+    return crypto.createPrivateKey(normalized);
+  } catch (firstErr) {
+    // GitHub .pem files are PKCS#1; Node accepts both when formatted correctly.
+    const message = firstErr instanceof Error ? firstErr.message : "invalid PEM";
+    throw new Error(`GITHUB_APP_PRIVATE_KEY is invalid (${message}). Paste the full .pem from GitHub App settings — either multiline in Vercel or one line with \\n between lines.`);
+  }
 }
 
 export function createGithubAppJwt(): string {
   const appId      = requireEnv("GITHUB_APP_ID");
-  const privateKey = normalizeGithubPrivateKey(requireEnv("GITHUB_APP_PRIVATE_KEY"));
+  const privateKey = loadGithubPrivateKey(requireEnv("GITHUB_APP_PRIVATE_KEY"));
   const now        = Math.floor(Date.now() / 1000);
 
   const header  = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
@@ -137,4 +172,18 @@ export function githubAppInstallUrl(state: string): string {
 
 export function githubWebhookSecret(): string {
   return requireEnv("GITHUB_APP_WEBHOOK_SECRET");
+}
+
+/** Prefer app-level secret so webhooks work before a connector row exists. */
+export function resolveGithubWebhookSecret(connectorSecret?: string | null): string {
+  return (
+    process.env.GITHUB_APP_WEBHOOK_SECRET?.trim() ||
+    connectorSecret?.trim() ||
+    ""
+  );
+}
+
+/** Store on connector rows; falls back to empty when env is unset. */
+export function githubWebhookSecretForStorage(): string {
+  return resolveGithubWebhookSecret();
 }

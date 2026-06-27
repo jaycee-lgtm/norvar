@@ -12,7 +12,12 @@ import {
   type SignalCandidate,
 } from "@/lib/monitoring";
 import { notifySignalRecipients } from "@/lib/monitoring-notify";
-import { getGithubInstallationAccessToken } from "@/lib/github-app";
+import {
+  createGithubInstallationToken,
+  getGithubInstallationAccessToken,
+  githubWebhookSecretForStorage,
+  resolveGithubWebhookSecret,
+} from "@/lib/github-app";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -184,6 +189,60 @@ async function handlePush(payload: Record<string, unknown>, orgId: string, conne
   return processSignal(candidate);
 }
 
+async function bootstrapGithubInstallation(
+  installationId: string,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const installation = payload.installation as Record<string, unknown>;
+  const account = installation.account as Record<string, unknown>;
+  const accountLogin = account.login as string;
+
+  const { data: session } = await supabase
+    .from("monitoring_oauth_sessions")
+    .select("*")
+    .eq("provider", "github")
+    .is("consumed_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!session) {
+    return { bootstrapped: false, reason: "no pending OAuth session — reconnect from Norvar Settings" };
+  }
+
+  const token = await createGithubInstallationToken(Number(installationId));
+  const row = {
+    org_id:           session.org_id,
+    provider:         "github",
+    installation_id:  installationId,
+    access_token:     token.token,
+    token_expires_at: token.expires_at,
+    webhook_secret:   githubWebhookSecretForStorage(),
+    account_name:     accountLogin,
+    watched_repos:    [],
+    watched_projects: [],
+    watched_branches: ["main", "master", "production"],
+    status:           "active",
+    connected_by:     session.user_id,
+    error_message:    null,
+    updated_at:       new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("monitoring_connectors")
+    .upsert(row, { onConflict: "org_id,provider,installation_id" });
+
+  if (error) throw new Error(error.message);
+
+  await supabase
+    .from("monitoring_oauth_sessions")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("id", session.id);
+
+  return { bootstrapped: true, orgId: session.org_id, account: accountLogin };
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-hub-signature-256");
@@ -202,21 +261,50 @@ export async function POST(req: NextRequest) {
   const installation = payload.installation as Record<string, unknown> | undefined;
   const installationId = installation?.id ? String(installation.id) : null;
 
-  const { data: connector } = await supabase
+  let { data: connector } = await supabase
     .from("monitoring_connectors")
     .select("*")
     .eq("provider", "github")
     .eq("installation_id", installationId ?? "")
     .maybeSingle();
 
+  const webhookSecret = resolveGithubWebhookSecret(connector?.webhook_secret as string | undefined);
+
+  if (!webhookSecret) {
+    await logWebhook("github", connector?.org_id ?? null, event ?? "unknown", payload, false, "Webhook secret not configured");
+    return Response.json({ error: "Webhook secret not configured" }, { status: 500 });
+  }
+
+  if (!verifyGithubSignature(rawBody, signature, webhookSecret)) {
+    await logWebhook("github", connector?.org_id ?? null, event ?? "unknown", payload, false, "Signature verification failed");
+    return Response.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  if (event === "ping") {
+    await logWebhook("github", connector?.org_id ?? null, "ping", { deliveryId, zen: payload.zen }, true);
+    return Response.json({ ok: true, ping: true });
+  }
+
+  if (!connector && event === "installation" && installationId) {
+    const action = payload.action as string;
+    if (action === "created" || action === "new_permissions_accepted") {
+      try {
+        const bootstrap = await bootstrapGithubInstallation(installationId, payload);
+        await logWebhook("github", (bootstrap.orgId as string | undefined) ?? null, event ?? "installation", { deliveryId, bootstrap }, true);
+        return Response.json({ ok: true, ...bootstrap });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Installation bootstrap failed";
+        await logWebhook("github", null, event ?? "installation", payload, false, message);
+        return Response.json({ error: message }, { status: 500 });
+      }
+    }
+    await logWebhook("github", null, event ?? "installation", { deliveryId, action }, true);
+    return Response.json({ ok: true, skipped: true, reason: `installation action ${action} ignored` });
+  }
+
   if (!connector) {
     await logWebhook("github", null, event ?? "unknown", payload, false, "No matching connector found");
     return Response.json({ error: "Connector not configured" }, { status: 404 });
-  }
-
-  if (!verifyGithubSignature(rawBody, signature, connector.webhook_secret)) {
-    await logWebhook("github", connector.org_id, event ?? "unknown", payload, false, "Signature verification failed");
-    return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   try {
