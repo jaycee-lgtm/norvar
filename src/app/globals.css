@@ -190,17 +190,34 @@ input, textarea, select, button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  width: 100%;
+  padding: 5px 10px;
   border-radius: 7px;
-  background: var(--card);
-  border: 0.5px solid var(--bdr2);
+  background: transparent;
+  border: 0.5px solid transparent;
   cursor: pointer;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   text-decoration: none;
-  transition: border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.new-assess-btn:hover { border-color: var(--bdr3); }
-.new-assess-label { font-size: 12px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; }
+
+.new-assess-btn:hover {
+  background: var(--lift);
+  border-color: var(--bdr);
+}
+
+.new-assess-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fg3);
+  letter-spacing: -0.01em;
+}
+
+.new-assess-btn svg {
+  color: var(--fg3);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
 
 .mode-selector--sidebar .mode-selector-trigger {
   display: flex;
