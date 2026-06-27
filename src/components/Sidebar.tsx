@@ -391,7 +391,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         </button>
         <Link href={newAction.href} className="new-assess-btn" onClick={openFreshSession}>
           <span className="new-assess-label">{newAction.label}</span>
-          <SquarePen size={12} strokeWidth={2} />
+          <SquarePen size={14} color="var(--fg3)" />
         </Link>
         <ModeSelector current={sidebarMode} sidebar />
       </div>
