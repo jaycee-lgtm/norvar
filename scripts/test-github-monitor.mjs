@@ -39,6 +39,29 @@ const urlIdx = args.indexOf("--url");
 const BASE_URL = urlIdx >= 0 ? args[urlIdx + 1] : (process.env.AUDIT_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.norvar.io");
 const WEBHOOK_URL = `${BASE_URL.replace(/\/$/, "")}/api/monitor/github`;
 
+// Also load non-secret metadata from Vercel pull (e.g. AUDIT_SECRET)
+for (const file of [".env.vercel.production", ".env.vercel"]) {
+  try {
+    for (const line of readFileSync(file, "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq <= 0) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let value = trimmed.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      if (process.env[key] === undefined && value.length > 0) process.env[key] = value;
+    }
+  } catch {
+    // ignore
+  }
+}
+
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -109,6 +132,23 @@ async function main() {
   console.log(`   watched_branches: ${(connector.watched_branches ?? ["main"]).join(", ")}`);
   console.log(`   last_event_at: ${connector.last_event_at ?? "never"}`);
   console.log(`   token_expires_at: ${connector.token_expires_at ?? "unknown"}`);
+
+  // 3b. Production self-test (JWT + installation token via audit header)
+  const auditSecret = process.env.AUDIT_SECRET;
+  if (auditSecret) {
+    const selfTest = await fetch(WEBHOOK_URL, {
+      headers: { "x-audit-secret": auditSecret },
+    });
+    const selfJson = await selfTest.json().catch(() => ({}));
+    console.log(`3b. Production self-test: HTTP ${selfTest.status}`);
+    console.log(`   ${JSON.stringify(selfJson, null, 2).slice(0, 600)}`);
+    if (!selfTest.ok) {
+      console.error("   FAIL — GitHub App credentials or connector broken on production");
+      process.exit(1);
+    }
+  } else {
+    console.log("3b. Production self-test: SKIP (no AUDIT_SECRET in env)");
+  }
 
   const repoFull =
     (connector.watched_repos?.[0]) ||

@@ -18,6 +18,7 @@ import {
   githubWebhookSecretForStorage,
   resolveGithubWebhookSecret,
 } from "@/lib/github-app";
+import { isAuditRequest } from "@/lib/audit";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -352,6 +353,48 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
-  return Response.json({ ok: true, provider: "github", status: "ready" });
+export async function GET(req: NextRequest) {
+  if (!isAuditRequest(req)) {
+    return Response.json({ ok: true, provider: "github", status: "ready" });
+  }
+
+  const checks: Record<string, unknown> = {
+    webhookSecretConfigured: !!process.env.GITHUB_APP_WEBHOOK_SECRET?.trim(),
+    githubAppIdConfigured:     !!process.env.GITHUB_APP_ID?.trim(),
+    githubPrivateKeyConfigured: !!process.env.GITHUB_APP_PRIVATE_KEY?.trim(),
+  };
+
+  const { data: connector } = await supabase
+    .from("monitoring_connectors")
+    .select("id, org_id, installation_id, account_name, status, token_expires_at")
+    .eq("provider", "github")
+    .neq("status", "disconnected")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  checks.connector = connector
+    ? { installation_id: connector.installation_id, account: connector.account_name, status: connector.status }
+    : null;
+
+  if (!connector) {
+    return Response.json({ ok: false, checks, error: "No GitHub connector row" }, { status: 503 });
+  }
+
+  try {
+    const token = await createGithubInstallationToken(Number(connector.installation_id));
+    checks.installationToken = { ok: true, expires_at: token.expires_at };
+    await getGithubInstallationAccessToken({
+      id:               connector.id,
+      org_id:           connector.org_id,
+      installation_id:  connector.installation_id,
+      access_token:     token.token,
+      token_expires_at: token.expires_at,
+    });
+    checks.tokenPersist = true;
+    return Response.json({ ok: true, provider: "github", status: "healthy", checks });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "GitHub App self-test failed";
+    return Response.json({ ok: false, checks, error: message }, { status: 502 });
+  }
 }
