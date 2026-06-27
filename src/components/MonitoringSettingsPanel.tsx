@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Github, Gitlab, Trello, Plus, Trash2, Check, Link2, Users } from "lucide-react";
 import SettingsSection from "@/components/SettingsSection";
 
@@ -310,13 +311,16 @@ function UserMappingPanel({ mappings, onAdd, onRemove }: {
   );
 }
 
-export default function MonitoringSettingsPanel() {
+function MonitoringSettingsPanelInner() {
+  const searchParams = useSearchParams();
+  const router       = useRouter();
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [orgConfig, setOrgConfig]   = useState<OrgConfig>({
     admin_email: "", privacy_contact_email: "", ai_governance_contact_email: "", cybersecurity_contact_email: "",
   });
   const [mappings, setMappings]     = useState<UserMapping[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [banner, setBanner]         = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -335,6 +339,36 @@ export default function MonitoringSettingsPanel() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    const connected = searchParams.get("monitor_connected");
+    const account   = searchParams.get("monitor_account");
+    const error     = searchParams.get("monitor_error");
+    const info      = searchParams.get("monitor_info");
+
+    if (connected === "github") {
+      setBanner({
+        kind: "ok",
+        text: account
+          ? `GitHub connected — watching ${account}. Add repo names below, then push or open a PR to test.`
+          : "GitHub connected. Add repo names below, then push or open a PR to test.",
+      });
+      void load();
+    } else if (error) {
+      setBanner({ kind: "err", text: error });
+    } else if (info) {
+      setBanner({ kind: "info", text: info });
+    } else {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("monitor_connected");
+    url.searchParams.delete("monitor_account");
+    url.searchParams.delete("monitor_error");
+    url.searchParams.delete("monitor_info");
+    router.replace(url.pathname + url.search, { scroll: false });
+  }, [searchParams, router, load]);
 
   const connectProvider = (provider: Provider) => {
     window.location.href = PROVIDER_META[provider].oauthPath;
@@ -393,6 +427,21 @@ export default function MonitoringSettingsPanel() {
         <p style={{ fontSize: 12, color: "var(--fg3)" }}>Loading...</p>
       ) : (
         <div style={{ maxWidth: 680 }}>
+          {banner && (
+            <div style={{
+              marginBottom: 16, padding: "10px 14px", borderRadius: 8, fontSize: 12, lineHeight: 1.5,
+              border: "0.5px solid var(--bdr2)",
+              background: banner.kind === "ok" ? "var(--rl-bg, rgba(59,109,17,0.08))"
+                : banner.kind === "err" ? "var(--rh-bg, rgba(163,45,45,0.08))"
+                : "var(--card2)",
+              color: banner.kind === "ok" ? "var(--rl, #3B6D11)"
+                : banner.kind === "err" ? "var(--rh, #A32D2D)"
+                : "var(--fg2)",
+            }}>
+              {banner.text}
+            </div>
+          )}
+
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--fg3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
               Connected sources
@@ -420,5 +469,13 @@ export default function MonitoringSettingsPanel() {
         </div>
       )}
     </SettingsSection>
+  );
+}
+
+export default function MonitoringSettingsPanel() {
+  return (
+    <Suspense fallback={null}>
+      <MonitoringSettingsPanelInner />
+    </Suspense>
   );
 }

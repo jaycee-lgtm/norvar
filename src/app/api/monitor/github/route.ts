@@ -12,6 +12,7 @@ import {
   type SignalCandidate,
 } from "@/lib/monitoring";
 import { notifySignalRecipients } from "@/lib/monitoring-notify";
+import { getGithubInstallationAccessToken } from "@/lib/github-app";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -216,6 +217,20 @@ export async function POST(req: NextRequest) {
   if (!verifyGithubSignature(rawBody, signature, connector.webhook_secret)) {
     await logWebhook("github", connector.org_id, event ?? "unknown", payload, false, "Signature verification failed");
     return Response.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  try {
+    connector.access_token = await getGithubInstallationAccessToken({
+      id:               connector.id,
+      org_id:           connector.org_id,
+      installation_id:  connector.installation_id,
+      access_token:     connector.access_token,
+      token_expires_at: connector.token_expires_at,
+    });
+  } catch (tokenErr) {
+    const message = tokenErr instanceof Error ? tokenErr.message : "Token refresh failed";
+    await logWebhook("github", connector.org_id, event ?? "unknown", payload, false, message);
+    return Response.json({ error: message }, { status: 502 });
   }
 
   const watchedRepos = (connector.watched_repos as string[] | undefined) ?? [];
