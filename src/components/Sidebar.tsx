@@ -272,7 +272,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     router.replace("/draft");
   };
 
-  const projectsSection = (
+  const workspaceNavSection = (
     <>
       <div className="sidebar-divider" />
       <Link
@@ -302,12 +302,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </span>
         </Link>
       ))}
-    </>
-  );
-
-  const remediationSection = (
-    <>
-      <div className="sidebar-divider" />
       <Link
         href="/remediation"
         className={`sidebar-nav-item${isRemediation ? " active" : ""}`}
@@ -315,12 +309,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         <ShieldAlert size={14} strokeWidth={isRemediation ? 2 : 1.75} />
         Remediation
       </Link>
-    </>
-  );
-
-  const documentsSection = (
-    <>
-      <div className="sidebar-divider" />
       <Link
         href="/documents"
         className={`sidebar-nav-item${isDocuments ? " active" : ""}`}
@@ -328,12 +316,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         <FolderOpen size={14} strokeWidth={isDocuments ? 2 : 1.75} />
         Documents
       </Link>
-    </>
-  );
-
-  const frameworksSection = (
-    <>
-      <div className="sidebar-divider" />
       <Link
         href="/frameworks"
         className={`sidebar-nav-item${isFrameworks ? " active" : ""}`}
@@ -395,7 +377,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         <div className="sidebar-divider" style={{ margin: "0 8px 6px" }} />
       )}
 
-      <div className="sidebar-scroll">
+      <div className={`sidebar-scroll${isMobileView ? "" : " sidebar-scroll--desktop"}`}>
         {isMobileView ? (
           <div className="sidebar-mobile-nav" style={{ padding: "0 0 4px" }}>
             <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
@@ -438,7 +420,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </div>
         ) : (
         <>
-        <div style={{ padding: "0 0 4px" }}>
+        <div className="sidebar-nav-primary" style={{ padding: "0 0 4px" }}>
           <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
             <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
             Inbox
@@ -591,12 +573,11 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </div>
         </div>
 
-        {projectsSection}
-        {remediationSection}
-        {documentsSection}
-        {frameworksSection}
+        {workspaceNavSection}
         </>
         )}
+
+        {!isMobileView && <div className="sidebar-scroll-spacer" aria-hidden="true" />}
 
         {assessments.length > 0 && (isMobileView ? sidebarMode === "assess" : (isAssess || path === "/history")) && (
           <>
@@ -800,14 +781,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           </>
         )}
 
-        {isMobileView && (
-          <>
-            {projectsSection}
-            {remediationSection}
-            {documentsSection}
-            {frameworksSection}
-          </>
-        )}
+        {isMobileView && workspaceNavSection}
 
         {extra && (
           <>
