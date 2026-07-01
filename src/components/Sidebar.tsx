@@ -269,6 +269,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
         Inbox
       </Link>
+      <div className="sidebar-divider" />
       <Link href="/chat" className={`sidebar-nav-item${isChatNavActive ? " active" : ""}`}>
         <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
         Chat
