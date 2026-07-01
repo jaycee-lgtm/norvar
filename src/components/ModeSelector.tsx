@@ -190,7 +190,10 @@ export default function ModeSelector({
             </span>
             )}
             <ChevronDown
-              size={isCompact ? 14 : 12} strokeWidth={2} color="var(--fg3)"
+              size={homePrompt ? 14 : isCompact ? 14 : 12}
+              strokeWidth={2}
+              color="var(--fg3)"
+              className="mode-selector-trigger-chevron"
               style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
             />
           </>

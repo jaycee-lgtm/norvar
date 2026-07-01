@@ -165,7 +165,7 @@ input, textarea, select, button {
 }
 
 .sidebar-brand-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--fg);
   letter-spacing: -0.03em;
@@ -1145,8 +1145,19 @@ input, textarea, select, button {
   cursor: not-allowed;
 }
 
-.mode-selector--home-prompt .mode-selector-trigger svg {
+.mode-selector--home-prompt .mode-selector-trigger svg:not(.mode-selector-trigger-chevron) {
   display: none;
+}
+
+.mode-selector--home-prompt .mode-selector-trigger .mode-selector-trigger-chevron {
+  display: block;
+  flex-shrink: 0;
+  opacity: 0.72;
+}
+
+.mode-selector--home-prompt .mode-selector-trigger:hover .mode-selector-trigger-chevron,
+.mode-selector--home-prompt .mode-selector-trigger[aria-expanded="true"] .mode-selector-trigger-chevron {
+  opacity: 1;
 }
 
 /* Claude-style home composer shell */
@@ -1296,10 +1307,15 @@ input, textarea, select, button {
   width: auto;
   max-width: 100%;
   min-height: 32px;
-  padding: 0 4px;
+  padding: 0 2px 0 4px;
+  gap: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.agent-composer-toolbar-end .mode-selector--home-prompt .mode-selector-trigger .mode-selector-trigger-chevron {
+  margin-left: 1px;
 }
 
 .agent-composer-toolbar-end .contracts-selected-bar--home {
