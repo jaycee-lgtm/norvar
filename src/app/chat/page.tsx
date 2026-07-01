@@ -23,6 +23,7 @@ import { stashNoraCassiusHandoff } from "@/lib/nora-cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
 import { readSSEStream } from "@/lib/sse";
 import { ShieldAlert, SquarePen, Trash2, FileText } from "lucide-react";
+import HoverTip from "@/components/HoverTip";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -493,6 +494,34 @@ function Chat() {
 
   const isHome = messages.length === 0 && !loadingSaved;
 
+  const threadActionsControl = !isHome ? (
+    <>
+      {conversationId && (
+        <HoverTip label="Delete chat">
+          <button
+            type="button"
+            className="chat-thread-action-btn chat-thread-action-btn--danger"
+            onClick={() => { void deleteChat(); }}
+            disabled={deleting || loading}
+            aria-label="Delete chat"
+          >
+            <Trash2 size={14} strokeWidth={1.75} />
+          </button>
+        </HoverTip>
+      )}
+      <HoverTip label="New chat">
+        <button
+          type="button"
+          className="chat-thread-action-btn"
+          onClick={startNew}
+          aria-label="New chat"
+        >
+          <SquarePen size={14} strokeWidth={1.75} />
+        </button>
+      </HoverTip>
+    </>
+  ) : null;
+
   const streamCursor = (
     <span style={{
       display: "inline-block", width: 2, height: "1em", background: "var(--fg3)",
@@ -684,45 +713,6 @@ function Chat() {
                       )}
                     </div>
                   )}
-                  {!isMobileView && (
-                  <div className="chat-input-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 11, color: "var(--fg3)", fontFamily: "'Sora', sans-serif" }}>
-                      Chat{queuedCount > 0 ? ` · ${queuedCount} queued` : ""}
-                    </span>
-                    <div className="chat-input-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      {conversationId && (
-                        <button
-                          type="button"
-                          onClick={() => { void deleteChat(); }}
-                          disabled={deleting || loading}
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 5,
-                            fontSize: 11, color: "var(--rh)", background: "transparent",
-                            border: "none", cursor: deleting || loading ? "not-allowed" : "pointer",
-                            fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em", padding: 0,
-                            opacity: deleting || loading ? 0.5 : 1,
-                          }}
-                        >
-                          <Trash2 size={11} strokeWidth={2} />
-                          Delete chat
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={startNew}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 5,
-                          fontSize: 11, color: "var(--fg3)", background: "transparent",
-                          border: "none", cursor: "pointer", fontFamily: "'Sora', sans-serif",
-                          letterSpacing: "-0.01em", padding: 0,
-                        }}
-                      >
-                        <SquarePen size={11} strokeWidth={2} />
-                        New chat
-                      </button>
-                    </div>
-                  </div>
-                  )}
                   <AgentComposer
                     variant="thread"
                     mode="chat"
@@ -739,6 +729,7 @@ function Chat() {
                     attachControl={attachControl}
                     voiceControl={voiceIcon}
                     extraToolbarStart={examplesControl}
+                    extraToolbarEnd={threadActionsControl}
                   />
                   {voice.voiceError && (
                     <VoiceErrorBanner message={voice.voiceError} onDismiss={voice.clearError} />

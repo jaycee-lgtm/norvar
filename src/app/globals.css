@@ -1395,6 +1395,29 @@ input, textarea, select, button {
   display: none;
 }
 
+.agent-composer--thread .agent-composer-shell {
+  border-radius: 14px;
+  padding: 10px 12px 8px;
+}
+
+.agent-composer--thread .agent-composer-input-row {
+  min-height: 20px;
+  max-height: 96px;
+  margin: 0 0 6px;
+}
+
+.agent-composer--thread .agent-composer-field {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.45;
+}
+
+.agent-composer--thread .agent-composer-field::placeholder {
+  color: var(--fg4);
+  font-weight: 400;
+}
+
 .agent-composer-field {
   width: 100%;
   flex: 1 1 auto;
@@ -7704,6 +7727,36 @@ input, textarea, select, button {
 .chat-input-inner {
   max-width: 820px;
   margin: 0 auto;
+}
+
+.chat-thread-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--fg3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.chat-thread-action-btn:hover:not(:disabled) {
+  background: var(--lift);
+  color: var(--fg2);
+}
+
+.chat-thread-action-btn--danger:hover:not(:disabled) {
+  color: var(--rh);
+  background: var(--rh-bg);
+}
+
+.chat-thread-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .chat-input-bar {
