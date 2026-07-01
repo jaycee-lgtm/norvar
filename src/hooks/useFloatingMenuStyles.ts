@@ -6,6 +6,8 @@ type FloatingMenuOptions = {
   placement: "top" | "bottom";
   align:     "start" | "end";
   width?:    number;
+  flip?:     boolean;
+  margin?:   number;
 };
 
 const MENU_FLIP_THRESHOLD = 220;
@@ -32,24 +34,25 @@ function resolvePlacement(
 }
 
 export function computeFloatingMenuStyles(
-  anchor: HTMLElement,
-  { placement, align, width = 280 }: FloatingMenuOptions,
+  placementAnchor: HTMLElement,
+  alignAnchor: HTMLElement | null | undefined,
+  { placement, align, width = 280, flip = true, margin = 6 }: FloatingMenuOptions,
 ): CSSProperties {
-  const rect = anchor.getBoundingClientRect();
-  const margin = 6;
-  const resolvedPlacement = resolvePlacement(rect, placement);
+  const placementRect = placementAnchor.getBoundingClientRect();
+  const alignRect = (alignAnchor ?? placementAnchor).getBoundingClientRect();
+  const resolvedPlacement = flip ? resolvePlacement(placementRect, placement) : placement;
   const menuWidth = width > 0
     ? Math.min(width, window.innerWidth - 16)
-    : Math.min(Math.max(rect.width, 240), window.innerWidth - 16);
-  let left = align === "end" ? rect.right - menuWidth : rect.left;
+    : Math.min(Math.max(alignRect.width, 240), window.innerWidth - 16);
+  let left = align === "end" ? alignRect.right - menuWidth : alignRect.left;
   left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
 
   if (resolvedPlacement === "top") {
-    const available = rect.top - margin - 8;
+    const available = placementRect.top - margin - 8;
     return {
       position:  "fixed",
       left,
-      bottom:    window.innerHeight - rect.top + margin,
+      bottom:    window.innerHeight - placementRect.top + margin,
       width:     menuWidth,
       maxHeight: Math.max(120, Math.min(320, available)),
       overflowY: "auto",
@@ -57,7 +60,7 @@ export function computeFloatingMenuStyles(
     };
   }
 
-  const top = rect.bottom + margin;
+  const top = placementRect.bottom + margin;
   const available = window.innerHeight - top - 8;
   return {
     position:  "fixed",
@@ -74,8 +77,9 @@ export function useFloatingMenuStyles(
   open: boolean,
   anchorRef: RefObject<HTMLElement | null>,
   options: FloatingMenuOptions,
+  alignAnchorRef?: RefObject<HTMLElement | null>,
 ) {
-  const { placement, align, width = 280 } = options;
+  const { placement, align, width = 280, flip = true, margin = 6 } = options;
   const [style, setStyle] = useState<CSSProperties>({});
 
   useLayoutEffect(() => {
@@ -87,7 +91,11 @@ export function useFloatingMenuStyles(
     const update = () => {
       const anchor = anchorRef.current;
       if (!anchor) return;
-      setStyle(computeFloatingMenuStyles(anchor, { placement, align, width }));
+      setStyle(computeFloatingMenuStyles(
+        anchor,
+        alignAnchorRef?.current ?? null,
+        { placement, align, width, flip, margin },
+      ));
     };
 
     update();
@@ -97,10 +105,14 @@ export function useFloatingMenuStyles(
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [open, placement, align, width, anchorRef]);
+  }, [open, placement, align, width, flip, margin, anchorRef, alignAnchorRef]);
 
   if (open && anchorRef.current) {
-    return computeFloatingMenuStyles(anchorRef.current, { placement, align, width });
+    return computeFloatingMenuStyles(
+      anchorRef.current,
+      alignAnchorRef?.current ?? null,
+      { placement, align, width, flip, margin },
+    );
   }
 
   return style;

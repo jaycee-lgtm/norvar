@@ -6,6 +6,7 @@ import {
   type PointerEvent,
   type ReactNode,
   type RefObject,
+  useRef,
   useState,
 } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
@@ -67,6 +68,7 @@ export default function AgentComposer({
 }: AgentComposerProps) {
   const isHome = variant === "home";
   const isMobileView = useIsMobile();
+  const shellRef = useRef<HTMLDivElement>(null);
   const hasText = value.trim().length > 0;
   const isTyping = value.length > 0;
   const [focused, setFocused] = useState(false);
@@ -130,6 +132,9 @@ export default function AgentComposer({
           homePrompt
           menuPlacement={isMobileView ? "top" : "bottom"}
           menuAlign="end"
+          menuAnchorRef={isMobileView ? undefined : shellRef}
+          menuFlip={isMobileView ? undefined : false}
+          menuGap={isMobileView ? undefined : 8}
           disabled={disabled || loading}
         />
       )}
@@ -140,6 +145,7 @@ export default function AgentComposer({
     <div className={rootClass}>
       {header}
       <div
+        ref={shellRef}
         className={shellClass}
         {...(hideInput ? {} : { onPointerDown: handleShellPointerDown, onClick: handleShellClick })}
       >

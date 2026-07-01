@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ShieldAlert, MessageSquare, Check, FilePenLine, FileText } from "lucide-react";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -63,6 +63,9 @@ export default function ModeSelector({
   onSelect,
   navigate = true,
   disabled = false,
+  menuAnchorRef,
+  menuFlip,
+  menuGap,
 }: {
   current: Mode;
   compact?: boolean;
@@ -75,6 +78,9 @@ export default function ModeSelector({
   onSelect?: (mode: Mode) => void;
   navigate?: boolean;
   disabled?: boolean;
+  menuAnchorRef?: RefObject<HTMLElement | null>;
+  menuFlip?: boolean;
+  menuGap?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -94,11 +100,20 @@ export default function ModeSelector({
   const isCompact = compact || sidebar;
   const menuUp = menuPlacement === "top";
   const useFloatingMenu = isMobileView || homePrompt;
-  const floatingMenuStyle = useFloatingMenuStyles(open && useFloatingMenu, ref, {
-    placement: menuUp ? "top" : "bottom",
-    align:     menuAlign,
-    width:     isCompact ? 0 : 260,
-  });
+  const menuPositionRef = menuAnchorRef ?? ref;
+  const menuAlignRef = menuAnchorRef ? ref : undefined;
+  const floatingMenuStyle = useFloatingMenuStyles(
+    open && useFloatingMenu,
+    menuPositionRef,
+    {
+      placement: menuUp ? "top" : "bottom",
+      align:     menuAlign,
+      width:     isCompact ? 0 : 260,
+      flip:      menuFlip,
+      margin:    menuGap,
+    },
+    menuAlignRef,
+  );
 
   const triggerTitle = homePrompt
     ? `Switch agent — ${active.label} (${active.tagline})`
