@@ -38,7 +38,7 @@
 
 .light, [data-theme="light"] {
   --bg:    #f5f0eb;
-  --card:  #ffffff;
+  --card:  #fdfaf7;
   --card2: #ece7e0;
   --lift:  #e5dfd8;
   --bdr:   rgba(28,20,14,.12);
