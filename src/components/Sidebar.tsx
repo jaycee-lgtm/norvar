@@ -652,8 +652,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             </div>
           </HoverTip>
           <div className="avatar-name" style={{ flex: 1, minWidth: 0 }}>
-            <div>{user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}</div>
-            <div className="avatar-sub">norvar.io</div>
+            {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
           </div>
           <HoverTip label="Settings">
             <Link
