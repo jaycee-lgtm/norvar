@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine, FileText } from "lucide-react";
-import ModeSelector from "@/components/ModeSelector";
+import { MODES } from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -70,6 +70,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const isFrameworks  = path === "/frameworks";
   const sidebarMode = getSidebarMode(path);
   const newAction = getNewAction(path);
+  const activeAgent = MODES.find(m => m.id === sidebarMode) ?? MODES[0];
   const activeId     = searchParams.get("id");
   const activeDraftId = isDraft ? (searchParams.get("draft") ?? searchParams.get("id")) : null;
   const isDraftHistory = isDraftHistoryPath(path, searchParams);
@@ -393,7 +394,16 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
           <span className="new-assess-label">{newAction.label}</span>
           <SquarePen size={14} color="var(--fg3)" />
         </Link>
-        <ModeSelector current={sidebarMode} sidebar />
+        <div
+          className="sidebar-agent-label"
+          aria-label={`${activeAgent.label} ${activeAgent.version} — ${activeAgent.tagline}`}
+        >
+          <span className="sidebar-agent-label-start">
+            <span className="sidebar-agent-label-icon">{activeAgent.icon}</span>
+            <span className="sidebar-agent-label-name">{activeAgent.label}</span>
+          </span>
+          <span className="sidebar-agent-label-version">{activeAgent.version}</span>
+        </div>
       </div>
       )}
 
