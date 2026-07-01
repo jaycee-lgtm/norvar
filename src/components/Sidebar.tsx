@@ -277,7 +277,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       <div className="sidebar-divider" />
       <Link
         href="/projects"
-        className={`sidebar-section-link${path === "/projects" ? " active" : ""}`}
+        className={`sidebar-nav-item${path === "/projects" ? " active" : ""}`}
       >
         <Briefcase size={14} strokeWidth={path === "/projects" ? 2 : 1.75} />
         Projects
@@ -310,7 +310,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       <div className="sidebar-divider" />
       <Link
         href="/remediation"
-        className={`sidebar-section-link${isRemediation ? " active" : ""}`}
+        className={`sidebar-nav-item${isRemediation ? " active" : ""}`}
       >
         <ShieldAlert size={14} strokeWidth={isRemediation ? 2 : 1.75} />
         Remediation
@@ -323,7 +323,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       <div className="sidebar-divider" />
       <Link
         href="/documents"
-        className={`sidebar-section-link${isDocuments ? " active" : ""}`}
+        className={`sidebar-nav-item${isDocuments ? " active" : ""}`}
       >
         <FolderOpen size={14} strokeWidth={isDocuments ? 2 : 1.75} />
         Documents
@@ -336,7 +336,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       <div className="sidebar-divider" />
       <Link
         href="/frameworks"
-        className={`sidebar-section-link${isFrameworks ? " active" : ""}`}
+        className={`sidebar-nav-item${isFrameworks ? " active" : ""}`}
       >
         <Layers size={14} strokeWidth={isFrameworks ? 2 : 1.75} />
         Frameworks
