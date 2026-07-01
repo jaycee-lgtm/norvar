@@ -568,10 +568,15 @@ input, textarea, select, button {
 }
 
 @media (min-width: 769px) {
+  .home-body {
+    padding: 24px 24px 40px;
+    transform: translateY(-24px);
+  }
+
   .home-hero-row {
     gap: 0;
-    margin-bottom: 32px;
-    transform: translate(-22px, 10px);
+    margin-bottom: 22px;
+    transform: translate(-22px, -2px);
   }
 
   .home-hero-row .home-hero-serif {
@@ -8440,7 +8445,8 @@ html:has(.public-shell--document) body {
   .mobile-home-layout {
     justify-content: center;
     text-align: center;
-    padding: 32px 24px;
+    padding: 24px 24px 40px;
+    transform: translateY(-24px);
   }
 
   .home-hero-block { flex: 0 0 auto; }

@@ -14,7 +14,7 @@ export default function HomeComposerWrap({
   return (
     <div
       className={isMobileView ? "home-composer-block" : "input-wrap"}
-      style={isMobileView ? undefined : { marginBottom: 24, ...(fullWidth ? { width: "100%" } : {}) }}
+      style={isMobileView ? undefined : { marginBottom: 16, ...(fullWidth ? { width: "100%" } : {}) }}
     >
       {children}
     </div>
