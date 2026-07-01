@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type MouseEvent, type ReactNode } from "
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { SquarePen, FileSearch, LayoutDashboard, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine, FileText } from "lucide-react";
+import { SquarePen, FileSearch, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine, FileText } from "lucide-react";
 import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import HoverTip from "@/components/HoverTip";
@@ -84,14 +84,14 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [projects,      setProjects]      = useState<RecentProject[]>([]);
   const [deletingId,    setDeletingId]    = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
-  const [assessNavOpen, setAssessNavOpen] = useState(isAssess);
-  const [chatNavOpen, setChatNavOpen]     = useState(path === "/chat/history");
-  const [contractsNavOpen, setContractsNavOpen] = useState(isContracts);
-  const [draftNavOpen, setDraftNavOpen] = useState(isDraft);
   const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(false);
   const [recentChatsOpen, setRecentChatsOpen] = useState(false);
   const [recentReviewsOpen, setRecentReviewsOpen] = useState(isContracts);
   const [recentDraftsOpen, setRecentDraftsOpen] = useState(isDraft);
+
+  const isChatNavActive = path === "/chat" || (path.startsWith("/chat/") && path !== "/chat/history");
+  const isAssessNavActive = path === "/assess" || path === "/history";
+  const isDraftNavActive = isDraft && !isDraftHistory;
 
   const loadAssessments = () => {
     fetch("/api/assessments?limit=5")
@@ -169,21 +169,13 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   }, []);
 
   useEffect(() => {
-    if (isAssess) setAssessNavOpen(true);
-    if (isContracts) {
-      setContractsNavOpen(true);
-      setRecentReviewsOpen(true);
-    }
-    if (isDraft) {
-      setDraftNavOpen(true);
-      setRecentDraftsOpen(true);
-    }
-    if (path === "/chat/history") setChatNavOpen(true);
+    if (isContracts) setRecentReviewsOpen(true);
+    if (isDraft) setRecentDraftsOpen(true);
     if (isMobileView) {
       setRecentReviewsOpen(sidebarMode === "contracts");
       setRecentDraftsOpen(sidebarMode === "draft");
     }
-  }, [path, isAssess, isContracts, isDraft, isMobileView, sidebarMode]);
+  }, [path, isContracts, isDraft, isMobileView, sidebarMode]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -272,6 +264,68 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     router.replace("/draft");
   };
 
+  const primaryNav = (
+    <div className={isMobileView ? "sidebar-mobile-nav" : "sidebar-nav-primary"}>
+      <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
+        <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
+        Inbox
+      </Link>
+      <Link href="/chat" className={`sidebar-nav-item${isChatNavActive ? " active" : ""}`}>
+        <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
+        Chat
+      </Link>
+      <Link href="/assess" className={`sidebar-nav-item${isAssessNavActive ? " active" : ""}`}>
+        <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
+        Assessments
+      </Link>
+      <Link
+        href="/contracts"
+        className={`sidebar-nav-item${isContracts ? " active" : ""}`}
+        onClick={goToContractsHome}
+      >
+        <FilePenLine size={14} strokeWidth={isContracts ? 2 : 1.75} />
+        Review
+      </Link>
+      <Link
+        href="/draft"
+        className={`sidebar-nav-item${isDraftNavActive ? " active" : ""}`}
+        onClick={goToDraftHome}
+      >
+        <FileText size={14} strokeWidth={isDraftNavActive ? 2 : 1.75} />
+        Draft
+      </Link>
+    </div>
+  );
+
+  const renderRecentsHeader = (
+    title: string,
+    open: boolean,
+    onToggle: () => void,
+    collapseLabel: string,
+  ) => {
+    if (!isMobileView) {
+      return <div className="sidebar-section">{title}</div>;
+    }
+    return (
+      <button
+        type="button"
+        className="sidebar-recents-toggle"
+        aria-expanded={open}
+        aria-label={open ? `Collapse ${collapseLabel}` : `Expand ${collapseLabel}`}
+        onClick={onToggle}
+      >
+        <span>{title}</span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2}
+          style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+        />
+      </button>
+    );
+  };
+
+  const showRecentsPanel = (open: boolean) => isMobileView ? open : true;
+
   const workspaceNavSection = (
     <>
       <div className="sidebar-divider" />
@@ -347,21 +401,29 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
       {!isMobileView && (
       <div className="sidebar-top">
-        <button
-          type="button"
-          className="sidebar-brand-btn"
-          onClick={goToChatHome}
-          aria-label="Norvar home — open chat"
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px 10px", width: "100%", textAlign: "left" }}
-        >
-          <Logo size={24} />
-          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--fg)", letterSpacing: "-.03em", fontFamily: "'Sora', sans-serif" }}>
-            Norvar
-          </span>
-        </button>
+        <div className="sidebar-brand-row">
+          <button
+            type="button"
+            className="sidebar-brand-btn"
+            onClick={goToChatHome}
+            aria-label="Norvar home — open chat"
+          >
+            <Logo size={24} />
+            <span className="sidebar-brand-name">Norvar</span>
+          </button>
+          <HoverTip label={newAction.label}>
+            <Link
+              href={newAction.href}
+              className="sidebar-compose-btn"
+              onClick={openFreshSession}
+              aria-label={newAction.label}
+            >
+              <SquarePen size={14} strokeWidth={1.75} />
+            </Link>
+          </HoverTip>
+        </div>
         <Link href={newAction.href} className="new-assess-btn" onClick={openFreshSession}>
           <span className="new-assess-label">{newAction.label}</span>
-          <SquarePen size={14} color="var(--fg3)" />
         </Link>
         <ModeSelector current={sidebarMode} sidebar />
       </div>
@@ -378,225 +440,22 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       )}
 
       <div className={`sidebar-scroll${isMobileView ? "" : " sidebar-scroll--desktop"}`}>
-        {isMobileView ? (
-          <div className="sidebar-mobile-nav" style={{ padding: "0 0 4px" }}>
-            <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
-              <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
-              Inbox
-            </Link>
-            <Link href="/chat" className={`sidebar-nav-item${path === "/chat" || path.startsWith("/chat/") ? " active" : ""}`}>
-              <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
-              Chat
-            </Link>
-            <Link href="/assess" className={`sidebar-nav-item${path === "/assess" || path === "/history" ? " active" : ""}`}>
-              <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
-              Assessments
-            </Link>
-            <Link
-              href="/contracts"
-              className={`sidebar-nav-item${isContracts ? " active" : ""}`}
-              onClick={goToContractsHome}
-            >
-              <FilePenLine size={14} strokeWidth={isContracts ? 2 : 1.75} />
-              Review
-            </Link>
-            <Link
-              href="/draft"
-              className={`sidebar-nav-item${isDraft && !isDraftHistory ? " active" : ""}`}
-              onClick={goToDraftHome}
-            >
-              <FileText size={14} strokeWidth={isDraft && !isDraftHistory ? 2 : 1.75} />
-              Draft
-            </Link>
-            {isDraft && !isMobileView && (
-              <Link
-                href={draftHistoryHref()}
-                className={`sidebar-nav-subitem${isDraftHistory ? " active" : ""}`}
-              >
-                <LayoutDashboard size={12} strokeWidth={isDraftHistory ? 2 : 1.75} />
-                History
-              </Link>
-            )}
-          </div>
-        ) : (
-        <>
-        <div className="sidebar-nav-primary" style={{ padding: "0 0 4px" }}>
-          <Link href="/inbox" className={`sidebar-nav-item${isInbox ? " active" : ""}`}>
-            <Inbox size={14} strokeWidth={isInbox ? 2 : 1.75} />
-            Inbox
-          </Link>
+        {primaryNav}
 
-          <div className="sidebar-nav-group">
-            <div className="sidebar-nav-group-row">
-              <Link
-                href="/chat"
-                className={`sidebar-nav-item sidebar-nav-group-main${path === "/chat" ? " active" : ""}`}
-              >
-                <MessageSquare size={14} strokeWidth={path === "/chat" ? 2 : 1.75} />
-                Chat
-              </Link>
-              <HoverTip label={chatNavOpen ? "Collapse chat menu" : "Expand chat menu"}>
-                <button
-                  type="button"
-                  className="sidebar-nav-toggle"
-                  aria-expanded={chatNavOpen}
-                  aria-label={chatNavOpen ? "Collapse chat menu" : "Expand chat menu"}
-                  onClick={() => setChatNavOpen(v => !v)}
-                >
-                  <ChevronDown
-                    size={12}
-                    strokeWidth={2}
-                    style={{ transform: chatNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                  />
-                </button>
-              </HoverTip>
-            </div>
-            {chatNavOpen && (
-              <Link
-                href="/chat/history"
-                className={`sidebar-nav-subitem${path === "/chat/history" ? " active" : ""}`}
-              >
-                <LayoutDashboard size={12} strokeWidth={path === "/chat/history" ? 2 : 1.75} />
-                History
-              </Link>
-            )}
-          </div>
-
-          <div className="sidebar-nav-group">
-            <div className="sidebar-nav-group-row">
-              <Link
-                href="/assess"
-                className={`sidebar-nav-item sidebar-nav-group-main${path === "/assess" ? " active" : ""}`}
-              >
-                <FileSearch size={14} strokeWidth={path === "/assess" ? 2 : 1.75} />
-                Assessments
-              </Link>
-              <HoverTip label={assessNavOpen ? "Collapse assessments menu" : "Expand assessments menu"}>
-                <button
-                  type="button"
-                  className="sidebar-nav-toggle"
-                  aria-expanded={assessNavOpen}
-                  aria-label={assessNavOpen ? "Collapse assessments menu" : "Expand assessments menu"}
-                  onClick={() => setAssessNavOpen(v => !v)}
-                >
-                  <ChevronDown
-                    size={12}
-                    strokeWidth={2}
-                    style={{ transform: assessNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                  />
-                </button>
-              </HoverTip>
-            </div>
-            {assessNavOpen && (
-              <Link
-                href="/history"
-                className={`sidebar-nav-subitem${path === "/history" ? " active" : ""}`}
-              >
-                <LayoutDashboard size={12} strokeWidth={path === "/history" ? 2 : 1.75} />
-                History
-              </Link>
-            )}
-          </div>
-
-          <div className="sidebar-nav-group">
-            <div className="sidebar-nav-group-row">
-              <Link
-                href="/contracts"
-                className={`sidebar-nav-item sidebar-nav-group-main${isContracts ? " active" : ""}`}
-                onClick={goToContractsHome}
-              >
-                <FilePenLine size={14} strokeWidth={isContracts ? 2 : 1.75} />
-                Review
-              </Link>
-              <HoverTip label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}>
-                <button
-                  type="button"
-                  className="sidebar-nav-toggle"
-                  aria-expanded={contractsNavOpen}
-                  aria-label={contractsNavOpen ? "Collapse review menu" : "Expand review menu"}
-                  onClick={() => setContractsNavOpen(v => !v)}
-                >
-                  <ChevronDown
-                    size={12}
-                    strokeWidth={2}
-                    style={{ transform: contractsNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                  />
-                </button>
-              </HoverTip>
-            </div>
-            {contractsNavOpen && (
-              <Link
-                href="/contracts?reviews=1"
-                className={`sidebar-nav-subitem${path === "/contracts" && searchParams.get("reviews") === "1" ? " active" : ""}`}
-              >
-                <LayoutDashboard size={12} strokeWidth={path === "/contracts" && searchParams.get("reviews") === "1" ? 2 : 1.75} />
-                History
-              </Link>
-            )}
-          </div>
-
-          <div className="sidebar-nav-group">
-            <div className="sidebar-nav-group-row">
-              <Link
-                href="/draft"
-                className={`sidebar-nav-item sidebar-nav-group-main${isDraft ? " active" : ""}`}
-                onClick={goToDraftHome}
-              >
-                <FileText size={14} strokeWidth={isDraft ? 2 : 1.75} />
-                Draft
-              </Link>
-              <HoverTip label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}>
-                <button
-                  type="button"
-                  className="sidebar-nav-toggle"
-                  aria-expanded={draftNavOpen}
-                  aria-label={draftNavOpen ? "Collapse draft menu" : "Expand draft menu"}
-                  onClick={() => setDraftNavOpen(v => !v)}
-                >
-                  <ChevronDown
-                    size={12}
-                    strokeWidth={2}
-                    style={{ transform: draftNavOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-                  />
-                </button>
-              </HoverTip>
-            </div>
-            {draftNavOpen && !isMobileView && (
-              <Link
-                href={draftHistoryHref()}
-                className={`sidebar-nav-subitem${isDraftHistory ? " active" : ""}`}
-              >
-                <LayoutDashboard size={12} strokeWidth={isDraftHistory ? 2 : 1.75} />
-                History
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {workspaceNavSection}
-        </>
-        )}
+        {!isMobileView && workspaceNavSection}
 
         {!isMobileView && <div className="sidebar-scroll-spacer" aria-hidden="true" />}
 
         {assessments.length > 0 && (isMobileView ? sidebarMode === "assess" : (isAssess || path === "/history")) && (
           <>
             <div className="sidebar-divider" />
-            <button
-              type="button"
-              className="sidebar-recents-toggle"
-              aria-expanded={recentAssessmentsOpen}
-              aria-label={recentAssessmentsOpen ? "Collapse recent assessments" : "Expand recent assessments"}
-              onClick={() => setRecentAssessmentsOpen(v => !v)}
-            >
-              <span>Recent assessments</span>
-              <ChevronDown
-                size={isMobileView ? 14 : 12}
-                strokeWidth={2}
-                style={{ transform: recentAssessmentsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-              />
-            </button>
-            {recentAssessmentsOpen && (
+            {renderRecentsHeader(
+              "Recent assessments",
+              recentAssessmentsOpen,
+              () => setRecentAssessmentsOpen(v => !v),
+              "recent assessments",
+            )}
+            {showRecentsPanel(recentAssessmentsOpen) && (
               <div className="sidebar-recents-panel">
                 {assessments.map(item => {
                   const c = TIER[tierKey(item.risk_tier)];
@@ -609,6 +468,12 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
                       >
                         <div className="recent-dot" style={{ background: c.dot }} />
                         <span className={`recent-text${isActive ? " active-text" : ""}`}>{item.title}</span>
+                        <span
+                          className="recent-score"
+                          style={{ color: c.badge, background: c.bg, border: `0.5px solid ${c.bdr}` }}
+                        >
+                          {item.risk_score}
+                        </span>
                       </Link>
                       <HoverTip label={`Delete ${item.title}`}>
                         <button
@@ -636,21 +501,13 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         {conversations.length > 0 && (isMobileView ? sidebarMode === "chat" : isChat) && (
           <>
             <div className="sidebar-divider" />
-            <button
-              type="button"
-              className="sidebar-recents-toggle"
-              aria-expanded={recentChatsOpen}
-              aria-label={recentChatsOpen ? "Collapse recent chats" : "Expand recent chats"}
-              onClick={() => setRecentChatsOpen(v => !v)}
-            >
-              <span>Recent chats</span>
-              <ChevronDown
-                size={isMobileView ? 14 : 12}
-                strokeWidth={2}
-                style={{ transform: recentChatsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-              />
-            </button>
-            {recentChatsOpen && (
+            {renderRecentsHeader(
+              "Recent chats",
+              recentChatsOpen,
+              () => setRecentChatsOpen(v => !v),
+              "recent chats",
+            )}
+            {showRecentsPanel(recentChatsOpen) && (
               <div className="sidebar-recents-panel">
                 {conversations.map(item => {
                   const isActive = activeId === item.id;
@@ -691,21 +548,13 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         {reviews.length > 0 && (isMobileView ? sidebarMode === "contracts" : isContracts) && (
           <>
             <div className="sidebar-divider" />
-            <button
-              type="button"
-              className="sidebar-recents-toggle"
-              aria-expanded={recentReviewsOpen}
-              aria-label={recentReviewsOpen ? "Collapse recent reviews" : "Expand recent reviews"}
-              onClick={() => setRecentReviewsOpen(v => !v)}
-            >
-              <span>Recent reviews</span>
-              <ChevronDown
-                size={isMobileView ? 14 : 12}
-                strokeWidth={2}
-                style={{ transform: recentReviewsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-              />
-            </button>
-            {recentReviewsOpen && (
+            {renderRecentsHeader(
+              "Recent reviews",
+              recentReviewsOpen,
+              () => setRecentReviewsOpen(v => !v),
+              "recent reviews",
+            )}
+            {showRecentsPanel(recentReviewsOpen) && (
               <div className="sidebar-recents-panel">
                 {reviews.map(item => {
                   const isActive = activeReviewId === item.id;
@@ -735,21 +584,13 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         {(isMobileView ? sidebarMode === "draft" : isDraft) && (
           <>
             <div className="sidebar-divider" />
-            <button
-              type="button"
-              className="sidebar-recents-toggle"
-              aria-expanded={recentDraftsOpen}
-              aria-label={recentDraftsOpen ? "Collapse recent drafts" : "Expand recent drafts"}
-              onClick={() => setRecentDraftsOpen(v => !v)}
-            >
-              <span>Recent drafts</span>
-              <ChevronDown
-                size={isMobileView ? 14 : 12}
-                strokeWidth={2}
-                style={{ transform: recentDraftsOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-              />
-            </button>
-            {recentDraftsOpen && (
+            {renderRecentsHeader(
+              "Recent drafts",
+              recentDraftsOpen,
+              () => setRecentDraftsOpen(v => !v),
+              "recent drafts",
+            )}
+            {showRecentsPanel(recentDraftsOpen) && (
               <div className="sidebar-recents-panel">
                 {drafts.length === 0 ? (
                   <p className="sidebar-recents-empty">No drafts yet</p>
@@ -816,7 +657,8 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             </div>
           </HoverTip>
           <div className="avatar-name" style={{ flex: 1, minWidth: 0 }}>
-            {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}
+            <div>{user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "Norvar"}</div>
+            <div className="avatar-sub">norvar.io</div>
           </div>
           <HoverTip label="Settings">
             <Link
