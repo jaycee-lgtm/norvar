@@ -485,7 +485,7 @@ input, textarea, select, button {
   justify-content: space-between;
   width: calc(100% - 12px);
   margin: 0 6px;
-  padding: 8px 8px 4px;
+  padding: 8px 8px 4px 14px;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -500,6 +500,13 @@ input, textarea, select, button {
   transition: background 0.1s, color 0.1s;
 }
 .sidebar-recents-toggle:hover { background: var(--lift); color: var(--fg2); }
+.sidebar-recents-toggle-chevron {
+  flex-shrink: 0;
+  opacity: 0.72;
+}
+.sidebar-recents-toggle:hover .sidebar-recents-toggle-chevron {
+  opacity: 1;
+}
 .sidebar-recents-panel { padding: 0 0 4px; }
 
 .sidebar-recents-empty {

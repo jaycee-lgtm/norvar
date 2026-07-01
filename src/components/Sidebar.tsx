@@ -83,10 +83,10 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const [projects,      setProjects]      = useState<RecentProject[]>([]);
   const [deletingId,    setDeletingId]    = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
-  const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(false);
-  const [recentChatsOpen, setRecentChatsOpen] = useState(false);
-  const [recentReviewsOpen, setRecentReviewsOpen] = useState(isContracts);
-  const [recentDraftsOpen, setRecentDraftsOpen] = useState(isDraft);
+  const [recentAssessmentsOpen, setRecentAssessmentsOpen] = useState(true);
+  const [recentChatsOpen, setRecentChatsOpen] = useState(true);
+  const [recentReviewsOpen, setRecentReviewsOpen] = useState(true);
+  const [recentDraftsOpen, setRecentDraftsOpen] = useState(true);
 
   const isChatNavActive = path === "/chat" || (path.startsWith("/chat/") && path !== "/chat/history");
   const isAssessNavActive = path === "/assess" || path === "/history";
@@ -166,15 +166,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
     window.addEventListener("norvar:drafts-updated", handler);
     return () => window.removeEventListener("norvar:drafts-updated", handler);
   }, []);
-
-  useEffect(() => {
-    if (isContracts) setRecentReviewsOpen(true);
-    if (isDraft) setRecentDraftsOpen(true);
-    if (isMobileView) {
-      setRecentReviewsOpen(sidebarMode === "contracts");
-      setRecentDraftsOpen(sidebarMode === "draft");
-    }
-  }, [path, isContracts, isDraft, isMobileView, sidebarMode]);
 
   const deleteAssessment = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This also removes linked remediation items.`)) return;
@@ -311,9 +302,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       </>
     );
 
-    if (!isMobileView) {
-      return <div className="sidebar-section">{label}</div>;
-    }
     return (
       <button
         type="button"
@@ -324,15 +312,16 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
       >
         <span className="sidebar-recents-toggle-label">{label}</span>
         <ChevronDown
-          size={14}
+          size={isMobileView ? 14 : 12}
           strokeWidth={2}
+          className="sidebar-recents-toggle-chevron"
           style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
         />
       </button>
     );
   };
 
-  const showRecentsPanel = (open: boolean) => isMobileView ? open : true;
+  const showRecentsPanel = (open: boolean) => open;
 
   const workspaceNavSection = (
     <>
