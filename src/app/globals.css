@@ -321,7 +321,31 @@ input, textarea, select, button {
   flex-shrink: 0;
 }
 
-.sidebar-section { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg3); padding: 8px 14px 4px; }
+.sidebar-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  padding: 8px 14px 4px;
+}
+
+.sidebar-section-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.72;
+}
+
+.sidebar-recents-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
 
 @media (min-width: 769px) {
   .sidebar-section {

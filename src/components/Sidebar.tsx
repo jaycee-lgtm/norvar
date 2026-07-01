@@ -299,12 +299,20 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
 
   const renderRecentsHeader = (
     title: string,
+    icon: ReactNode,
     open: boolean,
     onToggle: () => void,
     collapseLabel: string,
   ) => {
+    const label = (
+      <>
+        <span className="sidebar-section-icon" aria-hidden="true">{icon}</span>
+        <span>{title}</span>
+      </>
+    );
+
     if (!isMobileView) {
-      return <div className="sidebar-section">{title}</div>;
+      return <div className="sidebar-section">{label}</div>;
     }
     return (
       <button
@@ -314,7 +322,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         aria-label={open ? `Collapse ${collapseLabel}` : `Expand ${collapseLabel}`}
         onClick={onToggle}
       >
-        <span>{title}</span>
+        <span className="sidebar-recents-toggle-label">{label}</span>
         <ChevronDown
           size={14}
           strokeWidth={2}
@@ -447,6 +455,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             <div className="sidebar-divider" />
             {renderRecentsHeader(
               "Recent assessments",
+              <FileSearch size={11} strokeWidth={1.75} />,
               recentAssessmentsOpen,
               () => setRecentAssessmentsOpen(v => !v),
               "recent assessments",
@@ -499,6 +508,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             <div className="sidebar-divider" />
             {renderRecentsHeader(
               "Recent chats",
+              <MessageSquare size={11} strokeWidth={1.75} />,
               recentChatsOpen,
               () => setRecentChatsOpen(v => !v),
               "recent chats",
@@ -546,6 +556,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             <div className="sidebar-divider" />
             {renderRecentsHeader(
               "Recent reviews",
+              <FilePenLine size={11} strokeWidth={1.75} />,
               recentReviewsOpen,
               () => setRecentReviewsOpen(v => !v),
               "recent reviews",
@@ -582,6 +593,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             <div className="sidebar-divider" />
             {renderRecentsHeader(
               "Recent drafts",
+              <FileText size={11} strokeWidth={1.75} />,
               recentDraftsOpen,
               () => setRecentDraftsOpen(v => !v),
               "recent drafts",
