@@ -1223,8 +1223,10 @@ input, textarea, select, button {
 .mobile-composer--home .mobile-composer-field,
 .mobile-composer--home .input-textarea,
 .home-input-bar--claude .input-textarea {
-  font-size: 16px !important;
-  line-height: 1.35;
+  font-size: 14px !important;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: -0.015em;
   min-height: 0;
   max-height: 72px;
   padding: 0;
@@ -1406,18 +1408,6 @@ input, textarea, select, button {
   margin: 0 0 6px;
 }
 
-.agent-composer--thread .agent-composer-field {
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: -0.015em;
-  line-height: 1.45;
-}
-
-.agent-composer--thread .agent-composer-field::placeholder {
-  color: var(--fg4);
-  font-weight: 400;
-}
-
 .agent-composer-field {
   width: 100%;
   flex: 1 1 auto;
@@ -1425,10 +1415,12 @@ input, textarea, select, button {
   outline: none;
   background: transparent;
   resize: none;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 400;
   font-family: 'Sora', sans-serif;
   color: var(--fg);
-  line-height: 1.35;
+  letter-spacing: -0.015em;
+  line-height: 1.45;
   min-height: 22px;
   max-height: 72px;
   padding: 0;
@@ -1442,7 +1434,8 @@ input, textarea, select, button {
 }
 
 .agent-composer-field::placeholder {
-  color: var(--fg3);
+  color: var(--fg4);
+  font-weight: 400;
 }
 
 .agent-composer-toolbar {
@@ -8960,8 +8953,10 @@ html:has(.public-shell--document) body {
 
   .home-composer-block .mobile-composer-field,
   .mobile-home-layout .mobile-composer-field {
-    font-size: 16px !important;
-    line-height: 1.35;
+    font-size: 14px !important;
+    font-weight: 400;
+    line-height: 1.45;
+    letter-spacing: -0.015em;
     min-height: 0;
     max-height: 72px;
     padding: 0;
@@ -9033,15 +9028,18 @@ html:has(.public-shell--document) body {
     resize: none;
     min-height: 28px;
     max-height: 120px;
-    font-size: 16px !important;
+    font-size: 14px !important;
+    font-weight: 400;
     font-family: 'Sora', sans-serif;
     color: var(--fg);
-    line-height: 1.5;
+    letter-spacing: -0.015em;
+    line-height: 1.45;
     padding: 0 2px 10px;
   }
 
   .mobile-composer-field::placeholder {
-    color: var(--fg3);
+    color: var(--fg4);
+    font-weight: 400;
   }
 
   .mobile-composer-tools {
