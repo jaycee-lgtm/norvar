@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SquarePen, FileSearch, Layers, Settings, MessageSquare, FolderOpen, ShieldAlert, Trash2, Briefcase, ChevronDown, ChevronRight, Inbox, FilePenLine, FileText } from "lucide-react";
-import ModeSelector from "@/components/ModeSelector";
 import Logo from "@/components/Logo";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -425,7 +424,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
         <Link href={newAction.href} className="new-assess-btn" onClick={openFreshSession}>
           <span className="new-assess-label">{newAction.label}</span>
         </Link>
-        <ModeSelector current={sidebarMode} sidebar />
       </div>
       )}
 

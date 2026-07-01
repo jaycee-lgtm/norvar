@@ -118,6 +118,22 @@ export default function AgentComposer({
   const showExtraEnd = extraToolbarEnd && !hideToolbarIcons;
   const showHomePrompt = isHome && !hideToolbarIcons;
 
+  const homePromptControl = showHomePrompt ? (
+    <div className="agent-composer-home-prompt" {...promptHandlers}>
+      {promptOverride ?? (
+        <ModeSelector
+          current={mode}
+          embedded
+          askPrefix
+          homePrompt
+          menuPlacement="top"
+          menuAlign="end"
+          disabled={disabled || loading}
+        />
+      )}
+    </div>
+  ) : null;
+
   return (
     <div className={rootClass}>
       {header}
@@ -125,24 +141,6 @@ export default function AgentComposer({
         className={shellClass}
         {...(hideInput ? {} : { onPointerDown: handleShellPointerDown, onClick: handleShellClick })}
       >
-        {showHomePrompt && (
-          <div
-            className="agent-composer-prompt"
-            {...promptHandlers}
-          >
-            {promptOverride ?? (
-              <ModeSelector
-                current={mode}
-                embedded
-                askPrefix
-                homePrompt
-                menuPlacement="top"
-                disabled={disabled || loading}
-              />
-            )}
-          </div>
-        )}
-
         {!hideInput && (
           <div
             className="agent-composer-input-row"
@@ -176,6 +174,7 @@ export default function AgentComposer({
             )}
           </div>
           <div className="agent-composer-toolbar-end">
+            {homePromptControl}
             {showExtraEnd}
             {showVoice && voiceControl}
             {attachInEnd && showAttach && attachControl}

@@ -1111,7 +1111,7 @@ input, textarea, select, button {
   margin-right: 0;
 }
 
-.agent-composer--hide-input .agent-composer-prompt {
+.agent-composer--hide-input .agent-composer-home-prompt {
   cursor: default;
 }
 
@@ -1120,17 +1120,17 @@ input, textarea, select, button {
   z-index: 2;
 }
 
-.agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt {
-  width: 100%;
+.agent-composer--hide-input .agent-composer-home-prompt .mode-selector--home-prompt {
+  width: auto;
 }
 
-.agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger {
+.agent-composer--hide-input .agent-composer-home-prompt .mode-selector--home-prompt .mode-selector-trigger {
   cursor: pointer;
 }
 
-.agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger,
-.agent-composer--hide-input .agent-composer-prompt .contracts-selected-bar--home,
-.agent-composer--hide-input .agent-composer-prompt .contracts-selected-bar--home button {
+.agent-composer--hide-input .agent-composer-home-prompt .mode-selector--home-prompt .mode-selector-trigger,
+.agent-composer--hide-input .agent-composer-home-prompt .contracts-selected-bar--home,
+.agent-composer--hide-input .agent-composer-home-prompt .contracts-selected-bar--home button {
   pointer-events: auto;
 }
 
@@ -1273,20 +1273,46 @@ input, textarea, select, button {
   pointer-events: none;
 }
 
-.agent-composer-prompt > * {
+.agent-composer-home-prompt {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: min(100%, 280px);
+  pointer-events: none;
+}
+
+.agent-composer-home-prompt > * {
   pointer-events: auto;
 }
 
-.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt,
-.agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .contracts-selected-bar--home {
-  margin-bottom: 8px;
+.agent-composer-toolbar-end .mode-selector--home-prompt {
+  width: auto;
+  min-width: 0;
+  text-align: right;
 }
 
-.agent-composer--home.agent-composer--active .agent-composer-prompt .mode-selector--home-prompt,
-.agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .mode-selector--home-prompt,
-.agent-composer--home.agent-composer--active .agent-composer-prompt .contracts-selected-bar--home,
-.agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .contracts-selected-bar--home {
-  margin-bottom: 6px;
+.agent-composer-toolbar-end .mode-selector--home-prompt .mode-selector-trigger {
+  justify-content: flex-end;
+  text-align: right;
+  width: auto;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-composer-toolbar-end .contracts-selected-bar--home {
+  justify-content: flex-end;
+  text-align: right;
+  width: auto;
+  max-width: min(100%, 320px);
+  min-height: 32px;
+  padding: 0 4px;
+}
+
+.agent-composer-prompt > * {
+  pointer-events: auto;
 }
 
 .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-input-row {
@@ -1385,7 +1411,7 @@ input, textarea, select, button {
   margin-left: auto;
 }
 
-.agent-composer--typing .agent-composer-prompt {
+.agent-composer--typing .agent-composer-home-prompt {
   display: none !important;
 }
 
@@ -1481,89 +1507,20 @@ input, textarea, select, button {
     font-size: 17px;
   }
 
-  /* Collapsed home: prompt centered on the toolbar icon row */
   .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) {
     min-height: 52px;
     padding: 12px 16px;
   }
 
-  .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: 12px;
-    margin-top: 0;
-    height: 28px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    z-index: 1;
-  }
-
-  .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt,
-  .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .contracts-selected-bar--home {
-    margin-bottom: 0;
-  }
-
-  .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt {
-    width: auto;
-    align-self: center;
-    text-align: center;
-  }
-
-  .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger {
-    justify-content: center;
-    text-align: center;
-    width: auto;
-    align-self: center;
+  .agent-composer-toolbar-end .mode-selector--home-prompt .mode-selector-trigger {
+    font-size: 17px;
     min-height: 28px;
-    padding: 0;
+    padding: 0 6px 0 4px;
   }
 
-  .agent-composer--home:not(.agent-composer--active) .agent-composer-shell:not(:focus-within) .agent-composer-prompt .contracts-selected-bar--home {
-    justify-content: center;
-    text-align: center;
+  .agent-composer-toolbar-end .contracts-selected-bar--home {
     min-height: 28px;
-    padding: 0;
-  }
-
-  /* Active/focused: prompt above input, centered */
-  .agent-composer--home.agent-composer--active .agent-composer-prompt,
-  .agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt {
-    position: static;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    margin-top: 0;
-    height: auto;
-  }
-
-  .agent-composer--home.agent-composer--active .agent-composer-prompt .mode-selector--home-prompt,
-  .agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .mode-selector--home-prompt {
-    width: auto;
-    align-self: center;
-    text-align: center;
-  }
-
-  .agent-composer--home.agent-composer--active .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger,
-  .agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .mode-selector--home-prompt .mode-selector-trigger {
-    justify-content: center;
-    text-align: center;
-    width: auto;
-    align-self: center;
-    min-height: 36px;
-    padding-top: 2px;
-  }
-
-  .agent-composer--hide-input .agent-composer-prompt .mode-selector--home-prompt {
-    width: auto;
-  }
-
-  .agent-composer--home.agent-composer--active .agent-composer-prompt .contracts-selected-bar--home,
-  .agent-composer--home .agent-composer-shell:focus-within .agent-composer-prompt .contracts-selected-bar--home {
-    justify-content: center;
-    text-align: center;
+    padding: 0 6px 0 4px;
   }
 
   .agent-composer-toolbar {
