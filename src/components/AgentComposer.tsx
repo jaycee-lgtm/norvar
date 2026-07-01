@@ -11,6 +11,7 @@ import {
 import { ArrowUp, Loader2 } from "lucide-react";
 import ModeSelector, { type Mode } from "@/components/ModeSelector";
 import HoverTip from "@/components/HoverTip";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { focusComposerField, shouldIgnoreComposerFocusTap } from "@/lib/focus-home-composer";
 
 export type AgentComposerProps = {
@@ -65,6 +66,7 @@ export default function AgentComposer({
   attachPlacement = "start",
 }: AgentComposerProps) {
   const isHome = variant === "home";
+  const isMobileView = useIsMobile();
   const hasText = value.trim().length > 0;
   const isTyping = value.length > 0;
   const [focused, setFocused] = useState(false);
@@ -126,7 +128,7 @@ export default function AgentComposer({
           embedded
           askPrefix
           homePrompt
-          menuPlacement="top"
+          menuPlacement={isMobileView ? "top" : "bottom"}
           menuAlign="end"
           disabled={disabled || loading}
         />
