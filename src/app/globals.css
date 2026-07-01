@@ -161,15 +161,17 @@ input, textarea, select, button {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 2px 10px;
+  padding: 6px 2px 8px;
 }
 
 .sidebar-brand-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--fg);
   letter-spacing: -0.03em;
+  line-height: 1;
   font-family: 'Sora', sans-serif;
+  transform: translateY(0.5px);
 }
 
 .sidebar-compose-btn {
@@ -533,7 +535,8 @@ input, textarea, select, button {
 .sidebar-brand-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  min-height: 26px;
   margin: 0;
   padding: 0;
   border: none;

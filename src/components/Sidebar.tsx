@@ -408,7 +408,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             onClick={goToChatHome}
             aria-label="Norvar home — open chat"
           >
-            <Logo size={24} />
+            <Logo size={26} />
             <span className="sidebar-brand-name">Norvar</span>
           </button>
           <HoverTip label={newAction.label}>
