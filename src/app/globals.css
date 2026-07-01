@@ -270,6 +270,40 @@ input, textarea, select, button {
 
 .sidebar-section { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg3); padding: 8px 14px 4px; }
 
+.sidebar-section-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 1px 6px 4px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  text-decoration: none;
+  line-height: 1.45;
+  transition: background 0.1s, color 0.1s;
+  box-sizing: border-box;
+}
+
+.sidebar-section-link:hover {
+  background: var(--lift);
+  color: var(--fg2);
+}
+
+.sidebar-section-link.active {
+  background: var(--lift);
+  color: var(--fg);
+}
+
+.sidebar-section-link svg {
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.85;
+}
+
 .sidebar-divider { border: none; border-top: 0.5px solid var(--bdr); margin: 6px 8px; }
 
 .sidebar-nav-item {

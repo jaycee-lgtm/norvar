@@ -275,84 +275,72 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
   const projectsSection = (
     <>
       <div className="sidebar-divider" />
-      <div className="sidebar-section">Projects</div>
-      <div style={{ padding: "0 0 4px" }}>
+      <Link
+        href="/projects"
+        className={`sidebar-section-link${path === "/projects" ? " active" : ""}`}
+      >
+        <Briefcase size={14} strokeWidth={path === "/projects" ? 2 : 1.75} />
+        Projects
+      </Link>
+      {isProjects && projects.map(project => (
         <Link
-          href="/projects"
-          className={`sidebar-nav-item${path === "/projects" ? " active" : ""}`}
+          key={project.id}
+          href={`/projects/${project.id}`}
+          className={`sidebar-nav-item recent-project-item${activeProjectId === project.id ? " active" : ""}`}
+          style={{ paddingLeft: 22 }}
         >
-          <Briefcase size={14} strokeWidth={path === "/projects" ? 2 : 1.75} />
-          All projects
+          <span
+            style={{
+              width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+              background: project.color || "var(--fg3)",
+            }}
+          />
+          <span style={{
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {project.name}
+          </span>
         </Link>
-        {isProjects && projects.map(project => (
-          <Link
-            key={project.id}
-            href={`/projects/${project.id}`}
-            className={`sidebar-nav-item recent-project-item${activeProjectId === project.id ? " active" : ""}`}
-            style={{ paddingLeft: 22 }}
-          >
-            <span
-              style={{
-                width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                background: project.color || "var(--fg3)",
-              }}
-            />
-            <span style={{
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
-              {project.name}
-            </span>
-          </Link>
-        ))}
-      </div>
+      ))}
     </>
   );
 
   const remediationSection = (
     <>
       <div className="sidebar-divider" />
-      <div className="sidebar-section">Remediation</div>
-      <div style={{ padding: "0 0 4px" }}>
-        <Link
-          href="/remediation"
-          className={`sidebar-nav-item${isRemediation ? " active" : ""}`}
-        >
-          <ShieldAlert size={14} strokeWidth={isRemediation ? 2 : 1.75} />
-          Remediation queue
-        </Link>
-      </div>
+      <Link
+        href="/remediation"
+        className={`sidebar-section-link${isRemediation ? " active" : ""}`}
+      >
+        <ShieldAlert size={14} strokeWidth={isRemediation ? 2 : 1.75} />
+        Remediation
+      </Link>
     </>
   );
 
   const documentsSection = (
     <>
       <div className="sidebar-divider" />
-      <div className="sidebar-section">Documents</div>
-      <div style={{ padding: "0 0 4px" }}>
-        <Link
-          href="/documents"
-          className={`sidebar-nav-item${isDocuments ? " active" : ""}`}
-        >
-          <FolderOpen size={14} strokeWidth={isDocuments ? 2 : 1.75} />
-          All documents
-        </Link>
-      </div>
+      <Link
+        href="/documents"
+        className={`sidebar-section-link${isDocuments ? " active" : ""}`}
+      >
+        <FolderOpen size={14} strokeWidth={isDocuments ? 2 : 1.75} />
+        Documents
+      </Link>
     </>
   );
 
   const frameworksSection = (
     <>
       <div className="sidebar-divider" />
-      <div className="sidebar-section">Frameworks</div>
-      <div style={{ padding: "0 0 4px" }}>
-        <Link
-          href="/frameworks"
-          className={`sidebar-nav-item${isFrameworks ? " active" : ""}`}
-        >
-          <Layers size={14} strokeWidth={isFrameworks ? 2 : 1.75} />
-          Browse
-        </Link>
-      </div>
+      <Link
+        href="/frameworks"
+        className={`sidebar-section-link${isFrameworks ? " active" : ""}`}
+      >
+        <Layers size={14} strokeWidth={isFrameworks ? 2 : 1.75} />
+        Frameworks
+      </Link>
     </>
   );
 
@@ -817,6 +805,7 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             {projectsSection}
             {remediationSection}
             {documentsSection}
+            {frameworksSection}
           </>
         )}
 
