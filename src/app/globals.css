@@ -4,7 +4,7 @@
 /* ══════════════════════════════════════════════════════════════════
    NORVAR DESIGN TOKENS
    Dark  — C: Pure black, cool silver hierarchy
-   Light — Soft neutral white, dark gray text hierarchy
+   Light — A: Warm off-white, specific ink hierarchy
 ══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -37,31 +37,31 @@
 }
 
 .light, [data-theme="light"] {
-  --bg:    #f7f7f5;
+  --bg:    #f5f0eb;
   --card:  #ffffff;
-  --card2: #f0f0ee;
-  --lift:  #e8e8e6;
-  --bdr:   rgba(0, 0, 0, 0.06);
-  --bdr2:  rgba(0, 0, 0, 0.10);
-  --bdr3:  rgba(0, 0, 0, 0.18);
-  --fg:    #171717;
-  --fg2:   #525252;
-  --fg3:   #737373;
-  --fg4:   #a3a3a3;
+  --card2: #ece7e0;
+  --lift:  #e5dfd8;
+  --bdr:   rgba(28,20,14,.12);
+  --bdr2:  rgba(28,20,14,.20);
+  --bdr3:  rgba(28,20,14,.32);
+  --fg:    #1a1210;
+  --fg2:   #3d2e28;
+  --fg3:   #6b5e55;
+  --fg4:   #a8998e;
   --red:   #8b1a1a;
   --red2:  #a52020;
   --accent: var(--red);
-  --on-red: #ffffff;
+  --on-red: #f5f5f4;
   --overlay: rgba(0, 0, 0, 0.32);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.10);
-  --logo-slash: #171717;
-  --logo-slash-dim: rgba(23, 23, 23, 0.55);
-  --logo-slash-faint: rgba(23, 23, 23, 0.3);
-  --rh:    #b83232; --rh-bg: rgba(184,50,50,.07); --rh-bdr: rgba(184,50,50,.17);
-  --rm:    #9a5a18; --rm-bg: rgba(154,90,24,.07);  --rm-bdr: rgba(154,90,24,.17);
-  --rl:    #15803d; --rl-bg: rgba(21,128,61,.07);  --rl-bdr: rgba(21,128,61,.17);
+  --shadow-sm: 0 1px 2px rgba(28, 20, 14, 0.04), 0 4px 14px rgba(28, 20, 14, 0.05);
+  --shadow-md: 0 8px 24px rgba(28, 20, 14, 0.08);
+  --shadow-lg: 0 16px 40px rgba(28, 20, 14, 0.10);
+  --logo-slash: #1a1210;
+  --logo-slash-dim: rgba(26, 18, 16, 0.55);
+  --logo-slash-faint: rgba(26, 18, 16, 0.3);
+  --rh:    #b83232; --rh-bg: rgba(184,50,50,.09); --rh-bdr: rgba(184,50,50,.22);
+  --rm:    #9a5a18; --rm-bg: rgba(154,90,24,.09);  --rm-bdr: rgba(154,90,24,.22);
+  --rl:    #15803d; --rl-bg: rgba(21,128,61,.09);  --rl-bdr: rgba(21,128,61,.22);
   color-scheme: light;
 }
 
@@ -133,8 +133,8 @@ input, textarea, select, button {
 
 .light .sidebar,
 [data-theme="light"] .sidebar {
-  background: var(--card);
-  border-right-color: var(--bdr);
+  background: var(--card2);
+  border-right-color: var(--bdr2);
 }
 
 .main-area {
