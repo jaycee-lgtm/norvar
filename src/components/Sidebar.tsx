@@ -421,9 +421,6 @@ function SidebarInner({ extra, onNavigate }: { extra?: ReactNode; onNavigate?: (
             </Link>
           </HoverTip>
         </div>
-        <Link href={newAction.href} className="new-assess-btn" onClick={openFreshSession}>
-          <span className="new-assess-label">{newAction.label}</span>
-        </Link>
       </div>
       )}
 
