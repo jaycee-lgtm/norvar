@@ -53,6 +53,7 @@ import {
 import {
   buildMonitoringAssessmentDescription,
   mapMonitoringDomainsToAssessment,
+  type MonitoringInquirySignal,
 } from "@/lib/monitoring-inquiry";
 import { aggregateAssessmentFrameworks, CATALOG_STATUS_LABELS, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
@@ -880,7 +881,6 @@ function Home() {
   const assessScrollLockedRef = useRef(false);
   const prevAssessmentStatusRef = useRef<string | undefined>(undefined);
   const monitorBootRef          = useRef(false);
-  const assessmentConfirmRef    = useRef<(label: string, userAlreadyAdded?: boolean, descOverride?: string) => Promise<string | null>>(async () => null);
 
   function resetAssessmentScroll() {
     assessGapAnchoredRef.current = false;
@@ -890,7 +890,7 @@ function Home() {
   useEffect(() => {
     const id = searchParams.get("id");
     if (!id) {
-      if (searchParams.get("monitor")) return;
+      if (searchParams.get("monitor") || monitorBootRef.current) return;
       setMessages([]);
       setError("");
       setAssessmentId(null);
@@ -1079,6 +1079,7 @@ function Home() {
     setPreScopePhase("chat");
     resetAssessmentScroll();
     typewriterRef.current?.reset();
+    monitorBootRef.current = false;
     router.push("/assess");
   }
 
@@ -1256,42 +1257,6 @@ function Home() {
     setMessages(prev => [...prev, { role: "chat", text: reply }]);
     return reply;
   };
-
-  assessmentConfirmRef.current = handleAssessmentConfirm;
-
-  useEffect(() => {
-    if (!monitorId || searchParams.get("id") || monitorBootRef.current) return;
-
-    monitorBootRef.current = true;
-    setError("");
-
-    void (async () => {
-      try {
-        const res = await fetch(`/api/monitor/signals?signal=${encodeURIComponent(monitorId)}`);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.signal) {
-          throw new Error(data.error || "Monitoring alert not found");
-        }
-
-        const signal = data.signal;
-        const desc = buildMonitoringAssessmentDescription(signal);
-        const domainTags = mapMonitoringDomainsToAssessment(signal.domains ?? []);
-        if (domainTags.length) setDomains(domainTags);
-        setPendingDesc(desc);
-        setPreScopePhase(null);
-        setMessages([{
-          role: "user",
-          content: `Run a compliance assessment for monitoring alert: ${signal.title}`,
-        }]);
-        await assessmentConfirmRef.current(ASSESSMENT_CONFIRM_YES, true, desc);
-        router.replace("/assess", { scroll: false });
-      } catch (e: unknown) {
-        monitorBootRef.current = false;
-        setError(e instanceof Error ? e.message : "Could not start assessment from monitoring alert");
-        router.replace("/assess", { scroll: false });
-      }
-    })();
-  }, [monitorId, router, searchParams]);
 
   const handleAssessmentConfirmText = async (text: string): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "user", content: text }]);
@@ -1697,6 +1662,66 @@ function Home() {
 
     return summaryText.trim() || null;
   };
+
+  const startFromMonitoringSignal = async (signalId: string) => {
+    const res = await fetch(`/api/monitor/signals?signal=${encodeURIComponent(signalId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.signal) {
+      throw new Error(data.error || "Monitoring alert not found");
+    }
+
+    const signal = data.signal as MonitoringInquirySignal;
+    const desc = buildMonitoringAssessmentDescription(signal);
+    const resolvedDomains = mapMonitoringDomainsToAssessment(signal.domains ?? []);
+
+    setError("");
+    setPendingDesc(desc);
+    setPreScopePhase(null);
+    setGuidedActive(false);
+    setActiveGuidedQuestionId(null);
+    setGuidedTyping(false);
+    clearAll();
+    if (resolvedDomains.length) setDomains(resolvedDomains);
+
+    const tags = buildTagsFromValues([], resolvedDomains, [], "");
+
+    setMessages([{
+      role: "user",
+      content: `Run a compliance assessment for monitoring alert: ${signal.title}`,
+    }]);
+
+    await runAssessment(
+      desc,
+      tags,
+      resolvedDomains,
+      [],
+      [],
+      "",
+      folderId,
+      { guidedScoping: false, userMessage: desc },
+    );
+  };
+
+  const startMonitoringAssessmentRef = useRef(startFromMonitoringSignal);
+  startMonitoringAssessmentRef.current = startFromMonitoringSignal;
+
+  useEffect(() => {
+    if (!monitorId || searchParams.get("id") || monitorBootRef.current) return;
+
+    monitorBootRef.current = true;
+    setError("");
+
+    void (async () => {
+      try {
+        await startMonitoringAssessmentRef.current(monitorId);
+        router.replace("/assess", { scroll: false });
+      } catch (e: unknown) {
+        monitorBootRef.current = false;
+        setError(e instanceof Error ? e.message : "Could not start assessment from monitoring alert");
+        router.replace("/assess", { scroll: false });
+      }
+    })();
+  }, [monitorId, router, searchParams]);
 
   const handleAssessment = async (text: string): Promise<string | null> => {
     const priorDesc = buildConversationDescription(messages);
