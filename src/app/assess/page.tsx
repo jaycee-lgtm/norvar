@@ -870,6 +870,8 @@ function Home() {
   const [assessmentStreamText, setAssessmentStreamText] = useState("");
   const [preScopePhase, setPreScopePhase] = useState<"chat" | "confirm" | null>("chat");
 
+  const [monitorBooting, setMonitorBooting] = useState(false);
+
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const scrollRef      = useRef<HTMLDivElement>(null);
   const fileRef        = useRef<HTMLInputElement>(null);
@@ -881,6 +883,7 @@ function Home() {
   const assessScrollLockedRef = useRef(false);
   const prevAssessmentStatusRef = useRef<string | undefined>(undefined);
   const monitorBootRef          = useRef(false);
+  const bootedMonitorIdRef      = useRef<string | null>(null);
 
   function resetAssessmentScroll() {
     assessGapAnchoredRef.current = false;
@@ -890,7 +893,7 @@ function Home() {
   useEffect(() => {
     const id = searchParams.get("id");
     if (!id) {
-      if (searchParams.get("monitor") || monitorBootRef.current) return;
+      if (searchParams.get("monitor") || monitorBootRef.current || monitorBooting) return;
       setMessages([]);
       setError("");
       setAssessmentId(null);
@@ -1080,6 +1083,8 @@ function Home() {
     resetAssessmentScroll();
     typewriterRef.current?.reset();
     monitorBootRef.current = false;
+    bootedMonitorIdRef.current = null;
+    setMonitorBooting(false);
     router.push("/assess");
   }
 
@@ -1690,7 +1695,7 @@ function Home() {
       content: `Run a compliance assessment for monitoring alert: ${signal.title}`,
     }]);
 
-    await runAssessment(
+    void runAssessment(
       desc,
       tags,
       resolvedDomains,
@@ -1706,9 +1711,12 @@ function Home() {
   startMonitoringAssessmentRef.current = startFromMonitoringSignal;
 
   useEffect(() => {
-    if (!monitorId || searchParams.get("id") || monitorBootRef.current) return;
+    if (!monitorId || searchParams.get("id")) return;
+    if (bootedMonitorIdRef.current === monitorId) return;
 
+    bootedMonitorIdRef.current = monitorId;
     monitorBootRef.current = true;
+    setMonitorBooting(true);
     setError("");
 
     void (async () => {
@@ -1716,9 +1724,12 @@ function Home() {
         await startMonitoringAssessmentRef.current(monitorId);
         router.replace("/assess", { scroll: false });
       } catch (e: unknown) {
+        bootedMonitorIdRef.current = null;
         monitorBootRef.current = false;
         setError(e instanceof Error ? e.message : "Could not start assessment from monitoring alert");
         router.replace("/assess", { scroll: false });
+      } finally {
+        setMonitorBooting(false);
       }
     })();
   }, [monitorId, router, searchParams]);
@@ -1870,7 +1881,7 @@ function Home() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendWithVoice(); }
   };
 
-  const isHome = messages.length === 0 && !loading && !loadingSaved;
+  const isHome = messages.length === 0 && !loading && !loadingSaved && !monitorBooting;
 
   const threadLayoutClass = !isHome && !loadingSaved && isMobileView
     ? ` mobile-thread-layout${hideMobileGuidedComposer ? " mobile-thread-layout--guided-options" : ""}`
@@ -1998,6 +2009,12 @@ function Home() {
                   <span className="loading-dot" />
                   <span className="loading-dot" />
                 </div>
+              </div>
+            )}
+
+            {monitorBooting && !loadingSaved && (
+              <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
+                <p className="chat-monitor-boot">Starting assessment from monitoring alert…</p>
               </div>
             )}
 
