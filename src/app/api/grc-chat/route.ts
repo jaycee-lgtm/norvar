@@ -14,6 +14,10 @@ import { generateChatTitle } from "@/lib/generate-thread-title";
 import { appendLikedFramingExamples, newMessageId } from "@/lib/message-feedback";
 import { toClaudeMessages, userFacingClaudeError } from "@/lib/claude-messages";
 import { truncateDisplayTitle } from "@/lib/display-title";
+import {
+  buildMonitoringSystemContext,
+  type MonitoringInquirySignal,
+} from "@/lib/monitoring-inquiry";
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(
@@ -49,7 +53,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { messages, conversation_id, message, folder_id, document_ids, contract_text } = await req.json();
+      const {
+        messages,
+        conversation_id,
+        message,
+        folder_id,
+        document_ids,
+        contract_text,
+        monitoring_context,
+      } = await req.json();
       const resolvedMessages: ChatMessage[] | null = messages?.length
         ? messages
         : message
@@ -84,6 +96,10 @@ export async function POST(req: NextRequest) {
 
       if (hasDocumentContext) {
         system += GRC_DOCUMENT_REDLINE_APPENDIX;
+      }
+
+      if (monitoring_context && typeof monitoring_context === "object") {
+        system += buildMonitoringSystemContext(monitoring_context as MonitoringInquirySignal);
       }
 
       try {

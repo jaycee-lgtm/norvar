@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Github, Gitlab, Trello, AlertTriangle, ExternalLink, Check, Loader2, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Github, Gitlab, Trello, AlertTriangle, ExternalLink, Check, Loader2, RefreshCw, MessageSquare, ClipboardCheck } from "lucide-react";
 import HoverTip from "@/components/HoverTip";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import {
+  monitoringAssessHref,
+  monitoringChatHref,
+} from "@/lib/monitoring-inquiry";
 
 type Signal = {
   id:                  string;
@@ -53,19 +58,25 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment, isMobile }: {
+function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment, isMobile, highlight, actionBusy }: {
   signal:          Signal;
   onDismiss:       (id: string) => void;
   onAskNora:       (signal: Signal) => void;
   onRunAssessment: (signal: Signal) => void;
   isMobile:        boolean;
+  highlight:       boolean;
+  actionBusy:      "nora" | "assess" | null;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(highlight);
   const sev = SEVERITY_META[signal.severity];
+
+  useEffect(() => {
+    if (highlight) setExpanded(true);
+  }, [highlight]);
 
   return (
     <article
-      className={`inbox-monitor-card${signal.user_dismissed ? " dismissed" : ""}${expanded ? " expanded" : ""}`}
+      className={`inbox-monitor-card${signal.user_dismissed ? " dismissed" : ""}${expanded ? " expanded" : ""}${highlight ? " highlighted" : ""}`}
       style={{ "--monitor-sev": sev.color } as React.CSSProperties}
     >
       <button
@@ -146,10 +157,22 @@ function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment, isMobile }:
             <a href={signal.source_url} target="_blank" rel="noreferrer" className="inbox-monitor-btn">
               View source <ExternalLink size={10} />
             </a>
-            <button type="button" className="inbox-monitor-btn" onClick={() => onAskNora(signal)}>
+            <button
+              type="button"
+              className="inbox-monitor-btn"
+              disabled={!!actionBusy}
+              onClick={() => onAskNora(signal)}
+            >
+              {actionBusy === "nora" ? <Loader2 size={11} className="spin" /> : <MessageSquare size={11} />}
               Ask Nora
             </button>
-            <button type="button" className="inbox-monitor-btn primary" onClick={() => onRunAssessment(signal)}>
+            <button
+              type="button"
+              className="inbox-monitor-btn primary"
+              disabled={!!actionBusy}
+              onClick={() => onRunAssessment(signal)}
+            >
+              {actionBusy === "assess" ? <Loader2 size={11} className="spin" /> : <ClipboardCheck size={11} />}
               Run assessment
             </button>
             {!signal.user_dismissed && (
@@ -170,12 +193,16 @@ function SignalCard({ signal, onDismiss, onAskNora, onRunAssessment, isMobile }:
   );
 }
 
-export default function InboxMonitoringTab() {
-  const isMobile = useIsMobile();
+function InboxMonitoringTabInner() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const highlightId  = searchParams.get("signal");
+  const isMobile     = useIsMobile();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState("");
   const [filterDomain, setFilterDomain]     = useState("");
+  const [actionBusy, setActionBusy] = useState<{ id: string; kind: "nora" | "assess" } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -196,13 +223,13 @@ export default function InboxMonitoringTab() {
   };
 
   const askNora = (signal: Signal) => {
-    window.location.href = `/?prefill=${encodeURIComponent(signal.summary)}`;
+    setActionBusy({ id: signal.id, kind: "nora" });
+    router.push(monitoringChatHref(signal.id));
   };
 
   const runAssessment = (signal: Signal) => {
-    window.location.href = `/assess?context=${encodeURIComponent(JSON.stringify({
-      source: signal.source_url, summary: signal.summary, domains: signal.domains,
-    }))}`;
+    setActionBusy({ id: signal.id, kind: "assess" });
+    router.push(monitoringAssessHref(signal.id));
   };
 
   const filtered = signals.filter(s =>
@@ -216,6 +243,8 @@ export default function InboxMonitoringTab() {
     medium: signals.filter(s => s.severity === "medium" && !s.user_dismissed).length,
     low:    signals.filter(s => s.severity === "low" && !s.user_dismissed).length,
   };
+
+  const filterKey = `${filterSeverity}-${filterDomain}`;
 
   return (
     <div className={`inbox-monitoring-feed${isMobile ? " inbox-monitoring-feed--mobile" : ""}`}>
@@ -244,20 +273,27 @@ export default function InboxMonitoringTab() {
           {Object.entries(counts).map(([sev, count]) => {
             const meta = SEVERITY_META[sev as keyof typeof SEVERITY_META];
             return (
-              <div key={sev} className="inbox-monitoring-stat">
+              <button
+                key={sev}
+                type="button"
+                className={`inbox-monitoring-stat${filterSeverity === sev ? " active" : ""}`}
+                onClick={() => setFilterSeverity(filterSeverity === sev ? "" : sev)}
+              >
                 <span className="inbox-monitoring-stat-count" style={{ color: meta.color }}>{count}</span>
                 {meta.label}
-              </div>
+              </button>
             );
           })}
         </div>
 
         <div className="inbox-monitoring-filters">
-          <div className="inbox-monitoring-filter-group">
+          <div className="inbox-monitoring-filter-group" role="tablist" aria-label="Severity">
             {["", "high", "medium", "low"].map(s => (
               <button
                 key={s}
                 type="button"
+                role="tab"
+                aria-selected={filterSeverity === s}
                 className={`inbox-monitoring-filter${filterSeverity === s ? " active" : ""}`}
                 onClick={() => setFilterSeverity(s)}
               >
@@ -266,11 +302,13 @@ export default function InboxMonitoringTab() {
             ))}
           </div>
           {!isMobile && <span className="inbox-monitoring-filter-divider" aria-hidden />}
-          <div className="inbox-monitoring-filter-group">
+          <div className="inbox-monitoring-filter-group" role="tablist" aria-label="Domain">
             {["", "privacy", "ai_governance", "cybersecurity"].map(d => (
               <button
                 key={d}
                 type="button"
+                role="tab"
+                aria-selected={filterDomain === d}
                 className={`inbox-monitoring-filter${filterDomain === d ? " active" : ""}`}
                 onClick={() => setFilterDomain(d)}
               >
@@ -281,16 +319,16 @@ export default function InboxMonitoringTab() {
         </div>
       </div>
 
-      <div className="inbox-monitoring-list">
+      <div className="inbox-monitoring-list" key={filterKey}>
         {loading && (
           <div className="inbox-monitoring-empty">
             <Loader2 size={16} className="spin" />
           </div>
         )}
         {!loading && filtered.length === 0 && (
-          <div className="inbox-monitoring-empty">
+          <div className="inbox-monitoring-empty inbox-monitoring-empty--fade">
             <AlertTriangle size={24} color="var(--fg4)" />
-            <p>No monitoring signals match this filter</p>
+            <p>{signals.length === 0 ? "No monitoring signals yet" : "No signals match this filter"}</p>
           </div>
         )}
         {!loading && filtered.map(s => (
@@ -298,6 +336,8 @@ export default function InboxMonitoringTab() {
             key={s.id}
             signal={s}
             isMobile={isMobile}
+            highlight={s.id === highlightId}
+            actionBusy={actionBusy?.id === s.id ? actionBusy.kind : null}
             onDismiss={dismiss}
             onAskNora={askNora}
             onRunAssessment={runAssessment}
@@ -305,5 +345,17 @@ export default function InboxMonitoringTab() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function InboxMonitoringTab() {
+  return (
+    <Suspense fallback={
+      <div className="inbox-monitoring-empty">
+        <Loader2 size={16} className="spin" />
+      </div>
+    }>
+      <InboxMonitoringTabInner />
+    </Suspense>
   );
 }

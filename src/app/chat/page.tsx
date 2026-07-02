@@ -18,6 +18,10 @@ import { useVoice } from "@/hooks/useVoice";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import AgentComposer from "@/components/AgentComposer";
 import { CHAT_AGENT } from "@/lib/agents";
+import {
+  buildMonitoringInquiryUserMessage,
+  type MonitoringInquirySignal,
+} from "@/lib/monitoring-inquiry";
 import { shouldRedirectToCassius } from "@/lib/cassius-handoff";
 import { stashNoraCassiusHandoff } from "@/lib/nora-cassius-handoff";
 import { createTypewriterDrain, type TypewriterDrain } from "@/lib/typewriter-drain";
@@ -59,6 +63,7 @@ function Chat() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const folderId     = searchParams.get("folder");
+  const monitorId    = searchParams.get("monitor");
 
   const [messages,       setMessages]       = useState<DisplayMessage[]>([]);
   const [history,        setHistory]        = useState<ChatMessage[]>([]);
@@ -74,16 +79,21 @@ function Chat() {
   const [attachedDocName, setAttachedDocName] = useState("");
   const [fileExtracting, setFileExtracting]   = useState(false);
   const [fileError, setFileError]             = useState("");
+  const [monitoringAlert, setMonitoringAlert] = useState<MonitoringInquirySignal | null>(null);
+  const [monitorBooting, setMonitorBooting]   = useState(false);
 
   const fileRef          = useRef<HTMLInputElement>(null);
   const inputRef         = useRef<HTMLTextAreaElement>(null);
   const scrollRef        = useRef<HTMLDivElement>(null);
   const loadedIdRef      = useRef<string | null>(null);
   const handleSendRef    = useRef<(text: string) => Promise<string | null>>(async () => null);
+  const runSendRef       = useRef<(text: string) => Promise<string | null>>(async () => null);
   const typewriterRef    = useRef<TypewriterDrain | null>(null);
   const sendQueueRef     = useRef<string[]>([]);
   const sendInFlightRef  = useRef(false);
   const sendWaitersRef   = useRef<Array<() => void>>([]);
+  const monitoringContextRef = useRef<MonitoringInquirySignal | null>(null);
+  const monitorBootRef       = useRef(false);
 
   const waitForSendIdle = (): Promise<void> => {
     if (!sendInFlightRef.current) return Promise.resolve();
@@ -338,6 +348,7 @@ function Chat() {
           folder_id:       !conversationId ? folderId : undefined,
           document_ids:    selectedDocumentIds.length ? selectedDocumentIds : undefined,
           contract_text:   attachedDocText || undefined,
+          monitoring_context: monitoringContextRef.current ?? undefined,
         }),
       });
 
@@ -403,6 +414,39 @@ function Chat() {
   };
 
   handleSendRef.current = (text: string) => handleSend(text, true);
+  runSendRef.current = (text: string) => handleSend(text, false);
+
+  useEffect(() => {
+    if (!monitorId || searchParams.get("id") || monitorBootRef.current || loadingSaved) return;
+
+    monitorBootRef.current = true;
+    setMonitorBooting(true);
+    setError("");
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/monitor/signals?signal=${encodeURIComponent(monitorId)}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.signal) {
+          throw new Error(data.error || "Monitoring alert not found");
+        }
+
+        const signal = data.signal as MonitoringInquirySignal;
+        monitoringContextRef.current = signal;
+        setMonitoringAlert(signal);
+
+        const inquiry = buildMonitoringInquiryUserMessage(signal);
+        await runSendRef.current(inquiry);
+        router.replace("/chat", { scroll: false });
+      } catch (e: unknown) {
+        monitorBootRef.current = false;
+        setError(e instanceof Error ? e.message : "Could not start monitoring inquiry");
+        router.replace("/chat", { scroll: false });
+      } finally {
+        setMonitorBooting(false);
+      }
+    })();
+  }, [monitorId, loadingSaved, router, searchParams]);
 
   const sendWithVoice = async (text?: string) => {
     const response = await handleSend(text, false);
@@ -467,6 +511,9 @@ function Chat() {
     sendQueueRef.current = [];
     setQueuedCount(0);
     sendInFlightRef.current = false;
+    monitoringContextRef.current = null;
+    setMonitoringAlert(null);
+    monitorBootRef.current = false;
     router.replace("/chat", { scroll: false });
   };
 
@@ -492,7 +539,7 @@ function Chat() {
     }
   };
 
-  const isHome = messages.length === 0 && !loadingSaved;
+  const isHome = messages.length === 0 && !loadingSaved && !monitorBooting;
 
   const threadActionsControl = !isHome ? (
     <>
@@ -542,6 +589,12 @@ function Chat() {
                 <span className="loading-dot" />
                 <span className="loading-dot" />
               </div>
+            </div>
+          )}
+
+          {monitorBooting && !loadingSaved && (
+            <div className={`home-body${isMobileView ? " mobile-home-layout" : ""}`}>
+              <p className="chat-monitor-boot">Starting monitoring inquiry…</p>
             </div>
           )}
 
@@ -609,6 +662,12 @@ function Chat() {
             <>
               <div ref={scrollRef} className="main-scroll">
                 <div className="thread-inner">
+                {monitoringAlert && (
+                  <div className="chat-monitor-context fade-up">
+                    <span className="chat-monitor-context-label">Monitoring inquiry</span>
+                    <span className="chat-monitor-context-title">{monitoringAlert.title}</span>
+                  </div>
+                )}
                 {messages.map((msg, i) => {
                   if (msg.role === "user") {
                     return (

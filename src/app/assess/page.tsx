@@ -50,6 +50,10 @@ import {
   clearNoraCassiusHandoff,
   consumeNoraCassiusHandoff,
 } from "@/lib/nora-cassius-handoff";
+import {
+  buildMonitoringAssessmentDescription,
+  mapMonitoringDomainsToAssessment,
+} from "@/lib/monitoring-inquiry";
 import { aggregateAssessmentFrameworks, CATALOG_STATUS_LABELS, resolveCatalogEntryForFrameworkRef } from "@/lib/regulatory-catalog";
 import { normalizeRiskDomainKey, normalizeScopedRiskDomains, type RiskDomainKey } from "@/lib/risk-tiers";
 import { normalizeGapSeverity, normalizeRiskTier, compareGapSeverity } from "@/lib/risk-tiers";
@@ -835,6 +839,7 @@ function Home() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const folderId     = searchParams.get("folder");
+  const monitorId    = searchParams.get("monitor");
 
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [input,         setInput]         = useState("");
@@ -874,6 +879,8 @@ function Home() {
   const assessGapAnchoredRef = useRef(false);
   const assessScrollLockedRef = useRef(false);
   const prevAssessmentStatusRef = useRef<string | undefined>(undefined);
+  const monitorBootRef          = useRef(false);
+  const assessmentConfirmRef    = useRef<(label: string, userAlreadyAdded?: boolean, descOverride?: string) => Promise<string | null>>(async () => null);
 
   function resetAssessmentScroll() {
     assessGapAnchoredRef.current = false;
@@ -883,6 +890,7 @@ function Home() {
   useEffect(() => {
     const id = searchParams.get("id");
     if (!id) {
+      if (searchParams.get("monitor")) return;
       setMessages([]);
       setError("");
       setAssessmentId(null);
@@ -1248,6 +1256,42 @@ function Home() {
     setMessages(prev => [...prev, { role: "chat", text: reply }]);
     return reply;
   };
+
+  assessmentConfirmRef.current = handleAssessmentConfirm;
+
+  useEffect(() => {
+    if (!monitorId || searchParams.get("id") || monitorBootRef.current) return;
+
+    monitorBootRef.current = true;
+    setError("");
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/monitor/signals?signal=${encodeURIComponent(monitorId)}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.signal) {
+          throw new Error(data.error || "Monitoring alert not found");
+        }
+
+        const signal = data.signal;
+        const desc = buildMonitoringAssessmentDescription(signal);
+        const domainTags = mapMonitoringDomainsToAssessment(signal.domains ?? []);
+        if (domainTags.length) setDomains(domainTags);
+        setPendingDesc(desc);
+        setPreScopePhase(null);
+        setMessages([{
+          role: "user",
+          content: `Run a compliance assessment for monitoring alert: ${signal.title}`,
+        }]);
+        await assessmentConfirmRef.current(ASSESSMENT_CONFIRM_YES, true, desc);
+        router.replace("/assess", { scroll: false });
+      } catch (e: unknown) {
+        monitorBootRef.current = false;
+        setError(e instanceof Error ? e.message : "Could not start assessment from monitoring alert");
+        router.replace("/assess", { scroll: false });
+      }
+    })();
+  }, [monitorId, router, searchParams]);
 
   const handleAssessmentConfirmText = async (text: string): Promise<string | null> => {
     setMessages(prev => [...prev, { role: "user", content: text }]);

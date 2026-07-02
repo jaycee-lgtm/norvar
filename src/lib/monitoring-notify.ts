@@ -69,12 +69,8 @@ export function buildMonitoringEmailSubject(payload: MonitoringEmailPayload): st
 export function buildMonitoringEmailBody(payload: MonitoringEmailPayload): { html: string; text: string } {
   const { classification } = payload;
   const sevColor = severityColor(classification.severity);
-  const noraUrl = `${APP_URL}/?prefill=${encodeURIComponent(classification.summary)}`;
-  const cassiusUrl = `${APP_URL}/assess?context=${encodeURIComponent(JSON.stringify({
-    source:  payload.sourceUrl,
-    summary: classification.summary,
-    domains: classification.domains,
-  }))}`;
+  const noraUrl = `${APP_URL}/chat?monitor=${encodeURIComponent(payload.signalId)}`;
+  const cassiusUrl = `${APP_URL}/assess?monitor=${encodeURIComponent(payload.signalId)}`;
   const signalUrl = `${APP_URL}/inbox?folder=monitoring&signal=${payload.signalId}`;
 
   const gapsListHtml = classification.gaps_identified.map(g =>

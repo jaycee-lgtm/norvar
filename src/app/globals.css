@@ -5505,6 +5505,11 @@ input, textarea, select, button {
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-monitoring-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
   border-bottom: 0.5px solid var(--bdr);
   background: var(--card);
 }
@@ -5512,6 +5517,12 @@ input, textarea, select, button {
 .inbox-monitoring-list {
   flex: 1;
   min-height: 0;
+  animation: inboxMonitorListIn 0.22s ease-out;
+}
+
+@keyframes inboxMonitorListIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .inbox-page--mobile .inbox-monitoring-list {
@@ -5523,18 +5534,38 @@ input, textarea, select, button {
 .inbox-monitoring-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 20px;
+  gap: 8px 14px;
   padding: 4px 0 8px;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-monitoring-stats {
-  display: none;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .inbox-monitoring-stat {
   font-size: 12px;
   color: var(--fg3);
   font-family: 'Sora', sans-serif;
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.inbox-monitoring-stat:hover {
+  background: var(--lift);
+  color: var(--fg2);
+}
+
+.inbox-monitoring-stat.active {
+  background: var(--lift);
+  color: var(--fg);
 }
 
 .inbox-monitoring-stat-count {
@@ -5549,17 +5580,24 @@ input, textarea, select, button {
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-monitoring-filters {
+  flex: 1;
   flex-direction: row;
   align-items: center;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px 10px;
-  padding: 8px 14px;
+  padding: 0;
+  min-width: 0;
 }
 
 .inbox-monitoring-filter-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--card2);
+  border: 0.5px solid var(--bdr2);
 }
 
 .inbox-page--mobile .inbox-monitoring-filter-group {
@@ -5583,27 +5621,31 @@ input, textarea, select, button {
 
 .inbox-monitoring-filter {
   padding: 5px 11px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  border: 0.5px solid var(--bdr2);
+  border: none;
   background: transparent;
   color: var(--fg3);
   cursor: pointer;
   font-family: 'Sora', sans-serif;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease;
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-monitoring-filter {
   padding: 4px 10px;
-  border-radius: 6px;
+}
+
+.inbox-monitoring-filter:active {
+  transform: scale(0.97);
 }
 
 .inbox-monitoring-filter.active {
-  background: var(--lift);
-  border-color: var(--bdr3);
+  background: var(--card);
   color: var(--fg);
+  box-shadow: 0 1px 2px rgba(26, 18, 16, 0.06);
 }
 
 .inbox-page:not(.inbox-page--mobile) .inbox-monitoring-filter.active {
@@ -5627,6 +5669,10 @@ input, textarea, select, button {
   font-family: 'Sora', sans-serif;
 }
 
+.inbox-monitoring-empty--fade {
+  animation: inboxMonitorListIn 0.22s ease-out;
+}
+
 .inbox-monitor-card {
   border: 0.5px solid var(--bdr2);
   border-left-width: 3px;
@@ -5647,6 +5693,24 @@ input, textarea, select, button {
 
 .inbox-page:not(.inbox-page--mobile) .inbox-monitor-card.expanded {
   background: var(--lift);
+}
+
+.inbox-monitor-card.highlighted {
+  animation: inboxMonitorHighlight 0.45s ease-out;
+}
+
+@keyframes inboxMonitorHighlight {
+  0%   { background: color-mix(in srgb, var(--lift) 80%, var(--rm-bg) 20%); }
+  100% { background: var(--lift); }
+}
+
+.inbox-monitor-card-body {
+  animation: inboxMonitorExpand 0.2s ease-out;
+}
+
+@keyframes inboxMonitorExpand {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .inbox-monitor-card.dismissed {
@@ -5873,6 +5937,12 @@ input, textarea, select, button {
   cursor: pointer;
   text-decoration: none;
   font-family: 'Sora', sans-serif;
+  transition: background 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
+}
+
+.inbox-monitor-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .inbox-page--mobile .inbox-monitor-btn {
@@ -7727,6 +7797,41 @@ input, textarea, select, button {
 .chat-input-inner {
   max-width: 820px;
   margin: 0 auto;
+}
+
+.chat-monitor-context {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 0.5px solid var(--bdr2);
+  background: var(--card2);
+}
+
+.chat-monitor-context-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  font-family: 'Sora', sans-serif;
+}
+
+.chat-monitor-context-title {
+  font-size: 12px;
+  color: var(--fg2);
+  font-family: 'Sora', sans-serif;
+  line-height: 1.4;
+}
+
+.chat-monitor-boot {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg3);
+  text-align: center;
+  font-family: 'Sora', sans-serif;
 }
 
 .chat-thread-action-btn {
